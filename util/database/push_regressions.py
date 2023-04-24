@@ -4,14 +4,17 @@ from OTDatabase import OTSqliteDB
 from E2ENightlies import E2ENightlies
 from DVRegressions import DVRegressions
 from MasterCI import MasterCI
+from cdc_rdc import CdcRdcResults
 
 if __name__ == "__main__":
     if len(sys.argv) < 4:
         print(f"""Usage: {sys.argv[0]} <path/to/database_path.db> <path/to/e2e_nightly.json> <path/to/ci_master.json>""")
         exit(0)
 
+    
     database = OTSqliteDB(sys.argv[1])
 
+    CdcRdcResults(database).run(1)
     E2ENightlies(database).run(sys.argv[2])
     MasterCI(database).run(sys.argv[3])
 
