@@ -112,6 +112,10 @@ riscv_compliance_repos()
 load("//third_party/coremark:repos.bzl", "coremark_repos")
 coremark_repos()
 
+# display_drivers
+load("//third_party/display_drivers:repos.bzl", "display_drivers_repos")
+display_drivers_repos()
+
 # The standard Keccak algorithms
 load("//third_party/xkcp:repos.bzl", "xkcp_repos")
 xkcp_repos()
