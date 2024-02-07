@@ -73,7 +73,26 @@ static status_t external_isr(void) {
                                    (dif_rv_plic_irq_id_t)
                                        kTopEarlgreyPlicIrqIdSpiHost0Error);
 
-  TRY(dif_spi_host_irq_acknowledge(&spi_host, irq_fired));
+  // Clear or Disable the interrupt as appropriate.
+  dif_irq_type_t irq_type = kDifIrqTypeEvent;
+  TRY(dif_spi_host_irq_get_type(&spi_host, irq_fired, &irq_type));
+  switch (irq_type) {
+    case kDifIrqTypeEvent:
+      TRY(dif_spi_host_irq_acknowledge(&spi_host, irq_fired));
+      break;
+    case kDifIrqTypeStatus:
+      // As the event interrupt aggregates the different events, each event has
+      // their own independent disable/mask bits (CSR.EVENT_ENABLE.x). However,
+      // we need to mask the aggregated interrupt here, and each test can handle
+      // unmasking it when it has cleared the cause or masked the individual
+      // component.
+      TRY(dif_spi_host_irq_set_enabled(&spi_host, irq_fired,
+                                       kDifToggleDisabled));
+      break;
+    default:
+      LOG_ERROR("Unexpected interrupt type: %d", irq_type);
+      break;
+  }
 
   // Complete the IRQ at PLIC.
   TRY(dif_rv_plic_irq_complete(&plic, kHart, plic_irq_id));
@@ -115,6 +134,9 @@ static status_t ready_event_irq(void) {
   TRY_CHECK(status.ready);
 
   TRY(dif_spi_host_event_set_enabled(&spi_host, kDifSpiHostEvtReady, false));
+  // Unmask the whole interrupt for the next test.
+  CHECK_DIF_OK(dif_spi_host_irq_set_enabled(&spi_host, kDifSpiHostIrqSpiEvent,
+                                            kDifToggleEnabled));
   IBEX_TRY_SPIN_FOR(TRY(spi_host_testutils_is_active(&spi_host)) == false,
                     1000);
   return OK_STATUS();
@@ -145,6 +167,9 @@ static status_t active_event_irq(void) {
   TRY_CHECK(!status.active);
 
   TRY(dif_spi_host_event_set_enabled(&spi_host, kDifSpiHostEvtIdle, false));
+  // Unmask the whole interrupt for the next test.
+  CHECK_DIF_OK(dif_spi_host_irq_set_enabled(&spi_host, kDifSpiHostIrqSpiEvent,
+                                            kDifToggleEnabled));
   IBEX_TRY_SPIN_FOR(TRY(spi_host_testutils_is_active(&spi_host)) == false,
                     1000);
   return OK_STATUS();
@@ -175,6 +200,9 @@ static status_t tx_empty_event_irq(void) {
   TRY_CHECK(status.tx_empty);
 
   TRY(dif_spi_host_event_set_enabled(&spi_host, kDifSpiHostEvtTxEmpty, false));
+  // Unmask the whole interrupt for the next test.
+  CHECK_DIF_OK(dif_spi_host_irq_set_enabled(&spi_host, kDifSpiHostIrqSpiEvent,
+                                            kDifToggleEnabled));
   IBEX_TRY_SPIN_FOR(TRY(spi_host_testutils_is_active(&spi_host)) == false,
                     1000);
   return OK_STATUS();
@@ -207,6 +235,9 @@ static status_t tx_wm_event_irq(void) {
   TRY_CHECK(status.tx_water_mark);
 
   TRY(dif_spi_host_event_set_enabled(&spi_host, kDifSpiHostEvtTxWm, false));
+  // Unmask the whole interrupt for the next test.
+  CHECK_DIF_OK(dif_spi_host_irq_set_enabled(&spi_host, kDifSpiHostIrqSpiEvent,
+                                            kDifToggleEnabled));
   IBEX_TRY_SPIN_FOR(TRY(spi_host_testutils_is_active(&spi_host)) == false,
                     1000);
   return OK_STATUS();
@@ -254,6 +285,9 @@ static status_t rx_full_event_irq(void) {
   TRY_CHECK(status.rx_full);
 
   TRY(dif_spi_host_event_set_enabled(&spi_host, kDifSpiHostEvtRxFull, false));
+  // Unmask the whole interrupt for the next test.
+  CHECK_DIF_OK(dif_spi_host_irq_set_enabled(&spi_host, kDifSpiHostIrqSpiEvent,
+                                            kDifToggleEnabled));
   IBEX_TRY_SPIN_FOR(TRY(spi_host_testutils_is_active(&spi_host)) == false,
                     1000);
   return spi_host_testutils_flush(&spi_host);
@@ -276,6 +310,9 @@ static status_t rx_wm_event_irq(void) {
   TRY_CHECK(status.rx_water_mark);
 
   TRY(dif_spi_host_event_set_enabled(&spi_host, kDifSpiHostEvtRxWm, false));
+  // Unmask the whole interrupt for the next test.
+  CHECK_DIF_OK(dif_spi_host_irq_set_enabled(&spi_host, kDifSpiHostIrqSpiEvent,
+                                            kDifToggleEnabled));
   IBEX_TRY_SPIN_FOR(TRY(spi_host_testutils_is_active(&spi_host)) == false,
                     1000);
   return OK_STATUS();
