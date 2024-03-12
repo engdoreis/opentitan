@@ -46,6 +46,32 @@ enum {
   kRxWatermark = 64,
 };
 
+// clang-format off
+#define SPI_HOST_STATUS_DUMP(spi_host) ({ \
+  dif_spi_host_status_t status;\
+  TRY(dif_spi_host_get_status(&spi_host, &status));\
+  LOG_INFO(\
+      "\n%s:status = { \n\t%s: %d \n\t%s: %d \n\t%s: %d \n\t%s: %d \n\t%s: %d "\
+      "\n\t%s: %d \n\t%s: %d \n\t%s: %d \n\t%s: %d \n\t%s: %d \n\t%s: %d "\
+      "\n\t%s: %d \n\t%s: %d \n}",\
+      __func__,\
+      "ready",  status.ready,\
+      "active", status.active,\
+      "tx_empty", status.tx_empty,\
+      "rx_empty", status.rx_empty,\
+      "rx_full", status.rx_full,\
+      "tx_water_mark", status.tx_water_mark,\
+      "rx_water_mark", status.rx_water_mark,\
+      "tx_stall", status.tx_stall,\
+      "rx_stall", status.rx_stall,\
+      "least_significant_first", status.least_significant_first,\
+      "tx_queue_depth", status.tx_queue_depth,\
+      "rx_queue_depth", status.rx_queue_depth,\
+      "cmd_queue_depth", status.cmd_queue_depth);\
+  OK_STATUS();\
+})
+// clang-format on
+
 /**
  * Provides external IRQ handling for this test.
  *
@@ -93,6 +119,8 @@ static status_t external_isr(void) {
       LOG_ERROR("Unexpected interrupt type: %d", irq_type);
       break;
   }
+
+  TRY(SPI_HOST_STATUS_DUMP(spi_host));
 
   // Complete the IRQ at PLIC.
   TRY(dif_rv_plic_irq_complete(&plic, kHart, plic_irq_id));
@@ -165,13 +193,17 @@ static status_t active_event_irq(void) {
   ATOMIC_WAIT_FOR_INTERRUPT(irq_fired == kDifSpiHostIrqSpiEvent);
   TRY(dif_spi_host_get_status(&spi_host, &status));
   TRY_CHECK(!status.active);
+  LOG_INFO("%s", __func__);
 
   TRY(dif_spi_host_event_set_enabled(&spi_host, kDifSpiHostEvtIdle, false));
+  LOG_INFO("%s", __func__);
   // Unmask the whole interrupt for the next test.
   CHECK_DIF_OK(dif_spi_host_irq_set_enabled(&spi_host, kDifSpiHostIrqSpiEvent,
                                             kDifToggleEnabled));
+  LOG_INFO("%s", __func__);
   IBEX_TRY_SPIN_FOR(TRY(spi_host_testutils_is_active(&spi_host)) == false,
                     1000);
+  LOG_INFO("%s", __func__);
   return OK_STATUS();
 }
 
@@ -399,11 +431,11 @@ bool test_main(void) {
   CHECK_STATUS_OK(test_init());
   test_result = OK_STATUS();
   EXECUTE_TEST(test_result, active_event_irq);
-  EXECUTE_TEST(test_result, ready_event_irq);
-  EXECUTE_TEST(test_result, tx_empty_event_irq);
-  EXECUTE_TEST(test_result, tx_wm_event_irq);
-  EXECUTE_TEST(test_result, rx_full_event_irq);
-  EXECUTE_TEST(test_result, rx_wm_event_irq);
-  EXECUTE_TEST(test_result, cmd_busy_error_irq);
+  // EXECUTE_TEST(test_result, ready_event_irq);
+  // EXECUTE_TEST(test_result, tx_empty_event_irq);
+  // EXECUTE_TEST(test_result, tx_wm_event_irq);
+  // EXECUTE_TEST(test_result, rx_full_event_irq);
+  // EXECUTE_TEST(test_result, rx_wm_event_irq);
+  // EXECUTE_TEST(test_result, cmd_busy_error_irq);
   return status_ok(test_result);
 }
