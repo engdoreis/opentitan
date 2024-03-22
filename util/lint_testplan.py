@@ -9,6 +9,7 @@ usage:
     python3 ./util/lint_testplan.py --rules hw/lint/sival_testplan_rules.json --dir hw/top_earlgrey/data/ip/
 """
 
+import logging
 import argparse
 import difflib
 import glob
