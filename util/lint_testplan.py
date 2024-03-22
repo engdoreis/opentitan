@@ -132,7 +132,7 @@ class CustomEncoder(hjson.HjsonEncoder):
             if f'{self.newline}' in obj:
                 yield self.multiline_str(obj)
             else:
-                yield f'{obj}' if self.is_list_of_dict else f'"{obj}"'
+                yield f'"{obj}"' if self.is_quotes_needed(obj) else f'{obj}' 
         else:
             yield str(obj)
 
