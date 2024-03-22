@@ -136,6 +136,9 @@ class CustomEncoder(hjson.HjsonEncoder):
         else:
             yield str(obj)
 
+    def is_quotes_needed(self, value:str):
+        return not self.is_list_of_dict or re.search(r'\s',value)
+
     def multiline_str(self, text):
         align = len(self.current_key) + 2
         indented = f'{self.newline}' + text + f'{self.newline}'
