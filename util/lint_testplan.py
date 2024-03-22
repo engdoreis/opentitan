@@ -13,8 +13,6 @@ import logging
 import argparse
 import difflib
 import glob
-import json
-import logging
 import sys
 import re
 
