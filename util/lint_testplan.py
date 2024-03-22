@@ -152,42 +152,6 @@ class CustomEncoder(hjson.HjsonEncoder):
         for chunk in self.encode(obj):
             yield chunk
 
-class Formatting:
-    def check(self, files, fix=False) -> int:
-        WORK_FILE = "/tmp/linter_test.hjson"
-        for filename in files:
-            testplan = hjson.load(open(filename, "r"))
-            logging.debug(f"Checking {filename}.")
-            self.__dump_to_file(WORK_FILE, testplan)
-            try:
-                self.__diff_files(WORK_FILE, filename)
-            except TestplanLintException as e:
-                if fix:
-                    logging.info(f"Fixing file {filename}.")
-                    self.__dump_to_file(filename, testplan)
-                    continue
-
-                logging.info(f"Error found in file {filename}: {e}")
-                return -1
-        return 0
-
-    def __dump_to_file(self, filename, testplan):
-        with open(filename, "w") as f:
-            f.write(LOWRISC_HEADER)
-            hjson.dump(testplan, f, cls=CustomEncoder, indent="  ")
-            f.write("\n")
-
-    def __diff_files(self, ref_file, file):
-        text = open(file, "r").readlines()
-        ref_text = open(ref_file, "r").readlines()
-        diff = difflib.unified_diff(
-            text, ref_text, fromfile=file, tofile=ref_file, lineterm="\n"
-        )
-        msg = "".join(diff)
-
-        if len(msg) > 0:
-            raise TestplanLintException("\n" + msg)
-
 class TestplanLintException(Exception):
     pass
 

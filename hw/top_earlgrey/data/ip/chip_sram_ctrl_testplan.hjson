@@ -28,7 +28,7 @@
       si_stage: SV3
       lc_states: ["PROD"]
       tests: ["chip_sw_sram_ctrl_scrambled_access", "chip_sw_sram_ctrl_scrambled_access_jitter_en"]
-    }
+    }, 
     {
       name: chip_sw_sleep_sram_ret_contents
       desc: '''
@@ -54,7 +54,7 @@
       lc_states: ["PROD"]
       tests: ["chip_sw_sleep_sram_ret_contents_no_scramble", "chip_sw_sleep_sram_ret_contents_scramble"]
       bazel: ["//sw/device/tests:sram_ctrl_sleep_sram_ret_contents_no_scramble_test", "//sw/device/tests:sram_ctrl_sleep_sram_ret_contents_scramble_test"]
-    }
+    }, 
     {
       name: chip_sw_sram_execution
       desc: '''
@@ -102,7 +102,7 @@
       lc_states: ["PROD"]
       tests: ["chip_sw_sram_ctrl_execution_main"]
       bazel: ["//sw/device/tests:sram_ctrl_execution_test"]
-    }
+    }, 
     {
       name: chip_sw_sram_lc_escalation
       desc: '''
@@ -121,7 +121,7 @@
       si_stage: SV3
       lc_states: ["PROD"]
       tests: ["chip_sw_all_escalation_resets", "chip_sw_data_integrity_escalation"]
-    }
+    }, 
     {
       name: chip_sw_sram_memset
       desc: '''
@@ -142,7 +142,7 @@
       lc_states: ["PROD"]
       tests: []
       bazel: ["//sw/device/tests:sram_ctrl_memset_test"]
-    }
+    }, 
     {
       name: chip_sw_sram_subword_access
       desc: '''
@@ -162,6 +162,6 @@
       lc_states: ["PROD"]
       tests: []
       bazel: ["//sw/device/tests:sram_ctrl_subword_access_test"]
-    }
+    }, 
   ]
 }

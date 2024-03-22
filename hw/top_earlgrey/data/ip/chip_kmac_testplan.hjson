@@ -17,7 +17,7 @@
       tests: ["chip_sw_kmac_mode_cshake", "chip_sw_kmac_mode_kmac", "chip_sw_kmac_mode_kmac_jitter_en"]
       lc_states: ["PROD"]
       bazel: ["//sw/device/tests:kmac_mode_kmac_test"]
-    }
+    }, 
     {
       name: chip_sw_kmac_app_keymgr
       desc: '''
@@ -35,7 +35,7 @@
       stage: V2
       si_stage: NA
       tests: ["chip_sw_keymgr_key_derivation"]
-    }
+    }, 
     {
       name: chip_sw_kmac_app_lc
       desc: '''
@@ -50,7 +50,7 @@
       stage: V2
       si_stage: NA
       tests: ["chip_sw_lc_ctrl_transition"]
-    }
+    }, 
     {
       name: chip_sw_kmac_app_rom
       desc: '''
@@ -67,7 +67,7 @@
       stage: V2
       si_stage: NA
       tests: ["chip_sw_kmac_app_rom"]
-    }
+    }, 
     {
       name: chip_sw_kmac_entropy
       desc: '''
@@ -96,7 +96,7 @@
       si_stage: SV3
       lc_states: ["PROD"]
       tests: ["chip_sw_kmac_entropy"]
-    }
+    }, 
     {
       name: chip_sw_kmac_idle
       desc: '''
@@ -117,7 +117,7 @@
       lc_states: ["PROD"]
       tests: ["chip_sw_kmac_idle"]
       bazel: ["//sw/device/tests:kmac_idle_test"]
-    }
+    }, 
     {
       name: chip_sw_kmac_sha3_stress
       desc: '''
@@ -134,7 +134,7 @@
       lc_states: ["PROD"]
       tests: []
       bazel: []
-    }
+    }, 
     {
       name: chip_sw_kmac_shake_stress
       desc: '''
@@ -152,7 +152,7 @@
       lc_states: ["PROD"]
       tests: []
       bazel: []
-    }
+    }, 
     {
       name: chip_sw_kmac_cshake_stress
       desc: '''
@@ -170,7 +170,7 @@
       lc_states: ["PROD"]
       tests: []
       bazel: []
-    }
+    }, 
     {
       name: chip_sw_kmac_kmac_stress
       desc: '''
@@ -188,7 +188,7 @@
       lc_states: ["PROD"]
       tests: []
       bazel: []
-    }
+    }, 
     {
       name: chip_sw_kmac_kmac_key_sideload
       desc: '''
@@ -215,7 +215,7 @@
       lc_states: ["PROD"]
       tests: []
       bazel: []
-    }
+    }, 
     {
       name: chip_sw_kmac_endianess
       desc: '''
@@ -232,7 +232,7 @@
       lc_states: ["PROD"]
       tests: []
       bazel: []
-    }
+    }, 
     {
       name: chip_sw_kmac_entropy_stress
       desc: '''
@@ -254,7 +254,7 @@
       lc_states: ["PROD"]
       tests: []
       bazel: []
-    }
+    }, 
     {
       name: chip_sw_kmac_error_conditions
       desc: '''
@@ -283,6 +283,6 @@
       lc_states: ["PROD"]
       tests: []
       bazel: []
-    }
+    }, 
   ]
 }

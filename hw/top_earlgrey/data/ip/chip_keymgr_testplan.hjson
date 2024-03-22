@@ -40,7 +40,7 @@
       si_stage: SV3
       lc_states: ["PROD"]
       tests: ["chip_sw_keymgr_key_derivation", "chip_sw_keymgr_key_derivation_jitter_en"]
-    }
+    }, 
     {
       name: chip_sw_keymgr_sideload_kmac_error
       desc: '''
@@ -58,7 +58,7 @@
       stage: V3
       si_stage: NA
       tests: []
-    }
+    }, 
     {
       name: chip_sw_keymgr_sideload_kmac
       desc: '''
@@ -96,7 +96,7 @@
       lc_states: ["PROD"]
       tests: ["chip_sw_keymgr_sideload_kmac"]
       bazel: []
-    }
+    }, 
     {
       name: chip_sw_keymgr_sideload_aes
       desc: '''
@@ -110,7 +110,7 @@
       lc_states: ["PROD"]
       tests: ["chip_sw_keymgr_sideload_aes"]
       bazel: []
-    }
+    }, 
     {
       name: chip_sw_keymgr_sideload_otbn
       desc: '''
@@ -127,7 +127,7 @@
       lc_states: ["PROD"]
       tests: ["chip_sw_keymgr_sideload_otbn"]
       bazel: []
-    }
+    }, 
     {
       name: chip_sw_keymgr_derive_attestation
       desc: '''
@@ -160,7 +160,7 @@
       lc_states: ["PROD"]
       tests: []
       bazel: []
-    }
+    }, 
     {
       name: chip_sw_keymgr_derive_sealing
       desc: '''
@@ -180,6 +180,6 @@
       lc_states: ["PROD"]
       tests: []
       bazel: []
-    }
+    }, 
   ]
 }

@@ -29,7 +29,7 @@
       si_stage: SV3
       lc_states: ["PROD"]
       tests: ["chip_sw_adc_ctrl_sleep_debug_cable_wakeup"]
-    }
+    }, 
     {
       name: chip_sw_adc_ctrl_sleep_debug_cable_wakeup
       desc: '''
@@ -55,24 +55,24 @@
       si_stage: SV3
       lc_states: ["PROD"]
       tests: ["chip_sw_adc_ctrl_sleep_debug_cable_wakeup"]
-    }
+    }, 
     {
       name: chip_sw_adc_ctrl_normal
-      desc: Verifiy that ADC can sample from channel 0 and 1 in normal mode.
+      desc: "Verifiy that ADC can sample from channel 0 and 1 in normal mode."
       features: ["ADC_CTRL.MODE.NORMAL"]
       stage: V3
       si_stage: SV2
       lc_states: ["PROD"]
       tests: []
-    }
+    }, 
     {
       name: chip_sw_adc_ctrl_oneshot
-      desc: Verifiy that ADC can sample from channel 0 and 1 in normal mode with oneshot filter config.
+      desc: "Verifiy that ADC can sample from channel 0 and 1 in normal mode with oneshot filter config."
       features: ["ADC_CTRL.ONESHOT", "ADC_CTRL.MODE.NORMAL"]
       stage: V3
       si_stage: SV3
       lc_states: ["PROD"]
       tests: []
-    }
+    }, 
   ]
 }

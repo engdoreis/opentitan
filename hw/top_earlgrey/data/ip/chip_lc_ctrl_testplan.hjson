@@ -32,7 +32,7 @@
       lc_states: ["TEST_UNLOCKED", "DEV", "PROD", "PROD_END", "RMA"]
       tests: ["chip_sw_alert_handler_escalation"]
       bazel: []
-    }
+    }, 
     {
       name: chip_sw_lc_ctrl_jtag_access
       desc: '''
@@ -48,7 +48,7 @@
       lc_states: ["RAW", "TEST_LOCKED", "TEST_UNLOCKED", "DEV", "PROD", "PROD_END", "RMA"]
       tests: ["chip_tap_straps_dev", "chip_tap_straps_prod", "chip_tap_straps_rma"]
       bazel: []
-    }
+    }, 
     {
       name: chip_sw_lc_ctrl_otp_hw_cfg0
       desc: '''
@@ -68,7 +68,7 @@
       lc_states: ["TEST_UNLOCKED", "DEV", "PROD", "PROD_END", "RMA"]
       tests: ["chip_sw_lc_ctrl_otp_hw_cfg0"]
       bazel: []
-    }
+    }, 
     {
       name: chip_sw_lc_ctrl_init
       desc: '''
@@ -82,7 +82,7 @@
             '''
       stage: V2
       tests: ["chip_sw_lc_ctrl_transition"]
-    }
+    }, 
     {
       name: chip_sw_lc_ctrl_transitions
       desc: '''
@@ -111,7 +111,7 @@
       lc_states: ["RAW", "TEST_UNLOCKED", "TEST_LOCKED"]
       tests: ["chip_sw_lc_ctrl_transition"]
       bazel: []
-    }
+    }, 
     {
       name: chip_sw_lc_ctrl_kmac_req
       desc: '''
@@ -135,7 +135,7 @@
       lc_states: ["RAW", "TEST_UNLOCKED", "TEST_LOCKED", "DEV", "PROD", "PROD_END"]
       tests: ["chip_sw_lc_ctrl_transition"]
       bazel: []
-    }
+    }, 
     {
       name: chip_sw_lc_ctrl_key_div
       desc: '''
@@ -146,7 +146,7 @@
             '''
       stage: V2
       tests: ["chip_sw_keymgr_key_derivation_prod"]
-    }
+    }, 
     {
       name: chip_sw_lc_ctrl_broadcast
       desc: '''
@@ -181,7 +181,7 @@
             '''
       stage: V2
       tests: ["chip_prim_tl_access", "chip_tap_straps_dev", "chip_tap_straps_prod", "chip_tap_straps_rma", "chip_sw_rom_ctrl_integrity_check", "chip_sw_clkmgr_external_clk_src_for_sw_fast_test_unlocked0", "chip_sw_clkmgr_external_clk_src_for_sw_slow_test_unlocked0", "chip_sw_clkmgr_external_clk_src_for_sw_fast_dev", "chip_sw_clkmgr_external_clk_src_for_sw_slow_dev", "chip_sw_clkmgr_external_clk_src_for_sw_fast_rma", "chip_sw_clkmgr_external_clk_src_for_sw_slow_rma", "chip_sw_sram_ctrl_execution_main", "chip_rv_dm_lc_disabled", "chip_sw_keymgr_key_derivation", "chip_sw_clkmgr_external_clk_src_for_lc", "chip_sw_flash_rma_unlocked", "chip_sw_lc_ctrl_transition", "chip_sw_flash_ctrl_lc_rw_en", "chip_sw_otp_ctrl_lc_signals_test_unlocked0", "chip_sw_otp_ctrl_lc_signals_dev", "chip_sw_otp_ctrl_lc_signals_prod", "chip_sw_otp_ctrl_lc_signals_rma"]
-    }
+    }, 
     {
       name: chip_sw_lc_ctrl_kmac_error
       desc: '''
@@ -195,7 +195,7 @@
             '''
       stage: V3
       tests: []
-    }
+    }, 
     {
       name: chip_lc_scrap
       desc: '''
@@ -222,7 +222,7 @@
       lc_states: ["RAW", "TEST_UNLOCKED", "TEST_LOCKED", "DEV", "PROD", "PROD_END", "RMA"]
       tests: ["chip_sw_lc_ctrl_rand_to_scrap", "chip_sw_lc_ctrl_raw_to_scrap", "chip_sw_lc_ctrl_rma_to_scrap", "chip_sw_lc_ctrl_test_locked0_to_scrap"]
       bazel: []
-    }
+    }, 
     {
       name: chip_lc_test_locked
       desc: '''
@@ -248,7 +248,7 @@
       lc_states: ["TEST_UNLOCKED"]
       tests: ["chip_sw_lc_walkthrough_testunlocks", "chip_rv_dm_lc_disabled"]
       bazel: []
-    }
+    }, 
     {
       name: chip_sw_lc_walkthrough
       desc: '''
@@ -264,7 +264,7 @@
             '''
       stage: V2
       tests: ["chip_sw_lc_walkthrough_dev", "chip_sw_lc_walkthrough_prod", "chip_sw_lc_walkthrough_prodend", "chip_sw_lc_walkthrough_rma", "chip_sw_lc_walkthrough_testunlocks"]
-    }
+    }, 
     {
       name: chip_sw_lc_ctrl_volatile_raw_unlock
       desc: '''
@@ -297,7 +297,7 @@
       lc_states: ["RAW"]
       tests: ["chip_sw_lc_ctrl_volatile_raw_unlock", "chip_sw_lc_ctrl_volatile_raw_unlock_ext_clk_48mhz", "rom_volatile_raw_unlock"]
       bazel: []
-    }
+    }, 
     {
       name: chip_sw_lc_ctrl_debug_access
       desc: '''
@@ -313,6 +313,6 @@
       si_stage: SV2
       tests: []
       bazel: []
-    }
+    }, 
   ]
 }

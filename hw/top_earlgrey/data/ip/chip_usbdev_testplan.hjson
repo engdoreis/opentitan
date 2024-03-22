@@ -20,7 +20,7 @@
       lc_states: ["PROD"]
       tests: []
       bazel: []
-    }
+    }, 
     {
       name: chip_sw_usbdev_vbus
       desc: '''
@@ -36,7 +36,7 @@
       lc_states: ["PROD"]
       tests: ["chip_sw_usbdev_vbus"]
       bazel: ["//sw/device/tests:usbdev_vbus_test"]
-    }
+    }, 
     {
       name: chip_sw_usbdev_pullup
       desc: '''
@@ -59,7 +59,7 @@
       lc_states: ["PROD"]
       tests: ["chip_sw_usbdev_pullup"]
       bazel: ["//sw/device/tests:usbdev_pullup_test"]
-    }
+    }, 
     {
       name: chip_sw_usbdev_aon_pullup
       desc: '''
@@ -81,7 +81,7 @@
       lc_states: ["PROD"]
       tests: ["chip_sw_usbdev_aon_pullup"]
       bazel: ["//sw/device/tests:usbdev_aon_pullup_test"]
-    }
+    }, 
     {
       name: chip_sw_usbdev_sof
       desc: '''
@@ -104,7 +104,7 @@
       lc_states: ["PROD"]
       tests: []
       bazel: []
-    }
+    }, 
     {
       name: chip_sw_usbdev_setup_rx
       desc: '''
@@ -129,7 +129,7 @@
       lc_states: ["PROD"]
       tests: ["chip_sw_usbdev_setuprx"]
       bazel: ["//sw/device/tests:usbdev_setuprx_test"]
-    }
+    }, 
     {
       name: chip_sw_usbdev_config_host
       desc: '''
@@ -150,7 +150,7 @@
       lc_states: ["PROD"]
       tests: ["chip_sw_usbdev_config_host"]
       bazel: ["//sw/device/tests:usbdev_config_host_test"]
-    }
+    }, 
     {
       name: chip_sw_usbdev_pincfg
       desc: '''
@@ -171,7 +171,7 @@
       lc_states: ["PROD"]
       tests: ["chip_sw_usbdev_pincfg"]
       bazel: ["//sw/device/tests:usbdev_pincfg_test"]
-    }
+    }, 
     {
       name: chip_sw_usbdev_tx_rx
       desc: '''
@@ -193,7 +193,7 @@
       lc_states: ["PROD"]
       tests: ["chip_sw_usbdev_dpi"]
       bazel: []
-    }
+    }, 
     {
       name: chip_sw_usbdev_stream
       desc: '''
@@ -215,7 +215,7 @@
       lc_states: ["PROD"]
       tests: ["chip_sw_usbdev_stream"]
       bazel: []
-    }
+    }, 
     {
       name: chip_sw_usbdev_iso
       desc: '''
@@ -238,7 +238,7 @@
       lc_states: ["PROD"]
       tests: []
       bazel: []
-    }
+    }, 
     {
       name: chip_sw_usbdev_mixed
       desc: '''
@@ -258,7 +258,7 @@
       lc_states: ["PROD"]
       tests: []
       bazel: []
-    }
+    }, 
     {
       name: chip_sw_usbdev_suspend_resume
       desc: '''
@@ -282,7 +282,7 @@
       lc_states: ["PROD"]
       tests: []
       bazel: []
-    }
+    }, 
     {
       name: chip_sw_usbdev_aon_wake_reset
       desc: '''
@@ -306,7 +306,7 @@
       lc_states: ["PROD"]
       tests: []
       bazel: ["//sw/device/tests:usbdev_aon_wake_reset"]
-    }
+    }, 
     {
       name: chip_sw_usbdev_aon_wake_disconnect
       desc: '''
@@ -332,7 +332,7 @@
       lc_states: ["PROD"]
       tests: []
       bazel: ["//sw/device/tests:usbdev_aon_wake_disconnect"]
-    }
+    }, 
     {
       name: chip_sw_usbdev_toggle_restore
       desc: '''
@@ -352,6 +352,6 @@
       lc_states: ["PROD"]
       tests: []
       bazel: []
-    }
+    }, 
   ]
 }

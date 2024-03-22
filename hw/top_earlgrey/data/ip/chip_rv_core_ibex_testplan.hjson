@@ -25,7 +25,7 @@
       bazel: ["//sw/device/tests:rv_core_ibex_nmi_irq_test"]
       lc_states: ["PROD"]
       features: ["RV_CORE_IBEX.CPU.INTERRUPTS"]
-    }
+    }, 
     {
       name: chip_sw_rv_core_ibex_rnd
       desc: '''
@@ -46,7 +46,7 @@
       lc_states: ["PROD"]
       features: ["RV_CORE_IBEX.RND"]
       bazel: ["//sw/device/tests:rv_core_ibex_rnd_test"]
-    }
+    }, 
     {
       name: chip_sw_rv_core_ibex_address_translation
       desc: '''
@@ -67,7 +67,7 @@
       lc_states: ["PROD"]
       features: ["RV_CORE_IBEX.ADDRESS_TRANSLATION"]
       bazel: ["//sw/device/tests:rv_core_ibex_address_translation_test"]
-    }
+    }, 
     {
       name: chip_sw_rv_core_ibex_icache_scrambled_access
       desc: '''
@@ -88,7 +88,7 @@
       lc_states: ["PROD"]
       features: ["RV_CORE_IBEX.CPU.ICACHE"]
       bazel: ["//sw/device/tests:rv_core_ibex_icache_invalidate_test"]
-    }
+    }, 
     {
       name: chip_sw_rv_core_ibex_fault_dump
       desc: '''
@@ -105,7 +105,7 @@
       bazel: ["//sw/device/tests:rstmgr_cpu_info_test"]
       lc_states: ["PROD"]
       features: ["RV_CORE_IBEX.CRASH_DUMP"]
-    }
+    }, 
     {
       name: chip_sw_rv_core_ibex_double_fault
       desc: '''
@@ -122,7 +122,7 @@
       bazel: ["//sw/device/tests:rstmgr_cpu_info_test"]
       lc_states: ["PROD"]
       features: ["RV_CORE_IBEX.CRASH_DUMP"]
-    }
+    }, 
     {
       name: chip_sw_rv_core_ibex_smoke
       desc: '''
@@ -141,7 +141,7 @@
       bazel: ["//sw/device/tests:rv_core_ibex_isa_test_functest"]
       lc_states: ["PROD"]
       features: ["RV_CORE_IBEX.CPU.ISA"]
-    }
+    }, 
     {
       name: chip_sw_rv_core_ibex_epmp_smoke
       desc: '''
@@ -166,7 +166,7 @@
       bazel: ["//sw/device/tests:rv_core_ibex_epmp_test_functest"]
       lc_states: ["TEST_UNLOCKED", "DEV", "RMA", "PROD", "PROD_END"]
       features: ["RV_CORE_IBEX.CPU.EPMP"]
-    }
+    }, 
     {
       name: chip_sw_rv_core_ibex_mem_smoke
       desc: '''
@@ -201,7 +201,7 @@
       lc_states: ["PROD"]
       features: ["RV_CORE_IBEX.CPU.ICACHE", "RV_CORE_IBEX.CPU.MEMORY"]
       bazel: ["//sw/device/tests:rv_core_ibex_mem_test_functest"]
-    }
+    }, 
     {
       name: chip_sw_rv_core_ibex_lockstep_glitch
       desc: '''
@@ -214,7 +214,7 @@
       stage: V2S
       si_stage: None
       tests: ["chip_sw_rv_core_ibex_lockstep_glitch"]
-    }
+    }, 
     {
       name: chip_sw_rv_core_ibex_alerts
       desc: '''
@@ -230,6 +230,6 @@
       stage: V3
       si_stage: NA
       tests: []
-    }
+    }, 
   ]
 }

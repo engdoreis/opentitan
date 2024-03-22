@@ -26,7 +26,7 @@
       lc_states: ["PROD"]
       tests: ["chip_sw_flash_init"]
       bazel: ["//sw/device/tests:flash_ctrl_test"]
-    }
+    }, 
     {
       name: chip_sw_flash_host_access
       desc: '''
@@ -40,7 +40,7 @@
       lc_states: ["PROD"]
       tests: ["chip_sw_flash_ctrl_access", "chip_sw_flash_ctrl_access_jitter_en"]
       bazel: ["//sw/device/tests:flash_ctrl_ops_test"]
-    }
+    }, 
     {
       name: chip_sw_flash_ctrl_ops
       desc: '''
@@ -56,7 +56,7 @@
       lc_states: ["PROD"]
       tests: ["chip_sw_flash_ctrl_ops", "chip_sw_flash_ctrl_ops_jitter_en"]
       bazel: ["//sw/device/tests:flash_ctrl_ops_test"]
-    }
+    }, 
     {
       name: chip_sw_flash_memory_protection
       desc: '''
@@ -73,7 +73,7 @@
       lc_states: ["PROD"]
       tests: ["chip_sw_flash_ctrl_mem_protection"]
       bazel: ["//sw/device/tests:flash_ctrl_mem_protection_test"]
-    }
+    }, 
     {
       name: chip_sw_flash_rma_unlocked
       desc: '''
@@ -96,7 +96,7 @@
       si_stage: SV3
       lc_states: ["PROD"]
       tests: ["chip_sw_flash_rma_unlocked"]
-    }
+    }, 
     {
       name: chip_sw_flash_scramble
       desc: '''
@@ -116,7 +116,7 @@
       lc_states: ["PROD"]
       tests: ["chip_sw_flash_init"]
       bazel: ["//sw/device/tests:flash_ctrl_test"]
-    }
+    }, 
     {
       name: chip_sw_flash_idle_low_power
       desc: '''
@@ -132,7 +132,7 @@
       lc_states: ["PROD"]
       tests: ["chip_sw_flash_ctrl_idle_low_power"]
       bazel: ["//sw/device/tests:flash_ctrl_idle_low_power_test"]
-    }
+    }, 
     {
       name: chip_sw_flash_keymgr_seeds
       desc: '''
@@ -146,7 +146,7 @@
       si_stage: SV3
       lc_states: ["PROD"]
       tests: ["chip_sw_keymgr_key_derivation"]
-    }
+    }, 
     {
       name: chip_sw_flash_lc_creator_seed_sw_rw_en
       desc: '''
@@ -162,17 +162,17 @@
       lc_states: ["PROD"]
       tests: ["chip_sw_flash_ctrl_lc_rw_en"]
       bazel: ["//sw/device/tests:flash_ctrl_info_access_lc_states", "//sw/device/tests:flash_ctrl_info_access_lc_states_personalized"]
-    }
+    }, 
     {
       name: chip_sw_flash_creator_seed_wipe_on_rma
-      desc: Verify that the creator seed is wiped by the flash ctrl on RMA entry.
+      desc: "Verify that the creator seed is wiped by the flash ctrl on RMA entry."
       features: ["FLASH_CTRL.RMA"]
       stage: V2
       si_stage: SV3
       lc_states: ["RMA"]
       tests: ["chip_sw_flash_rma_unlocked"]
       bazel: ["//sw/device/tests:flash_ctrl_rma_test"]
-    }
+    }, 
     {
       name: chip_sw_flash_lc_owner_seed_sw_rw_en
       desc: '''
@@ -188,7 +188,7 @@
       lc_states: ["DEV", "PROD", "PROD_END", "RMA"]
       tests: ["chip_sw_flash_ctrl_lc_rw_en"]
       bazel: ["//sw/device/tests:flash_ctrl_info_access_lc_states"]
-    }
+    }, 
     {
       name: chip_sw_flash_lc_iso_part_sw_rd_en
       desc: '''
@@ -204,7 +204,7 @@
       lc_states: ["PROD", "PROD_END", "RMA"]
       tests: ["chip_sw_flash_ctrl_lc_rw_en"]
       bazel: ["//sw/device/tests:flash_ctrl_info_access_lc_states"]
-    }
+    }, 
     {
       name: chip_sw_flash_lc_iso_part_sw_wr_en
       desc: '''
@@ -220,7 +220,7 @@
       lc_states: ["TEST_UNLOCKED", "DEV", "PROD", "PROD_END", "RMA"]
       tests: ["chip_sw_flash_ctrl_lc_rw_en"]
       bazel: ["//sw/device/tests:flash_ctrl_info_access_lc_states"]
-    }
+    }, 
     {
       name: chip_sw_flash_lc_seed_hw_rd_en
       desc: '''
@@ -237,7 +237,7 @@
       si_stage: SV3
       lc_states: ["DEV", "PROD", "PROD_END", "RMA"]
       tests: ["chip_sw_flash_ctrl_lc_rw_en"]
-    }
+    }, 
     {
       name: chip_sw_flash_lc_escalate_en
       desc: '''
@@ -255,7 +255,7 @@
       stage: V2
       si_stage: NA
       tests: ["chip_sw_all_escalation_resets"]
-    }
+    }, 
     {
       name: chip_sw_flash_prim_tl_access
       desc: '''
@@ -268,7 +268,7 @@
       stage: V2
       si_stage: NA
       tests: ["chip_prim_tl_access"]
-    }
+    }, 
     {
       name: chip_sw_flash_ctrl_clock_freqs
       desc: '''
@@ -283,7 +283,7 @@
       lc_states: ["PROD"]
       tests: ["chip_sw_flash_ctrl_clock_freqs"]
       bazel: ["//sw/device/tests:flash_ctrl_clock_freqs_test"]
-    }
+    }, 
     {
       name: chip_sw_flash_ctrl_escalation_reset
       desc: '''
@@ -297,7 +297,7 @@
       stage: V2
       si_stage: NA
       tests: ["chip_sw_flash_crash_alert"]
-    }
+    }, 
     {
       name: chip_sw_flash_ctrl_write_clear
       desc: '''
@@ -323,6 +323,6 @@
       lc_states: ["PROD"]
       tests: ["chip_sw_flash_crash_alert"]
       bazel: ["//sw/device/tests:flash_ctrl_write_clear_test"]
-    }
+    }, 
   ]
 }

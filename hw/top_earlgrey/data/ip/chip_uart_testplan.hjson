@@ -24,7 +24,7 @@
       tests: ["chip_sw_uart_tx_rx"]
       tags: ["gls"]
       bazel: ["//sw/device/tests:uart_tx_rx_test"]
-    }
+    }, 
     {
       name: chip_sw_uart_rx_overflow
       desc: '''
@@ -42,7 +42,7 @@
       features: ["UART.FIFO_INTERRUPTS"]
       tests: ["chip_sw_uart_tx_rx", "chip_sw_uart_tx_rx_idx1", "chip_sw_uart_tx_rx_idx2", "chip_sw_uart_tx_rx_idx3"]
       bazel: ["//sw/device/tests:uart_tx_rx_test"]
-    }
+    }, 
     {
       name: chip_sw_uart_baud_rate
       desc: '''
@@ -57,7 +57,7 @@
       features: ["UART.BAUD_RATE_CONTROL"]
       tests: ["chip_sw_uart_rand_baudrate"]
       bazel: ["//sw/device/tests:uart_baud_rate_test"]
-    }
+    }, 
     {
       name: chip_sw_uart_tx_rx_alt_clk_freq
       desc: '''
@@ -80,7 +80,7 @@
       si_stage: NA
       features: []
       tests: ["chip_sw_uart_tx_rx_alt_clk_freq", "chip_sw_uart_tx_rx_alt_clk_freq_low_speed"]
-    }
+    }, 
     {
       name: chip_sw_uart_parity
       desc: '''
@@ -97,7 +97,7 @@
       lc_states: ["PROD"]
       features: ["UART.PARITY"]
       tests: []
-    }
+    }, 
     {
       name: chip_sw_uart_line_loopback
       desc: '''
@@ -113,7 +113,7 @@
       features: ["UART.LINE_LOOPBACK"]
       tests: []
       bazel: ["//sw/device/tests:uart_loopback_test"]
-    }
+    }, 
     {
       name: chip_sw_uart_system_loopback
       desc: '''
@@ -129,7 +129,7 @@
       features: ["UART.SYSTEM_LOOPBACK"]
       tests: []
       bazel: ["//sw/device/tests:uart_loopback_test"]
-    }
+    }, 
     {
       name: chip_sw_uart_line_break
       desc: '''
@@ -148,7 +148,7 @@
       lc_states: ["PROD"]
       features: ["UART.LINE_BREAK"]
       tests: []
-    }
+    }, 
     {
       name: chip_sw_uart_watermarks
       desc: '''
@@ -168,6 +168,6 @@
       features: ["UART.FIFO_INTERRUPTS"]
       tests: ["chip_sw_uart_tx_rx"]
       bazel: ["//sw/device/tests:uart_tx_rx_test"]
-    }
+    }, 
   ]
 }

@@ -23,7 +23,7 @@
       lc_states: ["PROD"]
       tests: ["chip_sw_alert_test"]
       bazel: ["//sw/device/tests/autogen:alert_test"]
-    }
+    }, 
     {
       name: chip_sw_alert_handler_escalations
       desc: '''
@@ -44,7 +44,7 @@
       tests: ["chip_sw_alert_handler_escalation"]
       otp_mutate: True
       host_support: True
-    }
+    }, 
     {
       name: chip_sw_alert_handler_escalation_nmi_reset
       desc: '''
@@ -67,7 +67,7 @@
       lc_states: ["PROD"]
       tests: []
       otp_mutate: False
-    }
+    }, 
     {
       name: chip_sw_alert_handler_escalation_methods
       desc: '''
@@ -84,7 +84,7 @@
       si_stage: SV3
       lc_states: ["PROD"]
       tests: []
-    }
+    }, 
     {
       name: chip_sw_all_escalation_resets
       desc: '''
@@ -109,7 +109,7 @@
       stage: V2
       si_stage: NA
       tests: ["chip_sw_all_escalation_resets"]
-    }
+    }, 
     {
       name: chip_sw_alert_handler_irqs
       desc: '''
@@ -123,7 +123,7 @@
       lc_states: ["PROD"]
       tests: ["chip_plic_all_irqs"]
       bazel: ["//sw/device/tests/autogen:plic_all_irqs_test_0"]
-    }
+    }, 
     {
       name: chip_sw_alert_handler_entropy
       desc: '''
@@ -141,7 +141,7 @@
       stage: V2
       si_stage: NA
       tests: ["chip_sw_alert_handler_entropy"]
-    }
+    }, 
     {
       name: chip_sw_alert_handler_crashdump
       desc: '''
@@ -158,7 +158,7 @@
       lc_states: ["PROD"]
       tests: ["chip_sw_rstmgr_alert_info"]
       bazel: ["//sw/device/tests:rstmgr_alert_info_test"]
-    }
+    }, 
     {
       name: chip_sw_alert_handler_ping_timeout
       desc: '''
@@ -174,7 +174,7 @@
       lc_states: ["PROD"]
       tests: ["chip_sw_alert_handler_ping_timeout"]
       bazel: ["//sw/device/tests:alert_handler_ping_timeout_test"]
-    }
+    }, 
     {
       name: chip_sw_alert_handler_lpg_sleep_mode_alerts
       desc: '''
@@ -195,7 +195,7 @@
       si_stage: SV3
       lc_states: ["PROD"]
       tests: ["chip_sw_alert_handler_lpg_sleep_mode_alerts"]
-    }
+    }, 
     {
       name: chip_sw_alert_handler_lpg_sleep_mode_pings
       desc: '''
@@ -221,7 +221,7 @@
       lc_states: ["PROD"]
       tests: ["chip_sw_alert_handler_lpg_sleep_mode_pings"]
       bazel: ["//sw/device/tests:alert_handler_lpg_sleep_mode_pings_test"]
-    }
+    }, 
     {
       name: chip_sw_alert_handler_lpg_clock_off
       desc: '''
@@ -236,7 +236,7 @@
       lc_states: ["PROD"]
       tests: ["chip_sw_alert_handler_lpg_clkoff"]
       bazel: ["//sw/device/tests:alert_handler_lpg_clkoff_test"]
-    }
+    }, 
     {
       name: chip_sw_alert_handler_lpg_reset_toggle
       desc: '''
@@ -251,7 +251,7 @@
       lc_states: ["PROD"]
       tests: ["chip_sw_alert_handler_lpg_reset_toggle"]
       bazel: ["//sw/device/tests:alert_handler_lpg_reset_toggle_test"]
-    }
+    }, 
     {
       name: chip_sw_alert_handler_reverse_ping_in_deep_sleep
       desc: '''
@@ -310,6 +310,6 @@
       lc_states: ["PROD"]
       tests: ["chip_sw_alert_handler_reverse_ping_in_deep_sleep"]
       bazel: ["//sw/device/tests:alert_handler_reverse_ping_in_deep_sleep_test"]
-    }
+    }, 
   ]
 }

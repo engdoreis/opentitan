@@ -20,7 +20,7 @@
       lc_states: ["PROD"]
       tests: ["chip_sw_gpio"]
       bazel: ["//sw/device/tests:gpio_pinmux_test"]
-    }
+    }, 
     {
       name: chip_sw_gpio_in
       desc: '''
@@ -35,7 +35,7 @@
       lc_states: ["PROD"]
       tests: ["chip_sw_gpio"]
       bazel: ["//sw/device/tests:gpio_pinmux_test"]
-    }
+    }, 
     {
       name: chip_sw_gpio_irq
       desc: '''
@@ -51,6 +51,6 @@
       lc_states: ["PROD"]
       tests: ["chip_sw_gpio"]
       bazel: ["//sw/device/tests:gpio_intr_test"]
-    }
+    }, 
   ]
 }

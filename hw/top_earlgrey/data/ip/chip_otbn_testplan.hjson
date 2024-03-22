@@ -26,7 +26,7 @@
       bazel: ["//sw/device/tests:otbn_isa_test"]
       lc_states: ["PROD"]
       features: ["OTBN.ISA", "OTBN.SECUREWIPE"]
-    }
+    }, 
     {
       name: chip_sw_otbn_op
       desc: '''
@@ -43,7 +43,7 @@
       bazel: ["//sw/device/tests:otbn_ecdsa_op_irq_test"]
       lc_states: ["PROD"]
       features: ["OTBN.ISA"]
-    }
+    }, 
     {
       name: chip_sw_otbn_rnd_entropy
       desc: '''
@@ -61,7 +61,7 @@
       bazel: ["//sw/device/tests:otbn_randomness_test"]
       lc_states: ["PROD"]
       features: ["OTBN.RANDOM"]
-    }
+    }, 
     {
       name: chip_sw_otbn_urnd_entropy
       desc: '''
@@ -75,7 +75,7 @@
       bazel: ["//sw/device/tests:otbn_randomness_test"]
       lc_states: ["PROD"]
       features: ["OTBN.RANDOM"]
-    }
+    }, 
     {
       name: chip_sw_otbn_idle
       desc: '''
@@ -98,7 +98,7 @@
       bazel: ["//sw/device/tests:otbn_randomness_test"]
       lc_states: ["PROD"]
       features: []
-    }
+    }, 
     {
       name: chip_sw_otbn_mem_scramble
       desc: '''
@@ -125,7 +125,7 @@
       tests: ["chip_sw_otbn_mem_scramble"]
       lc_states: ["PROD"]
       features: ["OTBN.MEM_SCRAMBLE", "OTBN.SECUREWIPE"]
-    }
+    }, 
     {
       name: chip_sw_otbn_keymgr
       desc: '''
@@ -142,6 +142,6 @@
       bazel: ["//sw/device/tests:keymgr_sideload_otbn_simple_test"]
       lc_states: ["PROD"]
       features: ["OTBN.KEYMGR"]
-    }
+    }, 
   ]
 }

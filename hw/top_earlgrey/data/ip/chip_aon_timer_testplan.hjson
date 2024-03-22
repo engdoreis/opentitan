@@ -21,7 +21,7 @@
       features: ["AON_TIMER.WAKEUP.INTERRUPT"]
       tests: ["chip_sw_aon_timer_irq"]
       bazel: ["//sw/device/tests:aon_timer_irq_test"]
-    }
+    }, 
     {
       name: chip_sw_aon_timer_sleep_wakeup
       desc: '''
@@ -44,7 +44,7 @@
       features: ["AON_TIMER.WAKEUP.WAKEUP_CONFIG", "AON_TIMER.WAKEUP.WAKEUP_REQUEST"]
       tests: ["chip_sw_pwrmgr_smoketest"]
       bazel: ["//sw/device/tests:pwrmgr_smoketest"]
-    }
+    }, 
     {
       name: chip_sw_aon_timer_wdog_bark_irq
       desc: '''
@@ -60,7 +60,7 @@
       features: ["AON_TIMER.WATCHDOG.INTERRUPT"]
       tests: ["chip_sw_aon_timer_irq"]
       bazel: ["//sw/device/tests:aon_timer_irq_test"]
-    }
+    }, 
     {
       name: chip_sw_aon_timer_wdog_bite_reset
       desc: '''
@@ -79,7 +79,7 @@
       features: ["AON_TIMER.WATCHDOG.BITE", "AON_TIMER.WATCHDOG.BARK"]
       tests: ["chip_sw_aon_timer_wdog_bite_reset"]
       bazel: ["//sw/device/tests:aon_timer_wdog_bite_reset_test"]
-    }
+    }, 
     {
       name: chip_sw_aon_timer_sleep_wdog_bite_reset
       desc: '''
@@ -98,7 +98,7 @@
       features: ["AON_TIMER.WATCHDOG.BITE", "AON_TIMER.WATCHDOG.BARK"]
       tests: ["chip_sw_aon_timer_wdog_bite_reset"]
       bazel: ["//sw/device/tests:aon_timer_wdog_bite_reset_test"]
-    }
+    }, 
     {
       name: chip_sw_aon_timer_sleep_wdog_sleep_pause
       desc: '''
@@ -119,7 +119,7 @@
       features: ["AON_TIMER.WATCHDOG.BITE", "AON_TIMER.WATCHDOG.PAUSE"]
       tests: ["chip_sw_aon_timer_sleep_wdog_sleep_pause"]
       bazel: ["//sw/device/tests:aon_timer_sleep_wdog_sleep_pause_test"]
-    }
+    }, 
     {
       name: chip_sw_aon_timer_wdog_lc_escalate
       desc: '''
@@ -141,6 +141,6 @@
       features: ["AON_TIMER.WATCHDOG.DISABLE_BY_LC_CTRL"]
       tests: ["chip_sw_aon_timer_wdog_lc_escalate"]
       bazel: ["//sw/device/tests:aon_timer_wdog_lc_escalate_test"]
-    }
+    }, 
   ]
 }

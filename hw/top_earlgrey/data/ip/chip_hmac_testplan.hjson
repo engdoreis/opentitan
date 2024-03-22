@@ -18,7 +18,7 @@
       lc_states: ["PROD"]
       tests: ["chip_sw_hmac_enc", "chip_sw_hmac_enc_jitter_en"]
       bazel: ["//sw/device/tests:hmac_enc_test"]
-    }
+    }, 
     {
       name: chip_sw_hmac_idle
       desc: '''
@@ -41,7 +41,7 @@
       lc_states: ["PROD"]
       tests: ["chip_sw_hmac_enc_idle"]
       bazel: ["//sw/device/tests:hmac_enc_idle_test"]
-    }
+    }, 
     {
       name: chip_sw_hmac_sha2_stress
       desc: '''
@@ -58,7 +58,7 @@
       lc_states: ["PROD"]
       tests: []
       bazel: []
-    }
+    }, 
     {
       name: chip_sw_hmac_stress
       desc: '''
@@ -75,7 +75,7 @@
       lc_states: ["PROD"]
       tests: []
       bazel: []
-    }
+    }, 
     {
       name: chip_sw_hmac_endianness
       desc: '''
@@ -92,7 +92,7 @@
       lc_states: ["PROD"]
       tests: []
       bazel: []
-    }
+    }, 
     {
       name: chip_sw_hmac_secure_wipe
       desc: '''
@@ -111,7 +111,7 @@
       lc_states: ["PROD"]
       tests: []
       bazel: ["//sw/device/tests:hmac_secure_wipe_test"]
-    }
+    }, 
     {
       name: chip_sw_hmac_error_conditions
       desc: '''
@@ -131,6 +131,6 @@
       lc_states: ["PROD"]
       tests: []
       bazel: []
-    }
+    }, 
   ]
 }

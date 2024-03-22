@@ -21,7 +21,7 @@
       features: ["SPI_DEVICE.MODE.FLASH_EMULATION", "SPI_DEVICE.MODE.FLASH_EMULATION.COMMANDS", "SPI_DEVICE.MODE.FLASH_EMULATION.READ_COMMAND_PROCESSOR", "SPI_DEVICE.HW.FLASH_EMULATION_BLOCKS", "SPI_DEVICE.HW.LAST_READ_ADDR"]
       tests: ["rom_e2e_smoke"]
       bazel: ["//sw/device/silicon_creator/rom/e2e:rom_e2e_smoke", "//sw/device/tests:spi_device_flash_smoketest"]
-    }
+    }, 
     {
       name: chip_sw_spi_device_pass_through
       desc: '''
@@ -52,7 +52,7 @@
       features: ["SPI_DEVICE.MODE.PASSTHROUGH", "SPI_DEVICE.HW.LANES", "SPI_DEVICE.MODE.PASSTHROUGH.CMD_FILTER"]
       tests: ["chip_sw_spi_device_pass_through"]
       bazel: []
-    }
+    }, 
     {
       name: chip_sw_spi_device_pass_through_flash_model
       desc: '''
@@ -67,7 +67,7 @@
       si_stage: NA
       features: ["SPI_DEVICE.MODE.PASSTHROUGH", "SPI_DEVICE.HW.LANES", "SPI_DEVICE.MODE.PASSTHROUGH.CMD_FILTER"]
       tests: []
-    }
+    }, 
     {
       name: chip_sw_spi_device_pass_through_collision
       desc: '''
@@ -92,7 +92,7 @@
       features: ["SPI_DEVICE.MODE.PASSTHROUGH", "SPI_DEVICE.HW.CMDINFOS", "SPI_DEVICE.HW.COMMAND_UPLOAD", "SPI_DEVICE.HW.FLASH_EMULATION_BLOCKS", "SPI_DEVICE.MODE.PASSTHROUGH.INTERCEPT_EN"]
       tests: ["chip_sw_spi_device_pass_through_collision"]
       bazel: []
-    }
+    }, 
     {
       name: chip_sw_spi_device_tpm
       desc: '''
@@ -109,7 +109,7 @@
       lc_states: ["PROD"]
       features: ["SPI_DEVICE.MODE.TPM", "SPI_DEVICE.MODE.TPM.READ_FIFO_MODE"]
       tests: ["chip_sw_spi_device_tpm"]
-    }
+    }, 
     {
       name: chip_sw_spi_device_output_when_disabled_or_sleeping
       desc: '''
@@ -146,6 +146,6 @@
       features: []
       tests: []
       bazel: []
-    }
+    }, 
   ]
 }

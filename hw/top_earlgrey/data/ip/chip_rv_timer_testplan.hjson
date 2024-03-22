@@ -20,7 +20,7 @@
       features: ["RV_TIMER.ENABLE", "RV_TIMER.CONFIG", "RV_TIMER.COMPARE", "RV_TIMER.INTERRUPT", "RV_TIMER.COUNTER"]
       tests: ["chip_sw_rv_timer_irq"]
       bazel: ["//sw/device/tests:rv_timer_smoketest"]
-    }
+    }, 
     {
       name: tick_configuration
       desc: '''
@@ -40,7 +40,7 @@
       features: ["RV_TIMER.ENABLE", "RV_TIMER.CONFIG", "RV_TIMER.COMPARE"]
       tests: ["chip_sw_rv_timer_systick_test"]
       bazel: ["//sw/device/tests:rv_timer_systick_test"]
-    }
+    }, 
     {
       name: counter_wrap
       desc: '''
@@ -60,6 +60,6 @@
       features: ["RV_TIMER.ENABLE", "RV_TIMER.CONFIG", "RV_TIMER.COMPARE", "RV_TIMER.INTERRUPT", "RV_TIMER.COUNTER", "RV_TIMER.RISCV_CSRS_INTEGRATION"]
       tests: ["chip_sw_rv_timer_systick_test"]
       bazel: ["//sw/device/tests:rv_timer_systick_test"]
-    }
+    }, 
   ]
 }

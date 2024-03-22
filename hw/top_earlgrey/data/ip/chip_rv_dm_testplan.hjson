@@ -25,7 +25,7 @@
       lc_states: ["DEV"]
       host_support: True
       features: ["RV_DM.JTAG.FSM", "RV_DM.JTAG.DTM"]
-    }
+    }, 
     {
       name: chip_jtag_mem_access
       desc: '''
@@ -53,7 +53,7 @@
       lc_states: ["DEV"]
       host_support: True
       features: ["RV_DM.JTAG.FSM", "RV_DM.JTAG.DTM", "RV_DM.DBG.SBA"]
-    }
+    }, 
     {
       name: chip_rv_dm_perform_debug
       desc: '''
@@ -71,7 +71,7 @@
       lc_states: ["DEV"]
       host_support: True
       features: ["RV_DM.JTAG.FSM", "RV_DM.JTAG.DTM", "RV_DM.DBG.GDB"]
-    }
+    }, 
     {
       name: chip_rv_dm_ndm_reset_req
       desc: '''
@@ -92,7 +92,7 @@
       lc_states: ["DEV"]
       host_support: True
       features: ["RV_DM.JTAG.FSM", "RV_DM.JTAG.DTM", "RV_DM.DBG.NDM_RESET"]
-    }
+    }, 
     {
       name: chip_sw_rv_dm_ndm_reset_req_when_cpu_halted
       desc: '''
@@ -121,7 +121,7 @@
       lc_states: ["DEV"]
       host_support: True
       features: ["RV_DM.JTAG.FSM", "RV_DM.JTAG.DTM", "RV_DM.DBG.NDM_RESET"]
-    }
+    }, 
     {
       name: chip_rv_dm_access_after_wakeup
       desc: '''
@@ -139,7 +139,7 @@
       lc_states: ["DEV"]
       host_support: True
       features: ["RV_DM.JTAG.FSM", "RV_DM.JTAG.DTM"]
-    }
+    }, 
     {
       name: chip_sw_rv_dm_access_after_hw_reset
       desc: '''
@@ -154,7 +154,7 @@
       bazel: ["//sw/device/tests:rv_dm_access_after_hw_reset"]
       lc_states: ["DEV"]
       features: ["RV_DM.JTAG.FSM", "RV_DM.JTAG.DTM"]
-    }
+    }, 
     {
       name: chip_sw_rv_dm_jtag_tap_sel
       desc: '''
@@ -172,7 +172,7 @@
       lc_states: ["DEV"]
       host_support: True
       features: ["RV_DM.JTAG.FSM", "RV_DM.JTAG.DTM"]
-    }
+    }, 
     {
       name: chip_rv_dm_lc_disabled
       desc: '''
@@ -199,7 +199,7 @@
       lc_states: ["RAW", "TEST_LOCKED", "TEST_UNLOCKED", "DEV", "RMA", "PROD", "PROD_END", "SCRAP"]
       host_support: True
       features: ["RV_DM.JTAG.FSM", "RV_DM.JTAG.DTM"]
-    }
+    }, 
     {
       name: chip_rv_dm_jtag
       desc: '''
@@ -217,7 +217,7 @@
       lc_states: ["DEV"]
       host_support: True
       features: ["RV_DM.JTAG.FSM"]
-    }
+    }, 
     {
       name: chip_rv_dm_dtm
       desc: '''
@@ -235,7 +235,7 @@
       lc_states: ["DEV"]
       host_support: True
       features: ["RV_DM.JTAG.FSM", "RV_DM.JTAG.DTM", "RV_DM.DBG.HARTINFO_REG", "RV_DM.DBG.DATA_REGS"]
-    }
+    }, 
     {
       name: chip_rv_dm_control_status
       desc: '''
@@ -262,6 +262,6 @@
       lc_states: ["DEV"]
       host_support: True
       features: ["RV_DM.JTAG.FSM", "RV_DM.JTAG.DTM", "RV_DM.DBG.DMSTATUS_REG", "RV_DM.DBG.DMCONTROL_REG"]
-    }
+    }, 
   ]
 }

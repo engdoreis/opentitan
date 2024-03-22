@@ -24,7 +24,7 @@
       lc_states: ["TEST_UNLOCKED", "PROD"]
       tests: ["chip_sw_entropy_src_csrng"]
       bazel: ["//sw/device/tests:entropy_src_csrng_test"]
-    }
+    }, 
     {
       name: chip_sw_csrng_fuse_en_sw_app_read
       desc: '''
@@ -47,7 +47,7 @@
       si_stage: SV3
       lc_states: ["PROD"]
       tests: ["chip_sw_csrng_fuse_en_sw_app_read_test"]
-    }
+    }, 
     {
       name: chip_sw_csrng_lc_hw_debug_en
       desc: '''
@@ -74,7 +74,7 @@
       si_stage: SV3
       lc_states: ["TEST_UNLOCKED", "DEV", "PROD", "PROD_END"]
       tests: ["chip_sw_csrng_lc_hw_debug_en_test"]
-    }
+    }, 
     {
       name: chip_sw_csrng_known_answer_tests
       desc: '''
@@ -96,6 +96,6 @@
       si_stage: SV3
       lc_states: ["PROD"]
       tests: ["chip_sw_csrng_kat_test"]
-    }
+    }, 
   ]
 }

@@ -28,7 +28,7 @@
       lc_states: ["PROD"]
       bazel: ["//sw/device/tests/pmod:i2c_host_eeprom_test"]
       tests: ["chip_sw_i2c_host_tx_rx", "chip_sw_i2c_host_tx_rx_idx1", "chip_sw_i2c_host_tx_rx_idx2"]
-    }
+    }, 
     {
       name: chip_sw_i2c_device_tx_rx
       desc: '''
@@ -52,7 +52,7 @@
       lc_states: ["PROD"]
       bazel: ["//sw/device/tests:i2c_target_test"]
       tests: ["chip_sw_i2c_device_tx_rx"]
-    }
+    }, 
     {
       name: chip_sw_i2c_speed
       desc: '''
@@ -80,7 +80,7 @@
       lc_states: ["PROD"]
       bazel: ["//sw/device/tests/pmod:i2c_host_fram_test"]
       tests: []
-    }
+    }, 
     {
       name: chip_sw_i2c_override
       desc: '''
@@ -100,7 +100,7 @@
       si_stage: SV3
       lc_states: ["PROD"]
       tests: []
-    }
+    }, 
     {
       name: chip_sw_i2c_clockstretching
       desc: '''
@@ -127,7 +127,7 @@
       si_stage: SV3
       lc_states: ["PROD"]
       tests: []
-    }
+    }, 
     {
       name: chip_sw_i2c_nack
       desc: '''
@@ -149,7 +149,7 @@
       lc_states: ["PROD"]
       tests: []
       bazel: ["//sw/device/tests/pmod:i2c_host_eeprom_test"]
-    }
+    }, 
     {
       name: chip_sw_i2c_repeatedstart
       desc: '''
@@ -169,6 +169,6 @@
       si_stage: SV3
       lc_states: ["PROD"]
       tests: []
-    }
+    }, 
   ]
 }

@@ -22,7 +22,7 @@
       features: ["CLKMGR.HINT.AES", "CLKMGR.HINT.HMAC", "CLKMGR.HINT.KMAC", "CLKMGR.HINT.OTBN"]
       tests: ["chip_sw_aes_idle", "chip_sw_hmac_enc_idle", "chip_sw_kmac_idle", "chip_sw_otbn_randomness"]
       bazel: ["//sw/device/tests:aes_idle_test", "//sw/device/tests:hmac_enc_idle_test", "//sw/device/tests:kmac_idle_test", "//sw/device/tests:otbn_randomness_test"]
-    }
+    }, 
     {
       name: chip_sw_clkmgr_off_trans
       desc: '''
@@ -44,7 +44,7 @@
       features: ["CLKMGR.HINT.AES", "CLKMGR.HINT.HMAC", "CLKMGR.HINT.KMAC", "CLKMGR.HINT.OTBN"]
       tests: ["chip_sw_clkmgr_off_aes_trans", "chip_sw_clkmgr_off_hmac_trans", "chip_sw_clkmgr_off_kmac_trans", "chip_sw_clkmgr_off_otbn_trans"]
       bazel: ["//sw/device/tests:clkmgr_off_aes_trans_test", "//sw/device/tests:clkmgr_off_hmac_trans_test", "//sw/device/tests:clkmgr_off_kmac_trans_test", "//sw/device/tests:clkmgr_off_otbn_trans_test"]
-    }
+    }, 
     {
       name: chip_sw_clkmgr_off_peri
       desc: '''
@@ -63,7 +63,7 @@
       features: ["CLKMGR.ENABLE.IO", "CLKMGR.ENABLE.IO_DIV2", "CLKMGR.ENABLE.IO_DIV4", "CLKMGR.ENABLE.USB"]
       tests: ["chip_sw_clkmgr_off_peri"]
       bazel: ["//sw/device/tests:clkmgr_off_peri_test"]
-    }
+    }, 
     {
       name: chip_sw_clkmgr_div
       desc: '''
@@ -82,7 +82,7 @@
       lc_states: ["TEST_UNLOCKED0", "DEV"]
       tests: ["chip_sw_ast_clk_outputs", "chip_sw_clkmgr_external_clk_src_for_sw_fast_test_unlocked0", "chip_sw_clkmgr_external_clk_src_for_sw_slow_test_unlocked0", "chip_sw_clkmgr_external_clk_src_for_sw_fast_dev", "chip_sw_clkmgr_external_clk_src_for_sw_slow_dev", "chip_sw_clkmgr_external_clk_src_for_sw_fast_rma", "chip_sw_clkmgr_external_clk_src_for_sw_slow_rma"]
       bazel: ["//sw/device/tests:ast_clk_outs_test", "//sw/device/tests:clkmgr_external_clk_src_for_sw_fast_test", "//sw/device/tests:clkmgr_external_clk_src_for_sw_slow_test"]
-    }
+    }, 
     {
       name: chip_sw_clkmgr_external_clk_src_for_lc
       desc: '''
@@ -97,7 +97,7 @@
       si_stage: NA
       tests: ["chip_sw_clkmgr_external_clk_src_for_lc"]
       bazel: []
-    }
+    }, 
     {
       name: chip_sw_clkmgr_external_clk_src_for_sw
       desc: '''
@@ -119,7 +119,7 @@
       lc_states: ["DEV"]
       tests: ["chip_sw_clkmgr_external_clk_src_for_sw_fast_dev", "chip_sw_clkmgr_external_clk_src_for_sw_slow_dev"]
       bazel: ["//sw/device/tests:clkmgr_sleep_frequency_test", "//sw/device/tests:clkmgr_reset_frequency_test"]
-    }
+    }, 
     {
       name: chip_sw_clkmgr_jitter
       desc: '''
@@ -136,7 +136,7 @@
       si_stage: NA
       tests: ["chip_sw_clkmgr_jitter", "chip_sw_flash_ctrl_ops_jitter_en", "chip_sw_flash_ctrl_access_jitter_en", "chip_sw_otbn_ecdsa_op_irq_jitter_en", "chip_sw_aes_enc_jitter_en", "chip_sw_hmac_enc_jitter_en", "chip_sw_keymgr_key_derivation_jitter_en", "chip_sw_kmac_mode_kmac_jitter_en", "chip_sw_sram_ctrl_scrambled_access_jitter_en", "chip_sw_edn_entropy_reqs_jitter"]
       bazel: []
-    }
+    }, 
     {
       name: chip_sw_clkmgr_jitter_cycle_measurements
       desc: '''
@@ -151,7 +151,7 @@
       features: ["CLKMGR.JITTER.REGWEN", "CLKMGR.JITTER.ENABLE", "CLKMGR.MEAS_CTRL.REGWEN", "CLKMGR.MEAS_CTRL.IO", "CLKMGR.MEAS_CTRL.IO_DIV2", "CLKMGR.MEAS_CTRL.IO_DIV4", "CLKMGR.MEAS_CTRL.MAIN", "CLKMGR.MEAS_CTRL.USB"]
       tests: ["chip_sw_clkmgr_jitter_frequency"]
       bazel: ["//sw/device/tests:clkmgr_jitter_frequency_test"]
-    }
+    }, 
     {
       name: chip_sw_clkmgr_extended_range
       desc: '''
@@ -181,7 +181,7 @@
       stage: V2
       si_stage: NA
       tests: ["chip_sw_clkmgr_jitter_reduced_freq", "chip_sw_flash_ctrl_ops_jitter_en_reduced_freq", "chip_sw_flash_ctrl_access_jitter_en_reduced_freq", "chip_sw_otbn_ecdsa_op_irq_jitter_en_reduced_freq", "chip_sw_aes_enc_jitter_en_reduced_freq", "chip_sw_hmac_enc_jitter_en_reduced_freq", "chip_sw_keymgr_key_derivation_jitter_en_reduced_freq", "chip_sw_kmac_mode_kmac_jitter_en_reduced_freq", "chip_sw_sram_ctrl_scrambled_access_jitter_en_reduced_freq", "chip_sw_flash_init_reduced_freq", "chip_sw_csrng_edn_concurrency_reduced_freq"]
-    }
+    }, 
     {
       name: chip_sw_clkmgr_deep_sleep_frequency
       desc: '''
@@ -197,7 +197,7 @@
       features: ["CLKMGR.MEAS_CTRL.REGWEN", "CLKMGR.MEAS_CTRL.IO", "CLKMGR.MEAS_CTRL.IO_DIV2", "CLKMGR.MEAS_CTRL.IO_DIV4", "CLKMGR.MEAS_CTRL.MAIN", "CLKMGR.MEAS_CTRL.USB", "CLKMGR.MEAS_CTRL.RECOV_ERR"]
       tests: ["chip_sw_ast_clk_outputs"]
       bazel: ["//sw/device/tests:ast_clk_outs_test"]
-    }
+    }, 
     {
       name: chip_sw_clkmgr_sleep_frequency
       desc: '''
@@ -215,7 +215,7 @@
       features: ["CLKMGR.MEAS_CTRL.REGWEN", "CLKMGR.MEAS_CTRL.IO", "CLKMGR.MEAS_CTRL.IO_DIV2", "CLKMGR.MEAS_CTRL.IO_DIV4", "CLKMGR.MEAS_CTRL.MAIN", "CLKMGR.MEAS_CTRL.USB", "CLKMGR.MEAS_CTRL.RECOV_ERR"]
       tests: ["chip_sw_clkmgr_sleep_frequency"]
       bazel: ["//sw/device/tests:clkmgr_sleep_frequency_test"]
-    }
+    }, 
     {
       name: chip_sw_clkmgr_reset_frequency
       desc: '''
@@ -233,7 +233,7 @@
       features: ["CLKMGR.MEAS_CTRL.REGWEN", "CLKMGR.MEAS_CTRL.IO", "CLKMGR.MEAS_CTRL.IO_DIV2", "CLKMGR.MEAS_CTRL.IO_DIV4", "CLKMGR.MEAS_CTRL.MAIN", "CLKMGR.MEAS_CTRL.USB", "CLKMGR.MEAS_CTRL.RECOV_ERR"]
       tests: ["chip_sw_clkmgr_reset_frequency"]
       bazel: ["//sw/device/tests:clkmgr_reset_frequency_test"]
-    }
+    }, 
     {
       name: chip_sw_clkmgr_escalation_reset
       desc: '''
@@ -248,7 +248,7 @@
       stage: V2
       si_stage: NA
       tests: ["chip_sw_all_escalation_resets"]
-    }
+    }, 
     {
       name: chip_sw_clkmgr_alert_handler_clock_enables
       desc: '''
@@ -266,6 +266,6 @@
       features: ["CLKMGR.ALERT_HANDLER.CLOCK_STATUS"]
       tests: ["chip_sw_alert_handler_lpg_clkoff"]
       bazel: ["//sw/device/tests:alert_handler_lpg_clkoff_test"]
-    }
+    }, 
   ]
 }
