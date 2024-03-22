@@ -121,7 +121,7 @@ class CustomEncoder(hjson.HjsonEncoder):
             self.is_list_of_dict = False
             for (enum,item) in enumerate(obj):
                 yield from self.encode(item)
-                if not self.is_list_of_dict and enum < len(obj)-1:
+                if self.is_list_of_dict or enum < len(obj)-1:
                     yield ', '
             self.level -=1
             if self.is_list_of_dict:
