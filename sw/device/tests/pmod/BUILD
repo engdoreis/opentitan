@@ -294,11 +294,20 @@ opentitan_test(
 opentitan_test(
     name = "i2c_host_eeprom_test",
     srcs = ["i2c_host_eeprom_test.c"],
-    exec_env = {
-        "//hw/top_earlgrey:fpga_cw310_sival": None,
-        "//hw/top_earlgrey:fpga_cw310_test_rom": None,
-    },
+    exec_env = dicts.add(
+        EARLGREY_SILICON_OWNER_ROM_EXT_ENVS,
+        {
+            "//hw/top_earlgrey:fpga_cw310_sival": None,
+            "//hw/top_earlgrey:fpga_cw310_test_rom": None,
+        },
+    ),
     fpga = fpga_params(
+        tags = [
+            "manual",
+            "pmod",
+        ],  # Requires the PMOD::BoB.
+    ),
+    silicon = fpga_params(
         tags = [
             "manual",
             "pmod",
