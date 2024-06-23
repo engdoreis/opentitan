@@ -5,11 +5,12 @@
 #include "app.h"
 
 #include "demos.h"
+#include "screen.h"
+#include "btn.h"
 #include "display_drivers/core/lucida_console_10pt.h"
 #include "display_drivers/st7735/lcd_st7735.h"
 #include "images/logo_opentitan_160_39.h"
 #include "images/ot_stronks_160_100.h"
-#include "screen.h"
 #include "sw/device/lib/dif/dif_spi_host.h"
 #include "sw/device/lib/runtime/ibex.h"
 #include "sw/device/lib/testing/spi_device_testutils.h"
@@ -17,17 +18,11 @@
 #include "sw/device/lib/testing/spi_flash_testutils.h"
 #include "sw/device/lib/testing/test_framework/check.h"
 
-enum {
-  kBtnDebounceMillis = 40,
-};
 // Local functions declaration.
 static uint32_t spi_write(void *handle, uint8_t *data, size_t len);
 static uint32_t gpio_write(void *handle, bool cs, bool dc);
 static void timer_delay(uint32_t ms);
-static status_t scan_buttons(context_t *ctx, uint32_t timeout);
-static status_t notavail_demo(context_t *ctx);
 static status_t aes_demo(context_t *ctx);
-static status_t spi_passthru_demo(context_t *ctx);
 
 status_t run_demo(dif_spi_host_t *spi_lcd, dif_spi_host_t *spi_flash,
                   dif_spi_device_handle_t *spid, dif_gpio_t *gpio,
@@ -118,7 +113,7 @@ status_t run_demo(dif_spi_host_t *spi_lcd, dif_spi_host_t *spi_flash,
             TRY(aes_demo(&ctx));
             break;
           case 1:
-            TRY(spi_passthru_demo(&ctx));
+            TRY(spi_passthrough_demo(&ctx));
             break;
           default:
             screen_println(&lcd, "Option not avail!", alined_center, 8, true);
@@ -147,63 +142,6 @@ static status_t aes_demo(context_t *ctx) {
   // timer_delay(3000);
   // lcd_st7735_clean(ctx->lcd);
   return OK_STATUS();
-}
-
-static status_t spi_passthru_demo(context_t *ctx) {
-  static bool enabled = false;
-  lcd_st7735_clean(ctx->lcd);
-  if (!enabled) {
-    enabled = true;
-
-    screen_println(ctx->lcd, "Enabling passthru!", alined_center, 5, true);
-    TRY(dif_spi_device_set_passthrough_mode(ctx->spid, kDifToggleEnabled));
-    TRY(spi_device_testutils_configure_passthrough(
-        ctx->spid,
-        /*filters=*/0x00,
-        /*upload_write_commands=*/false));
-
-    TRY(dif_spi_host_output_set_enabled(ctx->spi_flash, true));
-  } else {
-    enabled = false;
-    screen_println(ctx->lcd, "Disabling passthru!", alined_center, 5, true);
-    TRY(dif_spi_device_set_passthrough_mode(ctx->spid, kDifToggleDisabled));
-    TRY(dif_spi_host_output_set_enabled(ctx->spi_flash, false));
-  }
-  timer_delay(3000);
-  lcd_st7735_clean(ctx->lcd);
-  return OK_STATUS();
-}
-
-static status_t notavail_demo(context_t *ctx) {
-  lcd_st7735_clean(ctx->lcd);
-  while (true) {
-    screen_println(ctx->lcd, "Option not avail!", alined_center, 5, true);
-  }
-}
-
-status_t scan_buttons(context_t *ctx, uint32_t timeout) {
-  ibex_timeout_t deadline = ibex_timeout_init(timeout * 1000);
-  dif_gpio_pin_t pins[] = {ctx->pins.btn_up, ctx->pins.btn_down,
-                           ctx->pins.btn_left, ctx->pins.btn_right,
-                           ctx->pins.btn_ok};
-  static size_t i = 0;
-  do {
-    i = (i + 1) % ARRAYSIZE(pins);
-    bool state = true;
-    TRY(dif_gpio_read(ctx->gpio, pins[i], &state));
-    if (!state) {
-      timer_delay(kBtnDebounceMillis);
-      TRY(dif_gpio_read(ctx->gpio, pins[i], &state));
-      if (!state) {
-        // LOG_INFO("Pin[%u]:%u pressed", i, pins[i]);
-        return OK_STATUS((int32_t)i);
-      }
-    }
-
-  } while (!ibex_timeout_check(&deadline));
-
-  // LOG_INFO("Btn scan timeout");
-  return DEADLINE_EXCEEDED();
 }
 
 static uint32_t spi_write(void *handle, uint8_t *data, size_t len) {

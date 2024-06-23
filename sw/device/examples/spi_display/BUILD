@@ -46,14 +46,17 @@ cc_library(
     name = "spi_display_app",
     srcs = [
         "aes_demo.c",
+        "spi_passthrough.c",
         "app.c",
         "screen.c",
+        "btn.c"
     ],
     hdrs = [
         "app.h",
         "context.h",
         "demos.h",
         "screen.h",
+        "btn.h"
     ],
     deps = [
         ":spi_display_lib",
