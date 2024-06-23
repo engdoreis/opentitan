@@ -83,9 +83,9 @@ status_t run_demo(dif_spi_host_t *spi_lcd, dif_spi_host_t *spi_flash,
   // Show the main menu.
   const char *items[] = {
       "1. AES ECB/CDC",
-      "2. SPI passthru",
-      "3. Another demo",
-      "4. Yet another demo",
+      "2. SPI Passthrough",
+      "3. CTAP (FIDO)",
+      "4. TPM",
   };
   Menu_t main_menu = {
       .title = "Demo mode",
@@ -96,22 +96,23 @@ status_t run_demo(dif_spi_host_t *spi_lcd, dif_spi_host_t *spi_flash,
       .items = items,
   };
   lcd_st7735_clean(&lcd);
-  do {
+  int last_scan = 0;
     screen_show_menu(&lcd, &main_menu, selected);
+  do {
     status_t ret = scan_buttons(&ctx, 1000);
 
-    if (!status_ok(ret)) {
+    if (!status_ok(ret) || last_scan == UNWRAP(ret)) {
       continue;
     }
-
-    switch (UNWRAP(ret)) {
-      case 0:
-      case 1:
-      case 2:
-      case 3:
-        selected = (size_t)UNWRAP(ret);
+    last_scan = UNWRAP(ret);
+    switch (last_scan) {
+      case kBtnUp:
+      case kBtnDown:
+      case kBtnLeft:
+      case kBtnRight:
+        selected = (size_t)last_scan;
         break;
-      case 4:
+      case kBtnOk:
         switch (selected) {
           case 0:
             TRY(aes_demo(&ctx));
@@ -127,21 +128,24 @@ status_t run_demo(dif_spi_host_t *spi_lcd, dif_spi_host_t *spi_flash,
       default:
         break;
     }
+    screen_show_menu(&lcd, &main_menu, selected);
   } while (1);
 }
 
 static status_t aes_demo(context_t *ctx) {
-  TRY(run_aes(ctx));
-  timer_delay(5000);
+  while(1){
+    TRY(run_aes(ctx));
+    timer_delay(5000);
+  }
 
-  lcd_st7735_clean(ctx->lcd);
-  lcd_st7735_draw_rgb565(
-      ctx->lcd,
-      (LCD_rectangle){.origin = {.x = 0, .y = 12}, .width = 160, .height = 100},
-      (uint8_t *)ot_stronks_160_100);
+  // lcd_st7735_clean(ctx->lcd);
+  // lcd_st7735_draw_rgb565(
+  //     ctx->lcd,
+  //     (LCD_rectangle){.origin = {.x = 0, .y = 12}, .width = 160, .height = 100},
+  //     (uint8_t *)ot_stronks_160_100);
 
-  timer_delay(3000);
-  lcd_st7735_clean(ctx->lcd);
+  // timer_delay(3000);
+  // lcd_st7735_clean(ctx->lcd);
   return OK_STATUS();
 }
 
@@ -191,14 +195,14 @@ status_t scan_buttons(context_t *ctx, uint32_t timeout) {
       timer_delay(kBtnDebounceMillis);
       TRY(dif_gpio_read(ctx->gpio, pins[i], &state));
       if (!state) {
-        LOG_INFO("Pin[%u]:%u pressed", i, pins[i]);
+        // LOG_INFO("Pin[%u]:%u pressed", i, pins[i]);
         return OK_STATUS((int32_t)i);
       }
     }
 
   } while (!ibex_timeout_check(&deadline));
 
-  LOG_INFO("Btn scan timeout");
+  // LOG_INFO("Btn scan timeout");
   return DEADLINE_EXCEEDED();
 }
 

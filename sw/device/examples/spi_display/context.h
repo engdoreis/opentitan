@@ -29,4 +29,13 @@ typedef struct context {
   St7735Context *lcd;
 } context_t;
 
+typedef enum btn{
+  kBtnUp,
+  kBtnDown,
+  kBtnLeft,
+  kBtnRight,
+  kBtnOk,
+}btn_t;
+
+
 #endif

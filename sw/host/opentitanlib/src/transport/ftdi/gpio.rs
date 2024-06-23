@@ -66,7 +66,7 @@ impl GpioPin for Pin {
             self.pin.borrow_mut().set_high();
         } else {
             if self.pinname == "ddbus7" {
-                log::info!(">>PRESS THE POR ON RESET<<");
+                log::info!(">>PRESS THE RESET BTN<<");
                 std::thread::sleep(Duration::from_millis(4_000));
             }
             self.pin.borrow_mut().set_low();
