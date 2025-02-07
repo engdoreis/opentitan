@@ -8,6 +8,10 @@ cc_library(
     name = "bridge",
     srcs = ["main.c"],
     deps = [
+        "//hw/top_earlgrey/sw/autogen:top_earlgrey",
+        "//sw/device/lib/dif:spi_device",
+        "//sw/device/lib/testing:spi_device_testutils",
+        "//sw/device/lib/testing/test_framework:check",
         "//sw/device/silicon_creator/lib:dbg_print",
     ],
 )
@@ -34,7 +38,7 @@ opentitan_test(
         binaries = {
             ":bridge_virtual": "firmware",
         },
-        exit_success = "DONE",
+        exit_success = "CONFIGURED\r\n",
         interface = "ftdi",
         timeout = "eternal",
     ),

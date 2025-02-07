@@ -59,6 +59,7 @@ impl<C: Chip> Ftdi<C> {
 
     fn open_uart(&self, instance: u32) -> Result<SerialPortUart> {
         let uart_name = format!("/dev/ttyUSB{instance}");
+        println!("{uart_name}");
         SerialPortUart::open(&uart_name, C::UART_BAUD).context(uart_name)
     }
 }
