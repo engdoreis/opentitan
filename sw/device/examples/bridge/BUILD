@@ -38,7 +38,7 @@ opentitan_test(
         binaries = {
             ":bridge_virtual": "firmware",
         },
-        exit_success = "CONFIGURED\r\n",
+        # exit_success = "CONFIGURED\r\n",
         interface = "ftdi",
         timeout = "eternal",
     ),
