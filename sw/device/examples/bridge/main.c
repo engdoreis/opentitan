@@ -49,6 +49,16 @@
  * - Read one byte. If the lowest bit is 0, the device is ready.
  * - Pull chip-select high.
  * - Repeat until ready.
+ *
+ * You may also test the connection by asking for the JEDEC ID:
+ *
+ * - Pull chip-select low.
+ * - Send the ReadJedec command opcode (0x9f).
+ * - Read three bytes..
+ * - Pull chip-select high.
+ *
+ * If the bridge is working, the ID should come back as three bytes (0x4A, 0x5A, 0x4F)
+ * which correspond to the manufacturer ID ('J') and device ID ('O', 'T').
  */
 
 static void configure_spi_device(dif_spi_device_handle_t *spi_device);
@@ -86,6 +96,14 @@ static void configure_spi_device(dif_spi_device_handle_t *spi_device) {
     .payload_dir_to_host = true,
   };
 
+  dif_spi_device_flash_command_t read_jedec_cmd = {
+    .opcode = kSpiDeviceFlashOpReadJedec,
+    .address_type = kDifSpiDeviceFlashAddrDisabled,
+    .dummy_cycles = 0,
+    .payload_io_type = kDifSpiDevicePayloadIoSingle,
+    .payload_dir_to_host = true,
+  };
+
   dif_spi_device_flash_command_t read_4b_cmd = {
     .opcode = kSpiDeviceFlashOpRead4b,
     .address_type = kDifSpiDeviceFlashAddr4Byte,
@@ -114,12 +132,19 @@ static void configure_spi_device(dif_spi_device_handle_t *spi_device) {
   };
 
   CHECK_DIF_OK(dif_spi_device_set_flash_command_slot(spi_device, kSpiDeviceReadCommandSlotBase, kDifToggleEnabled, read_status1_cmd));
+  CHECK_DIF_OK(dif_spi_device_set_flash_command_slot(spi_device, kSpiDeviceReadCommandSlotBase + 3, kDifToggleEnabled, read_jedec_cmd));
   CHECK_DIF_OK(dif_spi_device_set_flash_command_slot(spi_device, kSpiDeviceReadCommandSlotBase + 5, kDifToggleEnabled, read_normal_cmd));
   CHECK_DIF_OK(dif_spi_device_set_flash_command_slot(spi_device, kSpiDeviceWriteCommandSlotBase, kDifToggleEnabled, write_cmd));
   CHECK_DIF_OK(dif_spi_device_set_flash_command_slot(spi_device, kSpiDeviceWriteCommandSlotBase + 1, kDifToggleEnabled, read_4b_cmd));
 
   // Enable 4-byte addresses so host doesn't have to send the `EN4B` command.
   CHECK_DIF_OK(dif_spi_device_set_4b_address_mode(spi_device, kDifToggleEnabled));
+
+  dif_spi_device_flash_id_t flash_id = {
+    .device_id = 0x544F, // OT_le
+    .manufacturer_id = 0x4A, // J :)
+  };
+  CHECK_DIF_OK(dif_spi_device_set_flash_id(spi_device, flash_id));
 }
 
 static void event_loop(dif_spi_device_handle_t *spi_device) {
