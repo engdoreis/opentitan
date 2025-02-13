@@ -6,7 +6,66 @@
 #include "sw/device/lib/testing/test_framework/check.h"
 #include "sw/device/silicon_creator/lib/dbg_print.h"
 
-void configure_spi_device(dif_spi_device_handle_t *spi_device) {
+/**
+ * # OpenTitan SPI MMIO bridge
+ *
+ * This program gives external devices access to OpenTitan's entire address space
+ * through the SPI device. Never *ever* sign this program with a production silicon
+ * owner key, it breaks tonnes of OpenTitan security rules.
+ * 
+ * ## The protocol
+ *
+ * We're mostly using SPI flash commands except reads are split into two. We're
+ * using CPOL=0, CPHA=0, MSB-first, and 4-byte addresses. All commands must start
+ * and end by pulling chip select low and high respectively. The connection has
+ * been tested up to 10MHz.
+ *
+ * Writing to memory:
+ *
+ * - Pull chip-select low.
+ * - Send the PageProgram command opcode (0x02).
+ * - Send the four-byte address to program (big-endian).
+ * - Send up to 256 bytes of data to program in series.
+ * - Pull chip-select high.
+ *
+ * Reading from memory:
+ *
+ * - Pull chip-select low.
+ * - Send the Read4b command opcode (0x13).
+ * - Send the four-byte address to read from (big-endian).
+ * - (optional) Send the number of bytes to read (up to 255). Defaults to 1.
+ * - Pull chip-select high.
+ * - Wait for the device to be ready (see below).
+ * - Pull chip-select low.
+ * - Send the ReadNormal command opcode (0x03).
+ * - Send a four-byte address from the buffer that was read (normally 0).
+ * - Read out the correct number of bytes.
+ * - Pull chip-select high.
+ *
+ * You must check that the device is ready before sending a read or write command:
+ *
+ * - Pull chip-select low.
+ * - Send the ReadStatus1 command opcode (0x05).
+ * - Read one byte. If the lowest bit is 0, the device is ready.
+ * - Pull chip-select high.
+ * - Repeat until ready.
+ */
+
+static void configure_spi_device(dif_spi_device_handle_t *spi_device);
+static void event_loop(dif_spi_device_handle_t *spi_device);
+
+void bare_metal_main(void) {
+  dif_spi_device_handle_t spi_device;
+
+  configure_spi_device(&spi_device);
+  dbg_printf("CONFIGURED\r\n");
+
+  event_loop(&spi_device);
+}
+
+void interrupt_handler(void) { dbg_printf("Interrupt!\r\n"); }
+
+static void configure_spi_device(dif_spi_device_handle_t *spi_device) {
   mmio_region_t base_addr = mmio_region_from_addr(TOP_EARLGREY_SPI_DEVICE_BASE_ADDR);
   CHECK_DIF_OK(dif_spi_device_init_handle(base_addr, spi_device));
 
@@ -29,7 +88,7 @@ void configure_spi_device(dif_spi_device_handle_t *spi_device) {
 
   dif_spi_device_flash_command_t read_4b_cmd = {
     .opcode = kSpiDeviceFlashOpRead4b,
-    .address_type = kDifSpiDeviceFlashAddrCfg,
+    .address_type = kDifSpiDeviceFlashAddr4Byte,
     .dummy_cycles = 0,
     .payload_io_type = kDifSpiDevicePayloadIoSingle,
     .upload = true,
@@ -38,7 +97,7 @@ void configure_spi_device(dif_spi_device_handle_t *spi_device) {
 
   dif_spi_device_flash_command_t read_normal_cmd = {
     .opcode = kSpiDeviceFlashOpReadNormal,
-    .address_type = kDifSpiDeviceFlashAddrCfg,
+    .address_type = kDifSpiDeviceFlashAddr4Byte,
     .dummy_cycles = 0,
     .payload_io_type = kDifSpiDevicePayloadIoSingle,
     .payload_dir_to_host = true,
@@ -46,7 +105,7 @@ void configure_spi_device(dif_spi_device_handle_t *spi_device) {
 
   dif_spi_device_flash_command_t write_cmd = {
     .opcode = kSpiDeviceFlashOpPageProgram,
-    .address_type = kDifSpiDeviceFlashAddrCfg,
+    .address_type = kDifSpiDeviceFlashAddr4Byte,
     .dummy_cycles = 0,
     .payload_io_type = kDifSpiDevicePayloadIoSingle,
     .payload_dir_to_host = false,
@@ -59,66 +118,59 @@ void configure_spi_device(dif_spi_device_handle_t *spi_device) {
   CHECK_DIF_OK(dif_spi_device_set_flash_command_slot(spi_device, kSpiDeviceWriteCommandSlotBase, kDifToggleEnabled, write_cmd));
   CHECK_DIF_OK(dif_spi_device_set_flash_command_slot(spi_device, kSpiDeviceWriteCommandSlotBase + 1, kDifToggleEnabled, read_4b_cmd));
 
-  CHECK_DIF_OK(dif_spi_device_configure_flash_wren_command(spi_device, kDifToggleEnabled, kSpiDeviceFlashOpWriteEnable));
-  CHECK_DIF_OK(dif_spi_device_configure_flash_en4b_command(spi_device, kDifToggleEnabled, kSpiDeviceFlashOpEnter4bAddr));
+  // Enable 4-byte addresses so host doesn't have to send the `EN4B` command.
+  CHECK_DIF_OK(dif_spi_device_set_4b_address_mode(spi_device, kDifToggleEnabled));
 }
 
-void bare_metal_main(void) {
-  dif_spi_device_handle_t spi_device;
-  configure_spi_device(&spi_device);
-
-  dbg_printf("CONFIGURED\r\n");
-
-  uint32_t magic = 0xdeadbeef;
-  dbg_printf("magic addr 0x%p\r\n", &magic);
-
+static void event_loop(dif_spi_device_handle_t *spi_device) {
   while (true) {
     upload_info_t upload_info;
-    CHECK_STATUS_OK(spi_device_testutils_wait_for_upload(&spi_device, &upload_info));
+    CHECK_STATUS_OK(spi_device_testutils_wait_for_upload(spi_device, &upload_info));
 
     if (!upload_info.has_address) {
       dbg_printf("cmd had no address\r\n");
       break;
     }
 
-    // Variables cannot be declared within a switch:
-    mmio_region_t base_addr;
-    // 8-bit and 32-bit data read from OpenTitan memory:
-    uint8_t data8;
-    uint32_t data32;
+    mmio_region_t base_addr = mmio_region_from_addr(upload_info.address);
 
     switch (upload_info.opcode) {
       case kSpiDeviceFlashOpRead4b:
-        base_addr = mmio_region_from_addr(upload_info.address);
-
         if (upload_info.data_len == 0) {
-          data8 = mmio_region_read8(base_addr, 0);
-          CHECK_DIF_OK(dif_spi_device_write_flash_buffer(&spi_device, kDifSpiDeviceFlashBufferTypeEFlash, 0, 1, &data8));
+          uint8_t data8 = mmio_region_read8(base_addr, 0);
+          CHECK_DIF_OK(dif_spi_device_write_flash_buffer(spi_device, kDifSpiDeviceFlashBufferTypeEFlash, 0, 1, &data8));
           break;
         }
 
-        for (uint16_t i = 0; i < upload_info.data[0] i += 4) {
-          data32 = mmio_region_read32(base_addr, i);
-          CHECK_DIF_OK(dif_spi_device_write_flash_buffer(&spi_device, kDifSpiDeviceFlashBufferTypeEFlash, i, sizeof(data32), (uint8_t*)&data32));
+        for (uint16_t i = 0; i < upload_info.data[0]; i += 4) {
+          uint32_t data32 = mmio_region_read32(base_addr, i);
+          CHECK_DIF_OK(dif_spi_device_write_flash_buffer(spi_device, kDifSpiDeviceFlashBufferTypeEFlash, i, sizeof(data32), (uint8_t*)&data32));
         }
 
         break;
       case kSpiDeviceFlashOpPageProgram:
-        base_addr = mmio_region_from_addr(upload_info.address);
         if (upload_info.data_len == 0) {
           dbg_printf("program cmd to addr %p had no data\r\n", base_addr.base);
-        } else if (upload_info.data_len == 1) {
+          break;
+        }
+
+        if (upload_info.data_len == 1) {
             mmio_region_write8(base_addr, 0, upload_info.data[0]);
         } else {
-          dbg_printf("TODO: multi-byte program\r\n");
+          for (uint16_t i = 0; i < upload_info.data_len; i += 4) {
+            uint32_t word = (uint32_t)upload_info.data[i];
+            if (i + 1 < upload_info.data_len) word += (uint32_t)(upload_info.data[i + 1]) << 8;
+            if (i + 2 < upload_info.data_len) word += (uint32_t)(upload_info.data[i + 2]) << 16;
+            if (i + 3 < upload_info.data_len) word += (uint32_t)(upload_info.data[i + 3]) << 24;
+            mmio_region_write32(base_addr, i, word);
+          }
         }
+
         break;
       default:
         dbg_printf("unknown opcode: %x\r\n", upload_info.opcode);
     }
 
-    CHECK_DIF_OK(dif_spi_device_clear_flash_busy_bit(&spi_device));
+    CHECK_DIF_OK(dif_spi_device_clear_flash_busy_bit(spi_device));
   }
 }
-
-void interrupt_handler(void) { dbg_printf("Interrupt!\r\n"); }
