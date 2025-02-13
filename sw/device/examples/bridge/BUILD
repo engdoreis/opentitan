@@ -6,10 +6,21 @@ load("//rules/opentitan:defs.bzl", "opentitan_binary", "opentitan_test", "silico
 
 cc_library(
     name = "bridge",
-    srcs = ["main.c"],
+    srcs = [
+        "main.c",
+        "screen.c",
+    ],
+    hdrs = [
+        "screen.h",
+    ],
     deps = [
+        "@display_drivers//:display_drivers_lib",
         "//hw/top_earlgrey/sw/autogen:top_earlgrey",
+        "//sw/device/examples/spi_display/images:logo_opentitan_160_39px",
+        "//sw/device/lib/dif:gpio",
+        "//sw/device/lib/dif:pinmux",
         "//sw/device/lib/dif:spi_device",
+        "//sw/device/lib/dif:spi_host",
         "//sw/device/lib/testing:spi_device_testutils",
         "//sw/device/lib/testing/test_framework:check",
         "//sw/device/silicon_creator/lib:dbg_print",

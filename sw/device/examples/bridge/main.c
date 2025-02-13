@@ -1,3 +1,5 @@
+#include "sw/device/examples/bridge/screen.h"
+
 #include <stdbool.h>
 
 #include "hw/top_earlgrey/sw/autogen/top_earlgrey.h"
@@ -68,8 +70,14 @@ void bare_metal_main(void) {
   dif_spi_device_handle_t spi_device;
 
   configure_spi_device(&spi_device);
-  dbg_printf("CONFIGURED\r\n");
+  dbg_printf("Bridge configured\r\n");
 
+  screen_context_t screen_ctx;
+  screen_init(&screen_ctx);
+  screen_draw_logo(&screen_ctx);
+  dbg_printf("Screen initialised\r\n");
+
+  dbg_printf("Starting event loop...\r\n");
   event_loop(&spi_device);
 }
 
