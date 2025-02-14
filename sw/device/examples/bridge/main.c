@@ -96,6 +96,16 @@ static void configure_spi_device(dif_spi_device_handle_t *spi_device) {
   };
   CHECK_DIF_OK(dif_spi_device_configure(spi_device, spi_config));
 
+  // Clear the payload FIFO - the hardware doesn't do this for us and the
+  // parity is checked on the first SW access, so there's a 50/50 chance
+  // of getting an integrity error.
+  uint8_t zeroes[256];
+  memset(zeroes, 0, sizeof(zeroes));
+  CHECK_DIF_OK(dif_spi_device_write_flash_buffer(spi_device,
+    kDifSpiDeviceFlashBufferTypePayload,
+    0, sizeof(zeroes), zeroes
+  ));
+
   dif_spi_device_flash_command_t read_status1_cmd = {
     .opcode = kSpiDeviceFlashOpReadStatus1,
     .address_type = kDifSpiDeviceFlashAddrDisabled,
