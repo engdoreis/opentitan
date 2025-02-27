@@ -3,6 +3,7 @@
 #include <stdbool.h>
 
 #include "hw/top_earlgrey/sw/autogen/top_earlgrey.h"
+#include "sw/device/lib/crypto/drivers/entropy.h"
 #include "sw/device/lib/dif/dif_spi_device.h"
 #include "sw/device/lib/testing/spi_device_testutils.h"
 #include "sw/device/lib/testing/test_framework/check.h"
@@ -67,8 +68,10 @@ static void configure_spi_device(dif_spi_device_handle_t *spi_device);
 static void event_loop(dif_spi_device_handle_t *spi_device);
 
 void bare_metal_main(void) {
-  dif_spi_device_handle_t spi_device;
+  dbg_printf("Entropy complex configured\r\n");
+  CHECK_STATUS_OK(entropy_complex_init());
 
+  dif_spi_device_handle_t spi_device;
   configure_spi_device(&spi_device);
   dbg_printf("Bridge configured\r\n");
 

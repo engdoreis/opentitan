@@ -17,6 +17,7 @@ cc_library(
         "@display_drivers//:display_drivers_lib",
         "//hw/top_earlgrey/sw/autogen:top_earlgrey",
         "//sw/device/examples/spi_display/images:logo_opentitan_160_39px",
+        "//sw/device/lib/crypto/drivers:entropy",
         "//sw/device/lib/dif:gpio",
         "//sw/device/lib/dif:pinmux",
         "//sw/device/lib/dif:spi_device",
