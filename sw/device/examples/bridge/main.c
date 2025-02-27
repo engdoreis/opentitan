@@ -167,6 +167,8 @@ static void configure_spi_device(dif_spi_device_handle_t *spi_device) {
 
 static void event_loop(dif_spi_device_handle_t *spi_device) {
   while (true) {
+    CHECK_DIF_OK(dif_spi_device_clear_flash_busy_bit(spi_device));
+
     upload_info_t upload_info;
     CHECK_STATUS_OK(spi_device_testutils_wait_for_upload(spi_device, &upload_info));
 
@@ -213,7 +215,5 @@ static void event_loop(dif_spi_device_handle_t *spi_device) {
       default:
         dbg_printf("unknown opcode: %x\r\n", upload_info.opcode);
     }
-
-    CHECK_DIF_OK(dif_spi_device_clear_flash_busy_bit(spi_device));
   }
 }
