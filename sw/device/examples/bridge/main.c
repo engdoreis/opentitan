@@ -3,6 +3,7 @@
 #include "sw/device/examples/bridge/screen.h"
 #include "sw/device/lib/crypto/drivers/entropy.h"
 #include "sw/device/lib/dif/dif_spi_device.h"
+#include "sw/device/lib/runtime/ibex.h"
 #include "sw/device/lib/testing/spi_device_testutils.h"
 #include "sw/device/lib/testing/test_framework/check.h"
 #include "sw/device/silicon_creator/lib/dbg_print.h"
@@ -65,8 +66,11 @@
  * 0x4F) which correspond to the manufacturer ID ('J') and device ID ('O', 'T').
  */
 
+#include "sw/device/lib/crypto/drivers/entropy.h"
+
 static void configure_spi_device(dif_spi_device_handle_t *spi_device);
-static void event_loop(dif_spi_device_handle_t *spi_device);
+static void event_loop(dif_spi_device_handle_t *spi_device,
+                       screen_context_t *screen_ctx);
 
 void bare_metal_main(void) {
   dbg_printf("Entropy complex configured\r\n");
@@ -82,7 +86,7 @@ void bare_metal_main(void) {
   dbg_printf("Screen initialised\r\n");
 
   dbg_printf("Starting event loop...\r\n");
-  event_loop(&spi_device);
+  event_loop(&spi_device, &screen_ctx);
 }
 
 void interrupt_handler(void) { dbg_printf("Interrupt!\r\n"); }
@@ -180,9 +184,25 @@ static void configure_spi_device(dif_spi_device_handle_t *spi_device) {
   CHECK_DIF_OK(dif_spi_device_set_flash_id(spi_device, flash_id));
 }
 
-static void event_loop(dif_spi_device_handle_t *spi_device) {
+static void event_loop(dif_spi_device_handle_t *spi_device,
+                       screen_context_t *screen_ctx) {
+  enum { kTimeout = 800 * 1000 };
+  ibex_timeout_t deadline = ibex_timeout_init(kTimeout);
+  CHECK_DIF_OK(dif_spi_device_clear_flash_busy_bit(spi_device));
   while (true) {
-    CHECK_DIF_OK(dif_spi_device_clear_flash_busy_bit(spi_device));
+    if (ibex_timeout_check(&deadline)) {
+      deadline = ibex_timeout_init(kTimeout);
+      screen_keep_alive(screen_ctx);
+    }
+
+    bool upload_pending;
+    CHECK_DIF_OK(dif_spi_device_irq_is_pending(
+        &spi_device->dev, kDifSpiDeviceIrqUploadCmdfifoNotEmpty,
+        &upload_pending));
+
+    if (!upload_pending) {
+      continue;
+    }
 
     upload_info_t upload_info;
     CHECK_STATUS_OK(
@@ -192,6 +212,7 @@ static void event_loop(dif_spi_device_handle_t *spi_device) {
       dbg_printf("cmd had no address\r\n");
       break;
     }
+    deadline = ibex_timeout_init(kTimeout);
 
     mmio_region_t base_addr = mmio_region_from_addr(upload_info.address);
 
@@ -237,5 +258,7 @@ static void event_loop(dif_spi_device_handle_t *spi_device) {
       default:
         dbg_printf("unknown opcode: %x\r\n", upload_info.opcode);
     }
+    CHECK_DIF_OK(dif_spi_device_clear_flash_busy_bit(spi_device));
   }
+  dbg_printf("Finishing loop\r\n");
 }

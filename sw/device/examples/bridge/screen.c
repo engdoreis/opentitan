@@ -99,6 +99,13 @@ void screen_init(screen_context_t *screen_ctx) {
   lcd_st7735_clean(&screen_ctx->lcd);
 }
 
+void screen_keep_alive(screen_context_t *screen_ctx) {
+  static const char *status_icon[4] = {"|", "/", "-", "\\"};
+  static uint32_t status_icon_index = 0;
+  lcd_st7735_puts(&screen_ctx->lcd, (LCD_Point){.x = 160 - 8, .y = 128 - 12},
+                  status_icon[status_icon_index++ % ARRAYSIZE(status_icon)]);
+}
+
 void screen_draw_logo(screen_context_t *screen_ctx) {
   lcd_st7735_draw_rgb565(
       &screen_ctx->lcd,
@@ -106,7 +113,7 @@ void screen_draw_logo(screen_context_t *screen_ctx) {
       (uint8_t *)logo_opentitan_160_39);
 
   lcd_st7735_puts(&screen_ctx->lcd, (LCD_Point){.x = 25, .y = 70},
-                  "Rainbow bridge");
+                  "Symphony Mode");
 
   uint32_t colours[] = {
       0x0000ff, 0x00a5ff, 0x00ffff, 0x00ff00, 0xff0000,
