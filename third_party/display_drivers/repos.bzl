@@ -8,9 +8,9 @@ def display_drivers_repos():
     http_archive(
         name = "display_drivers",
         build_file = Label("//third_party/display_drivers:BUILD.display_drivers.bazel"),
-        sha256 = "b47bb2541eac520d664d5d2a91a85f6a060b0560d0d3caa10afe2f89f229c88a",
-        strip_prefix = "display_drivers-0.1.0",
+        sha256 = "8dc986c010757847d3189cd3635396de6098f8aeb78f5f80ac92177e6bc9c8ff",
+        strip_prefix = "display_drivers-rc0.2.0",
         urls = [
-            "https://github.com/engdoreis/display_drivers/archive/refs/tags/v0.1.0.tar.gz",
+            "https://github.com/engdoreis/display_drivers/archive/refs/tags/rc0.2.0.tar.gz",
         ],
     )
