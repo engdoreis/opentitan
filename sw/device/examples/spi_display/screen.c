@@ -13,6 +13,8 @@ static void screen_select_item(St7735Context *lcd, size_t selected,
                                uint32_t color);
 
 void screen_show_menu(St7735Context *lcd, Menu_t *menu, size_t selected) {
+  size_t lcd_height, lcd_width;
+  lcd_st7735_get_resolution(lcd, &lcd_height, &lcd_width);
   size_t line = 0;
   // Clean the screen.
   lcd_st7735_fill_rectangle(lcd,
