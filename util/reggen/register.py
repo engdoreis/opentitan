@@ -750,9 +750,12 @@ class Register(RegBase):
 
     def to_systemrdl(self, importer: RDLImporter) -> systemrdl.component.Reg:
         rdl_t = importer.create_reg_definition(self.name)
+
         for rfield in self.fields:
             importer.add_child(rdl_t, rfield.to_systemrdl(importer))
 
-        return importer.instantiate_reg(rdl_t,
+        reg = importer.instantiate_reg(rdl_t,
                                         self.name,
                                         self.offset)
+        reg.external = self.hwext
+        return reg
