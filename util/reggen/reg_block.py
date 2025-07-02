@@ -745,20 +745,22 @@ class RegBlock:
             self._rename_flat_reg(alias_name, reg.name)
 
     def to_systemrdl(self, importer: RDLImporter) -> Addrmap | None:
-        nonempty = False
 
         name = self.name or 'none'
         rdl_addrmap_t = importer.create_addrmap_definition(name)
         rdl_addrmap = importer.instantiate_addrmap(rdl_addrmap_t, name, 0)
 
-        # registers and multiregs
-        for name, flat_reg in self.name_to_flat_reg.items():
-            nonempty = True
-            importer.add_child(rdl_addrmap, flat_reg.to_systemrdl(importer))
+        # registers 
+        for reg in self.registers:
+            importer.add_child(rdl_addrmap, reg.to_systemrdl(importer))
+
+        # multiregs
+        for reg in self.multiregs:
+            importer.add_child(rdl_addrmap, reg.to_systemrdl(importer))
 
         # windows
         for window in self.windows:
-            nonempty = True
             importer.add_child(rdl_addrmap, window.to_systemrdl(importer))
 
+        nonempty = bool(len(self.registers) + len(self.multiregs) + len(self.windows))
         return rdl_addrmap if nonempty else None

@@ -12,6 +12,9 @@ from reggen.params import ReggenParams
 from reggen.reg_base import RegBase
 from reggen.register import Register
 
+from systemrdl.importer import RDLImporter
+import systemrdl.component
+
 REQUIRED_FIELDS = {
     'name': ['s', "base name of the registers"],
     'desc': ['t', "description of the registers"],
@@ -409,3 +412,19 @@ class MultiRegister(RegBase):
         # Finally, iterate over expanded regs and scrub them as well.
         for creg in self.cregs:
             creg.scrub_alias(where)
+
+
+    def to_systemrdl(self, importer: RDLImporter) -> systemrdl.component.Reg:
+        rdl_t = importer.create_reg_definition(self.name)
+
+        for rfield in self.cregs[0].fields:
+            importer.add_child(rdl_t, rfield.to_systemrdl(importer))
+
+        reg = importer.instantiate_reg(rdl_t,
+                                        self.name,
+                                        self.offset,
+                                        [self.count], 
+                                        self.stride, 
+                                        )
+        reg.external = self.cregs[0].hwext
+        return reg
