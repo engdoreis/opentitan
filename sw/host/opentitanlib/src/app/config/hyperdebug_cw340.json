@@ -88,6 +88,46 @@
       "name": "PMOD",
       "pins": [
         {
+          "name": "IOA2",
+          "mode": "Input"
+        },
+        {
+          "name": "IOB12",
+          "mode": "Input"
+        },
+        {
+          "name": "IOR12",
+          "mode": "Input"
+        },
+        {
+          "name": "IOR11",
+          "mode": "Input"
+        },
+        {
+          "name": "IOB3",
+          "mode": "Input"
+        },
+        {
+          "name": "IOB0",
+          "mode": "Input"
+        },
+        {
+          "name": "IOB9",
+          "mode": "Input"
+        },
+        {
+          "name": "IOB7",
+          "mode": "Input"
+        },
+        {
+          "name": "IOB11",
+          "mode": "Input"
+        },
+        {
+          "name": "IOB10",
+          "mode": "Input"
+        },
+        {
           "name": "IOB1",
           "mode": "Input"
         },
