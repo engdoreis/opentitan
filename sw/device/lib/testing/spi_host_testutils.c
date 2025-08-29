@@ -89,11 +89,11 @@ static const spi_host1_pinmux_pads_t kSpiHost1PinmuxMap[] = {
         },
     [kSpiPinmuxPlatformIdCw340] =
         {
-            .clk = kDtPadIoa3,
-            .sd0 = kDtPadIoa5,
-            .sd1 = kDtPadIoa4,
-            .sd2 = kDtPadIoa8,
-            .sd3 = kDtPadIoa7,
+            .clk = kDtPadIob7,
+            .sd0 = kDtPadIob11,
+            .sd1 = kDtPadIob9,
+            .sd2 = kDtPadIob0,
+            .sd3 = kDtPadIob3,
         },
     [kSpiPinmuxPlatformIdTeacup] =
         {
@@ -110,6 +110,8 @@ status_t spi_host1_pinmux_connect_to_bob(const dif_pinmux_t *pinmux,
                                          spi_pinmux_platform_id_t platform_id) {
   TRY_CHECK(platform_id < kSpiPinmuxPlatformIdCount);
   const spi_host1_pinmux_pads_t *platform = &kSpiHost1PinmuxMap[platform_id];
+  LOG_INFO("cw340 %d", platform_id);
+  LOG_INFO("clk %d", platform->clk);
 
   // CSB.
   dt_periph_io_t csb =
