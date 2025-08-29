@@ -151,8 +151,20 @@ static status_t map_platform_to_pins(i2c_pinmux_platform_id_t platform,
               .insel = kTopEarlgreyPinmuxInselIob11,
           }};
       break;
+    case I2cPinmuxPlatformIdCw340Pmod:  // CW340 PMOD
+      *pins = (i2c_platform_pins_t){
+          .sda =
+              {
+                  .mio_out = kTopEarlgreyPinmuxMioOutIob2,
+                  .insel = kTopEarlgreyPinmuxInselIob2,
+              },
+          .scl = {
+              .mio_out = kTopEarlgreyPinmuxMioOutIob1,
+              .insel = kTopEarlgreyPinmuxInselIob1,
+          }};
+      break;
     default:
-      TRY_CHECK(false, "invalid platform: %0d", platform);
+      TRY_CHECK(false, "invalid platform: %d", platform);
       break;
   }
   return OK_STATUS();
@@ -349,6 +361,7 @@ status_t i2c_testutils_select_pinmux(const dif_pinmux_t *pinmux, uint8_t i2c_id,
       "Index out of bounds");
   i2c_platform_pins_t platform_pins;
   TRY(map_platform_to_pins(platform, i2c_id, &platform_pins));
+
   // Configure sda pin.
   TRY(dif_pinmux_input_select(pinmux, kI2cPinmuxPins[i2c_id].sda.peripheral_in,
                               platform_pins.sda.insel));
@@ -360,6 +373,7 @@ status_t i2c_testutils_select_pinmux(const dif_pinmux_t *pinmux, uint8_t i2c_id,
                               platform_pins.scl.insel));
   TRY(dif_pinmux_output_select(pinmux, platform_pins.scl.mio_out,
                                kI2cPinmuxPins[i2c_id].scl.outsel));
+
   return OK_STATUS();
 }
 
