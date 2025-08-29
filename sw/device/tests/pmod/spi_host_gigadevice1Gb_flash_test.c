@@ -33,6 +33,7 @@ static void init_test(dif_spi_host_t *spi_host) {
       mmio_region_from_addr(TOP_EARLGREY_PINMUX_AON_BASE_ADDR);
   CHECK_DIF_OK(dif_pinmux_init(base_addr, &pinmux));
 
+  dt_pad_t csb_pad = kDtPadIoc6;
   spi_pinmux_platform_id_t platform_id = kSpiPinmuxPlatformIdCount;
   switch (kDeviceType) {
     case kDeviceSilicon:
@@ -43,12 +44,12 @@ static void init_test(dif_spi_host_t *spi_host) {
       break;
     case kDeviceFpgaCw340:
       platform_id = kSpiPinmuxPlatformIdCw340;
+      csb_pad = kDtPadIor11;
       break;
     default:
       CHECK(false, "Device not supported %u", kDeviceType);
       break;
   }
-  dt_pad_t csb_pad = kDtPadIoc6;
   CHECK_STATUS_OK(
       spi_host1_pinmux_connect_to_bob(&pinmux, csb_pad, platform_id));
 

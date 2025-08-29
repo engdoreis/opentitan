@@ -48,9 +48,20 @@ opentitan_test(
     srcs = ["spi_host_macronix1Gb_flash_test.c"],
     exec_env = dicts.add(
         EARLGREY_SILICON_OWNER_ROM_EXT_ENVS,
-        {":top_earlgrey_fpga_cw310_sival_rom_ext_no_hyper": None},
+        {
+          ":top_earlgrey_fpga_cw310_sival_rom_ext_no_hyper": None,
+          "//hw/top_earlgrey:fpga_cw340_sival": None,
+        },
     ),
     fpga = fpga_params(
+        test_cmd = """
+            --exec="transport init"
+            --exec="fpga load-bitstream {bitstream}"
+            --exec="gpio apply PMOD"
+            --exec="bootstrap {firmware}"
+            --exec="console --non-interactive --exit-success='PASS.*\n' --exit-failure='FAIL|FAULT'"
+            no-op
+        """,
         tags = [
             "manual",
             "pmod",
@@ -82,9 +93,20 @@ opentitan_test(
     srcs = ["spi_host_macronix128Mb_flash_test.c"],
     exec_env = dicts.add(
         EARLGREY_SILICON_OWNER_ROM_EXT_ENVS,
-        {":top_earlgrey_fpga_cw310_sival_rom_ext_no_hyper": None},
+        {
+          ":top_earlgrey_fpga_cw310_sival_rom_ext_no_hyper": None,
+          "//hw/top_earlgrey:fpga_cw340_sival": None,
+        },
     ),
     fpga = fpga_params(
+        test_cmd = """
+            --exec="transport init"
+            --exec="fpga load-bitstream {bitstream}"
+            --exec="gpio apply PMOD"
+            --exec="bootstrap {firmware}"
+            --exec="console --non-interactive --exit-success='PASS.*\n' --exit-failure='FAIL|FAULT'"
+            no-op
+        """,
         tags = [
             "manual",
             "pmod",
@@ -116,9 +138,20 @@ opentitan_test(
     srcs = ["spi_host_gigadevice256Mb_flash_test.c"],
     exec_env = dicts.add(
         EARLGREY_SILICON_OWNER_ROM_EXT_ENVS,
-        {":top_earlgrey_fpga_cw310_sival_rom_ext_no_hyper": None},
+        {
+          ":top_earlgrey_fpga_cw310_sival_rom_ext_no_hyper": None,
+          "//hw/top_earlgrey:fpga_cw340_sival": None,
+        },
     ),
     fpga = fpga_params(
+        test_cmd = """
+            --exec="transport init"
+            --exec="fpga load-bitstream {bitstream}"
+            --exec="gpio apply PMOD"
+            --exec="bootstrap {firmware}"
+            --exec="console --non-interactive --exit-success='PASS.*\n' --exit-failure='FAIL|FAULT'"
+            no-op
+        """,
         tags = [
             "manual",
             "pmod",
@@ -151,9 +184,20 @@ opentitan_test(
     srcs = ["spi_host_gigadevice1Gb_flash_test.c"],
     exec_env = dicts.add(
         EARLGREY_SILICON_OWNER_ROM_EXT_ENVS,
-        {":top_earlgrey_fpga_cw310_sival_rom_ext_no_hyper": None},
+        {
+          ":top_earlgrey_fpga_cw310_sival_rom_ext_no_hyper": None,
+          "//hw/top_earlgrey:fpga_cw340_sival": None,
+        },
     ),
     fpga = fpga_params(
+        test_cmd = """
+            --exec="transport init"
+            --exec="fpga load-bitstream {bitstream}"
+            --exec="gpio apply PMOD"
+            --exec="bootstrap {firmware}"
+            --exec="console --non-interactive --exit-success='PASS.*\n' --exit-failure='FAIL|FAULT'"
+            no-op
+        """,
         tags = [
             "manual",
             "pmod",
@@ -186,9 +230,20 @@ opentitan_test(
     srcs = ["spi_host_issi256Mb_flash_test.c"],
     exec_env = dicts.add(
         EARLGREY_SILICON_OWNER_ROM_EXT_ENVS,
-        {":top_earlgrey_fpga_cw310_sival_rom_ext_no_hyper": None},
+        {
+          ":top_earlgrey_fpga_cw310_sival_rom_ext_no_hyper": None,
+          "//hw/top_earlgrey:fpga_cw340_sival": None,
+        },
     ),
     fpga = fpga_params(
+        test_cmd = """
+            --exec="transport init"
+            --exec="fpga load-bitstream {bitstream}"
+            --exec="gpio apply PMOD"
+            --exec="bootstrap {firmware}"
+            --exec="console --non-interactive --exit-success='PASS.*\n' --exit-failure='FAIL|FAULT'"
+            no-op
+        """,
         tags = [
             "manual",
             "pmod",
@@ -221,9 +276,20 @@ opentitan_test(
     srcs = ["spi_host_micron512Mb_flash_test.c"],
     exec_env = dicts.add(
         EARLGREY_SILICON_OWNER_ROM_EXT_ENVS,
-        {":top_earlgrey_fpga_cw310_sival_rom_ext_no_hyper": None},
+        {
+          ":top_earlgrey_fpga_cw310_sival_rom_ext_no_hyper": None,
+          "//hw/top_earlgrey:fpga_cw340_sival": None,
+        },
     ),
     fpga = fpga_params(
+        test_cmd = """
+            --exec="transport init"
+            --exec="fpga load-bitstream {bitstream}"
+            --exec="gpio apply PMOD"
+            --exec="bootstrap {firmware}"
+            --exec="console --non-interactive --exit-success='PASS.*\n' --exit-failure='FAIL|FAULT'"
+            no-op
+        """,
         tags = [
             "manual",
             "pmod",
@@ -256,9 +322,20 @@ opentitan_test(
     srcs = ["spi_host_winbond1Gb_flash_test.c"],
     exec_env = dicts.add(
         EARLGREY_SILICON_OWNER_ROM_EXT_ENVS,
-        {":top_earlgrey_fpga_cw310_sival_rom_ext_no_hyper": None},
+        {
+          ":top_earlgrey_fpga_cw310_sival_rom_ext_no_hyper": None,
+          "//hw/top_earlgrey:fpga_cw340_sival": None,
+        },
     ),
     fpga = fpga_params(
+        test_cmd = """
+            --exec="transport init"
+            --exec="fpga load-bitstream {bitstream}"
+            --exec="gpio apply PMOD"
+            --exec="bootstrap {firmware}"
+            --exec="console --non-interactive --exit-success='PASS.*\n' --exit-failure='FAIL|FAULT'"
+            no-op
+        """,
         tags = [
             "manual",
             "pmod",

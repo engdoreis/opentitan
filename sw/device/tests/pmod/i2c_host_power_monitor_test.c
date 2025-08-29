@@ -152,7 +152,20 @@ static status_t test_init(void) {
   base_addr = mmio_region_from_addr(TOP_EARLGREY_PINMUX_AON_BASE_ADDR);
   TRY(dif_pinmux_init(base_addr, &pinmux));
 
-  TRY(i2c_testutils_select_pinmux(&pinmux, 2, I2cPinmuxPlatformIdCw310Pmod));
+  i2c_pinmux_platform_id_t platform = I2cPinmuxPlatformIdCw310Pmod;
+  switch (kDeviceType) {
+    case kDeviceFpgaCw310:
+      platform = I2cPinmuxPlatformIdCw310Pmod;
+      break;
+    case kDeviceFpgaCw340:
+      platform = I2cPinmuxPlatformIdCw340Pmod;
+      break;
+    case kDeviceSilicon:
+    default:
+      CHECK(false, "Device not supported: %u", kDeviceType);
+      break;
+  }
+  TRY(i2c_testutils_select_pinmux(&pinmux, 2, platform));
 
   TRY(dif_i2c_host_set_enabled(&i2c, kDifToggleEnabled));
   // Enable the external IRQ at Ibex.
