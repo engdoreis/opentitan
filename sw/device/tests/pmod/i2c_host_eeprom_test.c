@@ -192,6 +192,18 @@ bool test_main(void) {
       mmio_region_from_addr(TOP_EARLGREY_PINMUX_AON_BASE_ADDR), &pinmux));
 
   i2c_pinmux_platform_id_t platform = I2cPinmuxPlatformIdCw310Pmod;
+  switch (kDeviceType) {
+    case kDeviceFpgaCw310:
+      platform = I2cPinmuxPlatformIdCw310Pmod;
+      break;
+    case kDeviceFpgaCw340:
+      platform = I2cPinmuxPlatformIdCw340Pmod;
+      break;
+    case kDeviceSilicon:
+    default:
+      CHECK(false, "Device not supported: %u", kDeviceType);
+      break;
+  }
   status_t test_result = OK_STATUS();
   for (uint8_t i2c_instance = 0; i2c_instance < 3; ++i2c_instance) {
     LOG_INFO("Testing i2c%d", i2c_instance);

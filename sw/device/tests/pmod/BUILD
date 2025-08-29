@@ -291,9 +291,20 @@ opentitan_test(
     srcs = ["i2c_host_accelerometer_test.c"],
     exec_env = dicts.add(
         EARLGREY_SILICON_OWNER_ROM_EXT_ENVS,
-        {":top_earlgrey_fpga_cw310_sival_rom_ext_no_hyper": None},
+        {
+          ":top_earlgrey_fpga_cw310_sival_rom_ext_no_hyper": None,
+          "//hw/top_earlgrey:fpga_cw340_sival": None,
+        },
     ),
     fpga = fpga_params(
+        test_cmd = """
+            --exec="transport init"
+            --exec="fpga load-bitstream {bitstream}"
+            --exec="gpio apply PMOD"
+            --exec="bootstrap {firmware}"
+            --exec="console --non-interactive --exit-success='PASS.*\n' --exit-failure='FAIL|FAULT'"
+            no-op
+        """,
         tags = [
             "manual",
             "pmod",
@@ -322,16 +333,24 @@ opentitan_test(
     srcs = ["i2c_host_ambient_light_detector_test.c"],
     exec_env = dicts.add(
         EARLGREY_SILICON_OWNER_ROM_EXT_ENVS,
-        {":top_earlgrey_fpga_cw310_sival_rom_ext_no_hyper": None},
+        {
+          ":top_earlgrey_fpga_cw310_sival_rom_ext_no_hyper": None,
+          "//hw/top_earlgrey:fpga_cw340_sival": None,
+        },
     ),
     fpga = fpga_params(
+        test_cmd = """
+            --exec="transport init"
+            --exec="fpga load-bitstream {bitstream}"
+            --exec="gpio apply PMOD"
+            --exec="bootstrap {firmware}"
+            --exec="console --non-interactive --exit-success='PASS.*\n' --exit-failure='FAIL|FAULT'"
+            no-op
+        """,
         tags = [
             "manual",
             "pmod",
         ],  # Requires the PMOD::BoB.
-    ),
-    silicon = silicon_params(
-        tags = ["pmod"],  # Requires the PMOD::BoB.
     ),
     deps = [
         "//hw/top_earlgrey/sw/autogen:top_earlgrey",
@@ -353,9 +372,20 @@ opentitan_test(
     srcs = ["i2c_host_hdc1080_humidity_temp_test.c"],
     exec_env = dicts.add(
         EARLGREY_SILICON_OWNER_ROM_EXT_ENVS,
-        {":top_earlgrey_fpga_cw310_sival_rom_ext_no_hyper": None},
+        {
+          ":top_earlgrey_fpga_cw310_sival_rom_ext_no_hyper": None,
+          "//hw/top_earlgrey:fpga_cw340_sival": None,
+        },
     ),
     fpga = fpga_params(
+        test_cmd = """
+            --exec="transport init"
+            --exec="fpga load-bitstream {bitstream}"
+            --exec="gpio apply PMOD"
+            --exec="bootstrap {firmware}"
+            --exec="console --non-interactive --exit-success='PASS.*\n' --exit-failure='FAIL|FAULT'"
+            no-op
+        """,
         tags = [
             "manual",
             "pmod",
@@ -384,9 +414,20 @@ opentitan_test(
     srcs = ["i2c_host_clock_stretching_test.c"],
     exec_env = dicts.add(
         EARLGREY_SILICON_OWNER_ROM_EXT_ENVS,
-        {":top_earlgrey_fpga_cw310_sival_rom_ext_no_hyper": None},
+        {
+          ":top_earlgrey_fpga_cw310_sival_rom_ext_no_hyper": None,
+          "//hw/top_earlgrey:fpga_cw340_sival": None,
+        },
     ),
     fpga = fpga_params(
+        test_cmd = """
+            --exec="transport init"
+            --exec="fpga load-bitstream {bitstream}"
+            --exec="gpio apply PMOD"
+            --exec="bootstrap {firmware}"
+            --exec="console --non-interactive --exit-success='PASS.*\n' --exit-failure='FAIL|FAULT'"
+            no-op
+        """,
         tags = [
             "manual",
             "pmod",
@@ -417,9 +458,20 @@ opentitan_test(
     srcs = ["i2c_host_compass_test.c"],
     exec_env = dicts.add(
         EARLGREY_SILICON_OWNER_ROM_EXT_ENVS,
-        {":top_earlgrey_fpga_cw310_sival_rom_ext_no_hyper": None},
+        {
+          ":top_earlgrey_fpga_cw310_sival_rom_ext_no_hyper": None,
+          "//hw/top_earlgrey:fpga_cw340_sival": None,
+        },
     ),
     fpga = fpga_params(
+        test_cmd = """
+            --exec="transport init"
+            --exec="fpga load-bitstream {bitstream}"
+            --exec="gpio apply PMOD"
+            --exec="bootstrap {firmware}"
+            --exec="console --non-interactive --exit-success='PASS.*\n' --exit-failure='FAIL|FAULT'"
+            no-op
+        """,
         tags = [
             "manual",
             "pmod",
@@ -449,9 +501,20 @@ opentitan_test(
     srcs = ["i2c_host_eeprom_test.c"],
     exec_env = dicts.add(
         EARLGREY_SILICON_OWNER_ROM_EXT_ENVS,
-        {":top_earlgrey_fpga_cw310_sival_rom_ext_no_hyper": None},
+        {
+          ":top_earlgrey_fpga_cw310_sival_rom_ext_no_hyper": None,
+          "//hw/top_earlgrey:fpga_cw340_sival": None,
+        },
     ),
     fpga = fpga_params(
+        test_cmd = """
+            --exec="transport init"
+            --exec="fpga load-bitstream {bitstream}"
+            --exec="gpio apply PMOD"
+            --exec="bootstrap {firmware}"
+            --exec="console --non-interactive --exit-success='PASS.*\n' --exit-failure='FAIL|FAULT'"
+            no-op
+        """,
         tags = [
             "manual",
             "pmod",
@@ -480,9 +543,20 @@ opentitan_test(
     srcs = ["i2c_host_fram_test.c"],
     exec_env = dicts.add(
         EARLGREY_SILICON_OWNER_ROM_EXT_ENVS,
-        {":top_earlgrey_fpga_cw310_sival_rom_ext_no_hyper": None},
+        {
+          ":top_earlgrey_fpga_cw310_sival_rom_ext_no_hyper": None,
+          "//hw/top_earlgrey:fpga_cw340_sival": None,
+        },
     ),
     fpga = fpga_params(
+        test_cmd = """
+            --exec="transport init"
+            --exec="fpga load-bitstream {bitstream}"
+            --exec="gpio apply PMOD"
+            --exec="bootstrap {firmware}"
+            --exec="console --non-interactive --exit-success='PASS.*\n' --exit-failure='FAIL|FAULT'"
+            no-op
+        """,
         tags = [
             "manual",
             "pmod",
@@ -509,14 +583,31 @@ opentitan_test(
     ],
 )
 
+# sw/host/opentitantool/opentitantool --rcfile= --logging=info --interface=hyper340
+# --exec=transport init --exec=fpga load-bitstream hw/bitstream/universal/splice.bit
+# --exec=bootstrap --clear-uart=true sw/device/tests/pmod/i2c_host_fram_test_fpga_cw340_sival.prod_key_0.prod_key_0.signed.bin
+# --exec=console --non-interactive --exit-success='PASS.*\n' --exit-failure='((FAIL|FAULT).*\n)|(BFV:[0-9a-f]{8})'
+# no-op
+
 opentitan_test(
     name = "i2c_host_gas_sensor_test",
     srcs = ["i2c_host_gas_sensor_test.c"],
     exec_env = dicts.add(
         EARLGREY_SILICON_OWNER_ROM_EXT_ENVS,
-        {":top_earlgrey_fpga_cw310_sival_rom_ext_no_hyper": None},
+        {
+          ":top_earlgrey_fpga_cw310_sival_rom_ext_no_hyper": None,
+          "//hw/top_earlgrey:fpga_cw340_sival": None,
+        },
     ),
     fpga = fpga_params(
+        test_cmd = """
+            --exec="transport init"
+            --exec="fpga load-bitstream {bitstream}"
+            --exec="gpio apply PMOD"
+            --exec="bootstrap {firmware}"
+            --exec="console --non-interactive --exit-success='PASS.*\n' --exit-failure='FAIL|FAULT'"
+            no-op
+        """,
         tags = [
             "manual",
             "pmod",
@@ -545,9 +636,20 @@ opentitan_test(
     srcs = ["i2c_host_power_monitor_test.c"],
     exec_env = dicts.add(
         EARLGREY_SILICON_OWNER_ROM_EXT_ENVS,
-        {":top_earlgrey_fpga_cw310_sival_rom_ext_no_hyper": None},
+        {
+          ":top_earlgrey_fpga_cw310_sival_rom_ext_no_hyper": None,
+          "//hw/top_earlgrey:fpga_cw340_sival": None,
+        },
     ),
     fpga = fpga_params(
+        test_cmd = """
+            --exec="transport init"
+            --exec="fpga load-bitstream {bitstream}"
+            --exec="gpio apply PMOD"
+            --exec="bootstrap {firmware}"
+            --exec="console --non-interactive --exit-success='PASS.*\n' --exit-failure='FAIL|FAULT'"
+            no-op
+        """,
         tags = [
             "manual",
             "pmod",
@@ -576,9 +678,20 @@ opentitan_test(
     srcs = ["i2c_host_irq_test.c"],
     exec_env = dicts.add(
         EARLGREY_SILICON_OWNER_ROM_EXT_ENVS,
-        {":top_earlgrey_fpga_cw310_sival_rom_ext_no_hyper": None},
+        {
+          ":top_earlgrey_fpga_cw310_sival_rom_ext_no_hyper": None,
+          "//hw/top_earlgrey:fpga_cw340_sival": None,
+        },
     ),
     fpga = fpga_params(
+        test_cmd = """
+            --exec="transport init"
+            --exec="fpga load-bitstream {bitstream}"
+            --exec="gpio apply PMOD"
+            --exec="bootstrap {firmware}"
+            --exec="console --non-interactive --exit-success='PASS.*\n' --exit-failure='FAIL|FAULT'"
+            no-op
+        """,
         tags = [
             "manual",
             "pmod",
