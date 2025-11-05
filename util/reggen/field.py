@@ -233,9 +233,15 @@ class Field:
         is_alias: bool,
         raw: object,
         bindings: dict[str, int],
+        vendor_specific_fields: dict[str, object] = {},
     ) -> "Field":
         where = f"field {field_idx} of {reg_name} register"
-        rd = check_keys(raw, where, list(REQUIRED_FIELDS.keys()), list(OPTIONAL_FIELDS.keys()))
+
+        optional_keys = list(OPTIONAL_FIELDS.keys())
+        if "field" in vendor_specific_fields:
+            optional_keys.extend(list(vendor_specific_fields["field"].keys()))
+
+        rd = check_keys(raw, where, list(REQUIRED_FIELDS.keys()), optional_keys)
 
         raw_name = rd.get("name")
         if raw_name is None:

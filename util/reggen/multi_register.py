@@ -148,7 +148,9 @@ class MultiRegister(RegBase):
 
     @staticmethod
     def from_raw(raw: object, reg_width: int, offset: int, addrsep: int,
-                 params: ReggenParams, clocks: Clocking, is_alias: bool) -> 'MultiRegister':
+                 params: ReggenParams, clocks: Clocking, is_alias: bool,
+                 vendor_specific_fields: dict[str, object]={} 
+                 ) -> 'MultiRegister':
         '''Create a MultiRegister object from a dictionary.
 
         The underlying register block has registers with reg_width bits and the
@@ -166,9 +168,13 @@ class MultiRegister(RegBase):
 
         # Check the raw object is a dictionary that has the right keys to
         # describe a MultiRegister.
+        optional_keys = list(OPTIONAL_FIELDS.keys())
+        if "register" in vendor_specific_fields:
+            optional_keys.extend(list(vendor_specific_fields["register"].keys()))
+
         rd = check_keys(raw, 'multireg',
                         list(REQUIRED_FIELDS.keys()),
-                        list(OPTIONAL_FIELDS.keys()))
+                        optional_keys)
 
         name = check_name(rd['name'], 'name of multi-register')
 

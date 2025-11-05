@@ -246,12 +246,12 @@ def main():
             gen_selfdoc.document(outfile)
         exit(0)
 
-    vendor_specific.extend_optional_fields(args.vendor_specific_fields.name)
+    vendor_specific_fields = vendor_specific.import_fields(args.vendor_specific_fields.name)
 
     srcfull = infile.read()
 
     try:
-        obj = IpBlock.from_text(srcfull, params, infile.name, args.node)
+        obj = IpBlock.from_text(srcfull, params, infile.name, args.node, vendor_specific_fields)
     except ValueError as err:
         log.error(str(err))
         exit(1)
