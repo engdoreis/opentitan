@@ -220,10 +220,17 @@ class IpBlock:
     def from_raw(param_defaults: list[tuple[str, str]],
                  raw: object,
                  where: str,
-                 node: str = '') -> 'IpBlock':
+                 node: str = '',
+                 vendor_specific_fields: dict[str, object]={} 
+                 ) -> 'IpBlock':
+
+
+        optional_keys = list(OPTIONAL_FIELDS.keys())
+        if "ip_block" in vendor_specific_fields:
+            optional_keys.extend(list(vendor_specific_fields["ip_block"].keys()))
 
         rd = check_keys(raw, 'block at ' + where, list(REQUIRED_FIELDS.keys()),
-                        list(OPTIONAL_FIELDS.keys()))
+                        optional_keys)
 
         name = check_name(rd['name'], 'name of block at ' + where)
 
@@ -352,7 +359,7 @@ class IpBlock:
         # but auto-generated registers should still be built.
         if "registers" in rd:
             reg_blocks = RegBlock.build_blocks(init_block, rd["registers"],
-                                               bus_interfaces, clocking, False)
+                                               bus_interfaces, clocking, False, vendor_specific_fields)
         else:
             reg_blocks = {}
 
@@ -410,11 +417,13 @@ class IpBlock:
     def from_text(txt: str,
                   param_defaults: list[tuple[str, str]],
                   where: str,
-                  node: str = '') -> 'IpBlock':
+                  node: str = '',
+                  vendor_specific_fields: dict[str, object]={} 
+                  ) -> 'IpBlock':
         '''Load an IpBlock from an hjson description in txt'''
         return IpBlock.from_raw(param_defaults,
                                 hjson.loads(txt, use_decimal=True), where,
-                                node)
+                                node, vendor_specific_fields)
 
     @staticmethod
     def from_path(path: str,

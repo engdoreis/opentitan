@@ -215,9 +215,16 @@ class Register(RegBase):
                  raw: object,
                  clocks: Clocking,
                  is_alias: bool,
-                 multireg_idx: Optional[int]) -> 'Register':
+                 multireg_idx: Optional[int],
+                 vendor_specific_fields: dict[str, object]={} 
+                 ) -> 'Register':
+
+        optional_keys = list(OPTIONAL_FIELDS.keys())
+        if "register" in vendor_specific_fields:
+            optional_keys.extend(list(vendor_specific_fields["register"].keys()))
+
         rd = check_keys(raw, 'register', list(REQUIRED_FIELDS.keys()),
-                        list(OPTIONAL_FIELDS.keys()))
+                        optional_keys)
 
         name = check_name(rd['name'], 'name of register')
 
@@ -323,7 +330,8 @@ class Register(RegBase):
                                     shadowed,
                                     is_alias,
                                     rf,
-                                    field_bindings))
+                                    field_bindings,
+                                    vendor_specific_fields))
 
             overlap_bits = used_bits & field.bits.bitmask()
             if overlap_bits:

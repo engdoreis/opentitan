@@ -72,7 +72,9 @@ class RegBlock:
     @staticmethod
     def build_blocks(block: 'RegBlock', raw: object, bus: BusInterfaces,
                      clocks: Clocking,
-                     is_alias: bool) -> dict[str | None, 'RegBlock']:
+                     is_alias: bool,
+                 vendor_specific_fields: dict[str, object]={} 
+                     ) -> dict[str | None, 'RegBlock']:
         '''Build a dictionary of blocks for a 'registers' field in the hjson
 
         There are two different syntaxes we might see here. The simple syntax
@@ -95,7 +97,7 @@ class RegBlock:
             # This is the simple syntax
             block.add_raw_registers(raw,
                                     'registers field at top-level', clocks,
-                                    bus.device_async.get(None), is_alias)
+                                    bus.device_async.get(None), is_alias, vendor_specific_fields)
             block.validate()
             return {None: block}
 
@@ -119,7 +121,7 @@ class RegBlock:
             block.add_raw_registers(
                 rb_val, 'item {} of the registers '
                 'dictionary at top-level'.format(idx + 1), clocks,
-                bus.device_async.get(r_key), is_alias)
+                bus.device_async.get(r_key), is_alias,vendor_specific_fields)
             block.validate()
 
             assert rb_key not in ret
@@ -129,7 +131,9 @@ class RegBlock:
         return ret
 
     def add_raw_registers(self, raw: object, what: str, clocks: Clocking,
-                          async_if: str | None, is_alias: bool) -> None:
+                          async_if: str | None, is_alias: bool,
+                 vendor_specific_fields: dict[str, object]={} 
+                          ) -> None:
 
         # the interface is fully asynchronous
         if async_if:
@@ -141,10 +145,12 @@ class RegBlock:
             where = (
                 'entry {} of the top-level registers field'.format(entry_idx +
                                                                    1))
-            self.add_raw(where, entry_raw, clocks, is_alias)
+            self.add_raw(where, entry_raw, clocks, is_alias, vendor_specific_fields)
 
     def add_raw(self, where: str, raw: object, clocks: Clocking,
-                is_alias: bool) -> None:
+                is_alias: bool,
+                 vendor_specific_fields: dict[str, object]={} 
+                ) -> None:
         entry = check_str_dict(raw, where)
 
         handlers = {
@@ -179,7 +185,7 @@ class RegBlock:
         entry_where = ('At offset {:#x}, {}, type {!r}'.format(
             self.offset, where, entry_type))
 
-        handlers[entry_type](entry_where, entry_body, clocks, is_alias)
+        handlers[entry_type](entry_where, entry_body, clocks, is_alias, vendor_specific_fields)
 
     def _validate_async(self, name_clk: tuple[str, object] | None) -> None:
         '''Check for async definition consistency
@@ -227,9 +233,11 @@ class RegBlock:
             self.clocks[name] = clk
 
     def _handle_register(self, where: str, body: object, clocks: Clocking,
-                         is_alias: bool) -> None:
+                         is_alias: bool,
+                 vendor_specific_fields: dict[str, object]={} 
+                         ) -> None:
         reg = Register.from_raw(self._reg_width, self.offset, self._params,
-                                body, clocks, is_alias, None)
+                                body, clocks, is_alias, None, vendor_specific_fields)
 
         self._validate_async(reg.async_clk)
         self._validate_sync(reg.sync_clk)
@@ -237,7 +245,9 @@ class RegBlock:
         self.add_register(reg)
 
     def _handle_reserved(self, where: str, body: object,
-                         clocks: Clocking | None, is_alias: bool) -> None:
+                         clocks: Clocking | None, is_alias: bool,
+                 vendor_specific_fields: dict[str, object]={} 
+                         ) -> None:
         if is_alias:
             raise ValueError('Aliasing reserved regions is not supported yet')
         nreserved = check_int(body, 'body of ' + where)
@@ -248,7 +258,9 @@ class RegBlock:
         self.offset += self._addrsep * nreserved
 
     def _handle_skipto(self, where: str, body: object,
-                       clocks: Clocking | None, is_alias: bool) -> None:
+                       clocks: Clocking | None, is_alias: bool,
+                 vendor_specific_fields: dict[str, object]={} 
+                       ) -> None:
         if is_alias:
             raise ValueError('The skipto command is not supported in '
                              'alias register definitions')
@@ -265,7 +277,9 @@ class RegBlock:
         self.offset = skipto
 
     def _handle_window(self, where: str, body: object,
-                       clocks: Clocking | None, is_alias: bool) -> None:
+                       clocks: Clocking | None, is_alias: bool,
+                 vendor_specific_fields: dict[str, object]={} 
+                       ) -> None:
         if is_alias:
             raise ValueError('Aliasing window regions is not supported yet')
 
@@ -282,7 +296,9 @@ class RegBlock:
         self.add_window(window)
 
     def _handle_multireg(self, where: str, body: object, clocks: Clocking,
-                         is_alias: bool) -> None:
+                         is_alias: bool,
+                 vendor_specific_fields: dict[str, object]={} 
+                         ) -> None:
         '''Update the register block by adding a multiregister as requested.
 
         If the multiregister has a count that is not positive, it will be
@@ -294,7 +310,7 @@ class RegBlock:
             mr = MultiRegister.from_raw(body,
                                         self._reg_width, self.offset,
                                         self._addrsep, self._params,
-                                        clocks, is_alias)
+                                        clocks, is_alias, vendor_specific_fields)
         except EmptyMultiRegException:
             return
 
