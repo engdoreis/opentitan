@@ -1,0 +1,43 @@
+name: Release artefacts
+
+on:
+  release:
+    types: [published, prereleased]
+
+env:
+  TEST_TARGET: aes_smoketest
+
+jobs:
+  ubuntu-build:
+    runs-on: ubuntu-22.04
+    steps:
+    - uses: actions/checkout@v4
+    - name: Prepare environment
+      uses: ./.github/actions/prepare-env
+    - name: Build
+      run: |
+        ./bazelisk.sh build \
+          //sw/device/tests:${TEST_TARGET}_sim_verilator \
+          //sw/device/tests:${TEST_TARGET}_sim_qemu_sival_rom_ext \
+          //sw/host/opentitantool
+
+    - name: Create tar
+      run: |
+        TARGET_DIR=$(./bazelisk.sh cquery //sw/device/tests:${TEST_TARGET}_sim_verilator --output starlark --starlark:expr "target.files_to_run.executable.path").runfiles/_main/
+        ARTEFACTS_DIR=artefacts                                                                             
+        mkdir -p $ARTEFACTS_DIR                                                                             
+        cp -v $TARGET_DIR/sw/device/lib/testing/test_rom/test_rom_sim_verilator.39.scr.vmem $ARTEFACTS_DIR/    
+        cp -v $TARGET_DIR/sw/host/opentitantool/opentitantool $ARTEFACTS_DIR/                                  
+        cp -v $TARGET_DIR/hw/ip/otp_ctrl/data/img_rma.24.vmem $ARTEFACTS_DIR/                                  
+        cp -v $TARGET_DIR/hw/build.verilator_real/sim-verilator/Vchip_sim_tb $ARTEFACTS_DIR/                   
+        tar -czvf sim_verilator.tar.gz $ARTEFACTS_DIR
+    - uses: actions/upload-artifact@v4
+      with:
+        name: 'artefacts'
+        path: sim_verilator.tar.gz
+
+    - uses: softprops/action-gh-release@v2
+      if: startsWith(github.ref, 'refs/tags/')
+      with:
+        prerelease: true
+        files: sim_verilator.tar.gz
