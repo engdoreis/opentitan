@@ -74,7 +74,6 @@ module top_darjeeling #(
   parameter bit OtbnFeatStubMai = 0,
   // parameters for keymgr_dpe
   parameter bit KeymgrDpeKmacEnMasking = 1,
-  parameter int KeymgrDpeNumRomDigestInputs = 2,
   // parameters for csrng
   parameter aes_pkg::sbox_impl_e CsrngSBoxImpl = aes_pkg::SBoxImplCanright,
   // parameters for entropy_src
@@ -384,7 +383,6 @@ module top_darjeeling #(
   .SecOtbnSkipUrndReseedAtStart(SecOtbnSkipUrndReseedAtStart),
   .OtbnFeatStubMai(OtbnFeatStubMai),
   .KeymgrDpeKmacEnMasking(KeymgrDpeKmacEnMasking),
-  .KeymgrDpeNumRomDigestInputs(KeymgrDpeNumRomDigestInputs),
   .CsrngSBoxImpl(CsrngSBoxImpl),
   .EntropySrcRngBusWidth(EntropySrcRngBusWidth),
   .EntropySrcRngBusBitSelWidth(EntropySrcRngBusBitSelWidth),

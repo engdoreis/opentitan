@@ -65,7 +65,6 @@ module darjeeling_pd_main #(
   parameter bit OtbnFeatStubMai = 0,
   // parameters for keymgr_dpe
   parameter bit KeymgrDpeKmacEnMasking = 1,
-  parameter int KeymgrDpeNumRomDigestInputs = 2,
   // parameters for csrng
   parameter aes_pkg::sbox_impl_e CsrngSBoxImpl = aes_pkg::SBoxImplCanright,
   // parameters for entropy_src
@@ -325,6 +324,10 @@ module darjeeling_pd_main #(
   localparam int LcCtrlNumRmaAckSigs = 1;
   // local parameters for spi_host0
   localparam int SpiHost0NumCS = 1;
+  // local parameters for keymgr_dpe
+  localparam int KeymgrDpeNumInstHwSlot = 8;
+  localparam int KeymgrDpeNumBootStages = 2;
+  localparam int KeymgrDpeNumRomDigestInputs = 2;
   // local parameters for entropy_src
   localparam int EntropySrcEsFifoDepth = 3;
   localparam int unsigned EntropySrcDistrFifoDepth = 11;
@@ -1685,6 +1688,8 @@ module darjeeling_pd_main #(
     .RndCnstKmacSeed(RndCnstKeymgrDpeKmacSeed),
     .RndCnstOtbnSeed(RndCnstKeymgrDpeOtbnSeed),
     .RndCnstNoneSeed(RndCnstKeymgrDpeNoneSeed),
+    .NumInstHwSlot(KeymgrDpeNumInstHwSlot),
+    .NumBootStages(KeymgrDpeNumBootStages),
     .NumRomDigestInputs(KeymgrDpeNumRomDigestInputs)
   ) u_keymgr_dpe (
     // Clock and reset connections
