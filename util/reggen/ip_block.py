@@ -71,6 +71,7 @@ KNOWN_CIP_IDS = {
     44: 'otp_macro',
     45: 'rram_ctrl',
     46: 'rram_macro',
+    47: 'i3c',
     49: 'ahb_bridge'
 }
 
