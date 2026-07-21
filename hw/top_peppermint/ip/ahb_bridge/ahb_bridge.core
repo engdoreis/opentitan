@@ -1,0 +1,26 @@
+CAPI=2:
+# Copyright lowRISC contributors (OpenTitan project).
+# Licensed under the Apache License, Version 2.0, see LICENSE for details.
+# SPDX-License-Identifier: Apache-2.0
+name: "lowrisc:top_peppermint:ahb_bridge:0.1"
+description: "AHB <-> TL-UL bridge (wraps ahb_to_tlul and ahb_from_tlul)"
+
+filesets:
+  files_rtl:
+    depend:
+      - lowrisc:peppermint_constants:top_pkg
+      - lowrisc:ip:tlul
+      - lowrisc:prim:fifo
+      - lowrisc:prim:util
+    files:
+      - rtl/ahb_pkg.sv
+      - rtl/ahb_from_tlul.sv
+      - rtl/ahb_to_tlul.sv
+      - rtl/ahb_bridge.sv
+    file_type: systemVerilogSource
+
+targets:
+  default:
+    filesets:
+      - files_rtl
+    toplevel: ahb_bridge

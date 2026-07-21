@@ -1,0 +1,40 @@
+// Copyright lowRISC contributors (OpenTitan project).
+// Licensed under the Apache License, Version 2.0, see LICENSE for details.
+// SPDX-License-Identifier: Apache-2.0
+//
+{
+  name:               "ahb_bridge"
+  human_name:         "AHB Bridge"
+  one_line_desc:      "Bidirectional AHB-Lite <-> TL-UL protocol bridge"
+  // Unique comportable IP identifier defined under KNOWN_CIP_IDS in the regtool.
+  cip_id:             "48"
+  version:            "1.0.0"
+
+  clocking: [
+    { clock: "clk_i", reset: "rst_ni", primary: true }
+  ]
+
+  bus_interfaces: [
+    // Egress: internal main-crossbar device window, converted to AHB manager.
+    { protocol: "tlul", direction: "device", name: "ctn" }
+    // Ingress: TL-UL host driving the SoC mailbox crossbar, from AHB sub.
+    { protocol: "tlul", direction: "host",   name: "socmbx" }
+  ]
+
+  inter_signal_list: [
+    // Incoming AHB subordinate port (external SoC manager -> bridge -> socmbx).
+    { struct: "ahb_h2d", package: "ahb_pkg", type: "uni", act: "rcv", name: "ahb_sub_h2d"
+      desc: "AHB subordinate request in (external SoC AHB manager)" }
+    { struct: "ahb_d2h", package: "ahb_pkg", type: "uni", act: "req", name: "ahb_sub_d2h"
+      desc: "AHB subordinate response out" }
+    // Outgoing AHB manager port (ctn device -> bridge -> external SoC).
+    { struct: "ahb_h2d", package: "ahb_pkg", type: "uni", act: "req", name: "ahb_mgr_h2d"
+      desc: "AHB manager request out (to external SoC AHB subordinate)" }
+    { struct: "ahb_d2h", package: "ahb_pkg", type: "uni", act: "rcv", name: "ahb_mgr_d2h"
+      desc: "AHB manager response in" }
+  ]
+
+  memory: {
+    ctn: {}
+  }
+}
