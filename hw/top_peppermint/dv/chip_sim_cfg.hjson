@@ -1,0 +1,91 @@
+// Copyright lowRISC contributors (OpenTitan project).
+// Licensed under the Apache License, Version 2.0, see LICENSE for details.
+// SPDX-License-Identifier: Apache-2.0
+
+// Peppermint top-level DVSim simulation config
+{
+  name: chip
+  variant: top_peppermint
+
+  // Testbench top
+  dut: top_peppermint
+  tb: tb
+
+  // Testplan
+  //
+  // TODO: see peppermint-embargoed#34
+  // testplan: "{proj_root}/hw/top_peppermint/data/chip_testplan.hjson"
+
+  // TODO: to be authored
+  // vPlan
+  vplan: ""
+  cov_vplan_prepare_opts: [""]
+  cov_vplan_process_opts: [""]
+
+  // Import shared DV / project settings
+  import_cfgs: [// Project wide common sim cfg file
+                "{proj_root}/hw/dv/tools/dvsim/common_sim_cfg.hjson",
+                // Config files to get the correct flags for crypto_dpi_prince
+                "{proj_root}/hw/ip/prim/dv/prim_prince/crypto_dpi_prince/crypto_dpi_prince_sim_opts.hjson",
+                ]
+
+  // mem_bkdr_util pulls in crypto_dpi_prince, whose C source includes prince_ref.h from the
+  // separate crypto_prince_ref core. That core only adds its own directory to the include path for
+  // VCS, so every other simulator needs the include path supplying explicitly through this mode.
+  // The sibling tops appear not to need this, but they do: they default to VCS, and their non-VCS
+  // runs pick the same path up from memutil_dpi_scrambled_opts.hjson, which bundles it with four
+  // other include paths and -lelf for their ELF loading flow. We do not depend on that core, so
+  // those four would point at directories FuseSoC never creates for this build. Hence the narrow
+  // import above.
+  en_build_modes: ["{tool}_crypto_dpi_prince_build_opts"]
+
+  // FuseSoC core for the sim target
+  fusesoc_core: lowrisc:dv:top_peppermint_chip_sim:0.1
+
+  // Additional tops for simulation, appended to the testbench that common_sim_cfg.hjson already
+  // names. A bind module is only elaborated if it is a top, and one left out of this list compiles
+  // and binds nothing, so the assertions are lost silently.
+  sim_tops: ["chip_pwr_handshake_bind"]
+
+  // Default tool
+  tool: xcelium
+
+  // TODO: build/run knobs
+
+  // Default iterations for all tests - each test entry can override this.
+  // Set to 1 as most of the tests are SW-driven and so directed.
+  reseed: 1
+
+  // Default UVM test
+  uvm_test: chip_base_test
+  sw_build_device: sim_dv
+
+  // Run modes
+  run_modes: [
+    {
+      // Silences the CPU so the TL agent drives the Ibex data bus directly, which is how the
+      // register interfaces are reached before any firmware exists. The scoreboard is off because
+      // these sequences poke registers with no regard for what the writes mean.
+      name: stub_cpu_mode
+      run_opts: ["+stub_cpu=1", "+en_scb=0"]
+    }
+  ]
+
+  // Placeholder test list. Testpoints tracked in the testplan.
+  tests: [
+    {
+      // Evidence for TOP_STUB_CPU_CSR_ACCESS
+      name: chip_stub_cpu_csr_access
+      uvm_test_seq: chip_stub_cpu_csr_access_vseq
+      en_run_modes: ["stub_cpu_mode"]
+    }
+  ]
+
+  // Regressions
+  regressions: [
+    {
+      name: smoke
+      tests: ["chip_stub_cpu_csr_access"]
+    }
+  ]
+}

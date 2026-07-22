@@ -1,0 +1,93 @@
+// Copyright lowRISC contributors (OpenTitan project).
+// Licensed under the Apache License, Version 2.0, see LICENSE for details.
+// SPDX-License-Identifier: Apache-2.0
+{
+  // This is a cfg hjson group for DV simulations. It includes ALL individual DV simulation
+  // cfgs of the IPs and the full chip used in top_peppermint. This enables the common
+  // regression sets to be run in one shot.
+  name: top_peppermint_batch_sim
+
+  import_cfgs: [// Project wide common cfg file
+                "{proj_root}/hw/data/common_project_cfg.hjson"]
+
+  flow: sim
+
+  rel_path: "hw/top_peppermint/dv/summary"
+
+  // Two notes on the list below
+  //
+  // 1. DVSim exits with an error when a cfg listed here does not exist, so an entry is only
+  //    enabled once its file is in the tree.
+  //
+  // 2. The inherited OT IPs are signed off upstream at their own V-stage, and Peppermint DV
+  //    ownership is the top plus the customised clk/rst/pwr blocks. They are listed here so
+  //    the IP set of the top is explicit and runnable on demand, but a scheduled run should
+  //    select a subset with dvsim --select-cfgs.
+
+  // Maintain alphabetical order below
+  use_cfgs: [
+             // Unit tests for UVCs and primitives. Top agnostic and cheap.
+             "{proj_root}/hw/dv/sv/tl_agent/dv/tl_agent_sim_cfg.hjson",
+             "{proj_root}/hw/ip/prim/dv/prim_alert/prim_alert_sim_cfg.hjson",
+             "{proj_root}/hw/ip/prim/dv/prim_esc/prim_esc_sim_cfg.hjson",
+             "{proj_root}/hw/ip/prim/dv/prim_lfsr/prim_lfsr_sim_cfg.hjson",
+             "{proj_root}/hw/ip/prim/dv/prim_present/prim_present_sim_cfg.hjson",
+             "{proj_root}/hw/ip/prim/dv/prim_prince/prim_prince_sim_cfg.hjson",
+
+             // Inherited OT IPs instantiated in top_peppermint, using the shared DV cfgs.
+             // Variants are pinned to the Peppermint parametrisation:
+             //   entropy_src  RngBusWidth 4, external digital noise source.
+             //   lc_ctrl      DMI transport, both volatile-unlock builds.
+             //   rom_ctrl     192 kB. No other top runs this variant.
+             //   rv_dm        reached over the DMI, not through JTAG pads.
+             //   sram_ctrl    main (192 kB) plus retention (8 kB).
+             "{proj_root}/hw/ip/csrng/dv/csrng_sim_cfg.hjson",
+             "{proj_root}/hw/ip/dma/dv/dma_sim_cfg.hjson",
+             "{proj_root}/hw/ip/entropy_src/dv/entropy_src_rng4bits_sim_cfg.hjson",
+             "{proj_root}/hw/ip/hmac/dv/hmac_sim_cfg.hjson",
+             "{proj_root}/hw/ip/keymgr_dpe/dv/keymgr_dpe_sim_cfg.hjson",
+             "{proj_root}/hw/ip/lc_ctrl/dv/lc_ctrl_dmi_volatile_unlock_disabled_sim_cfg.hjson",
+             "{proj_root}/hw/ip/lc_ctrl/dv/lc_ctrl_dmi_volatile_unlock_enabled_sim_cfg.hjson",
+             "{proj_root}/hw/ip/mbx/dv/mbx_sim_cfg.hjson",
+             "{proj_root}/hw/ip/otbn/dv/uvm/otbn_sim_cfg.hjson",
+             "{proj_root}/hw/ip/rom_ctrl/dv/rom_ctrl_192kB_sim_cfg.hjson",
+             "{proj_root}/hw/ip/rv_dm/dv/rv_dm_use_dmi_interface_sim_cfg.hjson",
+             "{proj_root}/hw/ip/sram_ctrl/dv/sram_ctrl_main_sim_cfg.hjson",
+             "{proj_root}/hw/ip/sram_ctrl/dv/sram_ctrl_ret_sim_cfg.hjson",
+
+             // TODO: inherited IPs whose cfg exists but whose variant or presence is not
+             // fixed yet. Enable once the top configuration is frozen.
+             // AES: Earlgrey runs unmasked plus masked, Darjeeling runs the GCM pair. Ask DD
+             // which AES configuration Peppermint instantiates (masking, GCM support).
+             // "{proj_root}/hw/ip/aes/dv/aes_masked_sim_cfg.hjson",
+             // "{proj_root}/hw/ip/aes/dv/aes_unmasked_sim_cfg.hjson",
+             // KMAC: same question, masked and unmasked builds.
+             // "{proj_root}/hw/ip/kmac/dv/kmac_masked_sim_cfg.hjson",
+             // "{proj_root}/hw/ip/kmac/dv/kmac_unmasked_sim_cfg.hjson",
+             // EDN: confirm Peppermint instantiates two EDNs, as Earlgrey and Darjeeling do.
+             // "{proj_root}/hw/ip/edn/dv/edn_edn0_sim_cfg.hjson",
+             // "{proj_root}/hw/ip/edn/dv/edn_edn1_sim_cfg.hjson",
+
+             // Peppermint-specific IP written by topgen. These carry the two-domain
+             // parametrisation, so clkmgr, pwrmgr and rstmgr are ours to close, and
+             // alert_handler, otp_ctrl and the crossbars must be re-run for this instance.
+             "{proj_root}/hw/top_peppermint/ip/xbar_aon/dv/autogen/xbar_aon_sim_cfg.hjson",
+             "{proj_root}/hw/top_peppermint/ip/xbar_main/dv/autogen/xbar_main_sim_cfg.hjson",
+             "{proj_root}/hw/top_peppermint/ip/xbar_socdbg/dv/autogen/xbar_socdbg_sim_cfg.hjson",
+             "{proj_root}/hw/top_peppermint/ip/xbar_socmbx/dv/autogen/xbar_socmbx_sim_cfg.hjson",
+             "{proj_root}/hw/top_peppermint/ip_autogen/alert_handler/dv/alert_handler_sim_cfg.hjson",
+             "{proj_root}/hw/top_peppermint/ip_autogen/clkmgr/dv/clkmgr_sim_cfg.hjson",
+             "{proj_root}/hw/top_peppermint/ip_autogen/otp_ctrl/dv/otp_ctrl_sim_cfg.hjson",
+             "{proj_root}/hw/top_peppermint/ip_autogen/pwrmgr/dv/pwrmgr_sim_cfg.hjson",
+             "{proj_root}/hw/top_peppermint/ip_autogen/rstmgr/dv/rstmgr_sim_cfg.hjson",
+             "{proj_root}/hw/top_peppermint/ip_autogen/rstmgr/dv/rstmgr_cnsty_chk/rstmgr_cnsty_chk_sim_cfg.hjson",
+
+             // Top level
+             "{proj_root}/hw/top_peppermint/dv/chip_sim_cfg.hjson",
+
+             // TODO: rv_core_ibex and rv_plic are generated here but ship no DV environment,
+             // upstream or otherwise, so there is nothing to list. Top level is the only place
+             // their registers and interrupt behaviour are ever exercised.
+             // The same applies to ahb_bridge and ast under ip/.
+            ]
+}

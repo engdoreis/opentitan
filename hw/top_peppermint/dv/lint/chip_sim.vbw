@@ -1,0 +1,23 @@
+# Copyright lowRISC contributors (OpenTitan project).
+# Licensed under the Apache License, Version 2.0, see LICENSE for details.
+# SPDX-License-Identifier: Apache-2.0
+
+# Read by two flows: the DVSim veriblelint target, which is passed this file through the core, and
+# the CI lint job, which concatenates every waiver in the tree into one file. Because of the second,
+# anchor a location whenever the rule should only be waived for this top.
+
+# The DUT generate block has to be labelled "dut", because topgen bakes the hierarchy
+# tb.dut.top_peppermint.* into the RAL backdoor roots, tb__xbar_connect.sv and the toggle-coverage
+# exclusions. A gen_ prefix would break every one of those generated files.
+# TODO: remove this waiver along with the generate block once Peppermint has a chip-level wrapper,
+#   which satisfies the same hierarchy contract with a named instance (peppermint-embargoed#38).
+waive --rule=generate-label-prefix --location=".*top_peppermint/dv/tb/tb\.sv"
+
+# These lines are too long due to templating. Duplicates common.vbl on purpose, as the sibling tops
+# do: the DV cores do not depend on lowrisc:lint:common, so common.vbl does not reach the DVSim
+# veriblelint target.
+#
+# Deliberately NOT anchored to this top, so do not "fix" it to match the waiver above. The target is
+# ralgen output, which only ever exists inside a build directory, so an anchor could only match the
+# scratch path. No ral_pkg under hw/top_peppermint is checked in for one to bite on.
+waive --rule=line-length --location=".*ral_pkg.*"

@@ -1,0 +1,20 @@
+CAPI=2:
+# Copyright lowRISC contributors (OpenTitan project).
+# Licensed under the Apache License, Version 2.0, see LICENSE for details.
+# SPDX-License-Identifier: Apache-2.0
+name: "lowrisc:dv:top_peppermint_sva:0.1"
+description: "Peppermint chip-level assertion modules"
+filesets:
+  files_dv:
+    depend:
+      - lowrisc:prim:assert
+      - "!gatelevel ? (lowrisc:systems:top_peppermint)"
+    files:
+      - chip_pwr_handshake_sva_if.sv
+      - chip_pwr_handshake_bind.sv
+    file_type: systemVerilogSource
+
+targets:
+  default:
+    filesets:
+      - files_dv
