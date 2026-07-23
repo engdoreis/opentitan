@@ -1,0 +1,74 @@
+# Copyright lowRISC contributors (OpenTitan project).
+# Licensed under the Apache License, Version 2.0, see LICENSE for details.
+# SPDX-License-Identifier: Apache-2.0
+
+plugin -i slang
+
+read_slang --top top_peppermint --single-unit --best-effort-hierarchy \
+  -DSYNTHESIS_MEMORY_BLACK_BOXING \
+  -f top_peppermint.f
+
+hierarchy -check -top top_peppermint
+
+# Keep every block instantiated directly in the main/AON power domains, plus
+# the two power-domain wrapper levels themselves and top_peppermint.
+keep_hierarchy top_peppermint
+keep_hierarchy peppermint_pd_main$*
+keep_hierarchy peppermint_pd_aon$*
+keep_hierarchy ahb_bridge$*
+keep_hierarchy ahb_from_tlul$*
+keep_hierarchy ahb_to_tlul$*
+keep_hierarchy aes$*
+keep_hierarchy alert_handler$*
+keep_hierarchy clkmgr$*
+keep_hierarchy csrng$*
+keep_hierarchy dma$*
+keep_hierarchy edn$*
+keep_hierarchy entropy_src$*
+keep_hierarchy hmac$*
+keep_hierarchy keymgr_dpe$*
+keep_hierarchy kmac$*
+keep_hierarchy lc_ctrl$*
+keep_hierarchy mbx$*
+keep_hierarchy otbn$*
+keep_hierarchy otbn_alu_bignum$*
+keep_hierarchy otbn_rf_bignum$*
+keep_hierarchy otbn_rnd$*
+keep_hierarchy otp_ctrl$*
+keep_hierarchy otp_macro$*
+keep_hierarchy pwrmgr$*
+keep_hierarchy rom_ctrl$*
+keep_hierarchy rstmgr$*
+keep_hierarchy rv_core_ibex$*
+keep_hierarchy ibex_top$*
+keep_hierarchy ibex_register_file_ff$*
+keep_hierarchy rv_dm$*
+keep_hierarchy rv_plic$*
+keep_hierarchy rv_timer$*
+keep_hierarchy soc_dbg_ctrl$*
+keep_hierarchy sram_ctrl$*
+keep_hierarchy xbar_aon$*
+keep_hierarchy xbar_main$*
+keep_hierarchy xbar_socdbg$*
+keep_hierarchy xbar_socmbx$*
+keep_hierarchy prim_ram_1p$*
+keep_hierarchy prim_ram_1r1w$*
+keep_hierarchy prim_ram_2p$*
+keep_hierarchy prim_rom$*
+
+flatten -noscopeinfo
+hierarchy -top top_peppermint
+
+proc
+write_verilog -norename -noexpr out/elaborated.v
+tee -o out/elaborated.rpt stat
+
+synth -top top_peppermint
+dfflibmap -liberty synthetic.lib
+abc -liberty synthetic.lib -script "+strash;dch -x;map -B 0.9;topo;"
+hilomap -singleton -hicell tiehi y_o -locell tielo y_o
+
+tee -o out/area.rpt stat -liberty synthetic.lib
+tee -o out/area.json stat -liberty synthetic.lib -json
+write_verilog -norename -noexpr out/synthetic_netlist.v
+write_verilog -norename out/synthetic_netlist_expr.v
