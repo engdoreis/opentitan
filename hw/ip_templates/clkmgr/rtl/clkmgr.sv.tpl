@@ -12,6 +12,9 @@ all_derived_srcs = list(sorted(set([dc['src']['name']
                                     for dc in derived_clks.values()])))
 all_srcs = get_all_srcs(src_clks, derived_clks)
 rg_srcs = get_rg_srcs(typed_clocks)
+# A width can never be 0 in SystemVerilog. A top with no hint-gated clocks
+# still needs an unused 1-bit placeholder for the idle bus.
+num_idle_bits = max(1, len(hint_names))
 %>\
 
 `include "prim_assert.sv"
@@ -70,7 +73,7 @@ rg_srcs = get_rg_srcs(typed_clocks)
 
   // idle hints
   // SEC_CM: IDLE.INTERSIG.MUBI
-  input prim_mubi_pkg::mubi4_t [${len(hint_names)-1}:0] idle_i,
+  input prim_mubi_pkg::mubi4_t [${num_idle_bits-1}:0] idle_i,
 % if ext_clk_bypass:
 
   // life cycle state output
@@ -520,7 +523,11 @@ rg_srcs = get_rg_srcs(typed_clocks)
   // clock target
   ////////////////////////////////////////////////////
 
-  logic [${len(typed_clocks['hint_clks'])-1}:0] idle_cnt_err;
+  logic [${num_idle_bits-1}:0] idle_cnt_err;
+% if not typed_clocks['hint_clks']:
+  // No hint-gated clocks in this top, tie off the unused placeholder
+  assign idle_cnt_err = '0;
+% endif
 % for clk, sig in typed_clocks['hint_clks'].items():
 
   clkmgr_trans #(
@@ -561,13 +568,15 @@ rg_srcs = get_rg_srcs(typed_clocks)
   assign hw2reg.fatal_err_code.idle_cnt.de = |idle_cnt_err;
 
   // state readback
-% if len(typed_clocks['hint_clks'].items()) > 1:
+% if len(typed_clocks['hint_clks']) > 1:
 % for clk in typed_clocks['hint_clks'].keys():
   assign hw2reg.clk_hints_status.${clk}_val.de = 1'b1;
 % endfor
-% else:
+% elif len(typed_clocks['hint_clks']) == 1:
   assign hw2reg.clk_hints_status.de = 1'b1;
 % endif
+## No hint-gated clocks at all: the CLK_HINTS_STATUS register doesn't
+## exist.
 
   // SEC_CM: JITTER.CONFIG.MUBI
   assign jitter_en_o = mubi4_t'(reg2hw.jitter_enable.q);

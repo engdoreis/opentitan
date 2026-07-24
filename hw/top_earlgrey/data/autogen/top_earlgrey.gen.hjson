@@ -4609,8 +4609,8 @@
           type: uni
           act: rcv
           width: 4
+          default: prim_mubi_pkg::MuBi4False
           inst_name: clkmgr
-          default: ""
           end_idx: -1
           top_type: one-to-N
           top_signame: clkmgr_idle
@@ -18278,7 +18278,7 @@
         end_idx: -1
         act: rcv
         suffix: ""
-        default: "'{default: prim_mubi_pkg::MUBI4_DEFAULT}"
+        default: prim_mubi_pkg::MuBi4False
       }
       {
         package: lc_ctrl_pkg
@@ -22842,8 +22842,8 @@
         type: uni
         act: rcv
         width: 4
+        default: prim_mubi_pkg::MuBi4False
         inst_name: clkmgr
-        default: ""
         end_idx: -1
         top_type: one-to-N
         top_signame: clkmgr_idle
@@ -27316,7 +27316,7 @@
         }
         width: 4
         type: uni
-        default: ""
+        default: prim_mubi_pkg::MuBi4False
         direction: in
         conn_type: false
         index: -1
@@ -27336,7 +27336,7 @@
         }
         width: 4
         type: uni
-        default: ""
+        default: prim_mubi_pkg::MuBi4False
         direction: out
         conn_type: false
         index: -1

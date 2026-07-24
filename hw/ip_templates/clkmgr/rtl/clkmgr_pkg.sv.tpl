@@ -12,11 +12,13 @@ all_clocks.update({clk: None for clk in typed_clocks['sw_clks'].keys()})
 
 package clkmgr_pkg;
 
+% if num_hints > 0:
   typedef enum int {
 % for idx, hint_name in list(enumerate(hint_names.values())):
     ${hint_name} = ${idx}${"," if not loop.last else ""}
 % endfor
   } hint_names_e;
+% endif
 
   // clocks generated and broadcast
   typedef struct packed {
@@ -45,6 +47,7 @@ package clkmgr_pkg;
   } clkmgr_${intf}_out_t;
 % endfor
 
+% if num_hints > 0:
   typedef struct packed {
     logic [${num_hints}-1:0] idle;
   } clk_hint_status_t;
@@ -52,5 +55,6 @@ package clkmgr_pkg;
   parameter clk_hint_status_t CLK_HINT_STATUS_DEFAULT = '{
     idle: {${num_hints}{1'b1}}
   };
+% endif
 
 endpackage // clkmgr_pkg

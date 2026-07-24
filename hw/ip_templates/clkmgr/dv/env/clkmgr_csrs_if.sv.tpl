@@ -14,13 +14,17 @@ rg_srcs = get_rg_srcs(typed_clocks)
 ## 2 for each clock measurements
 num_recov_errors = 1 + 2 * len(rg_srcs)
 num_fatal_errors = 3
+# Signal widths in SV can never be 0; a top with no sw-gated/hint-gated
+# clocks still needs an unused 1bit placeholders for these buses.
+num_sw_clks = max(1, len(typed_clocks['sw_clks']))
+num_idle_bits = max(1, len(hint_names))
 %>\
 interface clkmgr_csrs_if (
   input logic clk,
   input logic [${num_recov_errors-1}:0] recov_err_csr,
   input logic [${num_fatal_errors-1}:0] fatal_err_csr,
-  input logic [${len(typed_clocks['sw_clks'])-1}:0] clk_enables,
-  input logic [${len(hint_names)-1}:0] clk_hints
+  input logic [${num_sw_clks-1}:0] clk_enables,
+  input logic [${num_idle_bits-1}:0] clk_hints
 );
 
 clocking csrs_cb @(posedge clk);

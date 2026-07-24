@@ -41,10 +41,10 @@ package clkmgr_env_pkg;
   parameter int NUM_PERI = ${len(typed_clocks['sw_clks'])};
   parameter int NUM_TRANS = ${len(hint_names)};
 
-  typedef logic [NUM_PERI-1:0] peri_enables_t;
-  typedef logic [NUM_TRANS-1:0] hintables_t;
-  typedef mubi4_t [NUM_TRANS-1:0] mubi_hintables_t;
-  parameter mubi_hintables_t IdleAllBusy = {NUM_TRANS{prim_mubi_pkg::MuBi4False}};
+  typedef logic [${"NUM_PERI-1" if typed_clocks['sw_clks'] else "0"}:0] peri_enables_t;
+  typedef logic [${"NUM_TRANS-1" if hint_names else "0"}:0] hintables_t;
+  typedef mubi4_t [${"NUM_TRANS-1" if hint_names else "0"}:0] mubi_hintables_t;
+  parameter mubi_hintables_t IdleAllBusy = {${"NUM_TRANS" if hint_names else "1"}{prim_mubi_pkg::MuBi4False}};
 
 % for clk, freq in clk_freqs.items():
   parameter int ${Name.to_camel_case(clk)}ClkHz = ${f"{freq:_}"};
@@ -62,27 +62,46 @@ package clkmgr_env_pkg;
 
   // The enum values for these match the bit order in the CSRs.
   typedef enum int {
+% if typed_clocks['sw_clks']:
 % for clk in typed_clocks['sw_clks'].values():
 <% sep = "" if loop.last else "," %>\
     Peri${Name.to_camel_case(clk['src_name'])}${sep}
 % endfor
+% else:
+    // No software-gateable clocks on this top require a placeholder
+    PeriUnused
+% endif
   } peri_e;
   typedef struct packed {
+% if typed_clocks['sw_clks']:
 % for clk in [c for c in reversed(typed_clocks['sw_clks'].values())]:
     logic ${clk['src_name']}_peri_en;
 % endfor
+% else:
+    logic unused;
+% endif
   } clk_enables_t;
 
   typedef enum int {
+% if hint_targets:
 % for target in hint_targets:
 <% sep = "" if loop.last else "," %>\
     Trans${target.capitalize()}${sep}
 % endfor
+% else:
+    // No hintable clocks on this top; requires a placeholder
+    // this a valid (non-empty) enum.
+    TransUnused
+% endif
   } trans_e;
   typedef struct packed {
+% if hint_targets:
 % for target in reversed(hint_targets):
     logic ${target};
 % endfor
+% else:
+    logic unused;
+% endif
   } clk_hints_t;
 
   typedef struct {

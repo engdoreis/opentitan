@@ -240,7 +240,8 @@
       name:    "idle",
       act:     "rcv",
       package: "prim_mubi_pkg",
-      width:   "1"
+      width:   "1",
+      default: "prim_mubi_pkg::MuBi4False"
     },
     { struct:  "mubi4",
       desc:    "Indicates clocks are calibrated and frequencies accurate",

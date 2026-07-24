@@ -55,20 +55,22 @@ class CEnum(object):
         return full_name
 
     def add_first_constant(self, docstring=""):
-        assert len(self.constants) > 0, "cannot add a First constant to an empty enumeration"
-
         full_name = self.name + Name(["first"])
 
-        _, first_val, _ = self.constants[0]
+        # An empty enumeration has no first element. Still emit the constant:
+        # an empty enumerator list is invalid C, and 0 > Last == -1 makes the
+        # usual bounded loops iterate zero times.
+        first_val = self.constants[0][1] if self.constants else 0
 
         self.meta_constants.append((full_name, first_val, r"\internal " + docstring))
         self.finalized = True
 
     def add_last_constant(self, docstring=""):
-        assert len(self.constants) > 0, "cannot add a Last constant to an empty enumeration"
         full_name = self.name + Name(["last"])
 
-        _, last_val, _ = self.constants[-1]
+        # See add_first_constant: -1 marks "no valid values" and mirrors
+        # RustEnum.add_number_of_variants() below.
+        last_val = self.constants[-1][1] if self.constants else -1
 
         self.meta_constants.append((full_name, last_val, r"\internal " + docstring))
         self.finalized = True
@@ -164,12 +166,17 @@ class RustEnum(object):
 
     def add_number_of_variants(self, docstring=""):
         assert not self.finalized
-        _, last_val, _ = self.constants[-1]
+        # An empty enumeration has zero variants.
+        last_val = self.constants[-1][1] if self.constants else -1
         self.last_value = last_val + 1
         self.last_value_docstring = docstring
         self.finalized = True
 
     def calculate_range(self):
+        if not self.constants:
+            self.last_value = -1
+            self.first_value = 0
+            return
         _, last_val, _ = self.constants[-1]
         _, first_val, _ = self.constants[0]
         self.last_value = last_val
@@ -194,16 +201,24 @@ class RustEnum(object):
         if derive_list is not None:
             self.derive_list = derive_list
         self.calculate_range()
-        body = ("${enum.derive()}"
-                "#[repr(${enum.repr()})]\n"
-                "pub enum ${enum.short_name.as_rust_type()} {\n"
-                "% for name, value, docstring in enum.constants:\n"
-                "    % if len(docstring) > 0 : \n"
-                "    /// ${docstring}\n"
-                "    % endif \n"
-                "    ${name.as_rust_enum()} = ${value},\n"
-                "% endfor\n"
-                "}")
+        if self.constants:
+            body = ("${enum.derive()}"
+                    "#[repr(${enum.repr()})]\n"
+                    "pub enum ${enum.short_name.as_rust_type()} {\n"
+                    "% for name, value, docstring in enum.constants:\n"
+                    "    % if len(docstring) > 0 : \n"
+                    "    /// ${docstring}\n"
+                    "    % endif \n"
+                    "    ${name.as_rust_enum()} = ${value},\n"
+                    "% endfor\n"
+                    "}")
+        else:
+            # An empty enum has no variants to loop over. Render its braces
+            # on one line to match rustfmt's style for empty items. A
+            # zero-variant enum must not carry an explicit `repr` (rustc
+            # E0084), so it is omitted in this case.
+            body = ("${enum.derive()}"
+                    "pub enum ${enum.short_name.as_rust_type()} {}")
 
         impl = (
             "\n\n"

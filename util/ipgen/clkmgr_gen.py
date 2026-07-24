@@ -32,6 +32,17 @@ def get_clkmgr_params(top: ConfigT) -> ParamsT:
     typed_clocks = clocks.typed_clocks()
     hint_names = typed_clocks.hint_names()
 
+    clock_categories = ('ast_clks', 'ft_clks', 'rg_clks', 'sw_clks',
+                        'hint_clks')
+    # Fields of TypedClocks that are not per-clock `ClockSignal` dicts, so
+    # clkmgr ipgen has nothing to do with them.
+    non_category_fields = ('rg_srcs', 'parent_child_clks')
+    unhandled_fields = (set(typed_clocks._asdict()) - set(clock_categories) -
+                        set(non_category_fields))
+    assert not unhandled_fields, (
+        "TypedClocks gained field(s) not handled by clkmgr ipgen: "
+        f"{unhandled_fields}. Add them to clock_categories (if they are "
+        "per-clock ClockSignal dicts) or to non_category_fields (if not).")
     typed_clks = OrderedDict({
         ty: {
             nm: {
@@ -40,7 +51,7 @@ def get_clkmgr_params(top: ConfigT) -> ParamsT:
             }
             for nm, sig in mp.items() if isinstance(sig, ClockSignal)
         }
-        for ty, mp in typed_clocks._asdict().items() if isinstance(mp, dict)
+        for ty, mp in typed_clocks._asdict().items() if ty in clock_categories
     })
 
     # Will connect to alert_handler
@@ -57,9 +68,11 @@ def get_clkmgr_params(top: ConfigT) -> ParamsT:
         OrderedDict(
             {name: vars(obj)
              for name, obj in clocks.derived_srcs.items()}),
+        # Every clkmgr template indexes typed_clocks unconditionally, so all
+        # categories must be present even when empty (e.g. a top with no
+        # software-gated clocks at all).
         "typed_clocks":
-        OrderedDict({ty: d
-                     for ty, d in typed_clks.items() if d}),
+        typed_clks,
         "hint_names":
         hint_names,
         "parent_child_clks":

@@ -5,6 +5,10 @@
 from ipgen.clkmgr_gen import config_clk_meas, get_all_srcs, get_rg_srcs
 all_srcs = get_all_srcs(src_clks, derived_clks)
 rg_srcs = get_rg_srcs(typed_clocks)
+num_hints = len(hint_names)
+# A SystemVerilog width can never be 0; a top with no hint-gated clocks still
+# needs an unused 1-bit placeholder for the idle bus.
+num_idle_bits = max(1, num_hints)
 %>
 # CLKMGR register template
 #
@@ -250,7 +254,8 @@ rg_srcs = get_rg_srcs(typed_clocks)
       name:    "idle",
       act:     "rcv",
       package: "prim_mubi_pkg",
-      width:   "${len(hint_names)}"
+      width:   "${num_idle_bits}",
+      default: "prim_mubi_pkg::MuBi4False"
     },
 % if ext_clk_bypass:
     { struct:  "mubi4",
@@ -452,6 +457,7 @@ rg_srcs = get_rg_srcs(typed_clocks)
       ]
     },
 
+% if typed_clocks['sw_clks']:
     { name: "CLK_ENABLES",
       desc: '''
         Clock enable for software gateable clocks.
@@ -477,7 +483,9 @@ rg_srcs = get_rg_srcs(typed_clocks)
       // a register in the disabled block.  This would lead to a top level hang.
       tags: ["excl:CsrAllTests:CsrExclAll"]
     },
+% endif
 
+% if hint_names:
     { name: "CLK_HINTS",
       desc: '''
         Clock hint for software gateable transactional clocks during active mode.
@@ -538,6 +546,7 @@ rg_srcs = get_rg_srcs(typed_clocks)
       // This register's value depends on the IDLE inputs, so cannot be predicted.
       tags: ["excl:CsrNonInitTests:CsrExclCheck:CsrExclCheck"]
     },
+% endif
 
     { name: "MEASURE_CTRL_REGWEN",
       desc: "Measurement control write enable",
