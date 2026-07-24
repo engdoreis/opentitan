@@ -423,6 +423,9 @@ class TopHelper:
                     Name.from_snake_case(m["name"]),
                     "instance {} of {}".format(m["name"], m["type"])
                 )
+        self.instance_id_enum.add_constant(
+            Name(["external"]),
+            "Source outside the top, e.g. a power.external_wakeups entry")
         self.instance_id_enum.add_count_constant("Number of instance IDs")
 
         # List all muxed pads directly from the top.
@@ -691,6 +694,16 @@ registers to connect a peripheral to this pad.""",  # noqa:E501
             if m["name"] == module_name:
                 return m["type"]
         raise RuntimeError("module '{}' not found in top '{}'".format(module_name, self._top_name))
+
+    def has_module(self, module_name: str) -> bool:
+        """
+        Return whether a module with this name exists in the top.
+
+        This is false for symbolic module names that have no corresponding
+        on-chip instance, e.g. a `power.external_wakeups`/
+        `external_reset_requests` source such as "soc".
+        """
+        return any(m["name"] == module_name for m in self.top["module"])
 
 
 class IpHelper:

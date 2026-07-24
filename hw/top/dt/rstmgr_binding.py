@@ -173,6 +173,10 @@ class RstmgrExt(Extension):
             if self.ip_helper.top_helper.top["name"] == "englishbreakfast" and \
                     reset["module"] in ["alert_handler", "rv_dm"]:
                 inst_id = Name(["unknown"])
+            elif not self.ip_helper.top_helper.has_module(reset["module"]):
+                # A reset request declared via power.external_reset_requests
+                # has no corresponding on-chip module.
+                inst_id = Name(["unknown"])
             else:
                 inst_id = Name.from_snake_case(reset["module"])
             # Even though the ipconfig currently models internal and debug reset

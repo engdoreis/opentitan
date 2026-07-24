@@ -8,8 +8,15 @@
   clkmgr = lib.find_module(top['module'], 'clkmgr')
   rstmgr = lib.find_module(top['module'], 'rstmgr')
 %>\
+% if top.get('ast', True):
   // Base clocks from AST
   input ast_pkg::ast_clks_t ast_base_clks_i,
+% else:
+  // Externally supplied base clocks
+% for clk in top['clocks'].typed_clocks().ast_clks:
+  input ${clk},
+% endfor
+% endif
 
 % if len(top['unmanaged_clocks']._asdict().values()) > 0:
   // Unmanaged external clocks
@@ -33,6 +40,14 @@
   input                        scan_rst_ni, // reset used for test mode
   input                        scan_en_i,
   input prim_mubi_pkg::mubi4_t scanmode_i,  // lc_ctrl_pkg::On for Scan
+% for alert_group in top['incoming_alert'].keys():
+
+  // Incoming alerts for group ${alert_group}
+  input  prim_alert_pkg::alert_tx_t [top_${top["name"]}_pkg::NIncomingAlerts${alert_group.capitalize()}-1:0] incoming_alert_${alert_group}_tx_i,
+  output prim_alert_pkg::alert_rx_t [top_${top["name"]}_pkg::NIncomingAlerts${alert_group.capitalize()}-1:0] incoming_alert_${alert_group}_rx_o,
+  input  prim_mubi_pkg::mubi4_t     [top_${top["name"]}_pkg::NIncomingLpgs${alert_group.capitalize()}-1:0]   incoming_lpg_cg_en_${alert_group}_i,
+  input  prim_mubi_pkg::mubi4_t     [top_${top["name"]}_pkg::NIncomingLpgs${alert_group.capitalize()}-1:0]   incoming_lpg_rst_en_${alert_group}_i,
+% endfor
 
 % if feature_info["has_pinmux"]:
 % if cio_info["num_mio_pads"] != 0:

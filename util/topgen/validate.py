@@ -10,7 +10,7 @@ from typing import Dict, List, Union
 from basegen.typing import ConfigT
 from reggen.ip_block import IpBlock
 from reggen.validate import check_keys
-from topgen.resets import Resets, UnmanagedResets
+from topgen.resets import Resets, ResetItem, UnmanagedResets
 from topgen.typing import IpBlocksT
 from topgen.lib import find_module, find_modules
 
@@ -57,11 +57,22 @@ top_required = {
 
 top_optional = {
     'alerts': ['g', 'alert handler configuration'],
+    'ast': [
+        'pb', 'whether an AST block supplies the base clocks; when false, '
+        'the top exposes one plain input port per external clock instead '
+        'of an ast_pkg::ast_clks_t struct (default true)'
+    ],
     'alert_module':
     ['l', 'list of the modules that connects to alert_handler'],
     'datawidth': ['pn', "default data width"],
     'exported_clks': ['g', 'clock signal routing rules'],
     'host': ['g', 'list of host-only components in the system'],
+    'inter_domain': [
+        'g', 'how clocks and resets cross power-domain boundaries: set '
+        '"flat_clk_rst" to pass the individual clocks and resets a domain '
+        'uses instead of the complete clkmgr/rstmgr structs, and optionally '
+        'rename the resulting signals through "port_names"'
+    ],
     'inter_module': ['g', 'define the signal connections between the modules'],
     'interrupts': ['g', 'interrupt controller configuration'],
     'interrupt_module': ['l', 'list of the modules that connects to rv_plic'],
@@ -1201,6 +1212,20 @@ def check_power_domains(top: ConfigT):
         if end_point['domain'] not in top['power']['domains']:
             raise ValueError(
                 f"{end_point['name']} defines invalid domain {end_point['domain']}")
+
+    # Check that any domains a reset node explicitly declares are valid.
+    if isinstance(top['resets'], Resets):
+        reset_nodes = top['resets'].nodes.values()
+    else:
+        reset_nodes = top['resets']['nodes']
+    for reset in reset_nodes:
+        name = reset.name if isinstance(reset, ResetItem) else reset['name']
+        domains = reset.domains if isinstance(
+            reset, ResetItem) else reset.get('domains', [])
+        for dom in domains:
+            if dom not in top['power']['domains']:
+                raise ValueError(
+                    f"reset node {name} declares invalid domain {dom}")
 
 
 def check_modules(top: ConfigT, prefix: str) -> int:

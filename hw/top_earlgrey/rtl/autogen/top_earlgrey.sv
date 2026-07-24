@@ -591,7 +591,9 @@ module top_earlgrey #(
   .SramCtrlRetNumRamInst(SramCtrlRetNumRamInst),
   .SramCtrlRetInstrExec(SramCtrlRetInstrExec),
   .SramCtrlRetNumPrinceRoundsHalf(SramCtrlRetNumPrinceRoundsHalf),
-  .SramCtrlRetEccCorrection(SramCtrlRetEccCorrection)
+  .SramCtrlRetEccCorrection(SramCtrlRetEccCorrection),
+  .AlertHandlerEscNumSeverities(AlertHandlerEscNumSeverities),
+  .AlertHandlerEscPingCountWidth(AlertHandlerEscPingCountWidth)
   ) earlgrey_pd_aon (
     // All externally supplied clocks
     .clk_main_i(ast_base_clks_i.clk_sys),

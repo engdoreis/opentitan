@@ -5,7 +5,7 @@
 <%from topgen.merge import alert_handler_signals%>\
 <%page args="top, feature_info, cio_info, domain"/>\
 % if feature_info["has_pinmux"]:
-% if lib.find_module(top["module"], "pinmux").get("domain") == domain:
+% if (lib.find_module(top["module"], "pinmux") or {}).get("domain") == domain:
 % if cio_info["num_mio_pads"] != 0:
   // Multiplexed I/O
   input  logic ${lib.bitarray(cio_info["num_mio_pads"], cio_info["max_sigwidth"])} mio_in_i,
@@ -112,11 +112,21 @@
   rstmgr = lib.find_module(top['module'], 'rstmgr')
   domain_clkmgr = clkmgr.get('domain')
   domain_rstmgr = rstmgr.get('domain')
+  flat_clk_rst = lib.flat_inter_domain_clk_rst(top)
+  inter_domain_in = lib.get_inter_domain_clk_rst(top, domain)
 %>\
 % if domain_clkmgr == domain:
   // Externally supplied clocks
   % for clk in top['clocks'].typed_clocks().ast_clks:
   input ${clk},
+  % endfor
+<%include file="/toplevel_snippets/inter_domain_ports.tpl" args="top=top, domain=domain, mgr='clkmgr'" />\
+% elif flat_clk_rst:
+  // Clocks from clkmgr in power domain ${domain_clkmgr}
+  % for sig in inter_domain_in:
+    % if sig['mgr'] == 'clkmgr':
+  input ${lib.im_defname(sig)} ${lib.inter_domain_port(sig['name'], 'i')},
+    % endif
   % endfor
 % else:
   // Clocks from clkmgr in power domain ${domain_clkmgr}
@@ -124,7 +134,16 @@
   input clkmgr_pkg::clkmgr_cg_en_t  ${clkmgr['name']}_cg_en_i,
 % endif
 
-% if domain_rstmgr != domain:
+% if domain_rstmgr == domain:
+<%include file="/toplevel_snippets/inter_domain_ports.tpl" args="top=top, domain=domain, mgr='rstmgr'" />\
+% elif flat_clk_rst:
+  // Resets from rstmgr in power domain ${domain_rstmgr}
+  % for sig in inter_domain_in:
+    % if sig['mgr'] == 'rstmgr':
+  input ${lib.im_defname(sig)} ${lib.inter_domain_port(sig['name'], 'i')},
+    % endif
+  % endfor
+% else:
   // Resets from rstmgr in power domain ${domain_rstmgr}
   input rstmgr_pkg::rstmgr_out_t    ${rstmgr['name']}_resets_i,
   input rstmgr_pkg::rstmgr_rst_en_t ${rstmgr['name']}_rst_en_i,

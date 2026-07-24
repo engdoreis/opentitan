@@ -18278,7 +18278,7 @@
         end_idx: -1
         act: rcv
         suffix: ""
-        default: prim_mubi_pkg::MuBi4False
+        default: "'{default: prim_mubi_pkg::MuBi4False}"
       }
       {
         package: lc_ctrl_pkg
@@ -31458,7 +31458,7 @@
         end_idx: -1
         act: rcv
         suffix: ""
-        default: lc_ctrl_pkg::On
+        default: "'{default: lc_ctrl_pkg::On}"
       }
       {
         package: ""
@@ -31576,7 +31576,7 @@
         end_idx: -1
         act: rsp
         suffix: req
-        default: "'0"
+        default: "'{default: '0}"
       }
       {
         package: edn_pkg
@@ -31620,7 +31620,7 @@
         end_idx: -1
         act: rsp
         suffix: req
-        default: "'0"
+        default: "'{default: '0}"
       }
       {
         package: edn_pkg
@@ -31724,7 +31724,7 @@
         end_idx: -1
         act: rsp
         suffix: req
-        default: kmac_pkg::APP_REQ_DEFAULT
+        default: "'{default: kmac_pkg::APP_REQ_DEFAULT}"
       }
       {
         package: kmac_pkg

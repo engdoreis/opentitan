@@ -249,7 +249,11 @@ def _get_default_name(sig, suffix):
     # Specifically, the interface is 'logic' and has no default value.
     # In this situation, just return 0's
     if sig.get("default"):
-        return sig['default']
+        default = sig['default']
+        # Don't double-wrap a default that is already an assignment pattern.
+        if default.lstrip().startswith("'{"):
+            return default
+        return _array_wrap_default(default, sig["width"])
     elif sig['package']:
         scalar = "{}::{}_DEFAULT".format(sig['package'],
                                          (sig["struct"] + suffix).upper())
@@ -663,6 +667,12 @@ def elab_intermodule(topcfg: OrderedDict):
     for req, rsps in topcfg["inter_module"]["connect"].items():
         log.info("{req} --> {rsps}".format(req=req, rsps=rsps))
 
+        # A connect entry can legitimately have no responders,
+        # there's nothing to connect, so the signal is left dangling and gets
+        # tied to its default elsewhere.
+        if not rsps:
+            continue
+
         # Split index
         req_module, req_signal, _req_index = filter_index(req)
 
@@ -874,8 +884,9 @@ def elab_intermodule(topcfg: OrderedDict):
     if "definitions" not in topcfg["inter_signal"]:
         topcfg["inter_signal"]["definitions"] = definitions
 
-    # Append inter-pd signals and ports emitted by pinmux
-    if topcfg["pinmux"]["inter_pd"] is not None:
+    # Append inter-pd signals and ports emitted by pinmux. 'inter_pd' is
+    # optional here
+    if topcfg["pinmux"].get("inter_pd") is not None:
         topcfg["inter_signal"]["external"].extend(topcfg["pinmux"]["inter_pd"]["ports"])
         topcfg["inter_pd"]["definitions"].extend(topcfg["pinmux"]["inter_pd"]["definitions"])
         # No longer needed, delete
@@ -1005,6 +1016,11 @@ def find_otherside_modules(topcfg: OrderedDict, m,
             if signame == rsp:
                 req_m, req_s, _req_i = filter_index(req)
                 return [('connect', req_m, req_s)]
+
+    # A signal that only appears in the top's 'external' map terminates at
+    # the chip boundary with no on-chip far end to report
+    if signame in topcfg["inter_module"]["external"]:
+        return []
 
     # if reaches here, it means either the format is wrong, or floating port.
     log.error("`find_otherside_modules()`: "

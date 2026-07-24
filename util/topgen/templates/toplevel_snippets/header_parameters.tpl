@@ -4,7 +4,15 @@
 <%import topgen.lib as lib%>\
 <%page args="top, domain, feedthrough"/>\
 <%
-last_modidx_with_params = lib.idx_of_last_module_with_params(top, domain)
+domain_modules = lib.get_all_modules(top, domain=domain)
+# Escalation receivers may live in a domain other than the one hosting
+# the alert_handler instance.
+if domain != '' and not lib.find_modules(domain_modules, "alert_handler"):
+  domain_modules = domain_modules + lib.find_modules(top["module"], "alert_handler")
+last_modidx_with_params = -1
+for idx, module in enumerate(domain_modules):
+  if len(module["param_list"]):
+    last_modidx_with_params = idx
 %>\
 % if lib.num_rom_ctrl(lib.get_all_modules(top)) == 0:
   // Manually defined parameters
@@ -12,7 +20,7 @@ last_modidx_with_params = lib.idx_of_last_module_with_params(top, domain)
 
 % endif
   // Auto-inferred parameters
-% for m in lib.get_all_modules(top, domain=domain):
+% for m in domain_modules:
   % if not lib.is_inst(m):
 <% continue %>
   % endif

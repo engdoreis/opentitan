@@ -124,7 +124,9 @@ class PwrmgrExt(Extension):
         self.wakeup_src_struct.add_field(
             name = self.WAKEUP_SOURCE_INST_FIELD_NAME,
             field_type = ScalarType(self.ip_helper.top_helper.DT_INSTANCE_ID_NAME),
-            docstring = "Instance ID of the source of this wakeup.",
+            docstring = "Instance ID of the source of this wakeup, or "
+                        "kDtInstanceIdExternal if it comes from outside the top "
+                        "(a power.external_wakeups entry).",
         )
         self.wakeup_src_struct.add_field(
             name = self.WAKEUP_SOURCE_WAKEUP_FIELD_NAME,
@@ -136,7 +138,9 @@ class PwrmgrExt(Extension):
         self.reset_req_src_struct.add_field(
             name = self.RSTREQ_SOURCE_INST_FIELD_NAME,
             field_type = ScalarType(self.ip_helper.top_helper.DT_INSTANCE_ID_NAME),
-            docstring = "Instance ID of the source of this reset request.",
+            docstring = "Instance ID of the source of this reset request, or "
+                        "kDtInstanceIdExternal if it comes from outside the top "
+                        "(a power.external_reset_requests entry).",
         )
         self.reset_req_src_struct.add_field(
             name = self.RSTREQ_SOURCE_REQ_FIELD_NAME,
@@ -180,6 +184,14 @@ class PwrmgrExt(Extension):
         wakeup_srcs = {}
         self._extra_includes = OrderedDict()
         for (idx, wakeup) in enumerate(self.ipconfig.wakeup_list()):
+            # A wakeup declared via power.external_wakeups has no
+            # corresponding on-chip module.
+            if not self.ip_helper.top_helper.has_module(wakeup["module"]):
+                wakeup_srcs[str(idx)] = {
+                    self.WAKEUP_SOURCE_INST_FIELD_NAME: Name(["external"]),
+                    self.WAKEUP_SOURCE_WAKEUP_FIELD_NAME: "0",
+                }
+                continue
             # We need to create the wakeup name from another module.
             module_type = self.ip_helper.top_helper.get_module_type(wakeup["module"])
             self._extra_includes[module_type] = None
@@ -193,6 +205,13 @@ class PwrmgrExt(Extension):
             }
         rst_reqs = {}
         for (idx, reset) in enumerate(self.ipconfig.peripheral_reset_req_list()):
+            # A reset request declared via power.external_reset_requests.
+            if not self.ip_helper.top_helper.has_module(reset["module"]):
+                rst_reqs[str(idx)] = {
+                    self.RSTREQ_SOURCE_INST_FIELD_NAME: Name(["external"]),
+                    self.RSTREQ_SOURCE_REQ_FIELD_NAME: "0",
+                }
+                continue
             # We need to create the reset name from another module.
             module_type = self.ip_helper.top_helper.get_module_type(reset["module"])
             self._extra_includes[module_type] = None

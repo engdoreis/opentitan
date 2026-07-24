@@ -7,7 +7,8 @@
 <%from topgen.merge import alert_handler_signals%>\
 <%page args="top, domain"/>\
 <%
-if lib.find_module(top["module"], "pinmux").get("domain") == domain:
+pinmux_module = lib.find_module(top["module"], "pinmux")
+if pinmux_module is not None and pinmux_module.get("domain") == domain:
   cio_suffix_o, cio_suffix_i = ("", "")
 else:
   cio_suffix_o, cio_suffix_i = ("_o", "_i")

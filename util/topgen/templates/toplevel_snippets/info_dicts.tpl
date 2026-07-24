@@ -23,6 +23,11 @@ for m in top['module']:
   if block.scan_en:
     feature_info['has_scan_en'][m['domain']] = True
 
+# Distribute scan signals to all PDs
+if lib.flat_inter_domain_clk_rst(top):
+  for domain in top['power']['domains']:
+    feature_info['has_scan_en'][domain] = True
+
 if feature_info['has_pinmux']:
   cio_info['num_mio_inputs'] = top['pinmux']['io_counts']['muxed']['inouts'] + \
                               top['pinmux']['io_counts']['muxed']['inputs']
@@ -38,6 +43,6 @@ if feature_info['has_pinmux']:
                               top['pinmux']['io_counts']['dedicated']['inputs'] + \
                               top['pinmux']['io_counts']['dedicated']['outputs']
 
-  max_sigwidth = max([x["width"] if "width" in x else 1 for x in top["pinmux"]["ios"]])
+  max_sigwidth = max([x["width"] if "width" in x else 1 for x in top["pinmux"]["ios"]], default=1)
   cio_info['max_sigwidth'] = len("{}".format(max_sigwidth))
 %>\

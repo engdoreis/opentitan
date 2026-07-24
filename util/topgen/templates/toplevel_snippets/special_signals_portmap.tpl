@@ -9,8 +9,11 @@
   rstmgr = lib.find_module(top['module'], 'rstmgr')
   domain_clkmgr = clkmgr.get('domain')
   domain_rstmgr = rstmgr.get('domain')
+  flat_clk_rst = lib.flat_inter_domain_clk_rst(top)
+  inter_domain_in = lib.get_inter_domain_clk_rst(top, domain)
 %>\
 % if domain_clkmgr == domain:
+% if top.get('ast', True):
     // All externally supplied clocks
     .clk_main_i(ast_base_clks_i.clk_sys),
     .clk_io_i  (ast_base_clks_i.clk_io ),
@@ -19,12 +22,36 @@
 % endif
     .clk_aon_i (ast_base_clks_i.clk_aon),
 % else:
+    // All externally supplied clocks
+% for clk in top['clocks'].typed_clocks().ast_clks:
+    .${clk}(${clk}),
+% endfor
+% endif
+<%include file="/toplevel_snippets/inter_domain_portmap.tpl" args="top=top, domain=domain, mgr='clkmgr'" />\
+% elif flat_clk_rst:
+    // Clocks and clock gating control from ${clkmgr['name']}
+  % for sig in inter_domain_in:
+    % if sig['mgr'] == 'clkmgr':
+    .${lib.inter_domain_port(sig['name'], 'i')}(${sig['name']}),
+    % endif
+  % endfor
+% else:
     // Clocks and clock gating control from ${clkmgr['name']}
     .${clkmgr['name']}_clocks_i(${clkmgr['name']}_clocks_o),
     .${clkmgr['name']}_cg_en_i (${clkmgr['name']}_cg_en_o),
 % endif
 
-% if domain_rstmgr != domain:
+% if domain_rstmgr == domain:
+<%include file="/toplevel_snippets/inter_domain_portmap.tpl" args="top=top, domain=domain, mgr='rstmgr'" />\
+% elif flat_clk_rst:
+    // Resets and reset assert info from ${rstmgr['name']}
+  % for sig in inter_domain_in:
+    % if sig['mgr'] == 'rstmgr':
+    .${lib.inter_domain_port(sig['name'], 'i')}(${sig['name']}),
+    % endif
+  % endfor
+
+% else:
     // Resets and reset assert info from ${rstmgr['name']}
     .${rstmgr['name']}_resets_i(${rstmgr['name']}_resets_o),
     .${rstmgr['name']}_rst_en_i(${rstmgr['name']}_rst_en_o),
@@ -39,7 +66,7 @@
     .scanmode_i,
 
 % if feature_info["has_pinmux"]:
-% if lib.find_module(top["module"], "pinmux").get("domain") == domain:
+% if (lib.find_module(top["module"], "pinmux") or {}).get("domain") == domain:
 % if cio_info["num_mio_pads"] != 0:
     // Multiplexed I/O
     .mio_in_i,
@@ -120,3 +147,12 @@
     .outgoing_lpg_rst_en_${alert_group}_o(outgoing_lpg_rst_en_${alert_group}),
 % endif
 % endfor
+% if lib.find_module(top["module"], "alert_handler", domain=domain):
+% for alert_group in top['incoming_alert'].keys():
+    // Incoming alerts for group ${alert_group}
+    .incoming_alert_${alert_group}_tx_i(incoming_alert_${alert_group}_tx_i),
+    .incoming_alert_${alert_group}_rx_o(incoming_alert_${alert_group}_rx_o),
+    .incoming_lpg_cg_en_${alert_group}_i(incoming_lpg_cg_en_${alert_group}_i),
+    .incoming_lpg_rst_en_${alert_group}_i(incoming_lpg_rst_en_${alert_group}_i),
+% endfor
+% endif\

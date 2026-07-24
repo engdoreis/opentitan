@@ -20722,7 +20722,7 @@
         end_idx: -1
         act: rcv
         suffix: ""
-        default: rom_ctrl_pkg::PWRMGR_DATA_DEFAULT
+        default: "'{default: rom_ctrl_pkg::PWRMGR_DATA_DEFAULT}"
       }
       {
         package: pwrmgr_pkg
@@ -20794,7 +20794,7 @@
         end_idx: -1
         act: rcv
         suffix: ""
-        default: prim_mubi_pkg::MuBi4False
+        default: "'{default: prim_mubi_pkg::MuBi4False}"
       }
       {
         package: lc_ctrl_pkg
@@ -34390,7 +34390,7 @@
         end_idx: -1
         act: rcv
         suffix: ""
-        default: rom_ctrl_pkg::KEYMGR_DATA_DEFAULT
+        default: "'{default: rom_ctrl_pkg::KEYMGR_DATA_DEFAULT}"
       }
       {
         package: lc_ctrl_pkg
@@ -34436,7 +34436,7 @@
         end_idx: 7
         act: rsp
         suffix: req
-        default: "'0"
+        default: "'{default: '0}"
       }
       {
         package: edn_pkg
@@ -34480,7 +34480,7 @@
         end_idx: -1
         act: rsp
         suffix: req
-        default: "'0"
+        default: "'{default: '0}"
       }
       {
         package: edn_pkg
@@ -34620,7 +34620,7 @@
         end_idx: -1
         act: rsp
         suffix: req
-        default: kmac_pkg::APP_REQ_DEFAULT
+        default: "'{default: kmac_pkg::APP_REQ_DEFAULT}"
       }
       {
         package: kmac_pkg

@@ -38,6 +38,7 @@
   % endif
 % endfor\
 
+% if alert_handlers:
 % for alert_group, alerts in top['incoming_alert'].items():
 <% alert_info = top["alert_connections"]["incoming_" + alert_group] %>\
 % if not alert_info:
@@ -50,4 +51,5 @@
   assign ${alert_info["tx_expr"]} = incoming_alert_${alert_group}_tx_i;
   assign incoming_alert_${alert_group}_rx_o = ${alert_info["rx_expr"]};
 % endfor
+% endif
 % endif\

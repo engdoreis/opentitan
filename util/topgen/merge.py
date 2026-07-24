@@ -928,6 +928,143 @@ def amend_resets(top: ConfigT,
     top["resets"] = top_resets
 
 
+def _add_inter_domain_signal(signals: Dict, kind: str, mgr: str, name: str,
+                             src: str, mubi: bool = False):
+    '''Record one clock or reset crossing a power-domain boundary'''
+    signals.setdefault(
+        name,
+        OrderedDict([('kind', kind), ('mgr', mgr), ('name', name),
+                     ('src', src), ('type', 'uni'),
+                     ('package', 'prim_mubi_pkg' if mubi else ''),
+                     ('struct', 'mubi4' if mubi else 'logic')]))
+
+
+def _inter_domain_clk_rst_of(top: ConfigT, name_to_block: IpBlocksT,
+                             domain: str) -> List[ConfigT]:
+    '''Clocks and resets `domain` needs from the clkmgr / rstmgr domain'''
+    clkmgr_domain = lib.find_module(top['module'], 'clkmgr')['domain']
+    rstmgr_domain = lib.find_module(top['module'], 'rstmgr')['domain']
+    # Struct member prefixes as seen from the manager's own domain, where the
+    # crossing signals are driven, and from this domain, whose clock
+    # connections still refer to the struct at this point.
+    mgr_clk = lib.get_clock_prefixes(top, clkmgr_domain)
+    mgr_rst = lib.get_reset_prefixes(top, rstmgr_domain)
+    foreign_clk = lib.get_clock_prefixes(top, domain)['top']
+
+    signals = OrderedDict()
+    endpoints = [m for m in lib.get_all_modules(top, domain) if lib.is_inst(m)]
+    endpoints += [x for x in top['xbar'] if x.get('domain') == domain]
+
+    for ep in endpoints:
+        if domain != clkmgr_domain:
+            for clk in ep['clock_connections'].values():
+                if not clk.startswith(foreign_clk):
+                    continue
+                field = clk[len(foreign_clk):]
+                _add_inter_domain_signal(signals, 'clk', 'clkmgr',
+                                         lib.inter_domain_name(top, field),
+                                         mgr_clk['top'] + field)
+
+        if domain == rstmgr_domain:
+            continue
+        # Crossbars have no block description and never have shadowed ports.
+        block = name_to_block.get(ep.get('type'))
+        for port, reset in ep['reset_connections'].items():
+            if is_unmanaged_reset(top, reset['name']):
+                continue
+            if top['resets'].get_reset_by_name(reset['name']).rst_type != 'top':
+                continue
+            shadow_sels = [False]
+            if block is not None and lib.is_shadowed_port(block, port):
+                shadow_sels.append(True)
+            for shadow_sel in shadow_sels:
+                _add_inter_domain_signal(
+                    signals, 'rst', 'rstmgr',
+                    lib.inter_domain_reset_name(top, reset['name'],
+                                                reset['domain'], shadow_sel),
+                    top['resets'].get_path(reset['name'], mgr_rst,
+                                           reset['domain'], shadow_sel))
+
+    # The alert handler is the only consumer of the clock gating and reset
+    # indications, so those only cross if it sits away from its manager.
+    if lib.find_module(top['module'], 'alert_handler', domain=domain):
+        for lpg in top['alert_lpgs']:
+            group = lpg['clock_group']
+            clk = lpg['clock_connection'].split('clk_')[-1]
+            if (domain != clkmgr_domain and not lpg['unmanaged_clock'] and
+                    not (group is not None and group.src == 'ext')):
+                _add_inter_domain_signal(signals, 'cg_en', 'clkmgr',
+                                         lib.inter_domain_cg_en_name(top, clk),
+                                         mgr_clk['lpg'] + clk, mubi=True)
+            rst = lpg['reset_connection']
+            if domain != rstmgr_domain and not lpg['unmanaged_reset']:
+                _add_inter_domain_signal(
+                    signals, 'rst_en', 'rstmgr',
+                    lib.inter_domain_rst_en_name(top, rst['name'], rst['domain']),
+                    top['resets'].get_lpg_path(rst['name'], mgr_rst,
+                                               rst['domain']), mubi=True)
+
+    order = {'clk': 0, 'cg_en': 1, 'rst': 2, 'rst_en': 3}
+    return sorted(signals.values(), key=lambda s: (order[s['kind']], s['name']))
+
+
+def amend_inter_domain_clk_rst(top: ConfigT, name_to_block: IpBlocksT):
+    '''Determine which clocks and resets cross power-domain boundaries.
+
+    A power domain that hosts neither clkmgr nor rstmgr receives the complete
+    clkmgr / rstmgr structs by default. Where the boundary is a physical
+    partition, that routes every clock and reset of the design into a domain
+    which may use only a few of them. Such a top can opt into
+    `inter_domain.flat_clk_rst` instead: the domain then receives exactly the
+    clocks and resets its own instances use, as individual signals, and the
+    structs stop being ports of the top level altogether.
+
+    Collect those signals per power domain, point the affected clock
+    connections at them, and declare the nets carrying them between the
+    domains.
+    '''
+    if not lib.flat_inter_domain_clk_rst(top):
+        return
+
+    per_domain = {
+        domain: _inter_domain_clk_rst_of(top, name_to_block, domain)
+        for domain in top['power']['domains']
+    }
+    top.setdefault('inter_domain', {})['signals'] = per_domain
+
+    definitions = top.setdefault('inter_pd',
+                                 defaultdict()).setdefault('definitions', [])
+    declared = {d['signame'] for d in definitions}
+
+    clkmgr_domain = lib.find_module(top['module'], 'clkmgr')['domain']
+    for domain, signals in per_domain.items():
+        # Point this domain's clock connections at the crossing signals. Reset
+        # connections stay symbolic and resolve through lib.get_reset_path().
+        if domain != clkmgr_domain:
+            prefix = lib.get_clock_prefixes(top, domain)['top']
+            for ep in (lib.get_all_modules(top, domain) +
+                       [x for x in top['xbar'] if x.get('domain') == domain]):
+                ep['clock_connections'] = OrderedDict(
+                    (port,
+                     lib.inter_domain_port(
+                         lib.inter_domain_name(top, clk[len(prefix):]), 'i')
+                     if clk.startswith(prefix) else clk)
+                    for port, clk in ep['clock_connections'].items())
+
+        # Declare the nets carrying the crossing signals between the domains.
+        for sig in signals:
+            if sig['name'] in declared:
+                continue
+            declared.add(sig['name'])
+            definitions.append(
+                OrderedDict([('package', sig['package']),
+                             ('struct', sig['struct']),
+                             ('domain', 'chip'),
+                             ('signame', sig['name']),
+                             ('width', 1), ('type', 'uni'), ('end_idx', -1),
+                             ('default', "'0")]))
+
+
 def get_alerts_with_unique_lpg_idx(incoming_alerts: List[Dict]):
     unique_lpgs = set()
     result = []
@@ -1588,17 +1725,31 @@ def amend_wkup(topcfg: ConfigT,
                 'width': str(signal.bits.width()),
                 'module': m["name"]
             })
-    topcfg["wakeups"] = wakeups
+    # Wakeup requests driven from outside the top can be declared in power.
+    # external_wakeups. They contribute to pwrmgr's wakeup vector and
+    # registers like module wakeups do, but have no on-chip source.
+    external_wakeups = topcfg.get("power", {}).get("external_wakeups", [])
+    if external_wakeups and wakeups:
+        raise ValueError(
+            "power.external_wakeups cannot be combined with module wakeup "
+            "sources: pwrmgr's wakeups signal is routed either on-chip or "
+            "off-chip as a whole.")
+    topcfg["wakeups"] = wakeups + list(external_wakeups)
 
     pwrmgr = lib.find_module(topcfg['module'], 'pwrmgr')
     if pwrmgr:
-        # add wakeup signals to pwrmgr connections if there is one
+        # add wakeup signals to pwrmgr connections if there is one; external
+        # wakeups have no on-chip source, so they are never in this list
         signal_names = [
             f"{s['module'].lower()}.{s['name'].lower()}"
-            for s in topcfg["wakeups"]
+            for s in wakeups
         ]
-        topcfg["inter_module"]["connect"][f"{pwrmgr['name']}.wakeups"] = (
-            signal_names)
+        # Only add the connection if there's actually something to connect:
+        # an empty rsps list here would later crash intermodule elaboration,
+        # which assumes every connect entry has at least one responder.
+        if signal_names:
+            topcfg["inter_module"]["connect"][f"{pwrmgr['name']}.wakeups"] = (
+                signal_names)
         log.info("Intermodule signals: {}".format(
             topcfg["inter_module"]["connect"]))
 
@@ -1627,17 +1778,34 @@ def amend_reset_request(topcfg: ConfigT,
                 'desc': signal.desc,
                 'enabled_after_reset': signal.enabled_after_reset
             })
-    topcfg["reset_requests"]["peripheral"] = reset_signals
+    # Reset requests driven from outside the top can be declared in power.
+    # external_reset_requests. They contribute to pwrmgr's rstreqs vector
+    # and registers like module reset requests do, but have no on-chip
+    # source.
+    external_resets = topcfg.get("power", {}).get("external_reset_requests",
+                                                  [])
+    if external_resets and reset_signals:
+        raise ValueError(
+            "power.external_reset_requests cannot be combined with module "
+            "reset request sources: pwrmgr's rstreqs signal is routed "
+            "either on-chip or off-chip as a whole.")
+    topcfg["reset_requests"]["peripheral"] = (reset_signals +
+                                              list(external_resets))
 
     pwrmgr = lib.find_module(topcfg['module'], 'pwrmgr')
     if pwrmgr:
-        # add reset requests to pwrmgr connections if there is one
+        # Add reset requests to pwrmgr connections if there is one; external
+        # reset requests have no on-chip source.
         signal_names = [
             "{}.{}".format(s["module"].lower(), s["name"].lower())
-            for s in topcfg["reset_requests"]["peripheral"]
+            for s in reset_signals
         ]
-        topcfg["inter_module"]["connect"][f"{pwrmgr['name']}.rstreqs"] = (
-            signal_names)
+        # Only add the connection if there's actually something to connect:
+        # an empty rsps list here would later crash intermodule elaboration,
+        # which assumes every connect entry has at least one responder.
+        if signal_names:
+            topcfg["inter_module"]["connect"][f"{pwrmgr['name']}.rstreqs"] = (
+                signal_names)
     log.info("Intermodule signals: {}".format(
         topcfg["inter_module"]["connect"]))
 

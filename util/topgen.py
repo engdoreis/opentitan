@@ -43,7 +43,8 @@ from topgen.gen_dv import gen_dv
 from topgen.gen_top_docs import gen_top_docs
 from topgen.lib import find_module, find_modules, load_cfg, write_file_secure, get_ipgen_params
 from topgen.merge import (
-    amend_alert, amend_interrupt, amend_pinmux_io, amend_racl,
+    amend_alert, amend_inter_domain_clk_rst, amend_interrupt, amend_pinmux_io,
+    amend_racl,
     amend_reset_request, amend_resets, amend_wkup, commit_alert_modules,
     commit_interrupt_modules, commit_outgoing_alert_modules,
     commit_outgoing_interrupt_modules, connect_clocks,
@@ -1740,6 +1741,7 @@ def main():
 
     complete_topcfg(completecfg, name_to_block)
     create_alert_lpgs(completecfg, name_to_block)
+    amend_inter_domain_clk_rst(completecfg, name_to_block)
 
     configure_xbars(completecfg)
 

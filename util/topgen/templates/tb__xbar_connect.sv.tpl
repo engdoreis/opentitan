@@ -105,12 +105,17 @@ initial begin
 clk = 'clk_' + clk_src[node["clock"]]
 esc_name = node['name'].replace('.', '__')
 inst_sig_list = lib.find_otherside_modules(top, xbar["name"], 'tl_' + esc_name)
-inst_name = inst_sig_list[0][1]
-sig_name = inst_sig_list[0][2]
-
-power_domain = lib.find_module_by_name(top["module"] + top["xbar"], inst_name).get("domain").lower()
+if inst_sig_list:
+  inst_name = inst_sig_list[0][1]
+  sig_name = inst_sig_list[0][2]
+  power_domain = lib.find_module_by_name(top["module"] + top["xbar"], inst_name).get("domain").lower()
+else:
+  # No on-chip far end.
+  inst_name = None
 %>\
-    % if node["type"] == "host" and not node["xbar"]:
+    % if inst_name is None:
+    // ${esc_name}: no on-chip far end found; skipping DV force connection.
+    % elif node["type"] == "host" and not node["xbar"]:
     `DRIVE_CHIP_TL_HOST_IF(${esc_name}, ${inst_name}, ${sig_name}, ${power_domain})
     % elif node["type"] == "device" and not node["xbar"] and node["stub"]:
     `DRIVE_CHIP_TL_EXT_DEVICE_IF(${esc_name}, ${inst_name}, ${sig_name})

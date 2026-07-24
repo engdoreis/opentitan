@@ -579,22 +579,6 @@ def get_pad_list(padstr: str) -> List[Dict[str, Union[str, int]]]:
     return pads
 
 
-def idx_of_last_module_with_params(top: ConfigT, domain: str = "") -> int:
-    last = -1
-
-    if domain != "":
-        default_domain = top["power"]["default"]
-        modlist = [m for m in top["module"] if m.get("domain", default_domain) == domain]
-    else:
-        modlist = top["module"]
-
-    for idx, module in enumerate(modlist):
-        if len(module["param_list"]):
-            last = idx
-
-    return last
-
-
 def get_all_modules(top: ConfigT, domain: str = ""):
     if domain != "":
         return [m for m in top["module"] if m.get("domain") == domain]
@@ -680,6 +664,98 @@ def shadow_name(name: str) -> str:
         return 'rst_shadowed_ni'
 
 
+def flat_inter_domain_clk_rst(top) -> bool:
+    """Whether clocks and resets cross power-domain boundaries individually.
+
+    By default a power domain that hosts neither clkmgr nor rstmgr receives
+    the complete `clkmgr_out_t` / `clkmgr_cg_en_t` / `rstmgr_out_t` /
+    `rstmgr_rst_en_t` structs. A top can opt into passing only the individual
+    clocks and resets that domain actually uses instead, which is what a
+    physical power-domain partition needs.
+    """
+    return bool((top.get('inter_domain') or {}).get('flat_clk_rst', False))
+
+
+def is_foreign_mgr_domain(top, domain_mod: str, mgr: str) -> bool:
+    """Whether `domain_mod` receives what `mgr` generates from another power
+    domain, as individual signals rather than as the manager's structs."""
+    return (flat_inter_domain_clk_rst(top) and domain_mod is not None and
+            find_module(top['module'], mgr).get('domain') != domain_mod)
+
+
+def inter_domain_name(top, derived_name: str) -> str:
+    """Apply the top's optional rename map to an inter-power-domain signal.
+
+    The derived name is what the naming rules below produce; a top may give
+    any of them a friendlier name via `inter_domain.port_names`.
+    """
+    names = (top.get('inter_domain') or {}).get('port_names') or {}
+    return names.get(derived_name, derived_name)
+
+
+def inter_domain_port(name: str, direction: str) -> str:
+    """Add the direction suffix to an inter-power-domain signal name.
+
+    Active-low resets absorb the suffix into their trailing `_n`
+    (`rst_lc_main_n` -> `rst_lc_main_ni`); everything else gets `_i` / `_o`.
+    """
+    assert direction in ('i', 'o'), f'Invalid port direction {direction}'
+    return name + direction if name.endswith('_n') else f'{name}_{direction}'
+
+
+def inter_domain_cg_en_name(top, clk_name: str) -> str:
+    """Name of a clock gating indication crossing a power-domain boundary."""
+    return inter_domain_name(top, 'cg_en_' + clk_name.split('clk_')[-1])
+
+
+def inter_domain_reset_name(top, rst_name: str, rst_domain: str,
+                            shadow_sel: bool = False) -> str:
+    """Name of a reset crossing a power-domain boundary.
+
+    Derived from the rstmgr output field plus the power domain the reset
+    instance belongs to, e.g. `rst_lc_n[DomainMainSel]` -> `rst_lc_main_n`.
+    """
+    reset = top['resets'].get_reset_by_name(rst_name)
+    path = reset.shadow_path if shadow_sel else reset.path
+    return inter_domain_name(top, f'{path[:-1]}{rst_domain.lower()}_n')
+
+
+def inter_domain_rst_en_name(top, rst_name: str, rst_domain: str,
+                             shadow_sel: bool = False) -> str:
+    """Name of a reset indication crossing a power-domain boundary."""
+    reset = top['resets'].get_reset_by_name(rst_name)
+    path = reset.shadow_lpg_path if shadow_sel else reset.lpg_path
+    return inter_domain_name(top, f'rst_en_{path}_{rst_domain.lower()}')
+
+
+def get_inter_domain_clk_rst(top, domain: str) -> List[ConfigT]:
+    """Clocks and resets crossing a power-domain boundary into `domain`.
+
+    Empty unless the top opted into `inter_domain.flat_clk_rst`; populated by
+    `amend_inter_domain_clk_rst()`.
+    """
+    return ((top.get('inter_domain') or {}).get('signals') or {}).get(domain, [])
+
+
+def get_inter_domain_clk_rst_out(top, domain: str, mgr: str) -> List[ConfigT]:
+    """Clocks and resets `domain` exports to the other power domains.
+
+    `mgr` selects the manager owning them: `clkmgr` drives the clocks and
+    clock gating indications, `rstmgr` the resets and reset indications.
+    """
+    signals = []
+    seen = set()
+    for other in top['power']['domains']:
+        if other == domain:
+            continue
+        for sig in get_inter_domain_clk_rst(top, other):
+            if sig['mgr'] != mgr or sig['name'] in seen:
+                continue
+            seen.add(sig['name'])
+            signals.append(sig)
+    return signals
+
+
 def get_clock_prefixes(top, domain_mod: str = None) -> dict:
     clkmgr = find_module(top['module'], 'clkmgr')
     domain_clkmgr = clkmgr.get('domain')
@@ -706,12 +782,14 @@ def get_clock_path(top: object,
                    unmanaged_clock: bool = False) -> str:
     """Return the appropriate clock path given the clock name
     """
-    prefixes = get_clock_prefixes(top, domain_mod)
     if unmanaged_clock:
         return top['unmanaged_clocks'].get_clock_by_signal_name(
             clk_name).signal_name
-    else:
-        return prefixes['top'] + clk_name
+
+    if is_foreign_mgr_domain(top, domain_mod, 'clkmgr'):
+        return inter_domain_port(inter_domain_name(top, clk_name), 'i')
+
+    return get_clock_prefixes(top, domain_mod)['top'] + clk_name
 
 
 def get_clock_lpg_path(top: object,
@@ -720,13 +798,14 @@ def get_clock_lpg_path(top: object,
                        unmanaged_clock: bool = False) -> str:
     """Return the appropriate LPG clock path given name
     """
-    prefixes = get_clock_prefixes(top, domain_mod)
     if unmanaged_clock:
         return top['unmanaged_clocks'].get_clock_by_signal_name(
             clk_name).cg_en_signal
-    else:
-        clk_name = clk_name.split('clk_')[-1]
-        return prefixes['lpg'] + clk_name
+
+    if is_foreign_mgr_domain(top, domain_mod, 'clkmgr'):
+        return inter_domain_port(inter_domain_cg_en_name(top, clk_name), 'i')
+
+    return get_clock_prefixes(top, domain_mod)['lpg'] + clk_name.split('clk_')[-1]
 
 
 def get_reset_prefixes(top, domain_mod) -> dict:
@@ -756,12 +835,17 @@ def get_reset_path(top: object,
                    unmanaged_reset: bool = False) -> str:
     """Return the appropriate reset path given name
     """
-    prefixes = get_reset_prefixes(top, domain_mod)
     if unmanaged_reset:
         return top['unmanaged_resets'].get(reset['name']).signal_name
-    else:
-        return top['resets'].get_path(reset['name'], prefixes, reset['domain'],
-                                      shadow_sel)
+
+    if is_foreign_mgr_domain(top, domain_mod, 'rstmgr'):
+        return inter_domain_port(
+            inter_domain_reset_name(top, reset['name'], reset['domain'],
+                                    shadow_sel), 'i')
+
+    return top['resets'].get_path(reset['name'],
+                                  get_reset_prefixes(top, domain_mod),
+                                  reset['domain'], shadow_sel)
 
 
 def get_reset_lpg_path(top: object,
@@ -772,16 +856,19 @@ def get_reset_lpg_path(top: object,
                        unmanaged_reset: bool = False) -> str:
     """Return the appropriate LPG reset path given name
     """
-    prefixes = get_reset_prefixes(top, domain_mod)
     if unmanaged_reset:
         return top['unmanaged_resets'].get(reset['name']).rst_en_signal_name
-    else:
-        if reset_domain is not None:
-            return top['resets'].get_lpg_path(reset['name'], prefixes, reset_domain,
-                                              shadow_sel)
-        else:
-            return top['resets'].get_lpg_path(reset['name'], prefixes, reset['domain'],
-                                              shadow_sel)
+
+    domain = reset_domain if reset_domain is not None else reset['domain']
+
+    if is_foreign_mgr_domain(top, domain_mod, 'rstmgr'):
+        return inter_domain_port(
+            inter_domain_rst_en_name(top, reset['name'], domain, shadow_sel),
+            'i')
+
+    return top['resets'].get_lpg_path(reset['name'],
+                                      get_reset_prefixes(top, domain_mod),
+                                      domain, shadow_sel)
 
 
 def get_unused_resets(top: ConfigT) -> Dict:

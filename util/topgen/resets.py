@@ -30,8 +30,12 @@ class ResetItem:
             self.shadow_path = f"rst_{self.name}_shadowed_n"
             self.shadow_lpg_path = f"{self.name}_shadowed"
 
-        # to be constructed later
-        self.domains = []
+        # Power domains this reset is generated for. Usually computed later
+        # from which domains actually consume it, but a reset node may
+        # declare its domain list explicitly up front (e.g. a reset that
+        # must be generated for a specific domain regardless of what
+        # consumes it on-chip).
+        self.domains = list(raw.get('domains', []))
         self.shadowed = False
 
         self.parent = raw.get('parent', "")

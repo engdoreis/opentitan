@@ -782,7 +782,7 @@ module darjeeling_pd_main #(
   assign unused_edn0_edn_rsp7 = edn0_edn_rsp[7];
 
   // Assign undriven partial inter-module signals
-  assign edn0_edn_req[7] = '0;
+  assign edn0_edn_req[7] = '{default: '0};
 
   // OTP HW_CFG Broadcast signals.
   // TODO(#6713): The actual struct breakout and mapping currently needs to

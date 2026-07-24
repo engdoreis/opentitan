@@ -11,9 +11,6 @@
 `include "prim_assert.sv"
 
 module darjeeling_pd_aon #(
-  // TODO Manual parameters for pwrmgr
-  parameter int AlertHandlerEscNumSeverities = 4,
-  parameter int AlertHandlerEscPingCountWidth = 16,
   // Auto-inferred parameters
   // parameters for rstmgr
   parameter bit SecRstmgrCheck = 1'b1,
@@ -23,7 +20,10 @@ module darjeeling_pd_aon #(
   parameter int SramCtrlRetNumRamInst = 1,
   parameter bit SramCtrlRetInstrExec = 0,
   parameter int SramCtrlRetNumPrinceRoundsHalf = 3,
-  parameter bit SramCtrlRetEccCorrection = 0
+  parameter bit SramCtrlRetEccCorrection = 0,
+  // parameters for alert_handler
+  parameter int AlertHandlerEscNumSeverities = 4,
+  parameter int AlertHandlerEscPingCountWidth = 16
 ) (
   // Inter-module Signal External type
   input  alert_handler_pkg::alert_crashdump_t       alert_handler_crashdump_i,
