@@ -6,7 +6,7 @@
 // the test, and randomly glitches it for a few cycles at intervals less than the stretch cycle
 // count, which is at least 32 cycles, to make sure the internal and output resets won't be
 // released until the input is held steady for a sufficient number of cycles.
-<% 
+<%
 all_clks = set(clk_freqs.keys())
 
 if "io_div4" in all_clks:
@@ -14,8 +14,9 @@ if "io_div4" in all_clks:
 elif "io" in all_clks:
     preferred_domain = "io"
 else:
-    assert 0, "No preferred clock available"
-
+    # No io/io_div4-family clock on this top; "main" is always present.
+    assert "main" in all_clks, "No preferred clock available"
+    preferred_domain = "main"
 preferred_por_n = f"rst_por_{preferred_domain}_n"
 %>\
 class rstmgr_por_stretcher_vseq extends rstmgr_base_vseq;

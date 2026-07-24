@@ -6,17 +6,25 @@
 // resets.
 //
 // Notice that for rstmgr both POR and scan reset have identical side-effects.
-<% 
+<%
 all_clks = set(clk_freqs.keys())
 
 if "io_div4" in all_clks:
     preferred_domain = "io_div4"
 elif "io" in all_clks:
     preferred_domain = "io"
+elif "main" in all_clks:
+    # No io/io_div4-family clock on this top; "main" is always present.
+    preferred_domain = "main"
 else:
     assert 0, "No preferred clock available"
 
 preferred_clk_rst_vif = f"{preferred_domain}_clk_rst_vif"
+
+# Name of the main-clock-domain life cycle reset.
+lc_main_rst_n = next(r['path'] for r in output_rsts
+                     if r.get('parent') == "lc_src" and not r['sw'] and
+                     r['clock'] == "main")
 %>\
 class rstmgr_reset_vseq extends rstmgr_base_vseq;
   `uvm_object_utils(rstmgr_reset_vseq)
@@ -127,8 +135,8 @@ class rstmgr_reset_vseq extends rstmgr_base_vseq;
     expected_cpu_enable = 0;
 
     cfg.clk_rst_vif.wait_clks(8);
-    // Wait till rst_lc_n is inactive for non-aon.
-    `DV_WAIT(cfg.rstmgr_vif.resets_o.rst_lc_n[1])
+    // Wait till ${lc_main_rst_n} is inactive for non-aon.
+    `DV_WAIT(cfg.rstmgr_vif.resets_o.${lc_main_rst_n}[1])
 
     check_reset_info(get_reset_code(start_reset, 0), {reset_name[start_reset], " reset"});
     check_alert_info_after_reset(expected_alert_dump, expected_alert_enable);
@@ -184,7 +192,7 @@ class rstmgr_reset_vseq extends rstmgr_base_vseq;
       reset_done();
 
       cfg.${preferred_clk_rst_vif}.wait_clks(8);
-      wait(cfg.rstmgr_vif.resets_o.rst_lc_n[1]);
+      wait(cfg.rstmgr_vif.resets_o.${lc_main_rst_n}[1]);
       check_reset_info(expected_reset_info_code);
       check_alert_info_after_reset(.alert_dump(expected_alert_dump),
                                    .enable(expected_alert_enable));

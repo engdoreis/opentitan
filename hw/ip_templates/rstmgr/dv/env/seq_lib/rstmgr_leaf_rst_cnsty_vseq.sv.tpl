@@ -10,13 +10,16 @@
 // 3 - sw reset
 // Create reset consistency errors in the current leaf, and check that a
 // fatal_cnsty_fault alert is generated.
-<% 
+<%
 all_clks = set(clk_freqs.keys())
 
 if "io_div4" in all_clks:
     preferred_domain = "io_div4"
 elif "io" in all_clks:
     preferred_domain = "io"
+elif "main" in all_clks:
+    # No io/io_div4-family clock on this top; "main" is always present.
+    preferred_domain = "main"
 else:
     assert 0, "No preferred clock available"
 

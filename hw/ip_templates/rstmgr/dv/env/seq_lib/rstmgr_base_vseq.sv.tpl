@@ -1,7 +1,7 @@
 // Copyright lowRISC contributors (OpenTitan project).
 // Licensed under the Apache License, Version 2.0, see LICENSE for details.
 // SPDX-License-Identifier: Apache-2.0
-<% 
+<%
 sorted_clks = sorted(list(clk_freqs.keys()))
 
 def preferred_clk(preferred):
@@ -9,6 +9,10 @@ def preferred_clk(preferred):
         return preferred
     elif "io" in sorted_clks:
         return "io"
+    elif "main" in sorted_clks:
+        # No io-family clock on this top; "main" is always present and is
+        # the reset-node convention's unsuffixed default.
+        return "main"
     else:
         assert 0, "No preferred clock available"
 %>\

@@ -4,13 +4,16 @@
 
 // Tests the different kinds of reset: POR, low power wakeup, hardware reset, debug_mode reset,
 // and software initiated peripheral resets.
-<% 
+<%
 all_clks = set(clk_freqs.keys())
 
 if "io_div4" in all_clks:
     preferred_domain = "io_div4"
 elif "io" in all_clks:
     preferred_domain = "io"
+elif "main" in all_clks:
+    # No io/io_div4-family clock on this top; "main" is always present.
+    preferred_domain = "main"
 else:
     assert 0, "No preferred clock available"
 

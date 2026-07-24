@@ -2,7 +2,7 @@
 // Licensed under the Apache License, Version 2.0, see LICENSE for details.
 // SPDX-License-Identifier: Apache-2.0
 //
-<% 
+<%
 all_clks = set(clk_freqs.keys())
 
 if "io_div4" in all_clks:
@@ -10,8 +10,9 @@ if "io_div4" in all_clks:
 elif "io" in all_clks:
     preferred_domain = "io"
 else:
-    assert 0, "No preferred clock available"
-
+    # No io/io_div4-family clock on this top; "main" is always present.
+    assert "main" in all_clks, "No preferred clock available"
+    preferred_domain = "main"
 preferred_rst_n = f"rst_lc_{preferred_domain}_n"
 preferred_por_n = f"rst_por_{preferred_domain}_n"
 %>\

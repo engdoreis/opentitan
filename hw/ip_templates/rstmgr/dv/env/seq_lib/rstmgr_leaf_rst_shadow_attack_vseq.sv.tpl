@@ -4,7 +4,7 @@
 // Description:
 // Test assert glitch to shadow leaf reset module and
 // check if nomal reset module got affected or vice versa
-<% 
+<%
 all_clks = set(clk_freqs.keys())
 has_sys_io = any("sys_io" in d.get('name') for d in output_rsts) if output_rsts else False
 
@@ -12,10 +12,15 @@ if "io_div4" in all_clks:
     preferred_domain = "io_div4"
 elif "io" in all_clks:
     preferred_domain = "io"
+elif "main" in all_clks:
+    # No io/io_div4-family clock on this top; "main" is always present.
+    preferred_domain = "main"
 else:
     assert 0, "No preferred clock available"
 
 preferred_clk_rst_vif = f"{preferred_domain}_clk_rst_vif"
+# Only referenced below when has_sys_io is true; tops whose only non-aon
+# clock is "main" have no io/io_div4-domain reset chain to shadow-attack-test.
 preferred_rst_n = f"rst_sys_{preferred_domain}_n"
 %>\
 class rstmgr_leaf_rst_shadow_attack_vseq extends rstmgr_base_vseq;

@@ -6,16 +6,32 @@
 sorted_clks = sorted(list(clk_freqs.keys()))
 has_sys_io = any("sys_io" in d.get('name') for d in output_rsts) if output_rsts else False
 
+# Names of the por/lc/sys domain-cascade resets, keyed by clock domain.
+por_paths = {r['clock']: r['path'] for r in output_rsts if r.get('parent') == "por_aon"}
+lc_paths = {r['clock']: r['path']
+           for r in output_rsts if r.get('parent') == "lc_src" and not r['sw']}
+sys_paths = {r['clock']: r['path']
+            for r in output_rsts if r.get('parent') == "sys_src" and not r['sw']}
+
+# Some tops might not have a preferred_domain besides main.
 if "io_div4" in sorted_clks:
     preferred_domain = "io_div4"
 elif "io" in sorted_clks:
     preferred_domain = "io"
 else:
-    assert 0, "No preferred clock available"
+    preferred_domain = "main"
 
-preferred_por_n = f"rst_por_{preferred_domain}_n"
-preferred_rst_n = f"rst_sys_{preferred_domain}_n"
+preferred_por_n = por_paths[preferred_domain]
+# Only referenced under the has_sys_io guard below; not every top has a
+# domain-specific sys reset for its preferred_domain
+preferred_rst_n = sys_paths.get(preferred_domain)
 preferred_clk_i = f"clk_{preferred_domain}_i"
+
+# Clock domains the "Aon to POR" loop below leaves out. The preferred domain
+# gets its own hand-rolled assertion, but only if that loop does not already
+# cover it, otherwise the two are the same property under two names.
+POR_LOOP_SKIPPED = ("aon", "io_div4")
+loop_skips_preferred_domain = any(s in preferred_domain for s in POR_LOOP_SKIPPED)
 %>\
 // This has assertions that check the reset outputs of rstmgr cascade properly.
 // This means higher level resets always cause the lower level ones to assert.
@@ -140,10 +156,14 @@ interface rstmgr_cascading_sva_if (
 
   // The AON reset triggers the various POR reset for the different clock domains through
   // synchronizers.
+% if loop_skips_preferred_domain:
   // Only domain 0 cascading is checked here, because the current system doesn't have any consumers
   // of ${preferred_por_n}.
   `CASCADED_ASSERTS(CascadeEffAonToRstPorIoDiv4, effective_aon_rst_n[0],
                     resets_o.${preferred_por_n}[0], SyncCycles, ${preferred_clk_i})
+% else:
+  // The preferred domain is covered by the CascadeEffAonToRstPor* loop below.
+% endif
 
   // The internal reset is triggered by one of synchronized por.
   logic [rstmgr_pkg::PowerDomains-1:0] por_rst_n;
@@ -176,24 +196,24 @@ interface rstmgr_cascading_sva_if (
 
   // Aon to POR
 % for clk in sorted_clks:
-  % if "aon" in clk or "io_div4" in clk:
+  % if any(s in clk for s in POR_LOOP_SKIPPED):
 <% continue %>
   % endif
   `CASCADED_ASSERTS(CascadeEffAonToRstPor${clk.capitalize()}, effective_aon_rst_n[rstmgr_pkg::DomainAonSel],
-                    resets_o.rst_por_${clk + "_" if clk != "main" else ""}n[rstmgr_pkg::DomainAonSel], SyncCycles, clk_${clk}_i)
+                    resets_o.${por_paths[clk]}[rstmgr_pkg::DomainAonSel], SyncCycles, clk_${clk}_i)
 % endfor
 
   // Controlled by rst_lc_src_n.
   `CASCADED_ASSERTS(CascadeLcToLcAon, rst_lc_src_n[rstmgr_pkg::DomainAonSel],
                     resets_o.rst_lc_aon_n[rstmgr_pkg::DomainAonSel], SysCycles, clk_aon_i)
   `CASCADED_ASSERTS(CascadeLcToLc, rst_lc_src_n[rstmgr_pkg::DomainMainSel],
-                    resets_o.rst_lc_n[rstmgr_pkg::DomainMainSel], SysCycles, clk_main_i)
+                    resets_o.${lc_paths["main"]}[rstmgr_pkg::DomainMainSel], SysCycles, clk_main_i)
 
   // Controlled by rst_sys_src_n.
   `CASCADED_ASSERTS(CascadeSysToSys, rst_sys_src_n[rstmgr_pkg::DomainMainSel],
-                    resets_o.rst_sys_n[rstmgr_pkg::DomainMainSel], PeriCycles, clk_main_i)
+                    resets_o.${sys_paths["main"]}[rstmgr_pkg::DomainMainSel], PeriCycles, clk_main_i)
   `CASCADED_ASSERTS(CascadeLcToLcShadowed, rst_lc_src_n[rstmgr_pkg::DomainMainSel],
-                    resets_o.rst_lc_shadowed_n[rstmgr_pkg::DomainMainSel], SysCycles, clk_main_i)
+                    resets_o.${lc_paths["main"][:-2]}_shadowed_n[rstmgr_pkg::DomainMainSel], SysCycles, clk_main_i)
 
   `undef FALL_ASSERT
   `undef RISE_ASSERTS

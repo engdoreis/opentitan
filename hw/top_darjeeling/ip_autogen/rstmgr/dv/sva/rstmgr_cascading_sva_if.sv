@@ -125,10 +125,7 @@ interface rstmgr_cascading_sva_if (
 
   // The AON reset triggers the various POR reset for the different clock domains through
   // synchronizers.
-  // Only domain 0 cascading is checked here, because the current system doesn't have any consumers
-  // of rst_por_io_n.
-  `CASCADED_ASSERTS(CascadeEffAonToRstPorIoDiv4, effective_aon_rst_n[0],
-                    resets_o.rst_por_io_n[0], SyncCycles, clk_io_i)
+  // The preferred domain is covered by the CascadeEffAonToRstPor* loop below.
 
   // The internal reset is triggered by one of synchronized por.
   logic [rstmgr_pkg::PowerDomains-1:0] por_rst_n;
