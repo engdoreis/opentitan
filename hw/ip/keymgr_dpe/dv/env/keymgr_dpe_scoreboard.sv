@@ -22,7 +22,7 @@ class keymgr_dpe_scoreboard extends cip_base_scoreboard #(
     // HEALTH_ST_MEASUREMENT
     bit [keymgr_pkg::HealthStateWidth-1:0]                                 HealthMeasurement;
     // ROM_DESCRIPTORS
-    bit [keymgr_dpe_reg_pkg::NumRomDigestInputs-1:0][keymgr_pkg::KeyWidth-1:0] RomDigests;
+    bit [keymgr_dpe_pkg::DpeNumRomDigestInputs-1:0][keymgr_pkg::KeyWidth-1:0] RomDigests;
     // CREATOR_SEED
     bit [keymgr_pkg::KeyWidth-1:0]                                         DiversificationKey;
   } adv_creator_data_t;
@@ -1215,7 +1215,7 @@ class keymgr_dpe_scoreboard extends cip_base_scoreboard #(
         `uvm_info(`gfn, "HW invalid input on otp_device_id", UVM_LOW)
       end
 
-      for (int i = 0; i < keymgr_dpe_reg_pkg::NumRomDigestInputs; ++i) begin
+      for (int i = 0; i < keymgr_dpe_pkg::DpeNumRomDigestInputs; ++i) begin
         if (cfg.keymgr_dpe_vif.rom_digests[i].data inside {0, '1}) begin
           invalid_hw_input_type = RomDigestInvalid;
           void'(ral.debug.invalid_digest.predict(1));
@@ -1276,7 +1276,7 @@ class keymgr_dpe_scoreboard extends cip_base_scoreboard #(
     act = {<<8{byte_data_q}};
     exp.DiversificationKey = cfg.keymgr_dpe_vif.creator_seed.seed;
 
-    for (int i = 0; i < keymgr_dpe_reg_pkg::NumRomDigestInputs; ++i) begin
+    for (int i = 0; i < keymgr_dpe_pkg::DpeNumRomDigestInputs; ++i) begin
       exp.RomDigests[i] = cfg.keymgr_dpe_vif.rom_digests[i].data;
     end
     exp.HealthMeasurement  = cfg.keymgr_dpe_vif.keymgr_dpe_div;

@@ -5755,6 +5755,15 @@
           expose: "true"
           name_top: KeymgrDpeKmacEnMasking
         }
+        {
+          name: NumRomDigestInputs
+          desc: Number of digest inputs from ROM_CTRL
+          type: int
+          default: 2
+          local: "false"
+          expose: "true"
+          name_top: KeymgrDpeNumRomDigestInputs
+        }
       ]
       inter_signal_list:
       [
@@ -5909,7 +5918,17 @@
           package: rom_ctrl_pkg
           type: uni
           act: rcv
-          width: 2
+          width:
+          {
+            name: NumRomDigestInputs
+            desc: Number of digest inputs from ROM_CTRL
+            param_type: int
+            unpacked_dimensions: null
+            default: 2
+            local: false
+            expose: true
+            name_top: KeymgrDpeNumRomDigestInputs
+          }
           default: rom_ctrl_pkg::KEYMGR_DATA_DEFAULT
           inst_name: keymgr_dpe
           end_idx: -1
@@ -25800,7 +25819,17 @@
         package: rom_ctrl_pkg
         type: uni
         act: rcv
-        width: 2
+        width:
+        {
+          name: NumRomDigestInputs
+          desc: Number of digest inputs from ROM_CTRL
+          param_type: int
+          unpacked_dimensions: null
+          default: 2
+          local: false
+          expose: true
+          name_top: KeymgrDpeNumRomDigestInputs
+        }
         default: rom_ctrl_pkg::KEYMGR_DATA_DEFAULT
         inst_name: keymgr_dpe
         end_idx: -1
@@ -34346,7 +34375,17 @@
         struct: keymgr_data
         domain: Main
         signame: keymgr_dpe_rom_digest
-        width: 2
+        width:
+        {
+          name: NumRomDigestInputs
+          desc: Number of digest inputs from ROM_CTRL
+          param_type: int
+          unpacked_dimensions: null
+          default: 2
+          local: false
+          expose: true
+          name_top: KeymgrDpeNumRomDigestInputs
+        }
         type: uni
         end_idx: -1
         act: rcv

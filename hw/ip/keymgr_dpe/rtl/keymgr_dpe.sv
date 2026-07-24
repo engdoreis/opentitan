@@ -16,6 +16,7 @@ module keymgr_dpe
   // Number of cycles a differential skew is tolerated on the alert signal
   parameter int unsigned AlertSkewCycles       = 1,
   parameter bit KmacEnMasking                  = 1'b1,
+  parameter int NumRomDigestInputs             = DpeNumRomDigestInputs,
   parameter lfsr_seed_t RndCnstLfsrSeed        = RndCnstLfsrSeedDefault,
   parameter lfsr_perm_t RndCnstLfsrPerm        = RndCnstLfsrPermDefault,
   parameter rand_perm_t RndCnstRandPerm        = RndCnstRandPermDefault,
@@ -74,7 +75,10 @@ module keymgr_dpe
   output prim_alert_pkg::alert_tx_t [keymgr_reg_pkg::NumAlerts-1:0] alert_tx_o
 );
 
-  `ASSERT_INIT(DpeAdvDataWidth_A, DpeAdvDataWidth <= KDFMaxWidth)
+  // KMAC advance-message width for the configured number of ROM digest inputs.
+  localparam int AdvDataWidth = dpe_adv_data_width(NumRomDigestInputs);
+
+  `ASSERT_INIT(DpeAdvDataWidth_A, AdvDataWidth <= KDFMaxWidth)
   `ASSERT_INIT(GenDataWidth_A, GenDataWidth <= KDFMaxWidth)
   `ASSERT_INIT(OutputKeyDiff_A, RndCnstHardOutputSeed != RndCnstSoftOutputSeed)
 
@@ -421,7 +425,7 @@ module keymgr_dpe
 
   // The various arrays of inputs for each operation
   logic rom_digest_vld;
-  logic [2 ** DpeBootStagesWidth-1:0][DpeAdvDataWidth-1:0] adv_matrix;
+  logic [2 ** DpeBootStagesWidth-1:0][AdvDataWidth-1:0] adv_matrix;
   logic [2 ** DpeBootStagesWidth-1:0] adv_dvalid;
   logic [GenDataWidth-1:0] gen_in;
 
@@ -462,12 +466,12 @@ module keymgr_dpe
 
   always_comb begin : gen_adv_matrix_all
     // One default only use SW binding
-    adv_matrix = {(2 ** DpeBootStagesWidth){DpeAdvDataWidth'(sw_binding)}};
+    adv_matrix = {(2 ** DpeBootStagesWidth){AdvDataWidth'(sw_binding)}};
     adv_dvalid = {(2 ** DpeBootStagesWidth){1'b1}};
 
     if (reg2hw.control_shadowed.sw_binding_only.q == 1'b0) begin
       // For (0 = Creator) and (1 = OwnerInt), check seed validity
-      adv_matrix[BootStageCreator] = DpeAdvDataWidth'({sw_binding,
+      adv_matrix[BootStageCreator] = AdvDataWidth'({sw_binding,
                                                       revision_seed,
                                                       device_id_i,
                                                       lc_keymgr_div_i,
@@ -477,7 +481,7 @@ module keymgr_dpe
                                     devid_vld         &
                                     health_state_vld  &
                                     rom_digest_vld;
-      adv_matrix[BootStageOwner] = DpeAdvDataWidth'({sw_binding,owner_seed});
+      adv_matrix[BootStageOwner] = AdvDataWidth'({sw_binding,owner_seed});
       adv_dvalid[BootStageOwner] = owner_seed_vld;
     end
   end
@@ -582,7 +586,7 @@ module keymgr_dpe
   // Keymgr DPE does not have id generation, so assign '0 to `id_en`
   assign id_en = 1'b0;
   keymgr_kmac_if #(
-    .MaxAdvDataWidth(DpeAdvDataWidth)
+    .MaxAdvDataWidth(AdvDataWidth)
   ) u_kmac_if (
     .clk_i,
     .rst_ni,

@@ -119,7 +119,7 @@
       name:    "rom_digest"
       act:     "rcv"
       package: "rom_ctrl_pkg"
-      width:   "2"
+      width:   "NumRomDigestInputs"
       default: "rom_ctrl_pkg::KEYMGR_DATA_DEFAULT"
     },
     { struct:  "logic"
@@ -232,7 +232,8 @@
       desc: "Number of digest inputs from ROM_CTRL",
       type: "int",
       default: "2",
-      local: "true"
+      local: "false",
+      expose: "true"
     },
   ],
 

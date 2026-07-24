@@ -10,6 +10,9 @@ package keymgr_dpe_pkg;
   parameter int DpeNumSlots = 8;
   parameter int DpeNumSlotsWidth = prim_util_pkg::vbits(DpeNumSlots);
 
+  // Default number of ROM digest inputs.
+  parameter int DpeNumRomDigestInputs = 2;
+
   // Chip Device ID
   parameter int DeviceIdWidth = 256;
   typedef logic [DeviceIdWidth-1:0] keymgr_dpe_device_id_t;
@@ -22,8 +25,12 @@ package keymgr_dpe_pkg;
   //   - LC keymgr diversification value
   //   - ROM digests
   //   - Creator seed
-  parameter int DpeAdvDataWidth = SwBindingWidth + KeyWidth + DeviceIdWidth +
-      lc_ctrl_pkg::LcKeymgrDivWidth + KeyWidth*keymgr_dpe_reg_pkg::NumRomDigestInputs + KeyWidth;
+  function automatic int dpe_adv_data_width(int num_rom_digest_inputs);
+    return SwBindingWidth + KeyWidth + DeviceIdWidth +
+        lc_ctrl_pkg::LcKeymgrDivWidth + KeyWidth*num_rom_digest_inputs + KeyWidth;
+  endfunction
+
+  parameter int DpeAdvDataWidth = dpe_adv_data_width(DpeNumRomDigestInputs);
 
   typedef logic [DpeNumSlotsWidth-1:0] keymgr_dpe_slot_idx_e;
 

@@ -7,7 +7,9 @@ interface keymgr_dpe_if(input clk, input rst_n);
 
   import uvm_pkg::*;
   import keymgr_dpe_env_pkg::*;
-  import keymgr_dpe_reg_pkg::NumRomDigestInputs;
+
+  // Default configuration of the NumRomDigestInputs module parameter.
+  localparam int NumRomDigestInputs = keymgr_dpe_pkg::DpeNumRomDigestInputs;
 
   // Represents the keymgr_dpe sideload state for each sideload interface.
   //
