@@ -132,4 +132,10 @@ cc_library(
 
 doxygen_gather_all_package_cc(
     name = "doxy_target",
+    exclude = ["uart"],
+    extra_deps = opentitan_if_ip(
+        "uart",
+        [":uart"],
+        [],
+    ),
 )

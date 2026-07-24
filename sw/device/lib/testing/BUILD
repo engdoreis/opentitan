@@ -664,10 +664,11 @@ cc_library(
     ],
 )
 
-# Some testutils are not multitop yet.
-TESTUTILS_EXCEPTIONS = [
-    "rstmgr",
-]
+# Some testutils are not multitop yet: map each to the tops that support it.
+TESTUTILS_EXCEPTIONS = {
+    "rstmgr": ["earlgrey"],
+    "dma": ["darjeeling"],
+}
 
 # We need to transition to the opentitan platform since
 # testutils are not compatible with the host platform.
@@ -688,7 +689,12 @@ doxygen_gather_cc(
            ip not in TESTUTILS_EXCEPTIONS
     ]) + opentitan_select_top(
         {
-            "earlgrey": ["{}_testutils".format(ip) for ip in TESTUTILS_EXCEPTIONS],
+            top: [
+                "{}_testutils".format(ip)
+                for (ip, tops) in TESTUTILS_EXCEPTIONS.items()
+                if top in tops
+            ]
+            for top in {t: None for tops in TESTUTILS_EXCEPTIONS.values() for t in tops}
         },
         [],
     ),

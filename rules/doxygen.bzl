@@ -28,18 +28,26 @@ def _merge_doxygen_cc_input_infos(infos):
         strip_from_path = depset(transitive = [getattr(info, "strip_from_path", depset()) for info in infos]),
     )
 
-def doxygen_gather_all_package_cc(name):
+def doxygen_gather_all_package_cc(name, exclude = [], extra_deps = []):
     """
     Create a `cc_library` targets which depends on all `cc_library` targets
     previously defined in the same BUILD file.
+
+    Some cc_library targets in a package may only be `target_compatible_with`
+    a subset of tops (e.g. a peripheral driver for a top that doesn't have
+    that peripheral). Since `target_compatible_with` is generally a `select()`
+    that can't be introspected here, such targets can't be safely
+    auto-gathered for every top: list their names in `exclude` and instead
+    pass an explicitly top-conditional reference (e.g. built with
+    `opentitan_if_ip`) via `extra_deps`.
     """
 
     # We use a somewhat obscure feature of bazel that provides limited introspection.
     deps = [
-        ":{}".format(name)
-        for (name, info) in native.existing_rules().items()
-        if info["kind"] == "cc_library"
-    ]
+        ":{}".format(rule_name)
+        for (rule_name, info) in native.existing_rules().items()
+        if info["kind"] == "cc_library" and rule_name not in exclude
+    ] + extra_deps
 
     # Create a cc_library which depends on those.
     native.cc_library(
