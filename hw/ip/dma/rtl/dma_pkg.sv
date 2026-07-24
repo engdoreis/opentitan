@@ -6,6 +6,8 @@ package dma_pkg;
   // Create a type to be exposed for the inter_signal_list in the HJSON definition
   // This type is needed since regtool cannot evaluate parameters defined in the HJSON
   typedef logic [dma_reg_pkg::NumIntClearSources-1:0] lsio_trigger_t;
+  // Tie-off for idle trigger state
+  parameter lsio_trigger_t LSIO_TRIGGER_DEFAULT = '0;
 
   // Possible error bits the DMA can raise
   typedef enum logic [4:0] {
@@ -153,6 +155,7 @@ package dma_pkg;
     logic [SYS_NUM_ERROR_TYPES-1:0]    error_vec;
   } sys_rsp_t;
 
+  // Tie-off value for idle SYS response
   parameter sys_rsp_t SYS_RSP_DEFAULT = '0;
 
 endpackage

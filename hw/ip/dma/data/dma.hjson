@@ -82,6 +82,7 @@
       act: "req"
       width: "1"
       desc: "SoC System Bus (requests and responses), synchronous"
+      default: "dma_pkg::SYS_RSP_DEFAULT"
     }
     { struct:  "tl_h2d"
       package: "tlul_pkg"
