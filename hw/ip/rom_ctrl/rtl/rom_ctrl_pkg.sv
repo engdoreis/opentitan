@@ -21,6 +21,12 @@ package rom_ctrl_pkg;
     logic         valid;
   } keymgr_data_t;
 
+  // Tie-off default for a keymgr ROM-digest input
+  parameter keymgr_data_t KEYMGR_DATA_DEFAULT = '{
+    data:  '0,
+    valid: 1'b0
+  };
+
   //
   // Encoding generated with:
   // $ ./util/design/sparse-fsm-encode.py -d 3 -m 7 -n 6 -s 2 --language=sv
