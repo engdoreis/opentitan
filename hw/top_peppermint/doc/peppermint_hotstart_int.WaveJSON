@@ -1,0 +1,22 @@
+{
+signal: [
+  {name:'SoC PG State',     wave: '2.|..|....|', data: ["          GOOD"] },
+  {name:'clk_aon_i',        wave: '2.|..|....|', data: ["          32kHz"] },
+  {name:'clk_main_i',       wave: '2.|..|....|', data: ["          400MHz"] },
+  {name:'rst_aon_ni',       wave: '1.|..|....|' },
+  {},
+  {name:'rst_soc_cpu_no',   wave: '1.|..|....|' },
+  {name:'rst_main_no',      wave: '0.|..|..1.|' },
+  {name:'AHB Egress',       wave: 'x.|..|....|' },
+  {name:'Inbound Mailbox',  wave: 'x.|..|....|' },
+  {},
+  {name:'power_main_req_o', wave: '0.|1.|....|' },
+  {name:'power_main_ok_i',  wave: '0.|..|1...|' },
+  {name:'clk_aon_ok_i',     wave: '1.|..|....|' },
+  {name:'clk_main_ok_i',    wave: '1.|..|....|' },
+  {name:'wakeup_main_i',    wave: '0.|..|....|' },
+  {},
+  {name:'AON State',        wave: '3.|..|....|', data: ["      On"] },
+  {name:'Main State',       wave: '5.|..|2.3.|', data: ["Off", "Reset", "On"] },
+],
+}

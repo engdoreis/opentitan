@@ -1,0 +1,22 @@
+{
+signal: [
+  {name:'SoC PG State',     wave: 'x|2|.|.|..|..|...|.|..', data: ["Good"] },
+  {name:'clk_aon_i',        wave: 'x|.|2|.|..|..|...|.|..', data: ["           32kHz"] },
+  {name:'clk_main_i',       wave: 'x|.|.|2|..|..|.x.|2|..', data: ["32Mhz                   ", "    400MHz"] },
+  {name:'rst_aon_ni',       wave: 'x|.|0|.|.1|..|...|.|..' },
+  {},
+  {name:'rst_soc_cpu_no',   wave: 'x|.|0|.|..|..|...|.|1.' },
+  {name:'rst_main_no',      wave: 'x|.|0|.|..|.1|...|.|..' },
+  {name:'AHB Egress',       wave: 'x|...|.|..|..|2..|x|..', data: ["PLL_CFG"] },
+  {name:'Inbound Mailbox',  wave: 'x|...|.|..|..|...|.|..', data: ["PLL_CFG"] },
+  {},
+  {name:'power_main_req_o', wave: 'x|.|1|.|..|..|...|.|..' },
+  {name:'power_main_ok_i',  wave: 'x|.|0|.|..|1.|...|.|..' },
+  {name:'clk_aon_ok_i',     wave: 'x|.|1|.|..|..|...|.|..' },
+  {name:'clk_main_ok_i',    wave: 'x|.|0|1|..|..|.0.|1|..' },
+  {name:'wakeup_main_i',    wave: 'x|.|0|.|..|..|...|.|..' },
+  {},
+  {name:'AON State',        wave: 'x|.|2|.|.3|..|...|.|..', data: ["Reset", "On              "] },
+  {name:'Main State',       wave: 'x|.|2|.|..|.3|...|.|..', data: ["Reset", "On              "] },
+],
+}
