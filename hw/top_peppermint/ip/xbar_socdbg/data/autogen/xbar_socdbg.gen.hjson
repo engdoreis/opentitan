@@ -1,0 +1,145 @@
+// Copyright lowRISC contributors (OpenTitan project).
+// Licensed under the Apache License, Version 2.0, see LICENSE for details.
+// SPDX-License-Identifier: Apache-2.0
+//
+// ------------------- W A R N I N G: A U T O - G E N E R A T E D   C O D E !! -------------------//
+// PLEASE DO NOT HAND-EDIT THIS FILE. IT HAS BEEN AUTO-GENERATED WITH THE FOLLOWING COMMAND:
+// util/topgen.py -t hw/top_peppermint/data/top_peppermint.hjson -o hw/top_peppermint/
+
+{
+  name: socdbg
+  clock_srcs:
+  {
+    clk_main_i: main
+  }
+  clock_group: secure
+  reset: rst_main_ni
+  reset_connections:
+  {
+    rst_main_ni:
+    {
+      name: lc_main
+      domain: Main
+    }
+  }
+  clock_connections:
+  {
+    clk_main_i: clk_main_i
+  }
+  domain: Main
+  connections:
+  {
+    ext_socdbg_host:
+    [
+      lc_ctrl.dmi
+      rv_dm.dbg
+    ]
+  }
+  nodes:
+  [
+    {
+      name: ext_socdbg_host
+      type: host
+      addr_space: soc_dbg
+      clock: clk_main_i
+      reset: rst_main_ni
+      pipeline: false
+      xbar: false
+      stub: false
+      inst_type: ""
+      req_fifo_pass: true
+      rsp_fifo_pass: true
+    }
+    {
+      name: lc_ctrl.dmi
+      type: device
+      clock: clk_main_i
+      reset: rst_main_ni
+      pipeline: false
+      inst_type: lc_ctrl
+      addr_range:
+      [
+        {
+          base_addrs:
+          {
+            soc_dbg: 0x3000
+          }
+          size_byte: 0x1000
+        }
+      ]
+      xbar: false
+      stub: false
+      req_fifo_pass: true
+    }
+    {
+      name: rv_dm.dbg
+      type: device
+      clock: clk_main_i
+      reset: rst_main_ni
+      pipeline: false
+      inst_type: rv_dm
+      addr_range:
+      [
+        {
+          base_addrs:
+          {
+            soc_dbg: 0x0
+          }
+          size_byte: 0x200
+        }
+      ]
+      xbar: false
+      stub: false
+      req_fifo_pass: true
+    }
+  ]
+  addr_spaces:
+  [
+    soc_dbg
+  ]
+  clock: clk_main_i
+  type: xbar
+  inter_signal_list:
+  [
+    {
+      name: tl_ext_socdbg_host
+      struct: tl
+      package: tlul_pkg
+      type: req_rsp
+      act: rsp
+      inst_name: socdbg
+      width: 1
+      default: ""
+      external: true
+      conn_type: false
+      index: -1
+      top_signame: soc_dbg_tl
+    }
+    {
+      name: tl_lc_ctrl__dmi
+      struct: tl
+      package: tlul_pkg
+      type: req_rsp
+      act: req
+      inst_name: socdbg
+      width: 1
+      default: ""
+      domain: Main
+      top_signame: lc_ctrl_dmi_tl
+      index: -1
+    }
+    {
+      name: tl_rv_dm__dbg
+      struct: tl
+      package: tlul_pkg
+      type: req_rsp
+      act: req
+      inst_name: socdbg
+      width: 1
+      default: ""
+      domain: Main
+      top_signame: rv_dm_dbg_tl_d
+      index: -1
+    }
+  ]
+}

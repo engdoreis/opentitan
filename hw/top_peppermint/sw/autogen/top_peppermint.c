@@ -1,0 +1,119 @@
+// Copyright lowRISC contributors (OpenTitan project).
+// Licensed under the Apache License, Version 2.0, see LICENSE for details.
+// SPDX-License-Identifier: Apache-2.0
+//
+// ------------------- W A R N I N G: A U T O - G E N E R A T E D   C O D E !! -------------------//
+// PLEASE DO NOT HAND-EDIT THIS FILE. IT HAS BEEN AUTO-GENERATED WITH THE FOLLOWING COMMAND:
+// util/topgen.py -t hw/top_peppermint/data/top_peppermint.hjson
+//                -o hw/top_peppermint/
+
+#include "hw/top_peppermint/sw/autogen/top_peppermint.h"
+
+/**
+ * Alert Handler Alert Source to Peripheral Map
+ *
+ * This array is a mapping from `top_peppermint_alert_id_t` to
+ * `top_peppermint_alert_peripheral_t`.
+ */
+const top_peppermint_alert_peripheral_t
+    top_peppermint_alert_for_peripheral[50] = {
+  [kTopPeppermintAlertIdPwrmgrFatalFault] = kTopPeppermintAlertPeripheralPwrmgr,
+  [kTopPeppermintAlertIdRstmgrFatalFault] = kTopPeppermintAlertPeripheralRstmgr,
+  [kTopPeppermintAlertIdRstmgrFatalCnstyFault] = kTopPeppermintAlertPeripheralRstmgr,
+  [kTopPeppermintAlertIdClkmgrRecovFault] = kTopPeppermintAlertPeripheralClkmgr,
+  [kTopPeppermintAlertIdClkmgrFatalFault] = kTopPeppermintAlertPeripheralClkmgr,
+  [kTopPeppermintAlertIdRvTimerAonFatalFault] = kTopPeppermintAlertPeripheralRvTimerAon,
+  [kTopPeppermintAlertIdSramCtrlRetAonFatalError] = kTopPeppermintAlertPeripheralSramCtrlRetAon,
+  [kTopPeppermintAlertIdOtpCtrlFatalMacroError] = kTopPeppermintAlertPeripheralOtpCtrl,
+  [kTopPeppermintAlertIdOtpCtrlFatalCheckError] = kTopPeppermintAlertPeripheralOtpCtrl,
+  [kTopPeppermintAlertIdOtpCtrlFatalBusIntegError] = kTopPeppermintAlertPeripheralOtpCtrl,
+  [kTopPeppermintAlertIdOtpCtrlFatalPrimOtpAlert] = kTopPeppermintAlertPeripheralOtpCtrl,
+  [kTopPeppermintAlertIdOtpCtrlRecovPrimOtpAlert] = kTopPeppermintAlertPeripheralOtpCtrl,
+  [kTopPeppermintAlertIdLcCtrlFatalProgError] = kTopPeppermintAlertPeripheralLcCtrl,
+  [kTopPeppermintAlertIdLcCtrlFatalStateError] = kTopPeppermintAlertPeripheralLcCtrl,
+  [kTopPeppermintAlertIdLcCtrlFatalBusIntegError] = kTopPeppermintAlertPeripheralLcCtrl,
+  [kTopPeppermintAlertIdRvDmFatalFault] = kTopPeppermintAlertPeripheralRvDm,
+  [kTopPeppermintAlertIdRvPlicFatalFault] = kTopPeppermintAlertPeripheralRvPlic,
+  [kTopPeppermintAlertIdRvTimerFatalFault] = kTopPeppermintAlertPeripheralRvTimer,
+  [kTopPeppermintAlertIdAesRecovCtrlUpdateErr] = kTopPeppermintAlertPeripheralAes,
+  [kTopPeppermintAlertIdAesFatalFault] = kTopPeppermintAlertPeripheralAes,
+  [kTopPeppermintAlertIdHmacFatalFault] = kTopPeppermintAlertPeripheralHmac,
+  [kTopPeppermintAlertIdKmacRecovOperationErr] = kTopPeppermintAlertPeripheralKmac,
+  [kTopPeppermintAlertIdKmacFatalFaultErr] = kTopPeppermintAlertPeripheralKmac,
+  [kTopPeppermintAlertIdOtbnFatal] = kTopPeppermintAlertPeripheralOtbn,
+  [kTopPeppermintAlertIdOtbnRecov] = kTopPeppermintAlertPeripheralOtbn,
+  [kTopPeppermintAlertIdKeymgrDpeRecovOperationErr] = kTopPeppermintAlertPeripheralKeymgrDpe,
+  [kTopPeppermintAlertIdKeymgrDpeFatalFaultErr] = kTopPeppermintAlertPeripheralKeymgrDpe,
+  [kTopPeppermintAlertIdCsrngRecovAlert] = kTopPeppermintAlertPeripheralCsrng,
+  [kTopPeppermintAlertIdCsrngFatalAlert] = kTopPeppermintAlertPeripheralCsrng,
+  [kTopPeppermintAlertIdEntropySrcRecovAlert] = kTopPeppermintAlertPeripheralEntropySrc,
+  [kTopPeppermintAlertIdEntropySrcFatalAlert] = kTopPeppermintAlertPeripheralEntropySrc,
+  [kTopPeppermintAlertIdEdn0RecovAlert] = kTopPeppermintAlertPeripheralEdn0,
+  [kTopPeppermintAlertIdEdn0FatalAlert] = kTopPeppermintAlertPeripheralEdn0,
+  [kTopPeppermintAlertIdEdn1RecovAlert] = kTopPeppermintAlertPeripheralEdn1,
+  [kTopPeppermintAlertIdEdn1FatalAlert] = kTopPeppermintAlertPeripheralEdn1,
+  [kTopPeppermintAlertIdSramCtrlMainFatalError] = kTopPeppermintAlertPeripheralSramCtrlMain,
+  [kTopPeppermintAlertIdRomCtrlFatal] = kTopPeppermintAlertPeripheralRomCtrl,
+  [kTopPeppermintAlertIdDmaFatalFault] = kTopPeppermintAlertPeripheralDma,
+  [kTopPeppermintAlertIdMbx0FatalFault] = kTopPeppermintAlertPeripheralMbx0,
+  [kTopPeppermintAlertIdMbx0RecovFault] = kTopPeppermintAlertPeripheralMbx0,
+  [kTopPeppermintAlertIdMbx1FatalFault] = kTopPeppermintAlertPeripheralMbx1,
+  [kTopPeppermintAlertIdMbx1RecovFault] = kTopPeppermintAlertPeripheralMbx1,
+  [kTopPeppermintAlertIdRvCoreIbexFatalSwErr] = kTopPeppermintAlertPeripheralRvCoreIbex,
+  [kTopPeppermintAlertIdRvCoreIbexRecovSwErr] = kTopPeppermintAlertPeripheralRvCoreIbex,
+  [kTopPeppermintAlertIdRvCoreIbexFatalHwErr] = kTopPeppermintAlertPeripheralRvCoreIbex,
+  [kTopPeppermintAlertIdRvCoreIbexRecovHwErr] = kTopPeppermintAlertPeripheralRvCoreIbex,
+  [kTopPeppermintAlertIdIncomingSocSocFatalAlert0] = kTopPeppermintAlertPeripheralExternal,
+  [kTopPeppermintAlertIdIncomingSocSocFatalAlert1] = kTopPeppermintAlertPeripheralExternal,
+  [kTopPeppermintAlertIdIncomingSocSocFatalAlert2] = kTopPeppermintAlertPeripheralExternal,
+  [kTopPeppermintAlertIdIncomingSocSocFatalAlert3] = kTopPeppermintAlertPeripheralExternal,
+};
+
+/**
+ * PLIC Interrupt Source to Peripheral Map
+ *
+ * This array is a mapping from `top_peppermint_plic_irq_id_t` to
+ * `top_peppermint_plic_peripheral_t`.
+ */
+const top_peppermint_plic_peripheral_t
+    top_peppermint_plic_interrupt_for_peripheral[39] = {
+  [kTopPeppermintPlicIrqIdNone] = kTopPeppermintPlicPeripheralUnknown,
+  [kTopPeppermintPlicIrqIdPwrmgrWakeup] = kTopPeppermintPlicPeripheralPwrmgr,
+  [kTopPeppermintPlicIrqIdAlertHandlerClassa] = kTopPeppermintPlicPeripheralAlertHandler,
+  [kTopPeppermintPlicIrqIdAlertHandlerClassb] = kTopPeppermintPlicPeripheralAlertHandler,
+  [kTopPeppermintPlicIrqIdAlertHandlerClassc] = kTopPeppermintPlicPeripheralAlertHandler,
+  [kTopPeppermintPlicIrqIdAlertHandlerClassd] = kTopPeppermintPlicPeripheralAlertHandler,
+  [kTopPeppermintPlicIrqIdRvTimerAonTimerExpiredHart0Timer0] = kTopPeppermintPlicPeripheralRvTimerAon,
+  [kTopPeppermintPlicIrqIdOtpCtrlOtpOperationDone] = kTopPeppermintPlicPeripheralOtpCtrl,
+  [kTopPeppermintPlicIrqIdOtpCtrlOtpError] = kTopPeppermintPlicPeripheralOtpCtrl,
+  [kTopPeppermintPlicIrqIdRvTimerTimerExpiredHart0Timer0] = kTopPeppermintPlicPeripheralRvTimer,
+  [kTopPeppermintPlicIrqIdHmacHmacDone] = kTopPeppermintPlicPeripheralHmac,
+  [kTopPeppermintPlicIrqIdHmacFifoEmpty] = kTopPeppermintPlicPeripheralHmac,
+  [kTopPeppermintPlicIrqIdHmacHmacErr] = kTopPeppermintPlicPeripheralHmac,
+  [kTopPeppermintPlicIrqIdKmacKmacDone] = kTopPeppermintPlicPeripheralKmac,
+  [kTopPeppermintPlicIrqIdKmacFifoEmpty] = kTopPeppermintPlicPeripheralKmac,
+  [kTopPeppermintPlicIrqIdKmacKmacErr] = kTopPeppermintPlicPeripheralKmac,
+  [kTopPeppermintPlicIrqIdOtbnDone] = kTopPeppermintPlicPeripheralOtbn,
+  [kTopPeppermintPlicIrqIdKeymgrDpeOpDone] = kTopPeppermintPlicPeripheralKeymgrDpe,
+  [kTopPeppermintPlicIrqIdCsrngCsCmdReqDone] = kTopPeppermintPlicPeripheralCsrng,
+  [kTopPeppermintPlicIrqIdCsrngCsEntropyReq] = kTopPeppermintPlicPeripheralCsrng,
+  [kTopPeppermintPlicIrqIdCsrngCsHwInstExc] = kTopPeppermintPlicPeripheralCsrng,
+  [kTopPeppermintPlicIrqIdCsrngCsFatalErr] = kTopPeppermintPlicPeripheralCsrng,
+  [kTopPeppermintPlicIrqIdEntropySrcEsEntropyValid] = kTopPeppermintPlicPeripheralEntropySrc,
+  [kTopPeppermintPlicIrqIdEntropySrcEsHealthTestFailed] = kTopPeppermintPlicPeripheralEntropySrc,
+  [kTopPeppermintPlicIrqIdEntropySrcEsObserveFifoReady] = kTopPeppermintPlicPeripheralEntropySrc,
+  [kTopPeppermintPlicIrqIdEntropySrcEsFatalErr] = kTopPeppermintPlicPeripheralEntropySrc,
+  [kTopPeppermintPlicIrqIdEdn0EdnCmdReqDone] = kTopPeppermintPlicPeripheralEdn0,
+  [kTopPeppermintPlicIrqIdEdn0EdnFatalErr] = kTopPeppermintPlicPeripheralEdn0,
+  [kTopPeppermintPlicIrqIdEdn1EdnCmdReqDone] = kTopPeppermintPlicPeripheralEdn1,
+  [kTopPeppermintPlicIrqIdEdn1EdnFatalErr] = kTopPeppermintPlicPeripheralEdn1,
+  [kTopPeppermintPlicIrqIdDmaDmaDone] = kTopPeppermintPlicPeripheralDma,
+  [kTopPeppermintPlicIrqIdDmaDmaChunkDone] = kTopPeppermintPlicPeripheralDma,
+  [kTopPeppermintPlicIrqIdDmaDmaError] = kTopPeppermintPlicPeripheralDma,
+  [kTopPeppermintPlicIrqIdMbx0MbxReady] = kTopPeppermintPlicPeripheralMbx0,
+  [kTopPeppermintPlicIrqIdMbx0MbxAbort] = kTopPeppermintPlicPeripheralMbx0,
+  [kTopPeppermintPlicIrqIdMbx0MbxError] = kTopPeppermintPlicPeripheralMbx0,
+  [kTopPeppermintPlicIrqIdMbx1MbxReady] = kTopPeppermintPlicPeripheralMbx1,
+  [kTopPeppermintPlicIrqIdMbx1MbxAbort] = kTopPeppermintPlicPeripheralMbx1,
+  [kTopPeppermintPlicIrqIdMbx1MbxError] = kTopPeppermintPlicPeripheralMbx1,
+};

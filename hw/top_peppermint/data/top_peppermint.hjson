@@ -1,0 +1,1081 @@
+// Copyright lowRISC contributors (OpenTitan project).
+// Licensed under the Apache License, Version 2.0, see LICENSE for details.
+// SPDX-License-Identifier: Apache-2.0
+//
+// TOP Peppermint configuration
+{ name: "peppermint",
+  type: "top",
+
+  // 32-bit datawidth
+  datawidth: "32",
+
+  // No AST block: the base clocks are plain input ports (clk_main_i,
+  // clk_aon_i)
+  ast: false,
+
+  // Power information for the design
+  power: {
+    // Power domains supported by the design
+    domains: ["Aon", "Main"],
+
+    // Default power domain used for the design
+    default: "Main"
+
+    // The SoC does not hold Peppermint in reset: rst_main_no is an output and
+    // the Aon domain has its own power-on reset.
+    wait_for_external_reset: false
+
+    // SoC wakeup request (power handshake)
+    external_wakeups: [
+      { name: "wkup_req", width: "1", module: "soc" }
+    ]
+
+    // Declared so that pwrmgr keeps a one-entry rstreqs vector and its
+    // RESET_EN/RESET_STATUS registers, but tied off rather than routed
+    // off-chip (see inter_module.connect). pwrmgr cannot currently be
+    // generated with an empty rstreqs vector: RESET_EN would end up without
+    // any field.
+    external_reset_requests: [
+      { name: "rst_req", width: "1", module: "soc",
+        desc: "External reset request from the SoC",
+        enabled_after_reset: true }
+    ]
+
+    // No additional ROM control input to halt Ibex
+    halt_ibex_via_rom_ctrl: false
+  },
+
+  inter_domain: {
+    flat_clk_rst: true
+
+    port_names: {
+      // Keys are the derived names: the rstmgr output field with the power
+      // domain spliced in before the trailing _n, hence the doubled "main" on
+      // the two resets whose node is itself called lc_main.
+      clk_main_secure:             "clk_main"
+      clk_aon_secure:              "clk_aon"
+      // rst_lc_main_n[DomainMainSel]: the one reset of the whole Main domain.
+      rst_lc_main_main_n:          "rst_main_n"
+      // Separate reset line for the shadow copies of shadowed registers, so
+      // that a localized reset glitch cannot defeat both copies at once.
+      rst_lc_main_shadowed_main_n: "rst_main_shadowed_n"
+      // Survives an ndmreset raised by the debug module itself, so a debug
+      // session is not torn down by the reset it requested.
+      rst_sys_main_n:              "rst_main_sys_n"
+      // Same reset as rst_main_n, but released synchronously to clk_aon for
+      // the Main-domain logic clocked by it.
+      rst_lc_aon_main_n:           "rst_main_aon_n"
+    }
+  }
+
+  // List of unmanaged external clocks
+  unmanaged_clocks: []
+
+  // This is the clock data structure of the design.
+  // The src key indicates the raw clock sources in the design
+  // The groups key indicates the various clock groupings in the design
+  clocks: {
+
+    // Clock Source attributes
+    // name: Name of group.
+    // aon:  Whether the clock is free running all the time.
+    //       If it is, the clock is not handled by clkmgr.
+    // freq: Absolute frequency of clk in Hz
+    // ref: indicates the clock is used as a reference for measurement.
+    srcs: [
+      { name: "main", aon: "no",  freq: "400000000" }
+      { name: "aon",  aon: "yes", freq: "32768", ref: true }
+    ],
+
+    // Derived clock source attributes
+    // name: Name of group.
+    // aon:  Whether the clock is free running all the time.
+    //       If it is, the clock is not handled by clkmgr.
+    // freq: Absolute frequency of clk in Hz
+    // src:  From which clock source is the clock derived
+    // div:  Ratio between derived clock and source clock
+    derived_srcs: [],
+
+    // Clock Group attributes
+    // name: name of group.
+    //
+    // src: The hierarchical source of the clock
+    // "ext"  - clock is supplied from a port of the top module
+    // "top"  - clock is supplied from a net inside the top module
+    //
+    // sw_cg: whether software is allowed to gate the clock
+    // "no"   - software is not allowed to gate clocks
+    // "yes"  - software is allowed to gate clocks
+    // "hint" - software can provide a hint, and hw controls the rest
+    //
+    // unique: whether each module in the group can be separately gated
+    //         if sw_cg is "no", this field has no meaning
+    // "yes"  - each clock is individually controlled
+    // "no"   - the group is controlled as one single unit
+    //
+    // The powerup and proc groups are unique.
+    // The powerup group of clocks do not feed through the clock
+    // controller as they manage clock controller behavior
+    // The proc group is not peripheral, and directly hardwired
+
+    groups: [
+      { name: "ext",     src: "ext", sw_cg: "no" }
+      { name: "secure",  src: "top", sw_cg: "no" }
+    ],
+  },
+
+  // List of unmanaged external resets
+  //
+  // These should be listed as dictionaries that just give their names, in this form:
+  //
+  //    { name: "my_external_reset" }
+  // unmanaged_resets: []
+
+  // This is the reset data structure of the design.
+  // The node key represents all the known resets in the design
+  resets: {
+
+    // Reset node attributes
+    // name: name of reset.
+    //
+    // gen: whether the reset is generated
+    // true: it is a generated reset inside rstmgr
+    // false: it is a hardwired design reset inside rstmgr (roots and por)
+    // For non-generated resets, the parent / domain definitions have no meaning.
+    //
+    // type: the reset type [ext, top]
+    // ext: the reset is coming in from the ports, external to earlgrey
+    // int: the reset is only used inside rstmgr
+    // top: the reset is output from rstmgr to top level struct
+    //
+    // parent: The parent reset
+    // If type is "ext", there is no root, since it is external
+    //
+    // domains: The power domains of a particular reset
+    // This is a list of the supported power domains.
+    // Valid values are Aon and (power domain)0 ~ (power domain)1.
+    // If no value is supplied, the default is specified by the power configuration.
+    //
+    // clk:  related clock domain for synchronous release
+    // If type is "por", there is not related clock, since it is
+    // likely external or generated from a voltage comparator
+    //
+    nodes: [
+      { name: "por_aon", gen: false, type: "top",                    clock: "aon"  }
+      { name: "lc_src",  gen: false, type: "int",                    clock: "main" }
+      { name: "sys_src", gen: false, type: "int",                    clock: "main" }
+      { name: "por_main", gen: true, type: "top", parent: "por_aon", clock: "main" }
+      { name: "sys",     gen: true,  type: "top", parent: "sys_src", clock: "main" }
+      { name: "lc_main",      gen: true,  type: "top", parent: "lc_src",  clock: "main" }
+      { name: "lc_aon",  gen: true,  type: "top", parent: "lc_src",  clock: "aon"  }
+      { name: "soc_cpu", gen: true,  type: "top", parent: "lc_src",  clock: "aon", sw: true, domains: ["Aon"] }
+    ]
+  }
+  // The reset requests: peripherals are deduced, but internal and debug need
+  // to be configure in hjson file.
+  reset_requests: {
+    int: [
+      {
+        "name": "MainPwr",
+        "desc": "main power glitch reset request",
+        "module": "pwrmgr"
+      },
+      {
+        "name": "Esc",
+        "desc": "escalation reset request",
+        "module": "alert_handler"
+      }
+    ],
+    debug: [
+      {
+        "name": "Ndm",
+        "desc": "non-debug-module reset request",
+        "module": "rv_dm"
+      }
+    ],
+  },
+  // Number of cores: used in rv_plic and timer
+  num_cores: "1",
+
+  // Any module with interrupts that doesn't specify plic
+  // will have its interrupts sent here
+  default_plic: "rv_plic"
+
+  // Any module with alerts that doesn't specify alert_handler
+  // will have its alerts sent here
+  default_alert_handler: "alert_handler"
+
+  // `addr_spaces` names the distinct address spaces present in the device.
+  // All hosts in the same address space share the same base addresses for
+  // all peripherals, though not every peripheral will be accessible to every
+  // host in that address space--Access privileges are separate from addresses.
+  addr_spaces: [
+    { name: "hart",
+      desc: "The main address space, shared between the CPU and DM",
+      subspaces: [
+        { name: "mmio",
+          desc: '''
+                MMIO region excludes any memory that is separate from the module configuration
+                space, i.e. ROM, main SRAM and mailbox SoC window are excluded but retention SRAM is included.
+                '''
+          nodes: [
+            "pwrmgr",
+            "rstmgr",
+            "clkmgr",
+            "alert_handler",
+            "rv_timer_aon",
+            "sram_ctrl_ret_aon",
+            "otp_ctrl.core",
+            "otp_macro.prim",
+            "lc_ctrl.regs",
+            "rv_plic",
+            "rv_dm.regs",
+            "rom_ctrl.regs",
+            "sram_ctrl_main.regs",
+            "aes",
+            "hmac",
+            "kmac",
+            "otbn",
+            "keymgr_dpe",
+            "csrng",
+            "entropy_src",
+            "edn0",
+            "edn1",
+            "rv_timer",
+            "dma",
+            "mbx0.core",
+            "mbx1.core",
+          ]
+        }
+      ]
+    },
+    // SoC-facing mailbox window
+    { name: "soc_mbx",
+      desc: "SoC address space for mailbox access"
+    },
+    // SoC-facing debug window
+    { name: "soc_dbg",
+      desc: "SoC address space for debug module interfaces"
+    },
+  ]
+
+  // `module` defines the peripherals.
+  // Details are coming from each modules' config file `ip.hjson`
+  // attr: There are a few types of modules supported
+     //   normal(default): Normal, non-templated modules that will be instantiated
+     //   templated:   These modules are templated and must be run through topgen
+     //   ipgen:       These modules are the same as templated but use the new ipgen flow
+     //   reggen_top:  These modules are not templated, but need to have reggen run
+     //                because they live exclusively in hw/top_* instead of hw/ip_*.
+     //                These modules are also instantiated in the top level.
+     //   reggen_only: Similar to reggen_top, but are not instantiated in the top level.
+  module: [
+    { name: "pwrmgr",
+      type: "pwrmgr",
+      template_type: "pwrmgr",
+      clock_srcs: {
+        clk_i: "aon",
+        clk_slow_i: "aon",
+        clk_lc_i: {clock: "main", group: "ext"},
+        clk_esc_i: "aon"
+      },
+      clock_group: "ext",
+      reset_connections: {
+        rst_ni:      {name: "por_aon", domain: "Aon"},
+        rst_main_ni: {name: "por_aon", domain: "Main"},
+        rst_lc_ni:   {name: "lc_main",      domain: "Aon"},
+        rst_esc_ni:  {name: "lc_aon",  domain: "Aon"},
+        rst_slow_ni: {name: "por_aon", domain: "Aon"}
+      },
+      domain: "Aon",
+      base_addr: {
+        hart: "0x40400000",
+      },
+      param_decl: {
+        EscNumSeverities: "AlertHandlerEscNumSeverities",
+        EscPingCountWidth: "AlertHandlerEscPingCountWidth"
+      },
+      attr: "ipgen",
+    },
+    { name: "rstmgr",
+      type: "rstmgr",
+      template_type: "rstmgr",
+      clock_srcs: {clk_i: "aon", clk_por_i: "aon", clk_aon_i: "aon", clk_main_i: "main"},
+      clock_group: "ext",
+      reset_connections: {
+        rst_ni:     {name: "lc_aon",  domain: "Aon"},
+        rst_por_ni: {name: "por_aon", domain: "Aon"}
+      },
+      domain: "Aon",
+      base_addr: {
+        hart: "0x40410000",
+      },
+      param_decl: {
+        SecCheck: "0",
+      }
+      attr: "ipgen",
+    },
+    { name: "clkmgr",
+      type: "clkmgr",
+      template_type: "clkmgr",
+      clock_srcs: {
+        clk_i: "aon",
+        clk_main_i: {
+          group: "ext",
+          clock: "main"
+        },
+        clk_aon_i: {
+          group: "ext",
+          clock: "aon"
+        },
+      },
+      clock_group: "ext",
+      reset_connections: {
+        rst_ni:           {name: "lc_aon",  domain: "Aon"},
+        rst_aon_ni:       {name: "lc_aon",  domain: "Aon"},
+        rst_main_ni:      {name: "lc_main",      domain: "Aon"},
+        rst_root_ni:      {name: "por_aon", domain: "Aon"},
+        rst_root_main_ni: {name: "por_main", domain: "Aon"},
+      },
+      domain: "Aon",
+      base_addr: {
+        hart: "0x40420000",
+      },
+      ipgen_params: {
+        ext_clk_bypass: false
+      },
+      attr: "ipgen",
+    },
+    { name: "alert_handler",
+      type: "alert_handler",
+      template_type: "alert_handler",
+      clock_srcs: {clk_i: "aon", clk_edn_i: {clock: "main", group: "secure"}},
+      clock_group: "ext",
+      reset_connections: {
+        rst_ni:     "lc_aon",
+        rst_edn_ni: {name: "lc_main", domain: "Main"}
+      },
+      domain: "Aon",
+      base_addr: {
+        hart: "0x40450000",
+      },
+      param_decl: {
+        EscNumSeverities: "4",
+        EscPingCountWidth: "16"
+      },
+      incoming_alert: ["incoming_alerts_soc.hjson"],
+      attr: "ipgen",
+    },
+    { name: "rv_timer_aon",
+      type: "rv_timer",
+      clock_srcs: {clk_i: "aon"},
+      clock_group: "ext",
+      reset_connections: {rst_ni: "lc_aon"},
+      domain: "Aon",
+      base_addr: {
+        hart: "0x40430000",
+      },
+    },
+    { name: "sram_ctrl_ret_aon",
+      type: "sram_ctrl",
+      clock_srcs: {clk_i: "aon", clk_otp_i: "main"},
+      clock_group: "ext",
+      reset_connections: {
+        rst_ni:     "lc_aon",
+        rst_otp_ni: {name: "lc_main", domain: "Main"}
+      },
+      domain: "Aon",
+      param_decl: {
+        InstrExec: "0",
+        InstSize: 8192
+      }
+      base_addrs: {
+        regs: {hart: "0x40460000"},
+        ram:  {hart: "0x40470000"},
+      }
+      // Memory regions must be associated with a dedicated
+      // TL-UL device interface.
+      memory: {
+        ram: {
+          label:    "ram_ret_aon",
+          swaccess:   "rw",
+          data_intg_passthru: "true",
+          exec:       "True",
+          byte_write: "True",
+          size:     "0x2000"
+        }
+      }
+    },
+    { name: "otp_ctrl",
+      type: "otp_ctrl",
+      template_type: "otp_ctrl",
+      clock_srcs: {clk_i: "main", clk_edn_i: "main"},
+      clock_group: "secure",
+      reset_connections: {rst_ni: "lc_main", rst_edn_ni: "lc_main"},
+      base_addrs: {
+        core: {hart: "0x30130000"},
+      },
+      attr: "ipgen",
+    },
+    { name: "otp_macro",
+      type: "otp_macro",
+      clock_srcs: {clk_i: "main"},
+      clock_group: "secure",
+      reset_connections: {rst_ni: "lc_main"},
+      base_addrs: {
+        prim: {hart: "0x30140000"},
+      },
+      param_decl: {
+        Width: "otp_ctrl_macro_pkg::OtpWidth",
+        Depth: "otp_ctrl_macro_pkg::OtpDepth",
+        SizeWidth: "otp_ctrl_macro_pkg::OtpSizeWidth",
+        VendorTestOffset: "otp_ctrl_reg_pkg::VendorTestOffset",
+        VendorTestSize: "otp_ctrl_reg_pkg::VendorTestSize",
+      },
+    },
+    { name: "lc_ctrl",
+      type: "lc_ctrl",
+      clock_srcs: {clk_i: "main", clk_kmac_i: "main"},
+      clock_group: "secure",
+      reset_connections: {rst_ni: "lc_main", rst_kmac_ni: "lc_main"},
+      base_addrs: {
+        regs: {hart: "0x30150000"},
+        dmi:  {soc_dbg: "0x3000"},
+      },
+      param_decl: {
+        SecVolatileRawUnlockEn: "0",
+        // The following three values get exposed in the life cycle CSRs
+        // that are also readable via the TAP.
+        SiliconCreatorId: "16'h 4003", // Creator ID for Peppermint integration
+        ProductId: "16'h 4100", // Peppermint
+        RevisionId: "8'h 01",   // First tapeout
+        IdcodeValue: "32'h0000_0001",
+        UseDmiInterface: "1",
+        // No flash control so feed OTBN directly to lcctrl.
+        NumRmaAckSigs: "1",
+        EscNumSeverities: "AlertHandlerEscNumSeverities",
+        EscPingCountWidth: "AlertHandlerEscPingCountWidth",
+      },
+    },
+    { name: "rv_dm",
+      type: "rv_dm",
+      clock_srcs: {clk_i: "main", clk_lc_i: "main"},
+      clock_group: "secure",
+      reset_connections: {rst_ni: "sys", rst_lc_ni: "lc_main"},
+      base_addrs: {
+        mem: {hart: "0x00050000"},
+        regs: {hart: "0x21200000"},
+        dbg: {soc_dbg: "0x00000000"},
+      },
+      param_decl: {
+        IdcodeValue: "32'h0000_0001",
+        SecVolatileRawUnlockEn: "0",
+        // Use TL-UL based DMI
+        UseDmiInterface: "1"
+      },
+      generate_dif: "False",
+    },
+    { name: "rv_plic",
+      type: "rv_plic",
+      template_type: "rv_plic",
+      clock_srcs: {clk_i: "main"},
+      clock_group: "secure",
+      reset_connections: {rst_ni: "lc_main"},
+      base_addr: {hart: "0x28000000"},
+      attr: "ipgen",
+      targets: ["rv_core_ibex"],
+    },
+    { name: "rv_timer",
+      type: "rv_timer",
+      clock_srcs: {clk_i: "main"},
+      clock_group: "secure",
+      reset_connections: {rst_ni: "lc_main"},
+      base_addr: {hart: "0x21190000"},
+    },
+    { name: "aes",
+      type: "aes",
+      clock_srcs: {clk_i: "main", clk_edn_i: "main"},
+      clock_group: "secure",
+      reset_connections: {rst_ni: "lc_main", rst_edn_ni: "lc_main"},
+      param_decl: {
+        AESGCMEnable: "1",
+        SecMasking: "1",
+        SecSBoxImpl: "aes_pkg::SBoxImplDom"
+      },
+      base_addr: {hart: "0x21100000"},
+    },
+    { name: "hmac",
+      type: "hmac",
+      clock_srcs: {clk_i: "main"},
+      clock_group: "secure",
+      reset_connections: {rst_ni: "lc_main"},
+      base_addr: {hart: "0x21110000"},
+    },
+    { name: "kmac",
+      type: "kmac",
+      param_decl: {
+        EnMasking: "1",
+        NumAppIntf: 3,
+        AppCfg: "'{kmac_pkg::AppCfgKeyMgr,\n        kmac_pkg::AppCfgLcCtrl,\n        kmac_pkg::AppCfgRomCtrl}"
+      },
+      clock_srcs: {clk_i: "main", clk_edn_i: "main"},
+      clock_group: "secure",
+      reset_connections: {rst_ni: "lc_main", rst_edn_ni: "lc_main"},
+      base_addr: {hart: "0x21120000"},
+    },
+    { name: "otbn",
+      type: "otbn",
+      clock_srcs: {clk_i: "main", clk_edn_i: "main", clk_otp_i: "main"},
+      clock_group: "secure",
+      reset_connections: {rst_ni: "lc_main", rst_edn_ni: "lc_main", rst_otp_ni: "lc_main"},
+      base_addr: {hart: "0x21130000"},
+    },
+    { name: "keymgr_dpe",
+      type: "keymgr_dpe",
+      param_decl: {
+        NumRomDigestInputs: 1,
+      },
+      clock_srcs: {clk_i: "main", clk_edn_i: "main"},
+      clock_group: "secure",
+      reset_connections: {rst_ni: "lc_main", rst_edn_ni: "lc_main"},
+      base_addr: {hart: "0x21140000"},
+    },
+    { name: "csrng",
+      type: "csrng",
+      clock_srcs: {clk_i: "main"},
+      clock_group: "secure",
+      reset_connections: {rst_ni: "lc_main"},
+      base_addr: {hart: "0x21150000"},
+    },
+    { name: "entropy_src",
+      type: "entropy_src",
+      clock_srcs: {clk_i: "main"},
+      clock_group: "secure",
+      reset_connections: {rst_ni: "lc_main"},
+      base_addr: {hart: "0x21160000"},
+      // 4 independent noise source channels.
+      param_decl: {
+        RngBusWidth: "4",
+        RngBusBitSelWidth: "2"
+      },
+    },
+    { name: "edn0",
+      type: "edn",
+      clock_srcs: {clk_i: "main"},
+      clock_group: "secure",
+      reset_connections: {rst_ni: "lc_main"},
+      base_addr: {hart: "0x21170000"},
+      param_decl: {NumEndPoints: "8"},
+    },
+    { name: "edn1",
+      type: "edn",
+      clock_srcs: {clk_i: "main"},
+      clock_group: "secure",
+      reset_connections: {rst_ni: "lc_main"},
+      base_addr: {hart: "0x21180000"},
+      param_decl: {NumEndPoints: "1"},
+    },
+    { name: "sram_ctrl_main",
+      type: "sram_ctrl",
+      clock_srcs: {clk_i: "main", clk_otp_i: "main"},
+      clock_group: "secure",
+      reset_connections: {rst_ni: "lc_main", rst_otp_ni: "lc_main"},
+      param_decl: {
+        InstrExec: "1",
+        NumPrinceRoundsHalf: "2",
+        InstSize: "196608", // 192 KiB
+      },
+      base_addrs: {
+        regs: {hart: "0x211c0000"},
+        ram: {hart: "0x10000000"},
+      },
+      memory: {
+        ram: {
+          label: "ram_main",
+          swaccess: "rw",
+          data_intg_passthru: "true",
+          exec: "True",
+          byte_write: "True",
+          size: "0x30000" // 192 KiB
+        }
+      },
+    },
+    { name: "rom_ctrl",
+      type: "rom_ctrl",
+      clock_srcs: {clk_i: "main"},
+      clock_group: "secure",
+      reset_connections: {rst_ni: "lc_main"},
+      base_addrs: {
+        rom:  {hart: "0x00020000"},
+        regs: {hart: "0x211e0000"},
+      }
+      memory: {
+        rom: {
+          label:              "rom",
+          swaccess:           "ro",
+          data_intg_passthru: "True",
+          exec:               "True",
+          byte_write:         "False",
+          size:               "0x30000", // 192 KiB
+        }
+      },
+      param_decl: {
+        SecDisableScrambling: "1'b0",
+        FlopToKmac: "1'b1"
+      },
+    },
+    { name: "dma",
+      type: "dma",
+      clock_srcs: {clk_i: "main"},
+      clock_group: "secure",
+      reset_connections: {rst_ni: "lc_main"},
+      base_addr: {hart: "0x22010000"},
+    },
+    { name: "soc_proxy",
+      type: "soc_proxy",
+      attr: "reggen_top",
+      clock_srcs: {clk_i: "main"},
+      clock_group: "secure",
+      reset_connections: {rst_ni: "lc_main"},
+      base_addrs: {
+        ctn: {hart: "0x80000000"},
+      },
+      memory: {
+        ctn: {
+          label: "ctn",
+          swaccess: "rw",
+          data_intg_passthru: "true",
+          exec: "True",
+          byte_write: "True",
+          size: "0x10000000"
+        }
+      },
+    },
+    { name: "mbx0",
+      type: "mbx",
+      // Incoming mailbox: the SoC sends messages to Peppermint.
+      clock_srcs: {clk_i: "main"},
+      clock_group: "secure",
+      reset_connections: {rst_ni: "lc_main"},
+      base_addrs: {
+        core: {hart: "0x22000000"},
+        soc:  {soc_mbx: "0x00000000"},
+      },
+    },
+    { name: "mbx1",
+      type: "mbx",
+      // Outgoing mailbox: Peppermint sends messages to the SoC.
+      clock_srcs: {clk_i: "main"},
+      clock_group: "secure",
+      reset_connections: {rst_ni: "lc_main"},
+      base_addrs: {
+        core: {hart: "0x22000100"},
+        soc:  {soc_mbx: "0x00000100"},
+      },
+    },
+    { name: "rv_core_ibex",
+      type: "rv_core_ibex",
+      template_type: "rv_core_ibex",
+      attr: "ipgen",
+      ipgen_params: {
+        num_regions: 32
+      },
+      param_decl: {
+        PMPEnable: "1",
+        PMPGranularity: "0",
+        PMPNumRegions: "16",
+        MHPMCounterNum: "10",
+        MHPMCounterWidth: "32",
+        PMPRstCfg: "ibex_pmp_reset_pkg::PmpCfgRst",
+        PMPRstAddr: "ibex_pmp_reset_pkg::PmpAddrRst",
+        PMPRstMsecCfg: "ibex_pmp_reset_pkg::PmpMseccfgRst",
+        RV32E: "0",
+        RV32M: "ibex_pkg::RV32MSingleCycle",
+        RV32B: "ibex_pkg::RV32BOTEarlGrey",
+        RV32ZC: "ibex_pkg::RV32ZcaZcbZcmp",
+        RegFile: "ibex_pkg::RegFileFF",
+        BranchTargetALU: "1",
+        WritebackStage: "1",
+        ICache: "1",
+        ICacheECC: "1",
+        ICacheScramble: "1",
+        BranchPredictor: "0",
+        DbgTriggerEn: "1",
+        DbgHwBreakNum: "4",
+        // Dual-core lockstep configuration.
+        SecureIbex: "1",
+        DmBaseAddr: "tl_main_pkg::ADDR_SPACE_RV_DM__MEM",
+        DmAddrMask: "tl_main_pkg::ADDR_MASK_RV_DM__MEM",
+        DmHaltAddr: "tl_main_pkg::ADDR_SPACE_RV_DM__MEM + dm::HaltAddress[31:0]",
+        DmExceptionAddr: "tl_main_pkg::ADDR_SPACE_RV_DM__MEM + dm::ExceptionAddress[31:0]",
+        PipeLine: "1",
+        InstructionPipeline: "1",
+        NEscalationSeverities: "AlertHandlerEscNumSeverities",
+        WidthPingCounter: "AlertHandlerEscPingCountWidth"
+      },
+      clock_srcs: {
+        clk_i: "main",
+        clk_edn_i: "main",
+        clk_esc_i: "aon",
+        clk_otp_i: {clock: "main", group: "secure"},
+      },
+      clock_group: "secure",
+      reset_connections: {
+        rst_ni: "lc_main",
+        rst_edn_ni: "lc_main",
+        rst_esc_ni: "lc_aon",
+        rst_otp_ni: "lc_main",
+      },
+      base_addr: {hart: "0x211f0000"},
+    },
+  ]
+
+  // The port data structure is not something that should be used liberally.
+  // It is used specifically to assign special attributes to specific ports.
+  // For example, this allows us to designate a port as part of inter-module
+  // connections.
+  port: []
+
+  // Inter-module Connection.
+  // format:
+  //    requester: [ resp1, resp2, ... ],
+  //
+  //  the field and value should be module_inst.port_name
+  inter_module: {
+    'connect': {
+      'pwrmgr.pwr_rst'          : ['rstmgr.pwr'],
+      'pwrmgr.pwr_clk'          : ['clkmgr.pwr'],
+      'pwrmgr.pwr_otp'          : ['otp_ctrl.pwr_otp'],
+      'pwrmgr.pwr_lc'           : ['lc_ctrl.pwr_lc'],
+      'pwrmgr.strap'            : ['rv_dm.strap_en'],
+      'pwrmgr.fetch_en'         : ['rv_core_ibex.pwrmgr_cpu_en'],
+      'pwrmgr.rom_ctrl'         : ['rom_ctrl.pwrmgr_data'],
+      'pwrmgr.low_power'    : [],
+      // No off-chip reset requests: the SoC requests a reset through the
+      // mailbox, not through pwrmgr's rstreqs vector.
+      'pwrmgr.rstreqs'          : [],
+
+      // The idle connection is automatically connected through topgen.
+      // The user does not need to explicitly declare anything other than
+      // an empty list.
+      'clkmgr.idle'             : [],
+
+      'dma.sys'                 : [],
+      'dma.lsio_trigger'        : [],
+
+      'alert_handler.esc_rx'    : ['rv_core_ibex.esc_rx', 'lc_ctrl.esc_scrap_state0_rx', 'lc_ctrl.esc_scrap_state1_rx', 'pwrmgr.esc_rst_rx'],
+      'alert_handler.esc_tx'    : ['rv_core_ibex.esc_tx', 'lc_ctrl.esc_scrap_state0_tx', 'lc_ctrl.esc_scrap_state1_tx', 'pwrmgr.esc_rst_tx'],
+      'alert_handler.crashdump' : ['rstmgr.alert_dump'],
+
+      // Entropy complex.
+      'csrng.csrng_cmd'         : ['edn0.csrng_cmd', 'edn1.csrng_cmd'],
+      'csrng.entropy_src_hw_if' : ['entropy_src.entropy_src_hw_if'],
+      'edn0.edn'                : ['keymgr_dpe.edn', 'otp_ctrl.edn', 'kmac.entropy', 'alert_handler.edn', 'aes.edn', 'otbn.edn_urnd', 'rv_core_ibex.edn'],
+      'edn1.edn'                : ['otbn.edn_rnd'],
+
+      // OTP-derived keys.
+      'otp_ctrl.sram_otp_key'            : ['sram_ctrl_main.sram_otp_key', 'sram_ctrl_ret_aon.sram_otp_key', 'rv_core_ibex.icache_otp_key'],
+      'otp_ctrl.otbn_otp_key'            : ['otbn.otbn_otp_key'],
+      'otp_ctrl.keymgr_creator_root_key' : ['keymgr_dpe.creator_root_key'],
+      'otp_ctrl.keymgr_creator_seed'     : ['keymgr_dpe.creator_seed'],
+      'otp_ctrl.keymgr_owner_seed'       : ['keymgr_dpe.owner_seed'],
+
+      // OTP OTP_MACRO connections
+      'otp_ctrl.otp_macro'               : ['otp_macro.otp'],
+
+      // KeyMgr Sideload & KDF function
+      'keymgr_dpe.rom_digest'   : ['rom_ctrl.keymgr_data'],
+      'keymgr_dpe.aes_key'      : ['aes.keymgr_key'],
+      'keymgr_dpe.kmac_key'     : ['kmac.keymgr_key'],
+      'keymgr_dpe.otbn_key'     : ['otbn.keymgr_key'],
+
+      // KMAC Application Interface
+      'kmac.app'                : ['keymgr_dpe.kmac_data', 'lc_ctrl.kmac_data', 'rom_ctrl.kmac_data'],
+      'kmac.en_masking'         : ['keymgr_dpe.kmac_en_masking'],
+
+      // OTBN RMA wipe handshake with the LC controller.
+      // Note: this RoT configuration has no embedded nvm, hence
+      // the RMA request is just routed to OTBN directly.
+      'lc_ctrl.lc_nvm_rma_req'  : ['otbn.lc_rma_req'],
+      'otbn.lc_rma_ack'         : ['lc_ctrl.lc_nvm_rma_ack'],
+
+      // Peppermint has no bypassable clocks, so lc_ctrl's clock bypass
+      // request is always immediately acknowledged.
+      'lc_ctrl.lc_clk_byp_ack'  : ['lc_ctrl.lc_clk_byp_req'],
+
+      // OTP LC interface
+      'otp_ctrl.otp_lc_data'    : ['lc_ctrl.otp_lc_data'],
+      'lc_ctrl.lc_otp_program'  : ['otp_ctrl.lc_otp_program'],
+
+      // PRIM_OTP LC interface
+      'lc_ctrl.lc_otp_vendor_test' : ['otp_macro.test'],
+
+      // Diversification constant coming from life cycle
+      'lc_ctrl.lc_keymgr_div'   : ['keymgr_dpe.lc_keymgr_div'],
+
+      // Strap enable override signal, only used when SecVolatileRawUnlockEn = 1.
+      'lc_ctrl.strap_en_override' : ['rv_dm.strap_en_override'],
+
+      // LC function control signal broadcast
+      'lc_ctrl.lc_dft_en'       : ['otp_macro.lc_dft_en', 'pwrmgr.lc_dft_en', 'rv_dm.lc_dft_en'],
+      'lc_ctrl.lc_hw_debug_clr' : ['rv_dm.lc_hw_debug_clr'],
+      'lc_ctrl.lc_init_done'    : ['rv_dm.lc_init_done'],
+      'lc_ctrl.lc_hw_debug_en'  : ['sram_ctrl_main.lc_hw_debug_en', 'sram_ctrl_ret_aon.lc_hw_debug_en', 'csrng.lc_hw_debug_en', 'rv_dm.lc_hw_debug_en', 'pwrmgr.lc_hw_debug_en'],
+      'lc_ctrl.lc_cpu_en'       : ['rv_core_ibex.lc_cpu_en'],
+      'lc_ctrl.lc_keymgr_en'    : ['keymgr_dpe.lc_keymgr_en'],
+      'lc_ctrl.lc_escalate_en'  : ['aes.lc_escalate_en', 'kmac.lc_escalate_en', 'otbn.lc_escalate_en', 'otp_ctrl.lc_escalate_en', 'sram_ctrl_main.lc_escalate_en', 'sram_ctrl_ret_aon.lc_escalate_en', 'rv_dm.lc_escalate_en'],
+      'lc_ctrl.lc_check_byp_en' : ['otp_ctrl.lc_check_byp_en', 'rv_dm.lc_check_byp_en'],
+
+      // LC access control signal broadcast
+      // lc_raw_test_rma has no consumer in Peppermint (as in Earlgrey).
+      'lc_ctrl.lc_raw_test_rma'          : [],
+      'lc_ctrl.lc_creator_seed_sw_rw_en' : ['otp_ctrl.lc_creator_seed_sw_rw_en'],
+      'lc_ctrl.lc_owner_seed_sw_rw_en'   : ['otp_ctrl.lc_owner_seed_sw_rw_en'],
+      'lc_ctrl.lc_seed_hw_rd_en'         : ['otp_ctrl.lc_seed_hw_rd_en'],
+      'lc_ctrl.lc_rma_state'             : ['otp_ctrl.lc_rma_state'],
+
+      // rv_plic connections
+      'rv_plic.msip'            : ['rv_core_ibex.irq_software'],
+      'rv_plic.irq'             : ['rv_core_ibex.irq_external'],
+
+      // rv_dm connections
+      'rv_dm.debug_req'         : ['rv_core_ibex.debug_req'],
+
+      // rv core ibex connections
+      'rv_core_ibex.crash_dump' : ['rstmgr.cpu_dump'],
+      'rv_core_ibex.pwrmgr'     : ['pwrmgr.pwr_cpu'],
+
+      // Debug module reset request to power manager
+      'rv_dm.ndmreset_req'      : ['pwrmgr.ndmreset_req'],
+
+      // Reset manager software reset request to pwrmgr
+      'rstmgr.sw_rst_req'       : ['pwrmgr.sw_rst_req'],
+    }
+
+    // top is to connect to top net/struct.
+    // It defines the signal in the top and connect from the module,
+    // use of the signal is up to top template
+    'top': [
+        // top level net for clocks
+        'clkmgr.clocks',
+
+        // top level clock gating indications for alert subsystem
+        'clkmgr.cg_en',
+
+        // top level net for reset
+        'rstmgr.resets',
+
+        // top level reset asserted indications for alert subsystem
+        'rstmgr.rst_en',
+
+        'rstmgr.por_n',
+
+        // Power handshake with the SoC; broken out into flat signals by hand
+        // in the pd_aon template.
+        'pwrmgr.pwr_ast',
+
+        'lc_ctrl.lc_nvm_debug_en',
+
+        // Dedicated timer interrupt.
+        'rv_core_ibex.irq_timer',
+
+        // Hardwired connections.
+        'rv_core_ibex.hart_id', 'rv_core_ibex.boot_addr',
+
+        // OTP HW_CFG broadcast signals; struct breakout is done by hand in
+        // the pd_main template.
+        'otp_ctrl.otp_broadcast',
+        'csrng.otp_en_csrng_sw_app_read',
+        'lc_ctrl.otp_device_id',
+        'lc_ctrl.otp_manuf_state',
+        'keymgr_dpe.device_id',
+        'sram_ctrl_main.otp_en_sram_ifetch',
+
+        // Unconditionally disable the late debug feature (early debug).
+        'rv_dm.otp_dis_rv_dm_late_debug'
+    ],
+
+    // ext is to create port in the top.
+    'external': {
+        'pwrmgr.wakeups'                 : 'wakeup_main',
+
+        // Noise source interface: enable out, raw noise bits in.
+        'entropy_src.entropy_src_rng_enable' : 'es_rng_enable',
+        'entropy_src.entropy_src_rng_valid'  : 'es_rng_valid',
+        'entropy_src.entropy_src_rng_bits'   : 'es_rng_bit',
+        'entropy_src.rng_fips'               : 'es_rng_fips',
+
+        // Mailbox interrupts to the SoC (DOE convention).
+        'mbx0.doe_intr'                  : 'mbx0_doe_intr',
+        'mbx0.doe_intr_en'               : 'mbx0_doe_intr_en',
+        'mbx0.doe_intr_support'          : 'mbx0_doe_intr_support',
+        'mbx0.doe_async_msg_support'     : 'mbx0_doe_async_msg_support',
+        'mbx1.doe_intr'                  : 'mbx1_doe_intr',
+        'mbx1.doe_intr_en'               : 'mbx1_doe_intr_en',
+        'mbx1.doe_intr_support'          : 'mbx1_doe_intr_support',
+        'mbx1.doe_async_msg_support'     : 'mbx1_doe_async_msg_support',
+
+        // soc_proxy's outward-facing egress port.
+        'soc_proxy.ctn_tl_h2d'           : 'soc_proxy_ctn_tl_h2d',
+        'soc_proxy.ctn_tl_d2h'           : 'soc_proxy_ctn_tl_d2h',
+
+        // SoC-facing mailbox and debug crossbars' external host stubs.
+        'socmbx.tl_ext_socmbx_host'      : 'soc_mbx_tl',
+        'socdbg.tl_ext_socdbg_host'      : 'soc_dbg_tl',
+    },
+  },
+
+  // Crossbars: having a top level crossbar
+  // This version assumes all crossbars are instantiated at the top.
+  // Assume xbar.hjson is located in the same directory of top.hjson
+  xbar: [
+    { name: "main",
+      clock_srcs: {clk_main_i: "main", clk_aon_i: "aon"},
+      clock_group: "secure",
+      reset: "lc_main",
+      reset_connections: {
+        rst_main_ni: "lc_main",
+        rst_aon_ni: {name: "lc_aon", domain: "Main"}
+      }
+    },
+    { name: "aon",
+      domain: "Aon",
+      clock_srcs: {clk_aon_i: "aon"},
+      clock_group: "ext",
+      reset: "lc_aon",
+      reset_connections: {
+        rst_aon_ni: {name: "lc_aon", domain: "Aon"}
+      }
+    },
+    { name: "socmbx",
+      clock_srcs: {clk_main_i: "main"},
+      clock_group: "secure",
+      reset: "lc_main",
+      reset_connections: {rst_main_ni: "lc_main"}
+    },
+    { name: "socdbg",
+      clock_srcs: {clk_main_i: "main"},
+      clock_group: "secure",
+      reset: "lc_main",
+      reset_connections: {rst_main_ni: "lc_main"}
+    },
+  ],
+
+  // ===== PINMUX & PINOUT ======================================================
+
+  pinout: {
+    // IO power bank declaration.
+    // This list defines the IO bank power domains on the ASIC.
+    // Each individual pad must be in one of the declared power domains.
+    banks: ['VCC'],
+    // Pad declaration.
+    // Each entry must have the following four keys:
+    //
+    // - name: Name of the pad (this will be exposed at the chiplevel).
+    //
+    // - type: Pad type (this maps to the pad types defined in prim_pad_wrapper_pkg.sv)
+    //
+    // - bank: Specifies in which of the IO power banks this pad lives.
+    //
+    // - connection: Can have either of the following values:
+    //
+    //               1) 'direct': This is a dedicated IO Pad that is directly connected to a peripheral.
+    //
+    //               2) 'manual': This is a dedicated IO signal that is not directly connected to a
+    //                            peripheral. It needs to be manually wired up in the template.
+    //
+    //               3) 'muxed': This is a muxed IO pad that will be connected to the pinmux.
+    //
+    // Optionally, each pad can also have a 'desc' field for further description, and a 'port_type' field
+    // to override the default 'inout wire' type (this is currently only used for simulating ADC connections
+    // where the ports have to be switched to a real type when the ANALOGSIM macro is defined).
+    pads: [
+      // Special manually connected pads
+      { name: 'POR_N', type: 'InputStd', bank: 'VCC', connection: 'manual', desc: 'System reset'},
+    ]
+  }
+
+  pinmux: {
+    // Signal to pinmux/pad mapping.
+    // Each entry in the list below must have the following two mandatory keys:
+    //
+    // - instance: This is the comportable IO instance name where the IO signal comes from.
+    //
+    // - connection: This key is similar to the connection key in the pinout/pad configuration and
+    //               can have either of the following values:
+    //
+    //               1) 'direct': This is a dedicated IO signal that is directly connected to a pad.
+    //                            Such an IO signal must also specify the 'port' and 'pad' keys
+    //                            (see further below).
+    //
+    //               2) 'manual': This is a dedicated IO signal that is not directly connected to a pad.
+    //                            It needs to be manually wired up in the template.
+    //                            Such an IO signal may have a 'port' key, but no 'pad' key.
+    //
+    //               3) 'muxed': This is a muxed IO signal that will be connected to the pinmux.
+    //                           Such an IO signal may have a 'port' key, but no 'pad' key.
+    //
+    // Depending on the connection type specified, each entry may have the following optional keys:
+    //
+    // - port: Name of the available IO signal of the instance.
+    //         This is required for 'direct' connections, but optional for the others.
+    //         Individual signals of a bus IO signal must be indexed with square brackets, e.g. mybus[1].
+    //         Not specifying this key or setting it to an empty string acts as a wild card
+    //         and includes all available IOs of this instance.
+    //
+    // - pad: Name of the pad the 'direct' connection should connect to.
+    //        This is not required for 'muxed' and 'manual' connections.
+    //
+    // - desc: Optional description field.
+    //
+    // - attr: Manual direct IOs may specify an additional pad attr field.
+    //         This is used to create the correct pad attribute CSR for that DIO channel (since the
+    //         DIO is manual, there is no way to automatically infer the corresponding pad type).
+    //
+    signals: [],
+
+    enable_usb_wakeup: false
+    enable_strap_sampling: false
+  }
+
+  // Implementation targets.
+  // This defines the configuration of the target-specific chip-levels  to
+  // generate from the shared template. Each target uses the same base
+  // configuration for the  pinmux and pinout as defined above, and the
+  // generated software constants for the pinmux DIF do not change among the
+  // implementation targets. However, in order to accommodate slight
+  // differences among the ASIC, FPGA emulation and simulation environments,
+  // it is possible to make very limited pinout changes below. In particular,
+  // it is possible to remove and tie-off specific pads, or add more 'manual'
+  // pads that need to be manually connected in the template. It is also possible
+  // to override the JTAG and strap locations indices, since the testing and DFT
+  // setups may differ among the targets.
+  targets: [
+    { name: 'verilator',
+
+      // The verilator chip-level has no physical pads: the flat per-peripheral
+      // signals are connected to the testbench DPI models through the
+      // padring_verilator module. Most signals therefore flow through the
+      // common (shared with ASIC) path, except:
+      //  - the OTP IO (bidir) test pads
+      chiplevel: {
+        port_overrides: {}
+      }
+
+      // Pinout Changes.
+      // The verilator target has no physical pads, so there is nothing to
+      // remove or add here.
+      pinout: {
+        remove_ports: [],
+        remove_pads: [],
+        add_pads: [],
+      }
+
+      pinmux: {
+        // Same special signal (JTAG / strap) positions as the ASIC target to
+        // keep PinmuxTargetCfg in chiplevel identical; not actually relevant.
+        special_signals: [],
+      }
+    }
+  ]
+}

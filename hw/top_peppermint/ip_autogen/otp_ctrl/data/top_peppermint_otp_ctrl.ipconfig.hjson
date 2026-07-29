@@ -1,0 +1,1930 @@
+// Copyright lowRISC contributors (OpenTitan project).
+// Licensed under the Apache License, Version 2.0, see LICENSE for details.
+// SPDX-License-Identifier: Apache-2.0
+{
+  instance_name: top_peppermint_otp_ctrl
+  param_values:
+  {
+    otp_mmap:
+    {
+      otp:
+      {
+        width: 2
+        depth: 4096
+        size: 8192
+        addr_width: 12
+        byte_addr_width: 13
+      }
+      scrambling:
+      {
+        key_size: 16
+        iv_size: 8
+        cnst_size: 16
+        keys:
+        [
+          {
+            name: Secret0Key
+            value: <random>
+          }
+          {
+            name: Secret1Key
+            value: <random>
+          }
+          {
+            name: Secret2Key
+            value: <random>
+          }
+          {
+            name: Secret3Key
+            value: <random>
+          }
+        ]
+        digests:
+        [
+          {
+            name: CnstyDigest
+            iv_value: <random>
+            cnst_value: <random>
+          }
+          {
+            name: SramDataKey
+            iv_value: <random>
+            cnst_value: <random>
+          }
+        ]
+        num_keys: 4
+        num_digests: 2
+      }
+      partitions:
+      [
+        {
+          name: VENDOR_TEST
+          variant: Unbuffered
+          absorb: false
+          secret: false
+          sw_digest: true
+          hw_digest: false
+          write_lock: Digest
+          read_lock: CSR
+          key_sel: NoKey
+          integrity: false
+          bkout_type: false
+          zeroizable: false
+          skip_sw_header: true
+          items:
+          [
+            {
+              name: SCRATCH
+              size: 56
+              isdigest: false
+              iszer: false
+              ismubi: false
+              iskeymgr_creator: false
+              iskeymgr_owner: false
+              inv_default: 0
+              offset: 0
+            }
+            {
+              name: VENDOR_TEST_DIGEST
+              size: 8
+              offset: 56
+              ismubi: false
+              isdigest: true
+              iszer: false
+              inv_default: <random>
+              iskeymgr_creator: false
+              iskeymgr_owner: false
+            }
+          ]
+          desc:
+            '''
+            Vendor test partition.
+            This is reserved for manufacturing smoke checks. The OTP wrapper
+            control logic inside prim_otp is allowed to read/write to this
+            region. ECC uncorrectable errors seen on the functional prim_otp
+            interface will not lead to an alert for this partition.
+            Instead, such errors will be reported as correctable ECC errors.
+            '''
+          iskeymgr_creator: false
+          iskeymgr_owner: false
+          ignore_read_lock_in_rma: false
+          size: 64
+          offset: 0
+        }
+        {
+          name: CREATOR_SW_CFG
+          variant: Unbuffered
+          absorb: false
+          secret: false
+          sw_digest: true
+          hw_digest: false
+          write_lock: Digest
+          read_lock: CSR
+          key_sel: NoKey
+          integrity: true
+          bkout_type: false
+          zeroizable: false
+          items:
+          [
+            {
+              name: CREATOR_SW_CFG_AST_CFG
+              size: 124
+              isdigest: false
+              iszer: false
+              ismubi: false
+              iskeymgr_creator: false
+              iskeymgr_owner: false
+              inv_default: 0
+              offset: 64
+            }
+            {
+              name: CREATOR_SW_CFG_AST_INIT_EN
+              size: 4
+              isdigest: false
+              iszer: false
+              ismubi: false
+              iskeymgr_creator: false
+              iskeymgr_owner: false
+              inv_default: 0
+              offset: 188
+            }
+            {
+              name: CREATOR_SW_CFG_OVERRIDES
+              size: 32
+              isdigest: false
+              iszer: false
+              ismubi: false
+              iskeymgr_creator: false
+              iskeymgr_owner: false
+              inv_default: 0
+              offset: 192
+            }
+            {
+              name: CREATOR_SW_CFG_ROM_EXT_SKU
+              size: 4
+              isdigest: false
+              iszer: false
+              ismubi: false
+              iskeymgr_creator: false
+              iskeymgr_owner: false
+              inv_default: 0
+              offset: 224
+            }
+            {
+              name: CREATOR_SW_CFG_SIGVERIFY_RSA_MOD_EXP_IBEX_EN
+              size: 4
+              isdigest: false
+              iszer: false
+              ismubi: false
+              iskeymgr_creator: false
+              iskeymgr_owner: false
+              inv_default: 0
+              offset: 228
+            }
+            {
+              name: CREATOR_SW_CFG_SIGVERIFY_RSA_KEY_EN
+              size: 8
+              isdigest: false
+              iszer: false
+              ismubi: false
+              iskeymgr_creator: false
+              iskeymgr_owner: false
+              inv_default: 0
+              offset: 232
+            }
+            {
+              name: CREATOR_SW_CFG_SIGVERIFY_SPX_EN
+              size: 4
+              isdigest: false
+              iszer: false
+              ismubi: false
+              iskeymgr_creator: false
+              iskeymgr_owner: false
+              inv_default: 0
+              offset: 240
+            }
+            {
+              name: CREATOR_SW_CFG_SIGVERIFY_SPX_KEY_EN
+              size: 8
+              isdigest: false
+              iszer: false
+              ismubi: false
+              iskeymgr_creator: false
+              iskeymgr_owner: false
+              inv_default: 0
+              offset: 244
+            }
+            {
+              name: CREATOR_SW_CFG_FLASH_DATA_DEFAULT_CFG
+              size: 4
+              isdigest: false
+              iszer: false
+              ismubi: false
+              iskeymgr_creator: false
+              iskeymgr_owner: false
+              inv_default: 0
+              offset: 252
+            }
+            {
+              name: CREATOR_SW_CFG_FLASH_INFO_BOOT_DATA_CFG
+              size: 4
+              isdigest: false
+              iszer: false
+              ismubi: false
+              iskeymgr_creator: false
+              iskeymgr_owner: false
+              inv_default: 0
+              offset: 256
+            }
+            {
+              name: CREATOR_SW_CFG_FLASH_HW_INFO_CFG_OVERRIDE
+              size: 4
+              isdigest: false
+              iszer: false
+              ismubi: false
+              iskeymgr_creator: false
+              iskeymgr_owner: false
+              inv_default: 0
+              offset: 260
+            }
+            {
+              name: CREATOR_SW_CFG_RNG_EN
+              size: 4
+              isdigest: false
+              iszer: false
+              ismubi: false
+              iskeymgr_creator: false
+              iskeymgr_owner: false
+              inv_default: 0
+              offset: 264
+            }
+            {
+              name: CREATOR_SW_CFG_JITTER_EN
+              size: 4
+              isdigest: false
+              iszer: false
+              ismubi: false
+              iskeymgr_creator: false
+              iskeymgr_owner: false
+              inv_default: 0
+              offset: 268
+            }
+            {
+              name: CREATOR_SW_CFG_RET_RAM_RESET_MASK
+              size: 4
+              isdigest: false
+              iszer: false
+              ismubi: false
+              iskeymgr_creator: false
+              iskeymgr_owner: false
+              inv_default: 0
+              offset: 272
+            }
+            {
+              name: CREATOR_SW_CFG_MANUF_STATE
+              size: 4
+              isdigest: false
+              iszer: false
+              ismubi: false
+              iskeymgr_creator: false
+              iskeymgr_owner: false
+              inv_default: 0
+              offset: 276
+            }
+            {
+              name: CREATOR_SW_CFG_ROM_EXEC_EN
+              size: 4
+              isdigest: false
+              iszer: false
+              ismubi: false
+              iskeymgr_creator: false
+              iskeymgr_owner: false
+              inv_default: 0
+              offset: 280
+            }
+            {
+              name: CREATOR_SW_CFG_CPUCTRL
+              size: 4
+              isdigest: false
+              iszer: false
+              ismubi: false
+              iskeymgr_creator: false
+              iskeymgr_owner: false
+              inv_default: 0
+              offset: 284
+            }
+            {
+              name: CREATOR_SW_CFG_MIN_SEC_VER_ROM_EXT
+              size: 4
+              isdigest: false
+              iszer: false
+              ismubi: false
+              iskeymgr_creator: false
+              iskeymgr_owner: false
+              inv_default: 0
+              offset: 288
+            }
+            {
+              name: CREATOR_SW_CFG_MIN_SEC_VER_BL0
+              size: 4
+              isdigest: false
+              iszer: false
+              ismubi: false
+              iskeymgr_creator: false
+              iskeymgr_owner: false
+              inv_default: 0
+              offset: 292
+            }
+            {
+              name: CREATOR_SW_CFG_DEFAULT_BOOT_DATA_IN_PROD_EN
+              size: 4
+              isdigest: false
+              iszer: false
+              ismubi: false
+              iskeymgr_creator: false
+              iskeymgr_owner: false
+              inv_default: 0
+              offset: 296
+            }
+            {
+              name: CREATOR_SW_CFG_RMA_SPIN_EN
+              size: 4
+              isdigest: false
+              iszer: false
+              ismubi: false
+              iskeymgr_creator: false
+              iskeymgr_owner: false
+              inv_default: 0
+              offset: 300
+            }
+            {
+              name: CREATOR_SW_CFG_RMA_SPIN_CYCLES
+              size: 4
+              isdigest: false
+              iszer: false
+              ismubi: false
+              iskeymgr_creator: false
+              iskeymgr_owner: false
+              inv_default: 0
+              offset: 304
+            }
+            {
+              name: CREATOR_SW_CFG_RNG_REPCNT_THRESHOLDS
+              size: 4
+              isdigest: false
+              iszer: false
+              ismubi: false
+              iskeymgr_creator: false
+              iskeymgr_owner: false
+              inv_default: 0
+              offset: 308
+            }
+            {
+              name: CREATOR_SW_CFG_RNG_REPCNTS_THRESHOLDS
+              size: 4
+              isdigest: false
+              iszer: false
+              ismubi: false
+              iskeymgr_creator: false
+              iskeymgr_owner: false
+              inv_default: 0
+              offset: 312
+            }
+            {
+              name: CREATOR_SW_CFG_RNG_ADAPTP_HI_THRESHOLDS
+              size: 4
+              isdigest: false
+              iszer: false
+              ismubi: false
+              iskeymgr_creator: false
+              iskeymgr_owner: false
+              inv_default: 0
+              offset: 316
+            }
+            {
+              name: CREATOR_SW_CFG_RNG_ADAPTP_LO_THRESHOLDS
+              size: 4
+              isdigest: false
+              iszer: false
+              ismubi: false
+              iskeymgr_creator: false
+              iskeymgr_owner: false
+              inv_default: 0
+              offset: 320
+            }
+            {
+              name: CREATOR_SW_CFG_RNG_BUCKET_THRESHOLDS
+              size: 4
+              isdigest: false
+              iszer: false
+              ismubi: false
+              iskeymgr_creator: false
+              iskeymgr_owner: false
+              inv_default: 0
+              offset: 324
+            }
+            {
+              name: CREATOR_SW_CFG_RNG_MARKOV_HI_THRESHOLDS
+              size: 4
+              isdigest: false
+              iszer: false
+              ismubi: false
+              iskeymgr_creator: false
+              iskeymgr_owner: false
+              inv_default: 0
+              offset: 328
+            }
+            {
+              name: CREATOR_SW_CFG_RNG_MARKOV_LO_THRESHOLDS
+              size: 4
+              isdigest: false
+              iszer: false
+              ismubi: false
+              iskeymgr_creator: false
+              iskeymgr_owner: false
+              inv_default: 0
+              offset: 332
+            }
+            {
+              name: CREATOR_SW_CFG_RNG_EXTHT_HI_THRESHOLDS
+              size: 4
+              isdigest: false
+              iszer: false
+              ismubi: false
+              iskeymgr_creator: false
+              iskeymgr_owner: false
+              inv_default: 0
+              offset: 336
+            }
+            {
+              name: CREATOR_SW_CFG_RNG_EXTHT_LO_THRESHOLDS
+              size: 4
+              isdigest: false
+              iszer: false
+              ismubi: false
+              iskeymgr_creator: false
+              iskeymgr_owner: false
+              inv_default: 0
+              offset: 340
+            }
+            {
+              name: CREATOR_SW_CFG_RNG_BOOT_ALERT_THRESHOLD
+              size: 4
+              isdigest: false
+              iszer: false
+              ismubi: false
+              iskeymgr_creator: false
+              iskeymgr_owner: false
+              inv_default: 0
+              offset: 344
+            }
+            {
+              name: CREATOR_SW_CFG_RNG_FIPS_ALERT_THRESHOLD
+              size: 4
+              isdigest: false
+              iszer: false
+              ismubi: false
+              iskeymgr_creator: false
+              iskeymgr_owner: false
+              inv_default: 0
+              offset: 348
+            }
+            {
+              name: CREATOR_SW_CFG_RNG_BOOT_CONFIG_DIGEST
+              size: 4
+              isdigest: false
+              iszer: false
+              ismubi: false
+              iskeymgr_creator: false
+              iskeymgr_owner: false
+              inv_default: 0
+              offset: 352
+            }
+            {
+              name: CREATOR_SW_CFG_RNG_FIPS_CONFIG_DIGEST
+              size: 4
+              isdigest: false
+              iszer: false
+              ismubi: false
+              iskeymgr_creator: false
+              iskeymgr_owner: false
+              inv_default: 0
+              offset: 356
+            }
+            {
+              name: CREATOR_SW_CFG_SRAM_KEY_RENEW_AND_INIT_EN
+              size: 4
+              isdigest: false
+              iszer: false
+              ismubi: false
+              iskeymgr_creator: false
+              iskeymgr_owner: false
+              inv_default: 0
+              offset: 360
+            }
+            {
+              name: CREATOR_SW_CFG_DIGEST
+              size: 8
+              offset: 368
+              ismubi: false
+              isdigest: true
+              iszer: false
+              inv_default: <random>
+              iskeymgr_creator: false
+              iskeymgr_owner: false
+            }
+          ]
+          desc:
+            '''
+            Software configuration partition.
+            This is for device-specific calibration data. For example, clock,
+            LDO, RNG.
+            '''
+          iskeymgr_creator: false
+          iskeymgr_owner: false
+          ignore_read_lock_in_rma: false
+          size: 312
+          offset: 64
+        }
+        {
+          name: OWNER_SW_CFG
+          variant: Unbuffered
+          absorb: false
+          secret: false
+          sw_digest: true
+          hw_digest: false
+          write_lock: Digest
+          read_lock: CSR
+          key_sel: NoKey
+          integrity: true
+          bkout_type: false
+          zeroizable: false
+          items:
+          [
+            {
+              name: OWNER_SW_CFG_ROM_ERROR_REPORTING
+              size: 4
+              isdigest: false
+              iszer: false
+              ismubi: false
+              iskeymgr_creator: false
+              iskeymgr_owner: false
+              inv_default: 0
+              offset: 376
+            }
+            {
+              name: OWNER_SW_CFG_ROM_BOOTSTRAP_DIS
+              size: 4
+              isdigest: false
+              iszer: false
+              ismubi: false
+              iskeymgr_creator: false
+              iskeymgr_owner: false
+              inv_default: 0
+              offset: 380
+            }
+            {
+              name: OWNER_SW_CFG_ROM_ALERT_CLASS_EN
+              size: 4
+              isdigest: false
+              iszer: false
+              ismubi: false
+              iskeymgr_creator: false
+              iskeymgr_owner: false
+              inv_default: 0
+              offset: 384
+            }
+            {
+              name: OWNER_SW_CFG_ROM_ALERT_ESCALATION
+              size: 4
+              isdigest: false
+              iszer: false
+              ismubi: false
+              iskeymgr_creator: false
+              iskeymgr_owner: false
+              inv_default: 0
+              offset: 388
+            }
+            {
+              name: OWNER_SW_CFG_ROM_ALERT_CLASSIFICATION
+              size: 420
+              isdigest: false
+              iszer: false
+              ismubi: false
+              iskeymgr_creator: false
+              iskeymgr_owner: false
+              inv_default: 0
+              offset: 392
+            }
+            {
+              name: OWNER_SW_CFG_ROM_LOCAL_ALERT_CLASSIFICATION
+              size: 28
+              isdigest: false
+              iszer: false
+              ismubi: false
+              iskeymgr_creator: false
+              iskeymgr_owner: false
+              inv_default: 0
+              offset: 812
+            }
+            {
+              name: OWNER_SW_CFG_ROM_ALERT_ACCUM_THRESH
+              size: 16
+              isdigest: false
+              iszer: false
+              ismubi: false
+              iskeymgr_creator: false
+              iskeymgr_owner: false
+              inv_default: 0
+              offset: 840
+            }
+            {
+              name: OWNER_SW_CFG_ROM_ALERT_TIMEOUT_CYCLES
+              size: 16
+              isdigest: false
+              iszer: false
+              ismubi: false
+              iskeymgr_creator: false
+              iskeymgr_owner: false
+              inv_default: 0
+              offset: 856
+            }
+            {
+              name: OWNER_SW_CFG_ROM_ALERT_PHASE_CYCLES
+              size: 64
+              isdigest: false
+              iszer: false
+              ismubi: false
+              iskeymgr_creator: false
+              iskeymgr_owner: false
+              inv_default: 0
+              offset: 872
+            }
+            {
+              name: OWNER_SW_CFG_ROM_ALERT_DIGEST_PROD
+              size: 4
+              isdigest: false
+              iszer: false
+              ismubi: false
+              iskeymgr_creator: false
+              iskeymgr_owner: false
+              inv_default: 0
+              offset: 936
+            }
+            {
+              name: OWNER_SW_CFG_ROM_ALERT_DIGEST_PROD_END
+              size: 4
+              isdigest: false
+              iszer: false
+              ismubi: false
+              iskeymgr_creator: false
+              iskeymgr_owner: false
+              inv_default: 0
+              offset: 940
+            }
+            {
+              name: OWNER_SW_CFG_ROM_ALERT_DIGEST_DEV
+              size: 4
+              isdigest: false
+              iszer: false
+              ismubi: false
+              iskeymgr_creator: false
+              iskeymgr_owner: false
+              inv_default: 0
+              offset: 944
+            }
+            {
+              name: OWNER_SW_CFG_ROM_ALERT_DIGEST_RMA
+              size: 4
+              isdigest: false
+              iszer: false
+              ismubi: false
+              iskeymgr_creator: false
+              iskeymgr_owner: false
+              inv_default: 0
+              offset: 948
+            }
+            {
+              name: OWNER_SW_CFG_ROM_WATCHDOG_BITE_THRESHOLD_CYCLES
+              size: 4
+              isdigest: false
+              iszer: false
+              ismubi: false
+              iskeymgr_creator: false
+              iskeymgr_owner: false
+              inv_default: 0
+              offset: 952
+            }
+            {
+              name: OWNER_SW_CFG_ROM_KEYMGR_ROM_EXT_MEAS_EN
+              size: 4
+              isdigest: false
+              iszer: false
+              ismubi: false
+              iskeymgr_creator: false
+              iskeymgr_owner: false
+              inv_default: 0
+              offset: 956
+            }
+            {
+              name: OWNER_SW_CFG_MANUF_STATE
+              size: 4
+              isdigest: false
+              iszer: false
+              ismubi: false
+              iskeymgr_creator: false
+              iskeymgr_owner: false
+              inv_default: 0
+              offset: 960
+            }
+            {
+              name: OWNER_SW_CFG_ROM_RSTMGR_INFO_EN
+              size: 4
+              isdigest: false
+              iszer: false
+              ismubi: false
+              iskeymgr_creator: false
+              iskeymgr_owner: false
+              inv_default: 0
+              offset: 964
+            }
+            {
+              name: OWNER_SW_CFG_DIGEST
+              size: 8
+              offset: 968
+              ismubi: false
+              isdigest: true
+              iszer: false
+              inv_default: <random>
+              iskeymgr_creator: false
+              iskeymgr_owner: false
+            }
+          ]
+          desc:
+            '''
+            Software configuration partition.
+            This contains data that changes software behavior in the ROM, for
+            example enabling defensive features in ROM or selecting failure
+            modes if verification fails.
+            '''
+          iskeymgr_creator: false
+          iskeymgr_owner: false
+          ignore_read_lock_in_rma: false
+          size: 600
+          offset: 376
+        }
+        {
+          name: AUTH_SLOT_STATE
+          variant: Unbuffered
+          absorb: false
+          secret: false
+          sw_digest: false
+          hw_digest: false
+          write_lock: None
+          read_lock: CSR
+          key_sel: NoKey
+          integrity: true
+          bkout_type: false
+          zeroizable: false
+          items:
+          [
+            {
+              name: AUTH_SLOT_STATE_ROT_FIRMWARE
+              size: 16
+              desc:
+                '''
+                RoT Firmware Auth Slot State
+                SLOT_ST_RAW:       slot not yet claimed (factory default)
+                SLOT_ST_LOCKED0:   first slot claimed
+                SLOT_ST_RELEASED0: first slot released (assets have been cleared, ready to xfer)
+                SLOT_ST_LOCKED1:   second slot claimed
+                SLOT_ST_RELEASED1: second slot released (assets have been cleared, ready to xfer)
+                SLOT_ST_LOCKED2:   third slot claimed
+                SLOT_ST_RELEASED2: third slot released (assets have been cleared, ready to xfer)
+                SLOT_ST_LOCKED3:   fourth slot claimed
+                SLOT_ST_SCRAPPED:  scrap state - terminal
+                '''
+              isdigest: false
+              iszer: false
+              ismubi: false
+              iskeymgr_creator: false
+              iskeymgr_owner: false
+              inv_default: 0
+              offset: 976
+            }
+            {
+              name: AUTH_SLOT_STATE_SOC_FIRMWARE
+              size: 16
+              desc:
+                '''
+                SoC Firmware Key Slot State
+                SLOT_ST_RAW:       slot not yet claimed (factory default)
+                SLOT_ST_LOCKED0:   first slot claimed
+                SLOT_ST_RELEASED0: first slot released (assets have been cleared, ready to xfer)
+                SLOT_ST_LOCKED1:   second slot claimed
+                SLOT_ST_RELEASED1: second slot released (assets have been cleared, ready to xfer)
+                SLOT_ST_LOCKED2:   third slot claimed
+                SLOT_ST_RELEASED2: third slot released (assets have been cleared, ready to xfer)
+                SLOT_ST_LOCKED3:   fourth slot claimed
+                SLOT_ST_SCRAPPED:  scrap state - terminal
+                '''
+              isdigest: false
+              iszer: false
+              ismubi: false
+              iskeymgr_creator: false
+              iskeymgr_owner: false
+              inv_default: 0
+              offset: 992
+            }
+          ]
+          desc:
+            '''
+            SW managed authentication slot states partition.
+
+            Multibit enable value for the tracking the authentication slot states.
+            Note that the states can be written multiple times in a device lifetime.
+            The values to be written are engineered in the same way as the LC_CTRL
+            state encoding words so that the ECC encoding remains valid even after
+            updating the values.
+
+            The constants can be found in the lc_ctrl_state_pkg.sv package.
+
+            The programming order has to adhere to:
+
+            SLOT_ST_RAW (factory all-zero state) ->
+            SLOT_ST_LOCKED0 ->
+            SLOT_ST_RELEASED0 ->
+            ...
+            SLOT_ST_SCRAPPED
+
+            Note that if there are less than 4 slots available the higher slot states
+            become logically equivalent to SLOT_ST_SCRAPPED (firmware has to handle
+            this correctly).
+            '''
+          iskeymgr_creator: false
+          iskeymgr_owner: false
+          ignore_read_lock_in_rma: false
+          size: 32
+          offset: 976
+        }
+        {
+          name: ROT_CREATOR_AUTH
+          variant: Unbuffered
+          absorb: false
+          secret: false
+          sw_digest: true
+          hw_digest: false
+          write_lock: Digest
+          read_lock: CSR
+          key_sel: NoKey
+          integrity: true
+          bkout_type: false
+          zeroizable: false
+          items:
+          [
+            {
+              name: ROT_CREATOR_AUTH_NON_RAW_MFW_CODESIGN_KEY
+              size: 160
+              desc:
+                '''
+                Pub Key used to verify the manufacturing provisioning Software container
+                160B = Custom Cert --> {PubKey:48, Signature:48, Device ID:32, metadata:16}
+                It is expected to be provisioned at Chip Probe stage when LC = TEST
+                i.e. provisioning protected under proper lifecycle logistics / secure supplychain management
+                '''
+              isdigest: false
+              iszer: false
+              ismubi: false
+              iskeymgr_creator: false
+              iskeymgr_owner: false
+              inv_default: 0
+              offset: 1008
+            }
+            {
+              name: ROT_CREATOR_AUTH_OWNERSHIP_STATE
+              size: 4
+              desc:
+                '''
+                Creator Ownership transfer state management
+                UNLOCKED - ownership of ROT not yet claimed
+                LOCKED   - ownership claimed and
+                RELEASED - Release ownership (assets have been cleared, ready to xfer)
+                '''
+              isdigest: false
+              iszer: false
+              ismubi: false
+              iskeymgr_creator: false
+              iskeymgr_owner: false
+              inv_default: 0
+              offset: 1168
+            }
+            {
+              name: ROT_CREATOR_AUTH_ROM2_PATCH_SIGVERIFY_KEY
+              size: 160
+              desc:
+                '''
+                Pub Key used to verify the ROM2 OTP based patch
+                160B = Custom Cert --> {PubKey:48, Signature:48, Device ID:32, metadata:16}
+                It is expected to be provisioned at Chip Probe stage when LC = TEST
+                i.e. provisioning protected under proper lifecycle logistics / secure supplychain management
+                  OTP based key (instead of ROM) facilitates easy key rotation
+                '''
+              isdigest: false
+              iszer: false
+              ismubi: false
+              iskeymgr_creator: false
+              iskeymgr_owner: false
+              inv_default: 0
+              offset: 1172
+            }
+            {
+              name: ROT_CREATOR_AUTH_KEYMANIFEST_KEY
+              size: 160
+              desc:
+                '''
+                Pub Key used to verify the ROT CREATOR KEY MANIFEST.
+                KM is used to provisioning additional keys in (external) flash
+                160B = Custom Cert --> {PubKey:48, Signature:48, Device ID:32, metadata:16}
+                It is expected to be provisioned at Chip Probe stage when LC = TEST
+                i.e. provisioning protected under proper lifecycle logistics / secure supplychain management
+                '''
+              isdigest: false
+              iszer: false
+              ismubi: false
+              iskeymgr_creator: false
+              iskeymgr_owner: false
+              inv_default: 0
+              offset: 1332
+            }
+            {
+              name: ROT_CREATOR_AUTH_UNLOCK4XFER_KEY
+              size: 160
+              desc:
+                '''
+                Pub Key used to verify the ROT CREATOR KEY MANIFEST.
+                Used to authenticate the Unlock Ownership payload. Key Type: ECC NIST-P384 Curve.
+                160B = Custom Cert --> {PubKey:48, Signature:48, Device ID:32, metadata:16}
+                Can be made part bound i.e. unique per part key cert
+                i.e. provisioning protected under proper lifecycle logistics / secure supplychain management
+                '''
+              isdigest: false
+              iszer: false
+              ismubi: false
+              iskeymgr_creator: false
+              iskeymgr_owner: false
+              inv_default: 0
+              offset: 1492
+            }
+            {
+              name: ROT_CREATOR_AUTH_IDENTITY_CERT
+              size: 768
+              desc: ROT Device Identity Certificate endorsed by Silicon Creator stable off device PKI
+              isdigest: false
+              iszer: false
+              ismubi: false
+              iskeymgr_creator: false
+              iskeymgr_owner: false
+              inv_default: 0
+              offset: 1652
+            }
+            {
+              name: ROT_CREATOR_AUTH_DIGEST
+              size: 8
+              offset: 2424
+              ismubi: false
+              isdigest: true
+              iszer: false
+              inv_default: <random>
+              iskeymgr_creator: false
+              iskeymgr_owner: false
+            }
+          ]
+          desc: Software managed creator partition.
+          iskeymgr_creator: false
+          iskeymgr_owner: false
+          ignore_read_lock_in_rma: false
+          size: 1424
+          offset: 1008
+        }
+        {
+          name: ROT_FIRMWARE_AUTH_SLOT0
+          variant: Unbuffered
+          absorb: false
+          secret: false
+          sw_digest: true
+          hw_digest: false
+          write_lock: Digest
+          read_lock: CSR
+          key_sel: NoKey
+          integrity: true
+          bkout_type: false
+          zeroizable: false
+          items:
+          [
+            {
+              name: ROT_FIRMWARE_AUTH_SLOT0_HASH
+              size: 128
+              desc: Hash of public key for RoT firmware (slot 0)
+              isdigest: false
+              iszer: false
+              ismubi: false
+              iskeymgr_creator: false
+              iskeymgr_owner: false
+              inv_default: 0
+              offset: 2432
+            }
+            {
+              name: ROT_FIRMWARE_AUTH_SLOT0_DIGEST
+              size: 8
+              offset: 2560
+              ismubi: false
+              isdigest: true
+              iszer: false
+              inv_default: <random>
+              iskeymgr_creator: false
+              iskeymgr_owner: false
+            }
+          ]
+          desc: Software managed RoT firmware authentication slot
+          iskeymgr_creator: false
+          iskeymgr_owner: false
+          ignore_read_lock_in_rma: false
+          size: 136
+          offset: 2432
+        }
+        {
+          name: ROT_FIRMWARE_AUTH_SLOT1
+          variant: Unbuffered
+          absorb: false
+          secret: false
+          sw_digest: true
+          hw_digest: false
+          write_lock: Digest
+          read_lock: CSR
+          key_sel: NoKey
+          integrity: true
+          bkout_type: false
+          zeroizable: false
+          items:
+          [
+            {
+              name: ROT_FIRMWARE_AUTH_SLOT1_HASH
+              size: 128
+              desc: Hash of public key for RoT firmware (slot 1)
+              isdigest: false
+              iszer: false
+              ismubi: false
+              iskeymgr_creator: false
+              iskeymgr_owner: false
+              inv_default: 0
+              offset: 2568
+            }
+            {
+              name: ROT_FIRMWARE_AUTH_SLOT1_DIGEST
+              size: 8
+              offset: 2696
+              ismubi: false
+              isdigest: true
+              iszer: false
+              inv_default: <random>
+              iskeymgr_creator: false
+              iskeymgr_owner: false
+            }
+          ]
+          desc: Software managed RoT firmware authentication slot
+          iskeymgr_creator: false
+          iskeymgr_owner: false
+          ignore_read_lock_in_rma: false
+          size: 136
+          offset: 2568
+        }
+        {
+          name: ROT_FIRMWARE_AUTH_SLOT2
+          variant: Unbuffered
+          absorb: false
+          secret: false
+          sw_digest: true
+          hw_digest: false
+          write_lock: Digest
+          read_lock: CSR
+          key_sel: NoKey
+          integrity: true
+          bkout_type: false
+          zeroizable: false
+          items:
+          [
+            {
+              name: ROT_FIRMWARE_AUTH_SLOT2_HASH
+              size: 128
+              desc: Hash of public key for RoT firmware (slot 2)
+              isdigest: false
+              iszer: false
+              ismubi: false
+              iskeymgr_creator: false
+              iskeymgr_owner: false
+              inv_default: 0
+              offset: 2704
+            }
+            {
+              name: ROT_FIRMWARE_AUTH_SLOT2_DIGEST
+              size: 8
+              offset: 2832
+              ismubi: false
+              isdigest: true
+              iszer: false
+              inv_default: <random>
+              iskeymgr_creator: false
+              iskeymgr_owner: false
+            }
+          ]
+          desc: Software managed RoT firmware authentication slot
+          iskeymgr_creator: false
+          iskeymgr_owner: false
+          ignore_read_lock_in_rma: false
+          size: 136
+          offset: 2704
+        }
+        {
+          name: ROT_FIRMWARE_AUTH_SLOT3
+          variant: Unbuffered
+          absorb: false
+          secret: false
+          sw_digest: true
+          hw_digest: false
+          write_lock: Digest
+          read_lock: CSR
+          key_sel: NoKey
+          integrity: true
+          bkout_type: false
+          zeroizable: false
+          items:
+          [
+            {
+              name: ROT_FIRMWARE_AUTH_SLOT3_HASH
+              size: 128
+              desc: Hash of public key for RoT firmware (slot 3)
+              isdigest: false
+              iszer: false
+              ismubi: false
+              iskeymgr_creator: false
+              iskeymgr_owner: false
+              inv_default: 0
+              offset: 2840
+            }
+            {
+              name: ROT_FIRMWARE_AUTH_SLOT3_DIGEST
+              size: 8
+              offset: 2968
+              ismubi: false
+              isdigest: true
+              iszer: false
+              inv_default: <random>
+              iskeymgr_creator: false
+              iskeymgr_owner: false
+            }
+          ]
+          desc: Software managed RoT firmware authentication slot
+          iskeymgr_creator: false
+          iskeymgr_owner: false
+          ignore_read_lock_in_rma: false
+          size: 136
+          offset: 2840
+        }
+        {
+          name: SOC_FIRMWARE_AUTH_SLOT0
+          variant: Unbuffered
+          absorb: false
+          secret: false
+          sw_digest: true
+          hw_digest: false
+          write_lock: Digest
+          read_lock: CSR
+          key_sel: NoKey
+          integrity: true
+          bkout_type: false
+          zeroizable: false
+          items:
+          [
+            {
+              name: SOC_FIRMWARE_AUTH_SLOT0_HASH
+              size: 128
+              desc: Hash of public key for SoC firmware (slot 0)
+              isdigest: false
+              iszer: false
+              ismubi: false
+              iskeymgr_creator: false
+              iskeymgr_owner: false
+              inv_default: 0
+              offset: 2976
+            }
+            {
+              name: SOC_FIRMWARE_AUTH_SLOT0_DIGEST
+              size: 8
+              offset: 3104
+              ismubi: false
+              isdigest: true
+              iszer: false
+              inv_default: <random>
+              iskeymgr_creator: false
+              iskeymgr_owner: false
+            }
+          ]
+          desc: Software managed SoC firmware authentication slot
+          iskeymgr_creator: false
+          iskeymgr_owner: false
+          ignore_read_lock_in_rma: false
+          size: 136
+          offset: 2976
+        }
+        {
+          name: SOC_FIRMWARE_AUTH_SLOT1
+          variant: Unbuffered
+          absorb: false
+          secret: false
+          sw_digest: true
+          hw_digest: false
+          write_lock: Digest
+          read_lock: CSR
+          key_sel: NoKey
+          integrity: true
+          bkout_type: false
+          zeroizable: false
+          items:
+          [
+            {
+              name: SOC_FIRMWARE_AUTH_SLOT1_HASH
+              size: 128
+              desc: Hash of public key for SoC firmware (slot 1)
+              isdigest: false
+              iszer: false
+              ismubi: false
+              iskeymgr_creator: false
+              iskeymgr_owner: false
+              inv_default: 0
+              offset: 3112
+            }
+            {
+              name: SOC_FIRMWARE_AUTH_SLOT1_DIGEST
+              size: 8
+              offset: 3240
+              ismubi: false
+              isdigest: true
+              iszer: false
+              inv_default: <random>
+              iskeymgr_creator: false
+              iskeymgr_owner: false
+            }
+          ]
+          desc: Software managed SoC firmware authentication slot
+          iskeymgr_creator: false
+          iskeymgr_owner: false
+          ignore_read_lock_in_rma: false
+          size: 136
+          offset: 3112
+        }
+        {
+          name: SOC_FIRMWARE_AUTH_SLOT2
+          variant: Unbuffered
+          absorb: false
+          secret: false
+          sw_digest: true
+          hw_digest: false
+          write_lock: Digest
+          read_lock: CSR
+          key_sel: NoKey
+          integrity: true
+          bkout_type: false
+          zeroizable: false
+          items:
+          [
+            {
+              name: SOC_FIRMWARE_AUTH_SLOT2_HASH
+              size: 128
+              desc: Hash of public key for SoC firmware (slot 2)
+              isdigest: false
+              iszer: false
+              ismubi: false
+              iskeymgr_creator: false
+              iskeymgr_owner: false
+              inv_default: 0
+              offset: 3248
+            }
+            {
+              name: SOC_FIRMWARE_AUTH_SLOT2_DIGEST
+              size: 8
+              offset: 3376
+              ismubi: false
+              isdigest: true
+              iszer: false
+              inv_default: <random>
+              iskeymgr_creator: false
+              iskeymgr_owner: false
+            }
+          ]
+          desc: Software managed SoC firmware authentication slot
+          iskeymgr_creator: false
+          iskeymgr_owner: false
+          ignore_read_lock_in_rma: false
+          size: 136
+          offset: 3248
+        }
+        {
+          name: SOC_FIRMWARE_AUTH_SLOT3
+          variant: Unbuffered
+          absorb: false
+          secret: false
+          sw_digest: true
+          hw_digest: false
+          write_lock: Digest
+          read_lock: CSR
+          key_sel: NoKey
+          integrity: true
+          bkout_type: false
+          zeroizable: false
+          items:
+          [
+            {
+              name: SOC_FIRMWARE_AUTH_SLOT3_HASH
+              size: 128
+              desc: Hash of public key for SoC firmware (slot 3)
+              isdigest: false
+              iszer: false
+              ismubi: false
+              iskeymgr_creator: false
+              iskeymgr_owner: false
+              inv_default: 0
+              offset: 3384
+            }
+            {
+              name: SOC_FIRMWARE_AUTH_SLOT3_DIGEST
+              size: 8
+              offset: 3512
+              ismubi: false
+              isdigest: true
+              iszer: false
+              inv_default: <random>
+              iskeymgr_creator: false
+              iskeymgr_owner: false
+            }
+          ]
+          desc: Software managed SoC firmware authentication slot
+          iskeymgr_creator: false
+          iskeymgr_owner: false
+          ignore_read_lock_in_rma: false
+          size: 136
+          offset: 3384
+        }
+        {
+          name: EXT_NVM
+          variant: Unbuffered
+          absorb: false
+          secret: false
+          sw_digest: false
+          hw_digest: false
+          write_lock: None
+          read_lock: CSR
+          key_sel: NoKey
+          integrity: false
+          bkout_type: false
+          zeroizable: false
+          items:
+          [
+            {
+              name: EXT_NVM_ANTIREPLAY_FRESHNESS_CNT
+              size: 1024
+              desc:
+                '''
+                Fully SW managed partition
+                1 bit (double bit allocated for redundancy - i.e. 2 physical bits for every logical bit) per day
+                assuming 10 year product lifecycle, allocating 8192 bits of freshness protection.
+                Implemented as thermometer encoding. Redundant bit programming & logical OR-ing managed by
+                software. Cannot be ECC protected since different bits in a fuse row are programmed at different times.
+                '''
+              isdigest: false
+              iszer: false
+              ismubi: false
+              iskeymgr_creator: false
+              iskeymgr_owner: false
+              inv_default: 0
+              offset: 3520
+            }
+          ]
+          desc: Anti-replay protection Strike Counters partition.
+          iskeymgr_creator: false
+          iskeymgr_owner: false
+          ignore_read_lock_in_rma: false
+          size: 1024
+          offset: 3520
+        }
+        {
+          name: HW_CFG0
+          variant: Buffered
+          secret: false
+          sw_digest: false
+          hw_digest: true
+          write_lock: Digest
+          read_lock: None
+          key_sel: NoKey
+          integrity: true
+          bkout_type: true
+          zeroizable: false
+          skip_sw_header: true
+          items:
+          [
+            {
+              name: DEVICE_ID
+              size: 32
+              inv_default: <random>
+              isdigest: false
+              iszer: false
+              ismubi: false
+              iskeymgr_creator: false
+              iskeymgr_owner: false
+              offset: 4544
+            }
+            {
+              name: MANUF_STATE
+              size: 32
+              inv_default: <random>
+              isdigest: false
+              iszer: false
+              ismubi: false
+              iskeymgr_creator: false
+              iskeymgr_owner: false
+              offset: 4576
+            }
+            {
+              name: HW_CFG0_DIGEST
+              size: 8
+              offset: 4608
+              ismubi: false
+              isdigest: true
+              iszer: false
+              inv_default: <random>
+              iskeymgr_creator: false
+              iskeymgr_owner: false
+            }
+          ]
+          desc:
+            '''
+            Hardware configuration 0 partition.
+            This contains
+            - DEVICE_ID: Unique device identifier.
+            - MANUF_STATE: Vector for capturing the manufacturing status.
+            '''
+          absorb: false
+          iskeymgr_creator: false
+          iskeymgr_owner: false
+          ignore_read_lock_in_rma: false
+          size: 72
+          offset: 4544
+        }
+        {
+          name: HW_CFG1
+          variant: Buffered
+          secret: false
+          sw_digest: false
+          hw_digest: true
+          write_lock: Digest
+          read_lock: None
+          key_sel: NoKey
+          integrity: true
+          bkout_type: true
+          zeroizable: false
+          skip_sw_header: true
+          items:
+          [
+            {
+              name: SEC_BOOT_DBG
+              size: 4
+              inv_default: 0
+              desc:
+                '''
+                Multibit enable value for Secure Boot.
+                Encoding TBD
+                '''
+              isdigest: false
+              iszer: false
+              ismubi: false
+              iskeymgr_creator: false
+              iskeymgr_owner: false
+              offset: 4616
+            }
+            {
+              name: EN_CSRNG_SW_APP_READ
+              size: 1
+              ismubi: true
+              inv_default: <random>
+              desc:
+                '''
+                Enablement of CSRNG software application interface. A
+                kMultiBitBool8True value enables, while all other values
+                disable. Enablement is required to extract output from
+                CSRNG via software.
+                '''
+              isdigest: false
+              iszer: false
+              iskeymgr_creator: false
+              iskeymgr_owner: false
+              offset: 4620
+            }
+            {
+              name: EN_SRAM_IFETCH
+              size: 1
+              ismubi: true
+              inv_default: <random>
+              isdigest: false
+              iszer: false
+              iskeymgr_creator: false
+              iskeymgr_owner: false
+              offset: 4621
+            }
+            {
+              name: HW_CFG1_DIGEST
+              size: 8
+              offset: 4624
+              ismubi: false
+              isdigest: true
+              iszer: false
+              inv_default: <random>
+              iskeymgr_creator: false
+              iskeymgr_owner: false
+            }
+          ]
+          desc:
+            '''
+            Hardware configuration 1 partition.
+            This contains
+            EN_SRAM_IFETCH: Enable / disable execute from SRAM CSR switch.
+            SOC_DBG_STATE: Multibit enable value for the SOC debug authorization.
+            Note SOC_DBG_STATE will be written twice in a device lifetime. The
+            values to be written are engineered in the same way as the LC_CTRL
+            state encoding words: the ECC encoding remains valid even after
+            writing the second value on top of the first.
+
+            The constants can be found in the lc_ctrl_state_pkg.sv package.
+
+            The programming order has to adhere to:
+
+            SOC_DBG_RAW -> SOC_DBG_PRE_PROD -> SOC_DBG_PROD.
+            '''
+          absorb: false
+          iskeymgr_creator: false
+          iskeymgr_owner: false
+          ignore_read_lock_in_rma: false
+          size: 16
+          offset: 4616
+        }
+        {
+          name: SECRET0
+          variant: Buffered
+          secret: true
+          sw_digest: false
+          hw_digest: true
+          write_lock: Digest
+          read_lock: Digest
+          ignore_read_lock_in_rma: true
+          key_sel: Secret0Key
+          integrity: true
+          bkout_type: false
+          zeroizable: true
+          skip_sw_header: true
+          items:
+          [
+            {
+              name: TEST_UNLOCK_TOKEN
+              inv_default: <random>
+              size: 16
+              isdigest: false
+              iszer: false
+              ismubi: false
+              iskeymgr_creator: false
+              iskeymgr_owner: false
+              offset: 4632
+            }
+            {
+              name: TEST_EXIT_TOKEN
+              inv_default: <random>
+              size: 16
+              isdigest: false
+              iszer: false
+              ismubi: false
+              iskeymgr_creator: false
+              iskeymgr_owner: false
+              offset: 4648
+            }
+            {
+              name: SECRET0_DIGEST
+              size: 8
+              offset: 4664
+              ismubi: false
+              isdigest: true
+              iszer: false
+              inv_default: <random>
+              iskeymgr_creator: false
+              iskeymgr_owner: false
+            }
+            {
+              name: SECRET0_ZER
+              size: 8
+              offset: 4672
+              ismubi: false
+              isdigest: false
+              iszer: true
+              inv_default: 0
+              iskeymgr_creator: false
+              iskeymgr_owner: false
+            }
+          ]
+          desc:
+            '''
+            Secret partition 0.
+            This contains TEST lifecycle unlock tokens.
+            '''
+          absorb: false
+          iskeymgr_creator: false
+          iskeymgr_owner: false
+          size: 48
+          offset: 4632
+        }
+        {
+          name: SECRET1
+          variant: Buffered
+          secret: true
+          sw_digest: false
+          hw_digest: true
+          write_lock: Digest
+          read_lock: Digest
+          ignore_read_lock_in_rma: true
+          key_sel: Secret1Key
+          integrity: true
+          bkout_type: false
+          zeroizable: true
+          skip_sw_header: true
+          items:
+          [
+            {
+              name: SRAM_DATA_KEY_SEED
+              inv_default: <random>
+              size: 16
+              isdigest: false
+              iszer: false
+              ismubi: false
+              iskeymgr_creator: false
+              iskeymgr_owner: false
+              offset: 4680
+            }
+            {
+              name: SECRET1_DIGEST
+              size: 8
+              offset: 4696
+              ismubi: false
+              isdigest: true
+              iszer: false
+              inv_default: <random>
+              iskeymgr_creator: false
+              iskeymgr_owner: false
+            }
+            {
+              name: SECRET1_ZER
+              size: 8
+              offset: 4704
+              ismubi: false
+              isdigest: false
+              iszer: true
+              inv_default: 0
+              iskeymgr_creator: false
+              iskeymgr_owner: false
+            }
+          ]
+          desc:
+            '''
+            Secret partition 1.
+            This contains the SRAM scrambling key seed.
+            '''
+          absorb: false
+          iskeymgr_creator: false
+          iskeymgr_owner: false
+          size: 32
+          offset: 4680
+        }
+        {
+          name: SECRET2
+          variant: Buffered
+          secret: true
+          sw_digest: false
+          hw_digest: true
+          write_lock: Digest
+          read_lock: Digest
+          ignore_read_lock_in_rma: true
+          key_sel: Secret2Key
+          integrity: true
+          bkout_type: false
+          zeroizable: true
+          skip_sw_header: true
+          items:
+          [
+            {
+              name: RMA_TOKEN
+              inv_default: <random>
+              size: 16
+              isdigest: false
+              iszer: false
+              ismubi: false
+              iskeymgr_creator: false
+              iskeymgr_owner: false
+              offset: 4712
+            }
+            {
+              name: CREATOR_ROOT_KEY_SHARE0
+              inv_default: <random>
+              size: 32
+              iskeymgr_creator: true
+              isdigest: false
+              iszer: false
+              ismubi: false
+              iskeymgr_owner: false
+              offset: 4728
+            }
+            {
+              name: CREATOR_ROOT_KEY_SHARE1
+              inv_default: <random>
+              size: 32
+              iskeymgr_creator: true
+              isdigest: false
+              iszer: false
+              ismubi: false
+              iskeymgr_owner: false
+              offset: 4760
+            }
+            {
+              name: CREATOR_SEED
+              inv_default: <random>
+              size: 32
+              iskeymgr_creator: true
+              isdigest: false
+              iszer: false
+              ismubi: false
+              iskeymgr_owner: false
+              offset: 4792
+            }
+            {
+              name: SECRET2_DIGEST
+              size: 8
+              offset: 4824
+              ismubi: false
+              isdigest: true
+              iszer: false
+              inv_default: <random>
+              iskeymgr_creator: false
+              iskeymgr_owner: false
+            }
+            {
+              name: SECRET2_ZER
+              size: 8
+              offset: 4832
+              ismubi: false
+              isdigest: false
+              iszer: true
+              inv_default: 0
+              iskeymgr_creator: false
+              iskeymgr_owner: false
+            }
+          ]
+          desc:
+            '''
+            Secret partition 2.
+            This contains RMA unlock token, creator root key, and creator seed.
+            '''
+          absorb: false
+          iskeymgr_creator: true
+          iskeymgr_owner: false
+          size: 128
+          offset: 4712
+        }
+        {
+          name: SECRET3
+          variant: Buffered
+          secret: true
+          sw_digest: false
+          hw_digest: true
+          write_lock: Digest
+          read_lock: Digest
+          key_sel: Secret3Key
+          integrity: true
+          bkout_type: false
+          zeroizable: true
+          skip_sw_header: true
+          items:
+          [
+            {
+              name: OWNER_SEED
+              inv_default: <random>
+              size: 32
+              iskeymgr_owner: true
+              isdigest: false
+              iszer: false
+              ismubi: false
+              iskeymgr_creator: false
+              offset: 4840
+            }
+            {
+              name: SECRET3_DIGEST
+              size: 8
+              offset: 4872
+              ismubi: false
+              isdigest: true
+              iszer: false
+              inv_default: <random>
+              iskeymgr_creator: false
+              iskeymgr_owner: false
+            }
+            {
+              name: SECRET3_ZER
+              size: 8
+              offset: 4880
+              ismubi: false
+              isdigest: false
+              iszer: true
+              inv_default: 0
+              iskeymgr_creator: false
+              iskeymgr_owner: false
+            }
+          ]
+          desc:
+            '''
+            Secret partition 3.
+            This contains the owner seed.
+            '''
+          absorb: false
+          iskeymgr_creator: false
+          iskeymgr_owner: true
+          ignore_read_lock_in_rma: false
+          size: 48
+          offset: 4840
+        }
+        {
+          name: LIFE_CYCLE
+          variant: LifeCycle
+          secret: false
+          sw_digest: false
+          hw_digest: false
+          write_lock: None
+          read_lock: None
+          key_sel: NoKey
+          integrity: true
+          bkout_type: false
+          skip_sw_header: true
+          items:
+          [
+            {
+              name: LC_TRANSITION_CNT
+              inv_default: <random>
+              size: 48
+              isdigest: false
+              iszer: false
+              ismubi: false
+              iskeymgr_creator: false
+              iskeymgr_owner: false
+              offset: 4888
+            }
+            {
+              name: LC_STATE
+              inv_default: <random>
+              size: 40
+              isdigest: false
+              iszer: false
+              ismubi: false
+              iskeymgr_creator: false
+              iskeymgr_owner: false
+              offset: 4936
+            }
+          ]
+          desc:
+            '''
+            Lifecycle partition.
+            This contains lifecycle transition count and state. This partition
+            cannot be locked since the life cycle state needs to advance to RMA
+            in-field. Note that while this partition is not marked secret, it
+            is not readable nor writeable via the DAI. Only the LC controller
+            can access this partition, and even via the LC controller it is not
+            possible to read the raw manufacturing life cycle state in encoded
+            form, since that encoding is considered a netlist secret. The LC
+            controller only exposes a decoded version of this state.
+            '''
+          absorb: false
+          iskeymgr_creator: false
+          iskeymgr_owner: false
+          zeroizable: false
+          ignore_read_lock_in_rma: false
+          size: 88
+          offset: 4888
+        }
+      ]
+    }
+    enable_nvm_key: false
+    topname: peppermint
+    uniquified_modules: {}
+    module_instance_name: otp_ctrl
+  }
+}

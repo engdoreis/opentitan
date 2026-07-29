@@ -1,0 +1,47 @@
+// Copyright lowRISC contributors (OpenTitan project).
+// Licensed under the Apache License, Version 2.0, see LICENSE for details.
+// SPDX-License-Identifier: Apache-2.0
+//
+// Alerts from the wider SoC into Peppermint's alert handler. The SoC side
+// drives these with prim_alert_sender instances (async mode). Extend this
+// list as the SoC integration defines more alert sources.
+{
+    soc: [
+        {
+            name: soc_fatal_alert_0
+            module_name: soc
+            index: 0
+            type: alert
+            async: 1
+            width: 1
+            lpg_idx: 0
+        }
+        {
+            name: soc_fatal_alert_1
+            module_name: soc
+            index: 1
+            type: alert
+            async: 1
+            width: 1
+            lpg_idx: 0
+        }
+        {
+            name: soc_fatal_alert_2
+            module_name: soc
+            index: 2
+            type: alert
+            async: 1
+            width: 1
+            lpg_idx: 0
+        }
+        {
+            name: soc_fatal_alert_3
+            module_name: soc
+            index: 3
+            type: alert
+            async: 1
+            width: 1
+            lpg_idx: 0
+        }
+    ]
+}

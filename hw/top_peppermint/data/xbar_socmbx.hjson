@@ -1,0 +1,23 @@
+// Copyright lowRISC contributors (OpenTitan project).
+// Licensed under the Apache License, Version 2.0, see LICENSE for details.
+// SPDX-License-Identifier: Apache-2.0
+//
+// SoC-facing mailbox window: the external SoC reaches mbx0/mbx1's "soc"
+// ports through one shared external TL-UL port. Until the AHB<->TL-UL
+// bridge exists, the host side is a raw external TL-UL stub.
+{ name: "socmbx",
+  type: "xbar",
+  clock_primary: "clk_main_i",
+  other_clock_list: []
+  reset_primary: "rst_main_ni",
+  other_reset_list: []
+
+  nodes: [
+    { name: "ext_socmbx_host", type: "host", addr_space: "soc_mbx", clock: "clk_main_i", reset: "rst_main_ni", pipeline: false },
+    { name: "mbx0.soc",        type: "device", clock: "clk_main_i", reset: "rst_main_ni", pipeline: false },
+    { name: "mbx1.soc",        type: "device", clock: "clk_main_i", reset: "rst_main_ni", pipeline: false },
+  ],
+  connections: {
+    ext_socmbx_host: [ "mbx0.soc", "mbx1.soc" ],
+  },
+}

@@ -1,0 +1,15 @@
+// Copyright lowRISC contributors (OpenTitan project).
+// Licensed under the Apache License, Version 2.0, see LICENSE for details.
+// SPDX-License-Identifier: Apache-2.0
+//
+//////////////////////////////////////////////////////////////////////////////////////
+// Seed configuration for topgen and subsequent flows                               //
+// 256 bit seeds for compile-time random constants. All seeds must be different     //
+// NOTE: REPLACE THIS FILE WITH A PRODUCTION SEED CONFIGURATION BEFORE THE TAPEOUT  //
+//////////////////////////////////////////////////////////////////////////////////////
+{
+  name: "testing"
+  topgen_seed: 51451787542291517751888767411848989252412020777091149863881806945777355144337
+  otp_img_seed: 24868028277047070845280224376993946593238997617476146683055290474876205000801
+  lc_ctrl_seed: 49841089124658132456165265978197681960561948696349021308850918515200439523606
+}

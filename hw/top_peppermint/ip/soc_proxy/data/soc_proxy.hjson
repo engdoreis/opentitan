@@ -1,0 +1,45 @@
+// Copyright lowRISC contributors (OpenTitan project).
+// Licensed under the Apache License, Version 2.0, see LICENSE for details.
+// SPDX-License-Identifier: Apache-2.0
+//
+// SoC Proxy (Peppermint): pass-through placeholder for the future
+// TL-UL->AHB egress bridge. A single address-mapped "ctn" device port on
+// the main crossbar (CPU and DMA both reach it as regular, crossbar-
+// arbitrated hosts), forwarded straight out to the chip boundary. Replace
+// the RTL with the real AHB bridge without touching the xbar/top wiring.
+{
+  name:               "soc_proxy"
+  human_name:         "SoC Proxy"
+  one_line_desc:      "Minimal placeholder bridging Peppermint's main crossbar to the wider SoC"
+  cip_id:             "38" // matches upstream OpenTitan's reserved "soc_proxy" identifier
+  version:            "1.0.0"
+
+  clocking: [
+    { clock: "clk_i", reset: "rst_ni", primary: true }
+  ]
+
+  bus_interfaces: [
+    { protocol: "tlul", direction: "device", name: "ctn" }
+  ]
+
+  inter_signal_list: [
+    { struct:  "tl_h2d"
+      package: "tlul_pkg"
+      type:    "uni"
+      name:    "ctn_tl_h2d"
+      act:     "req"
+      desc:    "TL-UL port for egress into the wider SoC (request part), synchronous"
+    }
+    { struct:  "tl_d2h"
+      package: "tlul_pkg"
+      type:    "uni"
+      name:    "ctn_tl_d2h"
+      act:     "rcv"
+      desc:    "TL-UL port for egress into the wider SoC (response part), synchronous"
+    }
+  ]
+
+  memory: {
+    ctn: {}
+  }
+}

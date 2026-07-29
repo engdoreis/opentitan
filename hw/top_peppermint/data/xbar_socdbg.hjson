@@ -1,0 +1,20 @@
+// Copyright lowRISC contributors (OpenTitan project).
+// Licensed under the Apache License, Version 2.0, see LICENSE for details.
+// SPDX-License-Identifier: Apache-2.0
+//
+{ name: "socdbg",
+  type: "xbar",
+  clock_primary: "clk_main_i",
+  other_clock_list: []
+  reset_primary: "rst_main_ni",
+  other_reset_list: []
+
+  nodes: [
+    { name: "ext_socdbg_host",   type: "host", addr_space: "soc_dbg", clock: "clk_main_i", reset: "rst_main_ni", pipeline: false },
+    { name: "lc_ctrl.dmi",       type: "device", clock: "clk_main_i", reset: "rst_main_ni", pipeline: false },
+    { name: "rv_dm.dbg",         type: "device", clock: "clk_main_i", reset: "rst_main_ni", pipeline: false },
+  ],
+  connections: {
+    ext_socdbg_host: [ "lc_ctrl.dmi", "rv_dm.dbg" ],
+  },
+}

@@ -43,6 +43,7 @@ licence_test(
         "hw/top_earlgrey/ip_autogen/rv_core_ibex/lint/rv_core_ibex.vlt",
         "hw/top_englishbreakfast/ip_autogen/rv_core_ibex/lint/rv_core_ibex.vlt",
         "hw/top_darjeeling/ip_autogen/rv_core_ibex/lint/rv_core_ibex.vlt",
+        "hw/top_peppermint/ip_autogen/rv_core_ibex/lint/rv_core_ibex.vlt",
 
         ## Software Exclusions
 
