@@ -5966,8 +5966,8 @@
             desc: Number of digest inputs from ROM_CTRL
             param_type: int
             unpacked_dimensions: null
-            default: 2
-            local: false
+            default: 1
+            local: true
             expose: true
             name_top: KeymgrDpeNumRomDigestInputs
           }
@@ -25877,8 +25877,8 @@
           desc: Number of digest inputs from ROM_CTRL
           param_type: int
           unpacked_dimensions: null
-          default: 2
-          local: false
+          default: 1
+          local: true
           expose: true
           name_top: KeymgrDpeNumRomDigestInputs
         }
@@ -34433,8 +34433,8 @@
           desc: Number of digest inputs from ROM_CTRL
           param_type: int
           unpacked_dimensions: null
-          default: 2
-          local: false
+          default: 1
+          local: true
           expose: true
           name_top: KeymgrDpeNumRomDigestInputs
         }
