@@ -1,4 +1,30 @@
-# Peppermint M1 Delivery
+# Peppermint 1.0 M1 Delivery
+
+## Release Naming
+
+Release tags have the form `Peppermint-<major>.<minor>-M<milestone>[-RC<n>]`,
+so this delivery is `Peppermint-1.0-M1-RC0`.  Release candidates count from
+`RC0`, and the final release of a milestone drops the suffix altogether
+(`Peppermint-1.0-M1`).
+
+The two counters have separate jobs.  The milestone is a planned delivery point
+in the program schedule.  The version tracks the integration contract: the minor
+version increments for a backward-compatible change, the major version
+increments for a breaking/backward-incompatible change.  Backward compatibility
+is to be defined more precisely.  A milestone number can therefore recur under a
+later version, because an unplanned re-delivery is a version bump rather than a
+new milestone, and one version can span several milestones.
+
+Deliverable names follow from the tag mechanically: lowercase it, replace `-`
+with `_`, and replace `.` with `p`, which gives
+`lowrisc_top_peppermint_1p0_m1_rc0`.  The `p` keeps the version clear of suffix
+extraction.  With a literal dot, the usual way to strip a `.tar.zst` suffix,
+cutting everything from the first dot, would truncate the name to
+`lowrisc_top_peppermint_1`.
+
+The archive and the directory inside it carry this full identity.  The source
+files within carry only the milestone (`..._m1.sv`), because the directory
+around them already disambiguates them.
 
 ## Reproducing the Flow
 
@@ -71,12 +97,12 @@ As the final step, pack them into the archive that gets handed over.  Run this
 from this directory.
 ```sh
 tar -I 'zstd -19 -T0' \
-    -cf lowrisc_top_peppermint_m1_rc0.tar.zst \
-    --transform 's,^out,lowrisc_top_peppermint_m1_rc0,' \
+    -cf lowrisc_top_peppermint_1p0_m1_rc0.tar.zst \
+    --transform 's,^out,lowrisc_top_peppermint_1p0_m1_rc0,' \
     --owner=0 --group=0 --numeric-owner --sort=name \
     out
 ```
 
-`--transform` renames `out/` to `lowrisc_top_peppermint_m1_rc0/` inside the
+`--transform` renames `out/` to `lowrisc_top_peppermint_1p0_m1_rc0/` inside the
 archive, so it unpacks into a directory named after the delivery.  The
 remaining flags keep the archive reproducible and free of local uid/gid.
