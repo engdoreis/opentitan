@@ -22,9 +22,11 @@ extraction.  With a literal dot, the usual way to strip a `.tar.zst` suffix,
 cutting everything from the first dot, would truncate the name to
 `lowrisc_top_peppermint_1`.
 
-The archive and the directory inside it carry this full identity.  The source
-files within carry only the milestone (`..._m1.sv`), because the directory
-around them already disambiguates them.
+The names of the archive and the directory inside it carry this full identity;
+the names of the source files inside carry none of it, so an integrator's file
+lists and tool scripts stay valid across deliveries.  Each file instead names
+the release in a header comment, which survives being copied out of the
+archive, so `split_pickle.py` takes the identifier as `--release`.
 
 ## Reproducing the Flow
 
@@ -47,7 +49,7 @@ bender pickle \
     --prefix lowrisc_ \
     --expand-macros \
     -D SYNTHESIS \
-    --top top_peppermint > ../../../hw/top_peppermint/delivery/lowrisc_peppermint_m1.sv
+    --top top_peppermint > ../../../hw/top_peppermint/delivery/lowrisc_peppermint.sv
 ```
 
 
@@ -55,13 +57,13 @@ Then repair the package references that bender's renaming missed.
 (Issue opened in bender repo: `pulp-platform/bender/issues/338`)
 ```sh
 cd ../../../hw/top_peppermint/delivery
-python3 scripts/fix_pickle_prefix.py lowrisc_peppermint_m1.sv
+python3 scripts/fix_pickle_prefix.py lowrisc_peppermint.sv
 ```
 
 We first pickle, then finally split into the requested files.
 ```sh
 mkdir -p out
-python3 scripts/split_pickle.py lowrisc_peppermint_m1.sv
+python3 scripts/split_pickle.py --release Peppermint-1.0-M1-RC0 lowrisc_peppermint.sv
 ```
 
 Lastly, normalise the generated files.  Without this they trip this repository's
