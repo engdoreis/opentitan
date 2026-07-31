@@ -28,7 +28,7 @@ package tl_main_pkg;
   localparam logic [31:0] ADDR_SPACE_EDN1                 = 32'h 21180000;
   localparam logic [31:0] ADDR_SPACE_RV_CORE_IBEX__CFG    = 32'h 211f0000;
   localparam logic [31:0] ADDR_SPACE_DMA                  = 32'h 22010000;
-  localparam logic [31:0] ADDR_SPACE_SOC_PROXY__CTN       = 32'h 80000000;
+  localparam logic [31:0] ADDR_SPACE_AHB_BRIDGE__CTN      = 32'h 80000000;
   localparam logic [31:0] ADDR_SPACE_MBX0__CORE           = 32'h 22000000;
   localparam logic [31:0] ADDR_SPACE_MBX1__CORE           = 32'h 22000100;
   localparam logic [0:0][31:0] ADDR_SPACE_AON                  = {
@@ -57,7 +57,7 @@ package tl_main_pkg;
   localparam logic [31:0] ADDR_MASK_EDN1                 = 32'h 0000007f;
   localparam logic [31:0] ADDR_MASK_RV_CORE_IBEX__CFG    = 32'h 000007ff;
   localparam logic [31:0] ADDR_MASK_DMA                  = 32'h 000001ff;
-  localparam logic [31:0] ADDR_MASK_SOC_PROXY__CTN       = 32'h 0fffffff;
+  localparam logic [31:0] ADDR_MASK_AHB_BRIDGE__CTN      = 32'h 0fffffff;
   localparam logic [31:0] ADDR_MASK_MBX0__CORE           = 32'h 0000007f;
   localparam logic [31:0] ADDR_MASK_MBX1__CORE           = 32'h 0000007f;
   localparam logic [0:0][31:0] ADDR_MASK_AON                  = {
@@ -90,7 +90,7 @@ package tl_main_pkg;
     TlEdn1 = 19,
     TlRvCoreIbexCfg = 20,
     TlDma = 21,
-    TlSocProxyCtn = 22,
+    TlAhbBridgeCtn = 22,
     TlMbx0Core = 23,
     TlMbx1Core = 24,
     TlAon = 25

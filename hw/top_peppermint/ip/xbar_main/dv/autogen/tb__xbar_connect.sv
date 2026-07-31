@@ -47,7 +47,7 @@ initial force dut.rst_aon_ni = rst_n;
 `CONNECT_TL_DEVICE_IF(edn1, dut, clk_main_i, rst_n)
 `CONNECT_TL_DEVICE_IF(rv_core_ibex__cfg, dut, clk_main_i, rst_n)
 `CONNECT_TL_DEVICE_IF(dma, dut, clk_main_i, rst_n)
-`CONNECT_TL_DEVICE_IF(soc_proxy__ctn, dut, clk_main_i, rst_n)
+`CONNECT_TL_DEVICE_IF(ahb_bridge__ctn, dut, clk_main_i, rst_n)
 `CONNECT_TL_DEVICE_IF(mbx0__core, dut, clk_main_i, rst_n)
 `CONNECT_TL_DEVICE_IF(mbx1__core, dut, clk_main_i, rst_n)
 `CONNECT_TL_DEVICE_IF(aon, dut, clk_aon_i, rst_n)

@@ -7,6 +7,6 @@ package(default_visibility = ["//visibility:public"])
 filegroup(
     name = "rtl_files",
     srcs = glob(["**"]) + [
-        "//hw/top_peppermint/ip/soc_proxy:rtl_files",
+        "//hw/top_peppermint/ip/ahb_bridge:rtl_files",
     ],
 )

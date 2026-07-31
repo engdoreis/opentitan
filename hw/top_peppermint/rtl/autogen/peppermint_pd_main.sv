@@ -147,10 +147,10 @@ module peppermint_pd_main #(
   output logic       mbx1_doe_intr_en_o,
   output logic       mbx1_doe_intr_support_o,
   output logic       mbx1_doe_async_msg_support_o,
-  output tlul_pkg::tl_h2d_t       soc_proxy_ctn_tl_h2d_o,
-  input  tlul_pkg::tl_d2h_t       soc_proxy_ctn_tl_d2h_i,
-  input  tlul_pkg::tl_h2d_t       soc_mbx_tl_req_i,
-  output tlul_pkg::tl_d2h_t       soc_mbx_tl_rsp_o,
+  output ahb_pkg::ahb_h2d_t       soc_mgr_ahb_req_o,
+  input  ahb_pkg::ahb_d2h_t       soc_mgr_ahb_rsp_i,
+  input  ahb_pkg::ahb_h2d_t       soc_mbx_ahb_req_i,
+  output ahb_pkg::ahb_d2h_t       soc_mbx_ahb_rsp_o,
   input  tlul_pkg::tl_h2d_t       soc_dbg_tl_req_i,
   output tlul_pkg::tl_d2h_t       soc_dbg_tl_rsp_o,
 
@@ -347,12 +347,14 @@ module peppermint_pd_main #(
   tlul_pkg::tl_d2h_t       rv_core_ibex_cfg_tl_d_rsp;
   tlul_pkg::tl_h2d_t       dma_tl_d_req;
   tlul_pkg::tl_d2h_t       dma_tl_d_rsp;
-  tlul_pkg::tl_h2d_t       soc_proxy_ctn_tl_req;
-  tlul_pkg::tl_d2h_t       soc_proxy_ctn_tl_rsp;
+  tlul_pkg::tl_h2d_t       ahb_bridge_ctn_tl_d_req;
+  tlul_pkg::tl_d2h_t       ahb_bridge_ctn_tl_d_rsp;
   tlul_pkg::tl_h2d_t       mbx0_core_tl_d_req;
   tlul_pkg::tl_d2h_t       mbx0_core_tl_d_rsp;
   tlul_pkg::tl_h2d_t       mbx1_core_tl_d_req;
   tlul_pkg::tl_d2h_t       mbx1_core_tl_d_rsp;
+  tlul_pkg::tl_h2d_t       socmbx_tl_ahb_bridge__socmbx_req;
+  tlul_pkg::tl_d2h_t       socmbx_tl_ahb_bridge__socmbx_rsp;
   tlul_pkg::tl_h2d_t       mbx0_soc_tl_d_req;
   tlul_pkg::tl_d2h_t       mbx0_soc_tl_d_rsp;
   tlul_pkg::tl_h2d_t       mbx1_soc_tl_d_req;
@@ -1180,17 +1182,21 @@ module peppermint_pd_main #(
     .tl_d_o(dma_tl_d_rsp)
   );
 
-  soc_proxy u_soc_proxy (
+  ahb_bridge u_ahb_bridge (
     // Clock and reset connections
     .clk_i(clk_main_i),
     .rst_ni(rst_main_ni),
 
 
     // Inter-module signals
-    .ctn_tl_h2d_o(soc_proxy_ctn_tl_h2d_o),
-    .ctn_tl_d2h_i(soc_proxy_ctn_tl_d2h_i),
-    .ctn_tl_i(soc_proxy_ctn_tl_req),
-    .ctn_tl_o(soc_proxy_ctn_tl_rsp)
+    .ahb_sub_h2d_i(soc_mbx_ahb_req_i),
+    .ahb_sub_d2h_o(soc_mbx_ahb_rsp_o),
+    .ahb_mgr_h2d_o(soc_mgr_ahb_req_o),
+    .ahb_mgr_d2h_i(soc_mgr_ahb_rsp_i),
+    .socmbx_tl_h_o(socmbx_tl_ahb_bridge__socmbx_req),
+    .socmbx_tl_h_i(socmbx_tl_ahb_bridge__socmbx_rsp),
+    .ctn_tl_d_i(ahb_bridge_ctn_tl_d_req),
+    .ctn_tl_d_o(ahb_bridge_ctn_tl_d_rsp)
   );
 
   mbx #(
@@ -1517,9 +1523,9 @@ module peppermint_pd_main #(
     .tl_dma_o(dma_tl_d_req),
     .tl_dma_i(dma_tl_d_rsp),
 
-    // port: tl_soc_proxy__ctn
-    .tl_soc_proxy__ctn_o(soc_proxy_ctn_tl_req),
-    .tl_soc_proxy__ctn_i(soc_proxy_ctn_tl_rsp),
+    // port: tl_ahb_bridge__ctn
+    .tl_ahb_bridge__ctn_o(ahb_bridge_ctn_tl_d_req),
+    .tl_ahb_bridge__ctn_i(ahb_bridge_ctn_tl_d_rsp),
 
     // port: tl_mbx0__core
     .tl_mbx0__core_o(mbx0_core_tl_d_req),
@@ -1540,9 +1546,9 @@ module peppermint_pd_main #(
     .clk_main_i(clk_main_i),
     .rst_main_ni(rst_main_ni),
 
-    // port: tl_ext_socmbx_host
-    .tl_ext_socmbx_host_i(soc_mbx_tl_req_i),
-    .tl_ext_socmbx_host_o(soc_mbx_tl_rsp_o),
+    // port: tl_ahb_bridge__socmbx
+    .tl_ahb_bridge__socmbx_i(socmbx_tl_ahb_bridge__socmbx_req),
+    .tl_ahb_bridge__socmbx_o(socmbx_tl_ahb_bridge__socmbx_rsp),
 
     // port: tl_mbx0__soc
     .tl_mbx0__soc_o(mbx0_soc_tl_d_req),

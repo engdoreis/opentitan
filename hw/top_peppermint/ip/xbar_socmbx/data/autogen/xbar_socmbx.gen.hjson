@@ -29,7 +29,7 @@
   domain: Main
   connections:
   {
-    ext_socmbx_host:
+    ahb_bridge.socmbx:
     [
       mbx0.soc
       mbx1.soc
@@ -38,7 +38,7 @@
   nodes:
   [
     {
-      name: ext_socmbx_host
+      name: ahb_bridge.socmbx
       type: host
       addr_space: soc_mbx
       clock: clk_main_i
@@ -102,7 +102,7 @@
   inter_signal_list:
   [
     {
-      name: tl_ext_socmbx_host
+      name: tl_ahb_bridge__socmbx
       struct: tl
       package: tlul_pkg
       type: req_rsp
@@ -110,10 +110,10 @@
       inst_name: socmbx
       width: 1
       default: ""
-      external: true
-      conn_type: false
+      end_idx: -1
+      top_type: one-to-one
+      top_signame: socmbx_tl_ahb_bridge__socmbx
       index: -1
-      top_signame: soc_mbx_tl
     }
     {
       name: tl_mbx0__soc

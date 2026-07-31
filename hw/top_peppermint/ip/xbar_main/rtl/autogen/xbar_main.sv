@@ -63,7 +63,7 @@
 //     -> sm1_55
 //       -> dma
 //     -> sm1_56
-//       -> soc_proxy.ctn
+//       -> ahb_bridge.ctn
 //     -> sm1_57
 //       -> mbx0.core
 //     -> sm1_58
@@ -129,7 +129,7 @@
 //     -> sm1_34
 //       -> rom_ctrl.rom
 //     -> sm1_56
-//       -> soc_proxy.ctn
+//       -> ahb_bridge.ctn
 // mbx0.sram
 //   -> s1n_63
 //     -> sm1_36
@@ -204,8 +204,8 @@ module xbar_main (
   input  tlul_pkg::tl_d2h_t tl_rv_core_ibex__cfg_i,
   output tlul_pkg::tl_h2d_t tl_dma_o,
   input  tlul_pkg::tl_d2h_t tl_dma_i,
-  output tlul_pkg::tl_h2d_t tl_soc_proxy__ctn_o,
-  input  tlul_pkg::tl_d2h_t tl_soc_proxy__ctn_i,
+  output tlul_pkg::tl_h2d_t tl_ahb_bridge__ctn_o,
+  input  tlul_pkg::tl_d2h_t tl_ahb_bridge__ctn_i,
   output tlul_pkg::tl_h2d_t tl_mbx0__core_o,
   input  tlul_pkg::tl_d2h_t tl_mbx0__core_i,
   output tlul_pkg::tl_h2d_t tl_mbx1__core_o,
@@ -722,8 +722,8 @@ module xbar_main (
   assign tl_dma_o = tl_sm1_55_ds_h2d;
   assign tl_sm1_55_ds_d2h = tl_dma_i;
 
-  assign tl_soc_proxy__ctn_o = tl_sm1_56_ds_h2d;
-  assign tl_sm1_56_ds_d2h = tl_soc_proxy__ctn_i;
+  assign tl_ahb_bridge__ctn_o = tl_sm1_56_ds_h2d;
+  assign tl_sm1_56_ds_d2h = tl_ahb_bridge__ctn_i;
 
   assign tl_mbx0__core_o = tl_sm1_57_ds_h2d;
   assign tl_sm1_57_ds_d2h = tl_mbx0__core_i;
@@ -862,7 +862,7 @@ end
       dev_sel_s1n_37 = 5'd21;
 
     end else if ((tl_s1n_37_us_h2d.a_address &
-                  ~(ADDR_MASK_SOC_PROXY__CTN)) == ADDR_SPACE_SOC_PROXY__CTN) begin
+                  ~(ADDR_MASK_AHB_BRIDGE__CTN)) == ADDR_SPACE_AHB_BRIDGE__CTN) begin
       dev_sel_s1n_37 = 5'd22;
 
     end else if ((tl_s1n_37_us_h2d.a_address &
@@ -992,7 +992,7 @@ end
       dev_sel_s1n_62 = 2'd1;
 
     end else if ((tl_s1n_62_us_h2d.a_address &
-                  ~(ADDR_MASK_SOC_PROXY__CTN)) == ADDR_SPACE_SOC_PROXY__CTN) begin
+                  ~(ADDR_MASK_AHB_BRIDGE__CTN)) == ADDR_SPACE_AHB_BRIDGE__CTN) begin
       dev_sel_s1n_62 = 2'd2;
 end
   end

@@ -6,7 +6,7 @@
 // all reset signals should be generated from one reset signal to not make any deadlock
 //
 // Interconnect
-// ext_socmbx_host
+// ahb_bridge.socmbx
 //   -> s1n_3
 //     -> mbx0.soc
 //     -> mbx1.soc
@@ -16,8 +16,8 @@ module xbar_socmbx (
   input rst_main_ni,
 
   // Host interfaces
-  input  tlul_pkg::tl_h2d_t tl_ext_socmbx_host_i,
-  output tlul_pkg::tl_d2h_t tl_ext_socmbx_host_o,
+  input  tlul_pkg::tl_h2d_t tl_ahb_bridge__socmbx_i,
+  output tlul_pkg::tl_d2h_t tl_ahb_bridge__socmbx_o,
 
   // Device interfaces
   output tlul_pkg::tl_h2d_t tl_mbx0__soc_o,
@@ -54,8 +54,8 @@ module xbar_socmbx (
   assign tl_mbx1__soc_o = tl_s1n_3_ds_h2d[1];
   assign tl_s1n_3_ds_d2h[1] = tl_mbx1__soc_i;
 
-  assign tl_s1n_3_us_h2d = tl_ext_socmbx_host_i;
-  assign tl_ext_socmbx_host_o = tl_s1n_3_us_d2h;
+  assign tl_s1n_3_us_h2d = tl_ahb_bridge__socmbx_i;
+  assign tl_ahb_bridge__socmbx_o = tl_s1n_3_us_d2h;
 
   always_comb begin
     // default steering to generate error response if address is not within the range

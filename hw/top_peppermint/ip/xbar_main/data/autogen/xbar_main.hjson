@@ -183,7 +183,7 @@
     }
     { struct: "tl"
       type:   "req_rsp"
-      name:   "tl_soc_proxy__ctn"
+      name:   "tl_ahb_bridge__ctn"
       act:    "req"
       package: "tlul_pkg"
     }

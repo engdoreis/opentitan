@@ -176,11 +176,11 @@ module xbar_main_bind;
     .h2d    (tl_dma_o),
     .d2h    (tl_dma_i)
   );
-  bind xbar_main tlul_assert #(.EndpointType("Host")) tlul_assert_device_soc_proxy__ctn (
+  bind xbar_main tlul_assert #(.EndpointType("Host")) tlul_assert_device_ahb_bridge__ctn (
     .clk_i  (clk_main_i),
     .rst_ni (rst_main_ni),
-    .h2d    (tl_soc_proxy__ctn_o),
-    .d2h    (tl_soc_proxy__ctn_i)
+    .h2d    (tl_ahb_bridge__ctn_o),
+    .d2h    (tl_ahb_bridge__ctn_i)
   );
   bind xbar_main tlul_assert #(.EndpointType("Host")) tlul_assert_device_mbx0__core (
     .clk_i  (clk_main_i),

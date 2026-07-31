@@ -50,7 +50,7 @@ The main address space, shared between the CPU and DM
 | sram_ctrl_ret_aon | ram         | `0x40470000`   | `0x2000`       | `0x800`        |
 | sram_ctrl_main    | ram         | `0x10000000`   | `0x30000`      | `0xC000`       |
 | rom_ctrl          | rom         | `0x20000`      | `0x30000`      | `0xC000`       |
-| soc_proxy         | ctn         | `0x80000000`   | `0x10000000`   | `0x4000000`    |
+| ahb_bridge        | ctn         | `0x80000000`   | `0x10000000`   | `0x4000000`    |
 
 ## Soc_mbx Address Space
 

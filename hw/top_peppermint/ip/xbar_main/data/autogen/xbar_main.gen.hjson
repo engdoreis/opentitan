@@ -67,7 +67,7 @@
       edn1
       rv_core_ibex.cfg
       dma
-      soc_proxy.ctn
+      ahb_bridge.ctn
       mbx0.core
       mbx1.core
       aon
@@ -103,7 +103,7 @@
     [
       sram_ctrl_main.ram
       rom_ctrl.rom
-      soc_proxy.ctn
+      ahb_bridge.ctn
     ]
     mbx0.sram:
     [
@@ -657,12 +657,12 @@
       req_fifo_pass: true
     }
     {
-      name: soc_proxy.ctn
+      name: ahb_bridge.ctn
       type: device
       clock: clk_main_i
       reset: rst_main_ni
       pipeline: false
-      inst_type: soc_proxy
+      inst_type: ahb_bridge
       addr_range:
       [
         {
@@ -1120,7 +1120,7 @@
       index: -1
     }
     {
-      name: tl_soc_proxy__ctn
+      name: tl_ahb_bridge__ctn
       struct: tl
       package: tlul_pkg
       type: req_rsp
@@ -1129,7 +1129,7 @@
       width: 1
       default: ""
       domain: Main
-      top_signame: soc_proxy_ctn_tl
+      top_signame: ahb_bridge_ctn_tl_d
       index: -1
     }
     {

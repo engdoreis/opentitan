@@ -3,8 +3,9 @@
 // SPDX-License-Identifier: Apache-2.0
 //
 // SoC-facing mailbox window: the external SoC reaches mbx0/mbx1's "soc"
-// ports through one shared external TL-UL port. Until the AHB<->TL-UL
-// bridge exists, the host side is a raw external TL-UL stub.
+// ports through the ahb_bridge. The bridge's TL-UL host interface
+// (ahb_bridge.socmbx) is this crossbar's host, fed by the incoming AHB
+// subordinate port at the chip boundary.
 { name: "socmbx",
   type: "xbar",
   clock_primary: "clk_main_i",
@@ -13,11 +14,11 @@
   other_reset_list: []
 
   nodes: [
-    { name: "ext_socmbx_host", type: "host", addr_space: "soc_mbx", clock: "clk_main_i", reset: "rst_main_ni", pipeline: false },
-    { name: "mbx0.soc",        type: "device", clock: "clk_main_i", reset: "rst_main_ni", pipeline: false },
-    { name: "mbx1.soc",        type: "device", clock: "clk_main_i", reset: "rst_main_ni", pipeline: false },
+    { name: "ahb_bridge.socmbx", type: "host", addr_space: "soc_mbx", clock: "clk_main_i", reset: "rst_main_ni", pipeline: false },
+    { name: "mbx0.soc",          type: "device", clock: "clk_main_i", reset: "rst_main_ni", pipeline: false },
+    { name: "mbx1.soc",          type: "device", clock: "clk_main_i", reset: "rst_main_ni", pipeline: false },
   ],
   connections: {
-    ext_socmbx_host: [ "mbx0.soc", "mbx1.soc" ],
+    "ahb_bridge.socmbx": [ "mbx0.soc", "mbx1.soc" ],
   },
 }

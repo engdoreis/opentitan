@@ -44,7 +44,7 @@ filesets:
       - lowrisc:peppermint_ip:rv_plic
       - lowrisc:peppermint_ip:rv_core_ibex
       - lowrisc:ip:rom_ctrl
-      - lowrisc:top_peppermint:soc_proxy
+      - lowrisc:top_peppermint:ahb_bridge
       - lowrisc:tlul:headers
       - lowrisc:prim:all
       - lowrisc:prim:mubi

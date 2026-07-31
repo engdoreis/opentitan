@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 load("//rules/opentitan:hw.bzl", "opentitan_ip")
 
-SOC_PROXY = opentitan_ip(
-    name = "soc_proxy",
-    hjson = "//hw/top_peppermint/ip/soc_proxy/data:soc_proxy.hjson",
+AHB_BRIDGE = opentitan_ip(
+    name = "ahb_bridge",
+    hjson = "//hw/top_peppermint/ip/ahb_bridge/data:ahb_bridge.hjson",
 )

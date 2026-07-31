@@ -73,7 +73,7 @@ tl_device_t xbar_devices[$] = '{
     '{"dma", '{
         '{32'h22010000, 32'h220101ff}
     }},
-    '{"soc_proxy__ctn", '{
+    '{"ahb_bridge__ctn", '{
         '{32'h80000000, 32'h8fffffff}
     }},
     '{"mbx0__core", '{
@@ -117,7 +117,7 @@ tl_host_t xbar_hosts[$] = '{
         "edn1",
         "rv_core_ibex__cfg",
         "dma",
-        "soc_proxy__ctn",
+        "ahb_bridge__ctn",
         "mbx0__core",
         "mbx1__core",
         "aon"}}
@@ -151,7 +151,7 @@ tl_host_t xbar_hosts[$] = '{
     '{"dma__host", 3, '{
         "sram_ctrl_main__ram",
         "rom_ctrl__rom",
-        "soc_proxy__ctn"}}
+        "ahb_bridge__ctn"}}
     ,
     '{"mbx0__sram", 4, '{
         "sram_ctrl_main__ram"}}

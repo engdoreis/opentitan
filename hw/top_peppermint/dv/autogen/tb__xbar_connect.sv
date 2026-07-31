@@ -37,7 +37,7 @@ tl_if rv_dm__sba_tl_if(clk_main, rst_n);
 tl_if dma__host_tl_if(clk_main, rst_n);
 tl_if mbx0__sram_tl_if(clk_main, rst_n);
 tl_if mbx1__sram_tl_if(clk_main, rst_n);
-tl_if ext_socmbx_host_tl_if(clk_main, rst_n);
+tl_if ahb_bridge__socmbx_tl_if(clk_main, rst_n);
 tl_if ext_socdbg_host_tl_if(clk_main, rst_n);
 
 tl_if rv_dm__regs_tl_if(clk_main, rst_n);
@@ -62,7 +62,7 @@ tl_if edn0_tl_if(clk_main, rst_n);
 tl_if edn1_tl_if(clk_main, rst_n);
 tl_if rv_core_ibex__cfg_tl_if(clk_main, rst_n);
 tl_if dma_tl_if(clk_main, rst_n);
-tl_if soc_proxy__ctn_tl_if(clk_main, rst_n);
+tl_if ahb_bridge__ctn_tl_if(clk_main, rst_n);
 tl_if mbx0__core_tl_if(clk_main, rst_n);
 tl_if mbx1__core_tl_if(clk_main, rst_n);
 tl_if pwrmgr_tl_if(clk_aon, rst_n);
@@ -133,7 +133,7 @@ initial begin
     `DRIVE_CHIP_TL_DEVICE_IF(edn1, edn1, tl, main)
     `DRIVE_CHIP_TL_DEVICE_IF(rv_core_ibex__cfg, rv_core_ibex, cfg_tl_d, main)
     `DRIVE_CHIP_TL_DEVICE_IF(dma, dma, host_tl_h, main)
-    `DRIVE_CHIP_TL_DEVICE_IF(soc_proxy__ctn, soc_proxy, ctn_tl, main)
+    `DRIVE_CHIP_TL_DEVICE_IF(ahb_bridge__ctn, ahb_bridge, ctn_tl_d, main)
     `DRIVE_CHIP_TL_DEVICE_IF(mbx0__core, mbx0, core_tl_d, main)
     `DRIVE_CHIP_TL_DEVICE_IF(mbx1__core, mbx1, core_tl_d, main)
     `DRIVE_CHIP_TL_DEVICE_IF(pwrmgr, pwrmgr, tl, aon)
@@ -143,7 +143,7 @@ initial begin
     `DRIVE_CHIP_TL_DEVICE_IF(rv_timer_aon, rv_timer_aon, tl, aon)
     `DRIVE_CHIP_TL_DEVICE_IF(sram_ctrl_ret_aon__regs, sram_ctrl_ret_aon, regs_tl, aon)
     `DRIVE_CHIP_TL_DEVICE_IF(sram_ctrl_ret_aon__ram, sram_ctrl_ret_aon, ram_tl, aon)
-    // ext_socmbx_host: no on-chip far end found; skipping DV force connection.
+    `DRIVE_CHIP_TL_HOST_IF(ahb_bridge__socmbx, ahb_bridge, socmbx_tl_h, main)
     `DRIVE_CHIP_TL_DEVICE_IF(mbx0__soc, mbx0, soc_tl_d, main)
     `DRIVE_CHIP_TL_DEVICE_IF(mbx1__soc, mbx1, soc_tl_d, main)
     // ext_socdbg_host: no on-chip far end found; skipping DV force connection.

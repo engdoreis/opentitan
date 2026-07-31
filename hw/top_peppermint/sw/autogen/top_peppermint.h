@@ -565,14 +565,14 @@ extern "C" {
 #define TOP_PEPPERMINT_ROM_CTRL_ROM_SIZE_BYTES 0x30000u
 
 /**
- * Memory base address for ctn memory on soc_proxy in top peppermint.
+ * Memory base address for ctn memory on ahb_bridge in top peppermint.
  */
-#define TOP_PEPPERMINT_SOC_PROXY_CTN_BASE_ADDR 0x80000000u
+#define TOP_PEPPERMINT_AHB_BRIDGE_CTN_BASE_ADDR 0x80000000u
 
 /**
- * Memory size for ctn memory on soc_proxy in top peppermint.
+ * Memory size for ctn memory on ahb_bridge in top peppermint.
  */
-#define TOP_PEPPERMINT_SOC_PROXY_CTN_SIZE_BYTES 0x10000000u
+#define TOP_PEPPERMINT_AHB_BRIDGE_CTN_SIZE_BYTES 0x10000000u
 
 
 /**

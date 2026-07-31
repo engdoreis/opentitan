@@ -430,11 +430,11 @@ pub const ROM_CTRL_ROM_BASE_ADDR: usize = 0x20000;
 /// Memory size for rom memory on rom_ctrl in top peppermint.
 pub const ROM_CTRL_ROM_SIZE_BYTES: usize = 0x30000;
 
-/// Memory base address for ctn memory on soc_proxy in top peppermint.
-pub const SOC_PROXY_CTN_BASE_ADDR: usize = 0x80000000;
+/// Memory base address for ctn memory on ahb_bridge in top peppermint.
+pub const AHB_BRIDGE_CTN_BASE_ADDR: usize = 0x80000000;
 
-/// Memory size for ctn memory on soc_proxy in top peppermint.
-pub const SOC_PROXY_CTN_SIZE_BYTES: usize = 0x10000000;
+/// Memory size for ctn memory on ahb_bridge in top peppermint.
+pub const AHB_BRIDGE_CTN_SIZE_BYTES: usize = 0x10000000;
 
 /// PLIC Interrupt Source Peripheral.
 ///

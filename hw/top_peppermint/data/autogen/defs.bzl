@@ -8,6 +8,7 @@
 #                -o hw/top_peppermint/
 
 load("//hw/ip/aes:defs.bzl", "AES")
+load("//hw/top_peppermint/ip/ahb_bridge:defs.bzl", "AHB_BRIDGE")
 load("//hw/top_peppermint/ip_autogen/alert_handler:defs.bzl", "ALERT_HANDLER")
 load("//hw/top_peppermint/ip_autogen/clkmgr:defs.bzl", "CLKMGR")
 load("//hw/ip/csrng:defs.bzl", "CSRNG")
@@ -29,11 +30,11 @@ load("//hw/top_peppermint/ip_autogen/rv_core_ibex:defs.bzl", "RV_CORE_IBEX")
 load("//hw/ip/rv_dm:defs.bzl", "RV_DM")
 load("//hw/top_peppermint/ip_autogen/rv_plic:defs.bzl", "RV_PLIC")
 load("//hw/ip/rv_timer:defs.bzl", "RV_TIMER")
-load("//hw/top_peppermint/ip/soc_proxy:defs.bzl", "SOC_PROXY")
 load("//hw/ip/sram_ctrl:defs.bzl", "SRAM_CTRL")
 
 PEPPERMINT_IPS = [
     AES,
+    AHB_BRIDGE,
     ALERT_HANDLER,
     CLKMGR,
     CSRNG,
@@ -55,7 +56,6 @@ PEPPERMINT_IPS = [
     RV_DM,
     RV_PLIC,
     RV_TIMER,
-    SOC_PROXY,
     SRAM_CTRL,
 ]
 

@@ -16,7 +16,7 @@ tl_device_t xbar_devices[$] = '{
 
   // List of Xbar hosts
 tl_host_t xbar_hosts[$] = '{
-    '{"ext_socmbx_host", 0, '{
+    '{"ahb_bridge__socmbx", 0, '{
         "mbx0__soc",
         "mbx1__soc"}}
 };

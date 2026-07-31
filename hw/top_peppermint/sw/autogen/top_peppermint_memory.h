@@ -56,14 +56,14 @@
 #define TOP_PEPPERMINT_ROM_CTRL_ROM_SIZE_BYTES 0x30000
 
 /**
- * Memory base for ctn memory on soc_proxy in top peppermint.
+ * Memory base for ctn memory on ahb_bridge in top peppermint.
  */
-#define TOP_PEPPERMINT_SOC_PROXY_CTN_BASE_ADDR 0x80000000
+#define TOP_PEPPERMINT_AHB_BRIDGE_CTN_BASE_ADDR 0x80000000
 
 /**
- * Memory size for ctn memory on soc_proxy in top peppermint.
+ * Memory size for ctn memory on ahb_bridge in top peppermint.
  */
-#define TOP_PEPPERMINT_SOC_PROXY_CTN_SIZE_BYTES 0x10000000
+#define TOP_PEPPERMINT_AHB_BRIDGE_CTN_SIZE_BYTES 0x10000000
 
 
 /**

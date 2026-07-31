@@ -6,11 +6,11 @@
 module xbar_socmbx_bind;
 `ifndef GATE_LEVEL
   // Host interfaces
-  bind xbar_socmbx tlul_assert #(.EndpointType("Device")) tlul_assert_host_ext_socmbx_host (
+  bind xbar_socmbx tlul_assert #(.EndpointType("Device")) tlul_assert_host_ahb_bridge__socmbx (
     .clk_i  (clk_main_i),
     .rst_ni (rst_main_ni),
-    .h2d    (tl_ext_socmbx_host_i),
-    .d2h    (tl_ext_socmbx_host_o)
+    .h2d    (tl_ahb_bridge__socmbx_i),
+    .d2h    (tl_ahb_bridge__socmbx_o)
   );
 
   // Device interfaces

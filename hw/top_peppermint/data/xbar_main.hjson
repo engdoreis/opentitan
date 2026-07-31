@@ -58,7 +58,7 @@
     { name: "rv_core_ibex.cfg",   type: "device", clock: "clk_main_i", reset: "rst_main_ni", pipeline: false },
     { name: "dma",                type: "device", clock: "clk_main_i", reset: "rst_main_ni", pipeline: false },
     // Shared, address-mapped egress window to the wider SoC.
-    { name: "soc_proxy.ctn",      type: "device", clock: "clk_main_i", reset: "rst_main_ni", pipeline: false },
+    { name: "ahb_bridge.ctn",      type: "device", clock: "clk_main_i", reset: "rst_main_ni", pipeline: false },
     { name: "mbx0.core",          type: "device", clock: "clk_main_i", reset: "rst_main_ni", pipeline: false },
     { name: "mbx1.core",          type: "device", clock: "clk_main_i", reset: "rst_main_ni", pipeline: false },
     // Link to the Aon-domain register crossbar (xbar_aon); the async
@@ -76,7 +76,7 @@
       "otp_ctrl.core", "otp_macro.prim", "lc_ctrl.regs",
       "rv_plic", "rv_timer", "aes", "hmac", "kmac", "otbn", "keymgr_dpe",
       "csrng", "entropy_src", "edn0", "edn1",
-      "rv_core_ibex.cfg", "dma", "soc_proxy.ctn", "mbx0.core", "mbx1.core",
+      "rv_core_ibex.cfg", "dma", "ahb_bridge.ctn", "mbx0.core", "mbx1.core",
       "aon",
     ],
     "rv_dm.sba": [
@@ -89,7 +89,7 @@
       "aon",
     ],
     "dma.host": [
-      "sram_ctrl_main.ram", "rom_ctrl.rom", "soc_proxy.ctn",
+      "sram_ctrl_main.ram", "rom_ctrl.rom", "ahb_bridge.ctn",
     ],
     "mbx0.sram": [ "sram_ctrl_main.ram" ],
     "mbx1.sram": [ "sram_ctrl_main.ram" ],

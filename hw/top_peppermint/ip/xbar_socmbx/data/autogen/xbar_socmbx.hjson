@@ -14,7 +14,7 @@
     // host
     { struct: "tl"
       type:   "req_rsp"
-      name:   "tl_ext_socmbx_host"
+      name:   "tl_ahb_bridge__socmbx"
       act:    "rsp"
       package: "tlul_pkg"
     }

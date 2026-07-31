@@ -320,24 +320,14 @@ package top_peppermint_pkg;
   parameter int unsigned TOP_PEPPERMINT_ROM_CTRL_ROM_SIZE_BYTES = 32'h30000;
 
   /**
-   * Memory base address for ctn memory on soc_proxy in top peppermint.
+   * Memory base address for ctn memory on ahb_bridge in top peppermint.
    */
-  parameter int unsigned TOP_PEPPERMINT_SOC_PROXY_CTN_BASE_ADDR = 32'h80000000;
+  parameter int unsigned TOP_PEPPERMINT_AHB_BRIDGE_CTN_BASE_ADDR = 32'h80000000;
 
   /**
-   * Memory size for ctn memory on soc_proxy in top peppermint.
+   * Memory size for ctn memory on ahb_bridge in top peppermint.
    */
-  parameter int unsigned TOP_PEPPERMINT_SOC_PROXY_CTN_SIZE_BYTES = 32'h10000000;
-
-  /**
-  * Memory base address for ram_ctn in top peppermint.
-  */
-  parameter int unsigned TOP_PEPPERMINT_SOC_PROXY_RAM_CTN_BASE_ADDR = 32'h81000000;
-
-  /**
-  * Memory size for ram_ctn in top peppermint.
-  */
-  parameter int unsigned TOP_PEPPERMINT_SOC_PROXY_RAM_CTN_SIZE_BYTES = 32'h100000;
+  parameter int unsigned TOP_PEPPERMINT_AHB_BRIDGE_CTN_SIZE_BYTES = 32'h10000000;
 
 
   // Enumeration of alert modules

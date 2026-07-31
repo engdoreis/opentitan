@@ -631,8 +631,8 @@
       reset_connections: {rst_ni: "lc_main"},
       base_addr: {hart: "0x22010000"},
     },
-    { name: "soc_proxy",
-      type: "soc_proxy",
+    { name: "ahb_bridge",
+      type: "ahb_bridge",
       attr: "reggen_top",
       clock_srcs: {clk_i: "main"},
       clock_group: "secure",
@@ -915,12 +915,13 @@
         'mbx1.doe_intr_support'          : 'mbx1_doe_intr_support',
         'mbx1.doe_async_msg_support'     : 'mbx1_doe_async_msg_support',
 
-        // soc_proxy's outward-facing egress port.
-        'soc_proxy.ctn_tl_h2d'           : 'soc_proxy_ctn_tl_h2d',
-        'soc_proxy.ctn_tl_d2h'           : 'soc_proxy_ctn_tl_d2h',
+        // AHB bridge SoC boundary
+        'ahb_bridge.ahb_mgr_h2d'         : 'soc_mgr_ahb_req',
+        'ahb_bridge.ahb_mgr_d2h'         : 'soc_mgr_ahb_rsp',
+        'ahb_bridge.ahb_sub_h2d'         : 'soc_mbx_ahb_req',
+        'ahb_bridge.ahb_sub_d2h'         : 'soc_mbx_ahb_rsp',
 
-        // SoC-facing mailbox and debug crossbars' external host stubs.
-        'socmbx.tl_ext_socmbx_host'      : 'soc_mbx_tl',
+        // SoC-facing debug crossbar's external host stub.
         'socdbg.tl_ext_socdbg_host'      : 'soc_dbg_tl',
     },
   },
@@ -1059,7 +1060,12 @@
       // common (shared with ASIC) path, except:
       //  - the OTP IO (bidir) test pads
       chiplevel: {
-        port_overrides: {}
+        port_overrides: {
+          'ahb_bridge.ahb_mgr_h2d' : { feedthrough: true },
+          'ahb_bridge.ahb_mgr_d2h' : { feedthrough: true },
+          'ahb_bridge.ahb_sub_h2d' : { feedthrough: true },
+          'ahb_bridge.ahb_sub_d2h' : { feedthrough: true },
+        }
       }
 
       // Pinout Changes.

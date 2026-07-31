@@ -9,9 +9,9 @@
 // AST-style status/bypass signals tied off.
 //
 // All SoC-facing interfaces are exposed as plain chip-level ports: the
-// soc_proxy egress window (shared by CPU and DMA through xbar_main), the
-// mailbox and debug TL-UL windows (to be fronted by AHB<->TL-UL bridges once
-// those exist), the mailbox DOE interrupts, the noise source interface, the
+// ahb_bridge's AHB egress (manager) and ingress (subordinate) ports to the
+// wider SoC, the debug TL-UL window (still raw TL, to be fronted by a bridge
+// later), the mailbox DOE interrupts, the noise source interface, the
 // incoming SoC alerts, the debug policy bus, and the SoC-side
 // power-handshake signals (main power domain request, wakeup request). DMA's
 // SYS port, the low-speed IO triggers and pwrmgr's off-chip reset requests
@@ -39,15 +39,16 @@ module chip_peppermint_verilator (
   // Main power domain reset
   output logic rst_main_no,
 
-  // soc_proxy's outward egress window: shared by the CPU and DMA through
-  // xbar_main's soc_proxy.ctn device (see hw/top_peppermint/ip/soc_proxy).
-  output tlul_pkg::tl_h2d_t     soc_proxy_ctn_tl_h2d,
-  input  tlul_pkg::tl_d2h_t     soc_proxy_ctn_tl_d2h,
+  // AHB egress port to the wider SoC: the outgoing AHB manager the
+  // ahb_bridge drives from the CPU/DMA "ctn" egress window on xbar_main
+  // (see hw/top_peppermint/ip/ahb_bridge).
+  output ahb_pkg::ahb_h2d_t     soc_mgr_ahb_req_o,
+  input  ahb_pkg::ahb_d2h_t     soc_mgr_ahb_rsp_i,
 
-  // SoC-facing mailbox window (see xbar_socmbx.hjson): one shared external
-  // host port covering both mbx0.soc and mbx1.soc.
-  input  tlul_pkg::tl_h2d_t soc_mbx_tl_req,
-  output tlul_pkg::tl_d2h_t soc_mbx_tl_rsp,
+  // AHB ingress port from the wider SoC: the incoming AHB subordinate the
+  // ahb_bridge converts into the mailbox crossbar host (mbx0/mbx1.soc).
+  input  ahb_pkg::ahb_h2d_t     soc_mbx_ahb_req_i,
+  output ahb_pkg::ahb_d2h_t     soc_mbx_ahb_rsp_o,
 
   // Mailbox interrupts to the SoC (DOE convention).
   output logic mbx0_doe_intr,
@@ -209,10 +210,10 @@ module chip_peppermint_verilator (
     .mbx1_doe_intr_en_o          (mbx1_doe_intr_en     ),
     .mbx1_doe_intr_support_o     (mbx1_doe_intr_support),
     .mbx1_doe_async_msg_support_o(mbx1_doe_async_msg_support),
-    .soc_proxy_ctn_tl_h2d_o      (soc_proxy_ctn_tl_h2d ),
-    .soc_proxy_ctn_tl_d2h_i      (soc_proxy_ctn_tl_d2h ),
-    .soc_mbx_tl_req_i            (soc_mbx_tl_req       ),
-    .soc_mbx_tl_rsp_o            (soc_mbx_tl_rsp       ),
+    .soc_mgr_ahb_req_o           (soc_mgr_ahb_req_o    ),
+    .soc_mgr_ahb_rsp_i           (soc_mgr_ahb_rsp_i    ),
+    .soc_mbx_ahb_req_i           (soc_mbx_ahb_req_i    ),
+    .soc_mbx_ahb_rsp_o           (soc_mbx_ahb_rsp_o    ),
     .soc_dbg_tl_req_i            (soc_dbg_tl_req       ),
     .soc_dbg_tl_rsp_o            (soc_dbg_tl_rsp       )
   );

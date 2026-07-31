@@ -5821,8 +5821,8 @@
       domain: Main
     }
     {
-      name: soc_proxy
-      type: soc_proxy
+      name: ahb_bridge
+      type: ahb_bridge
       attr: reggen_top
       clock_srcs:
       {
@@ -5865,47 +5865,90 @@
       inter_signal_list:
       [
         {
-          name: ctn_tl_h2d
-          desc: TL-UL port for egress into the wider SoC (request part), synchronous
-          struct: tl_h2d
-          package: tlul_pkg
-          type: uni
-          act: req
-          width: 1
-          inst_name: soc_proxy
-          default: ""
-          external: true
-          conn_type: false
-          index: -1
-          top_signame: soc_proxy_ctn_tl_h2d
-        }
-        {
-          name: ctn_tl_d2h
-          desc: TL-UL port for egress into the wider SoC (response part), synchronous
-          struct: tl_d2h
-          package: tlul_pkg
+          name: ahb_sub_h2d
+          desc: AHB subordinate request in (external SoC AHB manager)
+          struct: ahb_h2d
+          package: ahb_pkg
           type: uni
           act: rcv
           width: 1
-          inst_name: soc_proxy
+          inst_name: ahb_bridge
           default: ""
           external: true
           conn_type: false
           index: -1
-          top_signame: soc_proxy_ctn_tl_d2h
+          top_signame: soc_mbx_ahb_req
         }
         {
-          name: ctn_tl
+          name: ahb_sub_d2h
+          desc: AHB subordinate response out
+          struct: ahb_d2h
+          package: ahb_pkg
+          type: uni
+          act: req
+          width: 1
+          inst_name: ahb_bridge
+          default: ""
+          external: true
+          conn_type: false
+          index: -1
+          top_signame: soc_mbx_ahb_rsp
+        }
+        {
+          name: ahb_mgr_h2d
+          desc: AHB manager request out (to external SoC AHB subordinate)
+          struct: ahb_h2d
+          package: ahb_pkg
+          type: uni
+          act: req
+          width: 1
+          inst_name: ahb_bridge
+          default: ""
+          external: true
+          conn_type: false
+          index: -1
+          top_signame: soc_mgr_ahb_req
+        }
+        {
+          name: ahb_mgr_d2h
+          desc: AHB manager response in
+          struct: ahb_d2h
+          package: ahb_pkg
+          type: uni
+          act: rcv
+          width: 1
+          inst_name: ahb_bridge
+          default: ""
+          external: true
+          conn_type: false
+          index: -1
+          top_signame: soc_mgr_ahb_rsp
+        }
+        {
+          name: socmbx_tl_h
+          struct: tl
+          package: tlul_pkg
+          type: req_rsp
+          act: req
+          width: 1
+          inst_name: ahb_bridge
+          default: ""
+          domain: Main
+          top_signame: socmbx_tl_ahb_bridge__socmbx
+          index: -1
+        }
+        {
+          name: ctn_tl_d
           struct: tl
           package: tlul_pkg
           type: req_rsp
           act: rsp
           width: 1
-          inst_name: soc_proxy
+          inst_name: ahb_bridge
           default: ""
           end_idx: -1
           top_type: one-to-one
-          top_signame: soc_proxy_ctn_tl
+          top_signame: ahb_bridge_ctn_tl_d
           index: -1
         }
       ]
@@ -7321,9 +7364,9 @@
       [
         main.tl_dma
       ]
-      soc_proxy.ctn_tl:
+      ahb_bridge.ctn_tl_d:
       [
-        main.tl_soc_proxy__ctn
+        main.tl_ahb_bridge__ctn
       ]
       mbx0.core_tl_d:
       [
@@ -7364,6 +7407,10 @@
       sram_ctrl_ret_aon.ram_tl:
       [
         aon.tl_sram_ctrl_ret_aon__ram
+      ]
+      socmbx.tl_ahb_bridge__socmbx:
+      [
+        ahb_bridge.socmbx_tl_h
       ]
       mbx0.soc_tl_d:
       [
@@ -7417,9 +7464,10 @@
       mbx1.doe_intr_en: mbx1_doe_intr_en
       mbx1.doe_intr_support: mbx1_doe_intr_support
       mbx1.doe_async_msg_support: mbx1_doe_async_msg_support
-      soc_proxy.ctn_tl_h2d: soc_proxy_ctn_tl_h2d
-      soc_proxy.ctn_tl_d2h: soc_proxy_ctn_tl_d2h
-      socmbx.tl_ext_socmbx_host: soc_mbx_tl
+      ahb_bridge.ahb_mgr_h2d: soc_mgr_ahb_req
+      ahb_bridge.ahb_mgr_d2h: soc_mgr_ahb_rsp
+      ahb_bridge.ahb_sub_h2d: soc_mbx_ahb_req
+      ahb_bridge.ahb_sub_d2h: soc_mbx_ahb_rsp
       socdbg.tl_ext_socdbg_host: soc_dbg_tl
     }
   }
@@ -7486,7 +7534,7 @@
           edn1
           rv_core_ibex.cfg
           dma
-          soc_proxy.ctn
+          ahb_bridge.ctn
           mbx0.core
           mbx1.core
           aon
@@ -7522,7 +7570,7 @@
         [
           sram_ctrl_main.ram
           rom_ctrl.rom
-          soc_proxy.ctn
+          ahb_bridge.ctn
         ]
         mbx0.sram:
         [
@@ -8076,12 +8124,12 @@
           req_fifo_pass: true
         }
         {
-          name: soc_proxy.ctn
+          name: ahb_bridge.ctn
           type: device
           clock: clk_main_i
           reset: rst_main_ni
           pipeline: false
-          inst_type: soc_proxy
+          inst_type: ahb_bridge
           addr_range:
           [
             {
@@ -8539,7 +8587,7 @@
           index: -1
         }
         {
-          name: tl_soc_proxy__ctn
+          name: tl_ahb_bridge__ctn
           struct: tl
           package: tlul_pkg
           type: req_rsp
@@ -8548,7 +8596,7 @@
           width: 1
           default: ""
           domain: Main
-          top_signame: soc_proxy_ctn_tl
+          top_signame: ahb_bridge_ctn_tl_d
           index: -1
         }
         {
@@ -8931,7 +8979,7 @@
       domain: Main
       connections:
       {
-        ext_socmbx_host:
+        ahb_bridge.socmbx:
         [
           mbx0.soc
           mbx1.soc
@@ -8940,7 +8988,7 @@
       nodes:
       [
         {
-          name: ext_socmbx_host
+          name: ahb_bridge.socmbx
           type: host
           addr_space: soc_mbx
           clock: clk_main_i
@@ -9004,7 +9052,7 @@
       inter_signal_list:
       [
         {
-          name: tl_ext_socmbx_host
+          name: tl_ahb_bridge__socmbx
           struct: tl
           package: tlul_pkg
           type: req_rsp
@@ -9012,10 +9060,10 @@
           inst_name: socmbx
           width: 1
           default: ""
-          external: true
-          conn_type: false
+          end_idx: -1
+          top_type: one-to-one
+          top_signame: socmbx_tl_ahb_bridge__socmbx
           index: -1
-          top_signame: soc_mbx_tl
         }
         {
           name: tl_mbx0__soc
@@ -9213,7 +9261,25 @@
       name: verilator
       chiplevel:
       {
-        port_overrides: {}
+        port_overrides:
+        {
+          ahb_bridge.ahb_mgr_h2d:
+          {
+            feedthrough: true
+          }
+          ahb_bridge.ahb_mgr_d2h:
+          {
+            feedthrough: true
+          }
+          ahb_bridge.ahb_sub_h2d:
+          {
+            feedthrough: true
+          }
+          ahb_bridge.ahb_sub_d2h:
+          {
+            feedthrough: true
+          }
+        }
       }
       pinout:
       {
@@ -14754,47 +14820,90 @@
         index: -1
       }
       {
-        name: ctn_tl_h2d
-        desc: TL-UL port for egress into the wider SoC (request part), synchronous
-        struct: tl_h2d
-        package: tlul_pkg
-        type: uni
-        act: req
-        width: 1
-        inst_name: soc_proxy
-        default: ""
-        external: true
-        conn_type: false
-        index: -1
-        top_signame: soc_proxy_ctn_tl_h2d
-      }
-      {
-        name: ctn_tl_d2h
-        desc: TL-UL port for egress into the wider SoC (response part), synchronous
-        struct: tl_d2h
-        package: tlul_pkg
+        name: ahb_sub_h2d
+        desc: AHB subordinate request in (external SoC AHB manager)
+        struct: ahb_h2d
+        package: ahb_pkg
         type: uni
         act: rcv
         width: 1
-        inst_name: soc_proxy
+        inst_name: ahb_bridge
         default: ""
         external: true
         conn_type: false
         index: -1
-        top_signame: soc_proxy_ctn_tl_d2h
+        top_signame: soc_mbx_ahb_req
       }
       {
-        name: ctn_tl
+        name: ahb_sub_d2h
+        desc: AHB subordinate response out
+        struct: ahb_d2h
+        package: ahb_pkg
+        type: uni
+        act: req
+        width: 1
+        inst_name: ahb_bridge
+        default: ""
+        external: true
+        conn_type: false
+        index: -1
+        top_signame: soc_mbx_ahb_rsp
+      }
+      {
+        name: ahb_mgr_h2d
+        desc: AHB manager request out (to external SoC AHB subordinate)
+        struct: ahb_h2d
+        package: ahb_pkg
+        type: uni
+        act: req
+        width: 1
+        inst_name: ahb_bridge
+        default: ""
+        external: true
+        conn_type: false
+        index: -1
+        top_signame: soc_mgr_ahb_req
+      }
+      {
+        name: ahb_mgr_d2h
+        desc: AHB manager response in
+        struct: ahb_d2h
+        package: ahb_pkg
+        type: uni
+        act: rcv
+        width: 1
+        inst_name: ahb_bridge
+        default: ""
+        external: true
+        conn_type: false
+        index: -1
+        top_signame: soc_mgr_ahb_rsp
+      }
+      {
+        name: socmbx_tl_h
+        struct: tl
+        package: tlul_pkg
+        type: req_rsp
+        act: req
+        width: 1
+        inst_name: ahb_bridge
+        default: ""
+        domain: Main
+        top_signame: socmbx_tl_ahb_bridge__socmbx
+        index: -1
+      }
+      {
+        name: ctn_tl_d
         struct: tl
         package: tlul_pkg
         type: req_rsp
         act: rsp
         width: 1
-        inst_name: soc_proxy
+        inst_name: ahb_bridge
         default: ""
         end_idx: -1
         top_type: one-to-one
-        top_signame: soc_proxy_ctn_tl
+        top_signame: ahb_bridge_ctn_tl_d
         index: -1
       }
       {
@@ -15712,7 +15821,7 @@
         index: -1
       }
       {
-        name: tl_soc_proxy__ctn
+        name: tl_ahb_bridge__ctn
         struct: tl
         package: tlul_pkg
         type: req_rsp
@@ -15721,7 +15830,7 @@
         width: 1
         default: ""
         domain: Main
-        top_signame: soc_proxy_ctn_tl
+        top_signame: ahb_bridge_ctn_tl_d
         index: -1
       }
       {
@@ -15873,7 +15982,7 @@
         index: -1
       }
       {
-        name: tl_ext_socmbx_host
+        name: tl_ahb_bridge__socmbx
         struct: tl
         package: tlul_pkg
         type: req_rsp
@@ -15881,10 +15990,10 @@
         inst_name: socmbx
         width: 1
         default: ""
-        external: true
-        conn_type: false
+        end_idx: -1
+        top_type: one-to-one
+        top_signame: socmbx_tl_ahb_bridge__socmbx
         index: -1
-        top_signame: soc_mbx_tl
       }
       {
         name: tl_mbx0__soc
@@ -16981,14 +17090,14 @@
         netname: mbx1_doe_async_msg_support
       }
       {
-        package: tlul_pkg
-        struct: tl_h2d
+        package: ahb_pkg
+        struct: ahb_h2d
         domain: Main
         inter_pd: false
-        signame: soc_proxy_ctn_tl_h2d_o
+        signame: soc_mgr_ahb_req_o
         signame_chip:
         {
-          verilator: soc_proxy_ctn_tl_h2d
+          verilator: soc_mgr_ahb_req_o
         }
         width: 1
         type: uni
@@ -16996,17 +17105,17 @@
         direction: out
         conn_type: false
         index: -1
-        netname: soc_proxy_ctn_tl_h2d
+        netname: soc_mgr_ahb_req
       }
       {
-        package: tlul_pkg
-        struct: tl_d2h
+        package: ahb_pkg
+        struct: ahb_d2h
         domain: Main
         inter_pd: false
-        signame: soc_proxy_ctn_tl_d2h_i
+        signame: soc_mgr_ahb_rsp_i
         signame_chip:
         {
-          verilator: soc_proxy_ctn_tl_d2h
+          verilator: soc_mgr_ahb_rsp_i
         }
         width: 1
         type: uni
@@ -17014,43 +17123,43 @@
         direction: in
         conn_type: false
         index: -1
-        netname: soc_proxy_ctn_tl_d2h
+        netname: soc_mgr_ahb_rsp
       }
       {
-        package: tlul_pkg
-        struct: tl_h2d
+        package: ahb_pkg
+        struct: ahb_h2d
         domain: Main
         inter_pd: false
-        signame: soc_mbx_tl_req_i
+        signame: soc_mbx_ahb_req_i
         signame_chip:
         {
-          verilator: soc_mbx_tl_req
+          verilator: soc_mbx_ahb_req_i
         }
         width: 1
-        type: req_rsp
+        type: uni
         default: ""
         direction: in
         conn_type: false
         index: -1
-        netname: soc_mbx_tl_h2d
+        netname: soc_mbx_ahb_req
       }
       {
-        package: tlul_pkg
-        struct: tl_d2h
+        package: ahb_pkg
+        struct: ahb_d2h
         domain: Main
         inter_pd: false
-        signame: soc_mbx_tl_rsp_o
+        signame: soc_mbx_ahb_rsp_o
         signame_chip:
         {
-          verilator: soc_mbx_tl_rsp
+          verilator: soc_mbx_ahb_rsp_o
         }
         width: 1
-        type: req_rsp
+        type: uni
         default: ""
         direction: out
         conn_type: false
         index: -1
-        netname: soc_mbx_tl_d2h
+        netname: soc_mbx_ahb_rsp
       }
       {
         package: tlul_pkg
@@ -18521,7 +18630,7 @@
         package: tlul_pkg
         struct: tl_h2d
         domain: Main
-        signame: soc_proxy_ctn_tl_req
+        signame: ahb_bridge_ctn_tl_d_req
         width: 1
         type: req_rsp
         end_idx: -1
@@ -18533,7 +18642,7 @@
         package: tlul_pkg
         struct: tl_d2h
         domain: Main
-        signame: soc_proxy_ctn_tl_rsp
+        signame: ahb_bridge_ctn_tl_d_rsp
         width: 1
         type: req_rsp
         end_idx: -1
@@ -18750,6 +18859,30 @@
         struct: tl_d2h
         domain: Aon
         signame: sram_ctrl_ret_aon_ram_tl_rsp
+        width: 1
+        type: req_rsp
+        end_idx: -1
+        act: rsp
+        suffix: rsp
+        default: ""
+      }
+      {
+        package: tlul_pkg
+        struct: tl_h2d
+        domain: Main
+        signame: socmbx_tl_ahb_bridge__socmbx_req
+        width: 1
+        type: req_rsp
+        end_idx: -1
+        act: rsp
+        suffix: req
+        default: tlul_pkg::TL_H2D_DEFAULT
+      }
+      {
+        package: tlul_pkg
+        struct: tl_d2h
+        domain: Main
+        signame: socmbx_tl_ahb_bridge__socmbx_rsp
         width: 1
         type: req_rsp
         end_idx: -1

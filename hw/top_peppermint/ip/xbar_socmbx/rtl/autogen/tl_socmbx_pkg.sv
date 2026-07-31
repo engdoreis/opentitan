@@ -21,7 +21,7 @@ package tl_socmbx_pkg;
   } tl_device_e;
 
   typedef enum int {
-    TlExtSocmbxHost = 0
+    TlAhbBridgeSocmbx = 0
   } tl_host_e;
 
 endpackage
