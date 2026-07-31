@@ -1,0 +1,16 @@
+# Copyright lowRISC contributors (OpenTitan project).
+# Licensed under the Apache License, Version 2.0, see LICENSE for details.
+# SPDX-License-Identifier: Apache-2.0
+
+# Waivers for the pickled deliverables in out/.  Those files are machine-
+# generated concatenations of the whole design, so the violations below are
+# structural and cannot be fixed in the generated output.
+
+# A pickle holds many design units per file, so neither a package nor a module
+# name can match the file name.
+waive --rule=package-filename --location=".*delivery/out/.*\.sv"
+waive --rule=module-filename --location=".*delivery/out/.*\.sv"
+
+# `bender --expand-macros` expands the assertion macros from `prim_assert.sv`,
+# whose generated `<name>_L` localparams do not match our naming convention.
+waive --rule=parameter-name-style --location=".*delivery/out/.*\.sv"

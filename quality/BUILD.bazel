@@ -44,6 +44,11 @@ licence_test(
         "hw/top_englishbreakfast/ip_autogen/rv_core_ibex/lint/rv_core_ibex.vlt",
         "hw/top_darjeeling/ip_autogen/rv_core_ibex/lint/rv_core_ibex.vlt",
         "hw/top_peppermint/ip_autogen/rv_core_ibex/lint/rv_core_ibex.vlt",
+        # Pickled Peppermint deliverables: machine-generated concatenations of the
+        # whole design.
+        "hw/top_peppermint/delivery/out/lowrisc_peppermint_rtl_m1.sv",
+        "hw/top_peppermint/delivery/out/lowrisc_prim_generic_m1.sv",
+        "hw/top_peppermint/delivery/out/lowrisc_top_packages_m1.sv",
 
         ## Software Exclusions
 
