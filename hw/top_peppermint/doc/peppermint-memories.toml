@@ -1,0 +1,151 @@
+# Copyright lowRISC contributors (OpenTitan project).
+# Licensed under the Apache License, Version 2.0, see LICENSE for details.
+# SPDX-License-Identifier: Apache-2.0
+
+title = "Memory macro parameters in the OpenTitan Peppermint top"
+
+# Description and units of each key in the memory parameters.
+[keys]
+
+[keys.memory_name]
+description = "The name by which the memory is known in the design"
+
+[keys.data_size]
+description = "Size of the memory in addressable memory excluding meta-data"
+unit = "KiB"
+
+[keys.word_width]
+description = "Width of the word stored in memory, which includes the data width as well as the meta-data width (such as ECC)"
+unit = "bits"
+
+[keys.num_words]
+description = "Number of words in the memory, which should equal (data_size * 8 * 1024) / (word_width - meta_data_width)"
+unit = "words"
+
+[keys.mask_width]
+description = "The width of the write mask, which controls the granularity at which you can make writes"
+unit = "bits"
+
+[keys.num_ports]
+description = "Number of ports on the memory macro"
+unit = "ports"
+
+[keys.resp_latency]
+description = "Response latency of the memory"
+unit = "Clock cycles"
+
+[keys.internal_ecc]
+description = "Macro should compute its own ECC and not expose this to the rest of the design"
+
+# Table of memory macros present in Peppermint.
+[memory_macros]
+
+# Working memory in the main power domain.
+[memory_macros.sram_main]
+memory_name  = "Main SRAM"
+data_size    = 192
+word_width   = 39 # 32 bits of data and 7 bits of ECC: hw/ip/sram_ctrl/rtl/sram_ctrl_pkg.sv#L12-L13
+num_words    = 49152
+mask_width   = 1 # hw/ip/sram_ctrl/rtl/sram_ctrl.sv#L684
+num_ports    = 1 # hw/ip/sram_ctrl/rtl/sram_ctrl.sv#L678-L710
+resp_latency = 1 # Flowthrough
+internal_ecc = "No"
+
+# Data memory for OTBN big-number accelerator
+[memory_macros.otbn_dmem]
+memory_name  = "OTBN Data SRAM"
+data_size    = 32
+word_width   = 312 # 256 bits of data, 56 bits of ECC: 7 bits of ECC for each 32 bit chunk
+num_words    = 1024 # DMEM size in Bytes is OTBN_DMEM_SIZE + DmemScratchSizeByte = 0x4000 + 16384, see hw/ip/otbn/rtl/otbn_reg_pkg.sv and hw/ip/otbn/rtl/otbn_pkg.sv
+mask_width   = 8 # One mask bit per 32 bits of data and 7 bits of ECC, see DataBitsPerMask parameter of u_dmem in hw/ip/otbn/rtl/otbn.sv
+num_ports    = 1 # See u_dmem in hw/ip/otbn/rtl/otbn.sv
+resp_latency = 1 # Flowthrough
+internal_ecc = "No"
+
+# Instruction memory for OTBN big-number accelerator
+[memory_macros.otbn_imem]
+memory_name  = "OTBN Instruction SRAM"
+data_size    = 16
+word_width   = 39 # 32 bits of data and 7 bits of ECC. See Width parameter of u_imem in hw/ip/otbn/rtl/otbn.sv
+num_words    = 4096 # IMEM size in Bytes is 0x4000, see OTBN_IMEM_SIZE in hw/ip/otbn/rtl/otbn_reg_pkg.sv
+mask_width   = 1 # See DataBitsPerMask parameter of u_imem in hw/ip/otbn/rtl/otbn.sv
+num_ports    = 1 # See u_imem in hw/ip/otbn/rtl/otbn.sv
+resp_latency = 1 # Flowthrough
+internal_ecc = "No"
+
+# Working memory in the AON power domain to speed up booting from sleep.
+[memory_macros.sram_ret]
+memory_name  = "Retention SRAM"
+data_size    = 8 # Based on next-generation Earl Grey
+word_width   = 39 # 32 bits of data and 7 bits of ECC: hw/ip/sram_ctrl/rtl/sram_ctrl_pkg.sv#L12-L13
+num_words    = 2048
+mask_width   = 1 # hw/ip/sram_ctrl/rtl/sram_ctrl.sv#L684
+num_ports    = 1 # hw/ip/sram_ctrl/rtl/sram_ctrl.sv#L678-L710
+resp_latency = 1 # Flowthrough
+internal_ecc = "No"
+
+# Instruction cache data (way 0) for Ibex
+[memory_macros.icache_data0]
+memory_name  = "ICache data[0] SRAM"
+data_size    = 2
+word_width   = 78 # 64 bits of data 14 bits of ECC (7 bits for each 32 bits)
+num_words    = 256
+mask_width   = 1
+num_ports    = 1
+resp_latency = 1 # Flowthrough
+internal_ecc = "No"
+
+# Instruction cache data (way 1) for Ibex
+[memory_macros.icache_data1]
+memory_name  = "ICache data[1] SRAM"
+data_size    = 2
+word_width   = 78 # 64 bits of data 14 bits of ECC (7 bits for each 32 bits)
+num_words    = 256
+mask_width   = 1
+num_ports    = 1
+resp_latency = 1 # Flowthrough
+internal_ecc = "No"
+
+# Instruction cache tags (way 0) for Ibex
+[memory_macros.icache_tag0]
+memory_name  = "ICache tag[0] SRAM"
+data_size    = 0 # Not addressable
+word_width   = 28 # Address tag (22 bits) with ECC (6 bits)
+num_words    = 256 # Equal to the number of cache lines
+mask_width   = 1
+num_ports    = 1
+resp_latency = 1 # Flowthrough
+internal_ecc = "No"
+
+# Instruction cache tags (way 1) for Ibex
+[memory_macros.icahce_tag1]
+memory_name  = "ICache tag[1] SRAM"
+data_size    = 0 # Not addressable
+word_width   = 28 # Address tag (22 bits) with ECC (6 bits)
+num_words    = 256 # Equal to the number of cache lines
+mask_width   = 1
+num_ports    = 1
+resp_latency = 1 # Flowthrough
+internal_ecc = "No"
+
+# One-time programmable memory.
+[memory_macros.otp]
+memory_name  = "OTP"
+data_size    = 8
+word_width   = 16 # Macro should not expose ECC bits to controller so this is equal to the data width: hw/ip/otp_macro/rtl/otp_macro.sv#L13
+num_words    = 4096
+mask_width   = 1 # hw/ip/otp_macro/rtl/otp_macro.sv#L483
+num_ports    = 1 # hw/ip/otp_macro/rtl/otp_macro.sv#L470-L490
+resp_latency = 3 # Modelled in the design as a memory primitive with both input and output pipelining
+internal_ecc = "Yes"
+
+# Read only memory
+[memory_macros.rom]
+memory_name  = "ROM"
+data_size    = 192
+word_width   = 39 # 32 bits of data and 7 bits of ECC: hw/ip/rom_ctrl/rtl/rom_ctrl.sv#L71-L74
+num_words    = 49152
+mask_width   = 0 # Not applicable because this is a read only memory
+num_ports    = 1 # hw/ip/rom_ctrl/rtl/rom_ctrl_scrambled_rom.sv#L200-L213
+resp_latency = 1 # Flowthrough
+internal_ecc = "No"
