@@ -221,8 +221,8 @@ class cip_base_env_cfg #(type RAL_T = dv_base_reg_block) extends dv_base_env_cfg
         string blk_name = sub_blks[i].get_name();
         foreach (list_of_alerts[j]) begin
           string alert_name = list_of_alerts[j];
-          if (alert_name.substr(0, blk_name.len() - 1) == blk_name) begin
-            alerts_q.push_back(alert_name.substr(blk_name.len() + 1, list_of_alerts[j].len() - 1));
+          if (alert_owner_blk(alert_name, sub_blks) == sub_blks[i]) begin
+            alerts_q.push_back(alert_name.substr(blk_name.len() + 1, alert_name.len() - 1));
           end
         end
         if (alerts_q.size() > 0) check_alert_configs_by_block(sub_blks[i], alerts_q);
@@ -232,6 +232,57 @@ class cip_base_env_cfg #(type RAL_T = dv_base_reg_block) extends dv_base_env_cfg
       string alerts_q[$] = list_of_alerts;
       check_alert_configs_by_block(ral, alerts_q);
     end
+  endfunction
+
+  // Return the most specific register block that owns an alert
+  //
+  // This is useful in a top-level test, where the environment wants to collect up alerts associated
+  // with each smaller uvm_reg_block.
+  //
+  // A block with name B is considered to own alerts with names like "B_some_name". There might be
+  // multiple blocks that are prefixes (for example, we have blocks "A" and "A_B" and an alert
+  // called "A_B_some_name"). In that situation, the longest-named block is considered the owner.
+  //
+  //    alert_name: The name of the alert to look up.
+  //    blks:       A queue of register blocks, which might be the owner of the alert.
+  //
+  // Returns: The register block that is the owner of the alert, or null if there is no match.
+  function dv_base_reg_block alert_owner_blk(string alert_name,
+                                             const ref dv_base_reg_block blks[$]);
+    // The matching block.
+    dv_base_reg_block match;
+
+    // The length of the current matching block (if match is not null).
+    int unsigned match_len;
+
+    foreach (blks[i]) begin
+      string blk_name = blks[i].get_name();
+
+      // If this name is no longer than the longest match so far, it definitely can't be the longest
+      // match.
+      if (blk_name.len() <= match_len) begin
+        continue;
+      end
+
+      // If blk_name is B, we are checking whether alert_name is of the form B_C for some C. This is
+      // only possible if C is a non-empty string, so the alert name must have enough characters for
+      // B plus the underscore and at least one other character.
+      if (alert_name.len() < blk_name.len() + 2) begin
+        continue;
+      end
+
+      // Check that the alert name actually starts with "B_". Requiring the underscore keeps the
+      // match on a name boundary.
+      if (alert_name.substr(0, blk_name.len()) != {blk_name, "_"}) begin
+        continue;
+      end
+
+      // We have a match and have already checked it is longer than any existing match.
+      match     = blks[i];
+      match_len = blk_name.len();
+    end
+
+    return match;
   endfunction
 
   // Checks if the hardcoded cfg.list_of_alerts array matches the information in corresponding
