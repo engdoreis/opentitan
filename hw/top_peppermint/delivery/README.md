@@ -85,6 +85,12 @@ match the individual UTF-8 bytes under `LC_ALL=C` and corrupt the file.
 sed -i -e 's/“/"/g' -e 's/”/"/g' out/*.sv
 ```
 
+Copy the memory macro descriptions:
+```sh
+cp ../doc/peppermint-memories.toml out
+../../../util/memory_macro_to_md.py out/peppermint-memories.toml
+```
+
 ### Tool Versions
 * `bender 0.32.1`
 
