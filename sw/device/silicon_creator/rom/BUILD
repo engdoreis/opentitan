@@ -141,8 +141,7 @@ cc_library(
 
 cc_library(
     name = "rom_common",
-    srcs = [
-        "rom.c",
+    hdrs = [
         "rom.h",
     ],
     deps = [
@@ -203,8 +202,8 @@ cc_library(
     # Generate targets with `sim_dv` and `sim_verilator` suffixes as expected
     # by dvsim.
     alias(
-        name = "mask_rom_{}".format(env),
-        actual = ":mask_rom",
+        name = "rom_{}".format(env),
+        actual = "//hw/top:rom",
     )
     for env in [
         "sim_dv",
@@ -213,7 +212,10 @@ cc_library(
 ]
 
 opentitan_binary(
-    name = "mask_rom",
+    name = "earlgrey_rom",
+    srcs = [
+        "rom_earlgrey.c",
+    ],
     collect_code_coverage = 0,
     exec_env = [
         "//hw/top_earlgrey:fpga_cw340",
@@ -245,7 +247,7 @@ check_elf_symbols_test(
         "__udivdi3",
         "__divdi3",
     ],
-    target = ":mask_rom",
+    target = "//hw/top:rom",
 )
 
 # Create the legacy ROM target names so that existing splicing rules can find
@@ -254,14 +256,14 @@ legacy_rom_targets(
     suffixes = {
         "fpga_cw340": ["//hw/top_earlgrey:fpga_cw340"],
     },
-    target = "mask_rom",
+    target = "//hw/top:rom",
 )
 
 [
     filegroup(
-        name = "mask_rom_{}_hashfile".format(dev),
+        name = "earlgrey_rom_{}_hashfile".format(dev),
         testonly = True,
-        srcs = [":mask_rom"],
+        srcs = ["//hw/top:rom"],
         output_group = "{}_hashfile".format(dev),
     )
     for dev in [
@@ -479,7 +481,7 @@ cc_library(
 output_groups(
     name = "pre_package",
     testonly = True,
-    srcs = [":mask_rom"],
+    srcs = ["//hw/top:rom"],
     groups = [
         "fpga_cw340_binary",
         "fpga_cw340_elf",
@@ -516,8 +518,8 @@ opentitan_manual_test(
 )
 
 output_groups(
-    name = "mask_rom_binaries",
-    srcs = [":mask_rom"],
+    name = "rom_binaries",
+    srcs = ["//hw/top:rom"],
     groups = [
         "fpga_cw340_binary",
         "sim_dv_binary",
@@ -527,8 +529,8 @@ output_groups(
 )
 
 output_groups(
-    name = "mask_rom_disassembly",
-    srcs = [":mask_rom"],
+    name = "rom_disassembly",
+    srcs = ["//hw/top:rom"],
     groups = [
         "fpga_cw340_disassembly",
         "sim_dv_disassembly",
@@ -541,12 +543,12 @@ genrule(
     name = "rom_hashes",
     testonly = True,
     srcs = [
-        ":mask_rom_binaries",
+        ":rom_binaries",
     ],
     outs = ["rom_hashes.txt"],
     cmd = """
         echo "SHA256 of rom with real keys" > $@
-    for f in $(locations :mask_rom_binaries); do
+    for f in $(locations :rom_binaries); do
         if [[ "$$f" == *bin ]]; then
             name=$$(basename $$f)
         echo $$f >> $@

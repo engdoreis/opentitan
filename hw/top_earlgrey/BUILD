@@ -85,7 +85,7 @@ sim_qemu(
     ecdsa_key = {"//sw/device/silicon_creator/rom/keys/fake/ecdsa:ecdsa_keyset": "test_key_0"},
     exec_env = "sim_qemu_rom_with_fake_keys",
     manifest = "//sw/device/silicon_creator/rom_ext:manifest",
-    rom = "//sw/device/silicon_creator/rom:mask_rom",
+    rom = "//hw/top:rom",
 )
 
 ###########################################################################
@@ -178,7 +178,7 @@ fpga_cw340(
     param = {
         "testopt_bootstrap": "True",
     },
-    rom = "//sw/device/silicon_creator/rom:mask_rom",
+    rom = "//hw/top:rom",
     test_cmd = CLEAR_TEST_CMD,
 )
 
@@ -388,7 +388,7 @@ sim_verilator(
     base = ":sim_verilator",
     ecdsa_key = {"//sw/device/silicon_creator/rom/keys/fake/ecdsa:ecdsa_keyset": "prod_key_0"},
     manifest = "//sw/device/silicon_creator/rom_ext:manifest",
-    rom = "//sw/device/silicon_creator/rom:mask_rom_sim_verilator",
+    rom = "//sw/device/silicon_creator/rom:rom_sim_verilator",
 )
 
 ###########################################################################

@@ -289,7 +289,7 @@ opentitan_test(
     name = "rom_e2e_shutdown_exception_c",
     srcs = ["rom_e2e_shutdown_exception_c_test.c"],
     dv = dv_params(
-        rom = "//sw/device/silicon_creator/rom:mask_rom",
+        rom = "//hw/top:rom",
     ),
     ecdsa_key = {"//sw/device/silicon_creator/rom/keys/fake/ecdsa:ecdsa_keyset": "prod_key_0"},
     exec_env = {
@@ -320,7 +320,7 @@ opentitan_test(
     name = "rom_e2e_smoke",
     srcs = [":empty_test"],
     dv = dv_params(
-        rom = "//sw/device/silicon_creator/rom:mask_rom",
+        rom = "//hw/top:rom",
     ),
     ecdsa_key = {"//sw/device/silicon_creator/rom/keys/fake/ecdsa:ecdsa_keyset": "prod_key_0"},
     exec_env = {
@@ -332,7 +332,7 @@ opentitan_test(
     manifest = "//sw/device/silicon_creator/rom_ext:manifest",
     verilator = verilator_params(
         timeout = "eternal",
-        rom = "//sw/device/silicon_creator/rom:mask_rom",
+        rom = "//hw/top:rom",
     ),
     deps = [
         "//sw/device/lib/dif:spi_device",
@@ -344,7 +344,7 @@ opentitan_test(
     name = "rom_e2e_static_critical",
     srcs = ["rom_e2e_static_critical_test.c"],
     dv = dv_params(
-        rom = "//sw/device/silicon_creator/rom:mask_rom",
+        rom = "//hw/top:rom",
     ),
     ecdsa_key = {"//sw/device/silicon_creator/rom/keys/fake/ecdsa:ecdsa_keyset": "prod_key_0"},
     exec_env = {
@@ -355,7 +355,7 @@ opentitan_test(
     manifest = "//sw/device/silicon_creator/rom_ext:manifest",
     verilator = verilator_params(
         timeout = "eternal",
-        rom = "//sw/device/silicon_creator/rom:mask_rom",
+        rom = "//hw/top:rom",
     ),
     deps = [
         "//sw/device/lib/dif:hmac",

@@ -61,7 +61,7 @@ manifest(
         dv = dv_params(
             binaries = {"//sw/device/silicon_creator/rom/e2e:new_empty_test_slot_a": "firmware"},
             otp = ":otp_img_shutdown_output_{}".format(lc_state),
-            rom = "//sw/device/silicon_creator/rom:mask_rom",
+            rom = "//hw/top:rom",
         ),
         ecdsa_key = ecdsa_key_for_lc_state(
             ECDSA_ONLY_KEY_STRUCTS,

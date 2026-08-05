@@ -2,8 +2,6 @@
 // Licensed under the Apache License, Version 2.0, see LICENSE for details.
 // SPDX-License-Identifier: Apache-2.0
 
-#include "sw/device/silicon_creator/rom/rom.h"
-
 #include <assert.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -47,6 +45,7 @@
 #include "sw/device/silicon_creator/rom/boot_policy.h"
 #include "sw/device/silicon_creator/rom/boot_policy_ptrs.h"
 #include "sw/device/silicon_creator/rom/bootstrap.h"
+#include "sw/device/silicon_creator/rom/rom.h"
 #include "sw/device/silicon_creator/rom/rom_epmp.h"
 #include "sw/device/silicon_creator/rom/rom_state.h"
 #include "sw/device/silicon_creator/rom/sigverify_keys_ecdsa_p256.h"

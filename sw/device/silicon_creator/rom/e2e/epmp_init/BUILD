@@ -46,7 +46,8 @@ package(default_visibility = ["//visibility:public"])
         verilator = verilator_params(
             timeout = "eternal",
             otp = "//hw/top_earlgrey/data/otp:img_" + lc_state,
-            rom = "//sw/device/silicon_creator/rom:mask_rom",
+            # Overriding the default rom for this exec_env 
+            rom = "//hw/top:rom", 
         ),
         deps = [
             "//hw/top_earlgrey/sw/autogen:top_earlgrey",
