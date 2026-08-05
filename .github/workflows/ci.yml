@@ -243,7 +243,10 @@ jobs:
       - name: Prepare Verible config
         run: |
           echo "Concatenating Verible waivers"
-          find . -type f -name '*.vbl' -exec cat {} \; >> verible_waiver
+          # Both extensions are in use for the same thing: the RTL waivers are named .vbl and the
+          # per-top DV ones .vbw, and both are declared as file_type veribleLintWaiver in their core
+          # files.
+          find . -type f \( -name '*.vbl' -o -name '*.vbw' \) -exec cat {} \; >> verible_waiver
 
           echo "::group::Verible config"
           cat "$verible_config"
