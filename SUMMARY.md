@@ -287,6 +287,11 @@
     - [Device Interface Functions](./sw/device/lib/dif/dif_rstmgr.h)
     - [Checklist](./hw/top_darjeeling/ip_autogen/rstmgr/doc/checklist.md)
 
+- [Top Peppermint](./hw/top_peppermint/README.md)
+  - [Verification Stages and Sign-off](./hw/top_peppermint/doc/signoff.md)
+  - [Design and Verification Stages](./hw/top_peppermint/doc/stages.md)
+  - [Checklist](./hw/top_peppermint/doc/checklist.md)
+
 - [Cores](./hw/doc/cores.md)
   - [Ibex RISC-V Core Wrapper](./hw/top_earlgrey/ip_autogen/rv_core_ibex/README.md)
     - [Theory of Operation](./hw/top_earlgrey/ip_autogen/rv_core_ibex/doc/theory_of_operation.md)
