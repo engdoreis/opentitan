@@ -82,6 +82,11 @@ opentitan_alias_top_attr(
 )
 
 opentitan_alias_top_attr(
+    name = "rom",
+    attr_name = "rom",
+)
+
+opentitan_alias_top_attr(
     name = "top_otp_map",
     attr_name = "otp_map",
 )
