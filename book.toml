@@ -58,6 +58,9 @@ command = "./util/mdbook_otbn.py"
 [preprocessor.dashboard]
 command = "./util/mdbook_dashboard.py"
 
+[preprocessor.ipstages]
+command = "./util/mdbook_ip_stages.py"
+
 [preprocessor.code-snippet]
 command = "./util/mdbook_code_snippet.py"
 
