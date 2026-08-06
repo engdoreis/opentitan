@@ -75,6 +75,59 @@ def strip_comments(text):
     return "".join(out)
 
 
+# Synopsys DC's Presto Verilog elaborator rejects an assignment pattern used
+# directly as a port-connection actual: "VER-721: assignment pattern in port
+# connection is not supported." IEEE 1800-2017 10.9.1 does not list port
+# connections among the contexts that allow an unprefixed '{...} pattern.
+# We rewrite them here.
+ASSIGN_PATTERN_PORT_RE = re.compile(r"(\.\w+)\s*\(\s*'\{([^{}]*)\}\s*\)")
+ZERO_PARAM_RE = re.compile(
+    r"(?:^|\n)\s*(?:parameter|localparam)\s+[\w:]+\s+(\w+)\s*=\s*'0\s*;", re.M)
+ZERO_LITERAL_RE = re.compile(r"^(?:'0|\d*'[bB]0+)$")
+DEFAULT_ITEM_RE = re.compile(r"^\s*default\s*:\s*(.+?)\s*$")
+NAME_REF_RE = re.compile(r"^(?:\w+::)?(\w+)$")
+
+
+def fix_assignment_pattern_port_connections(text):
+    """Rewrite `.port('{...})` actuals to `.port('0)`, for Presto's VER-721.
+
+    An occurrence is rewritten only once every item in its pattern is shown
+    to be zero: a literal ('0, 1'b0, ...) or a reference to a <pkg>::NAME
+    parameter declared elsewhere in the pickle as `= '0;`. Anything else is
+    left untouched and reported, since guessing at a non-zero value would be
+    worse than leaving the tool error for a human to look at.
+    """
+    zero_names = set(ZERO_PARAM_RE.findall(text))
+
+    def item_value(item):
+        m = DEFAULT_ITEM_RE.match(item)
+        return m.group(1) if m else item.strip()
+
+    def is_zero(value):
+        if ZERO_LITERAL_RE.match(value):
+            return True
+        m = NAME_REF_RE.match(value)
+        return bool(m) and m.group(1) in zero_names
+
+    fixed, unresolved = [], []
+
+    def repl(m):
+        port, inner = m.group(1), m.group(2)
+        items = [item_value(it) for it in inner.split(",")]
+        if all(is_zero(v) for v in items):
+            fixed.append(m.group(0))
+            return f"{port}('0)"
+        unresolved.append(m.group(0))
+        return m.group(0)
+
+    new_text = ASSIGN_PATTERN_PORT_RE.sub(repl, text)
+    if unresolved:
+        sys.exit("error: assignment pattern in port connection that cannot "
+                 "be proven all-zero -- resolve by hand:\n"
+                 + "\n".join(f"    {u}" for u in unresolved))
+    return new_text, fixed
+
+
 class Unit:
     def __init__(self, kind, name, start):
         self.kind, self.name, self.start = kind, name, start
@@ -195,6 +248,14 @@ def main():
 
     with open(args.pickle) as fh:
         text = fh.read()
+
+    text, port_fixes = fix_assignment_pattern_port_connections(text)
+    if port_fixes:
+        print(f"==> rewrote {len(port_fixes)} assignment-pattern port "
+              "connection(s) Presto rejects (VER-721) to '0:")
+        for f in port_fixes:
+            print(f"    {f}")
+
     lines = text.splitlines(keepends=True)
     code_lines = strip_comments(text).splitlines()
     code_lines += [""] * (len(lines) - len(code_lines))

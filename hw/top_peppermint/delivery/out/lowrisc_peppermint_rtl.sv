@@ -112323,7 +112323,7 @@ module lowrisc_edn_core import lowrisc_edn_pkg::*;
     .rst_ni(rst_ni),
     .req_chk_i(1'b1),
     .req_i(packer_arb_req), // N number of reqs
-    .data_i('{default: 1'b0}),
+    .data_i('0),
     .gnt_o(packer_arb_gnt), // N number of gnts
     .idx_o(), //NC
     .valid_o(packer_arb_valid),
@@ -192987,7 +192987,7 @@ module lowrisc_csrng_core import lowrisc_csrng_pkg::*; #(
     .rst_ni   (rst_ni),
     .req_chk_i(cs_enable_fo[1]),
     .req_i    (cmd_arb_req),
-    .data_i   ('{default: 1'b0}),
+    .data_i('0),
     .gnt_o    (cmd_arb_gnt),
     .idx_o    (cmd_arb_idx),
     .valid_o  (acmd_avail), // 1 req
@@ -222693,7 +222693,7 @@ module lowrisc_kmac_app
     .rst_ni,
 
     .req_i  (app_req_valids),
-    .data_i ('{default:'0}),
+    .data_i('0),
     .gnt_o  (), // not used
     .idx_o  (arb_idx),
 
@@ -278839,7 +278839,7 @@ module lowrisc_otp_ctrl_dai
     .clk_i,
     .rst_ni,
     .req_i   ( part_sel_oh    ),
-    .data_i  ( '{default: '0} ),
+    .data_i('0),
     .gnt_o   (                ), // unused
     .idx_o   ( part_idx       ),
     .valid_o ( part_sel_valid ), // used for detecting OOB addresses
@@ -281078,7 +281078,7 @@ module lowrisc_otp_ctrl
     .clk_i,
     .rst_ni,
     .req_i   ( tlul_part_sel_oh  ),
-    .data_i  ( '{default: '0}    ),
+    .data_i('0),
     .gnt_o   (                   ), // unused
     .idx_o   ( tlul_part_idx     ),
     .valid_o (                   ), // unused
@@ -281582,7 +281582,7 @@ end
     .rst_ni,
     .req_chk_i ( ~lc_escalate_en_any         ),
     .req_i     ( {lfsr_edn_req, key_edn_req} ),
-    .data_i    ( '{default: '0}              ),
+    .data_i('0),
     .gnt_o     ( {lfsr_edn_ack, key_edn_ack} ),
     .idx_o     (                             ), // unused
     .valid_o   ( edn_req                     ),
@@ -284329,12 +284329,12 @@ module lowrisc_peppermint_pd_main #(
     .alert_rx_i(alert_rx_i[28]),
 
     // RACL policies
-    .racl_policy_sel_ranges_ram_i('{lowrisc_top_racl_pkg::RACL_RANGE_T_DEFAULT}),
+    .racl_policy_sel_ranges_ram_i('0),
 
     // Inter-module signals
     .sram_otp_key_o(otp_ctrl_sram_otp_key_req[0]),
     .sram_otp_key_i(otp_ctrl_sram_otp_key_rsp[0]),
-    .ram_cfg_i('{default: lowrisc_prim_ram_1p_pkg::RAM_1P_CFG_REQ_DEFAULT}),
+    .ram_cfg_i('0),
     .ram_cfg_o(),
     .lc_escalate_en_i(lc_ctrl_lc_escalate_en),
     .lc_hw_debug_en_i(lc_ctrl_lc_hw_debug_en),
@@ -284566,9 +284566,9 @@ module lowrisc_peppermint_pd_main #(
 
     // Inter-module signals
     .rst_cpu_n_o(),
-    .ram_cfg_icache_tag_i('{default: lowrisc_prim_ram_1p_pkg::RAM_1P_CFG_REQ_DEFAULT}),
+    .ram_cfg_icache_tag_i('0),
     .ram_cfg_icache_tag_o(),
-    .ram_cfg_icache_data_i('{default: lowrisc_prim_ram_1p_pkg::RAM_1P_CFG_REQ_DEFAULT}),
+    .ram_cfg_icache_data_i('0),
     .ram_cfg_icache_data_o(),
     .hart_id_i(rv_core_ibex_hart_id),
     .boot_addr_i(rv_core_ibex_boot_addr),
@@ -285725,12 +285725,12 @@ module lowrisc_peppermint_pd_aon #(
     .alert_rx_i(alert_rx[6]),
 
     // RACL policies
-    .racl_policy_sel_ranges_ram_i('{lowrisc_top_racl_pkg::RACL_RANGE_T_DEFAULT}),
+    .racl_policy_sel_ranges_ram_i('0),
 
     // Inter-module signals
     .sram_otp_key_o(otp_ctrl_sram_otp_key_req_o),
     .sram_otp_key_i(otp_ctrl_sram_otp_key_rsp_i),
-    .ram_cfg_i('{default: lowrisc_prim_ram_1p_pkg::RAM_1P_CFG_REQ_DEFAULT}),
+    .ram_cfg_i('0),
     .ram_cfg_o(),
     .lc_escalate_en_i(lc_ctrl_lc_escalate_en_i),
     .lc_hw_debug_en_i(lc_ctrl_lc_hw_debug_en_i),
