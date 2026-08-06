@@ -17,7 +17,7 @@ module lowrisc_top_peppermint_wrapper
   // Manual DFT signals
   input                        scan_rst_ni, // reset used for test mode
   input                        scan_en_i,
-  input lowrisc_prim_mubi_pkg::mubi4_t scanmode_i,  // lowrisc_lc_ctrl_pkg::On for Scan
+  input lowrisc_prim_mubi_pkg::mubi4_t scanmode_i,  // lowrisc_prim_mubi_pkg::MuBi4True for Scan
 
   // Incoming alerts for group soc
   input  lowrisc_prim_alert_pkg::alert_tx_t [lowrisc_top_peppermint_pkg::NIncomingAlertsSoc-1:0] incoming_alert_soc_tx_i,
