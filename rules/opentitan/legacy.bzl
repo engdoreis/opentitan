@@ -33,12 +33,15 @@ def legacy_rom_targets(target, suffixes, testonly = False):
     # Filter execution environments by top.
     ev_map = exec_env_to_top_map([ev for ev_list in suffixes.values() for ev in ev_list])
 
+    # Extract the short name from the label (e.g. "//hw/top:rom" -> "rom").
+    target_name = target.split(":")[-1]
+
     for (suffix, ev_list) in suffixes.items():
         valid_tops = [ev_map[ev] for ev in ev_list]
 
         native.filegroup(
-            name = "{}_{}".format(target, suffix),
-            srcs = [":{}".format(target)],
+            name = "{}_{}".format(target_name, suffix),
+            srcs = [target],
             output_group = select({
                 "//sw/device:is_english_breakfast": "{}_rom32".format(suffix),
                 "//conditions:default": "{}_rom".format(suffix),
@@ -53,8 +56,8 @@ def legacy_rom_targets(target, suffixes, testonly = False):
             ),
         )
         native.alias(
-            name = "{}_{}_scr_vmem".format(target, suffix),
-            actual = ":{}_{}".format(target, suffix),
+            name = "{}_{}_scr_vmem".format(target_name, suffix),
+            actual = ":{}_{}".format(target_name, suffix),
             testonly = testonly,
         )
 
