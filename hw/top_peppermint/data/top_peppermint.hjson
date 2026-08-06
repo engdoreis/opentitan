@@ -281,7 +281,7 @@
       clock_srcs: {clk_i: "main"},
       clock_group: "secure",
       reset_connections: {rst_ni: "lc_main"},
-      base_addr: {hart: "0x21190000"},
+      base_addr: {hart: "0x40000000"},
     },
     { name: "otp_ctrl",
       type: "otp_ctrl",
@@ -290,7 +290,7 @@
       clock_group: "secure",
       reset_connections: {rst_ni: "lc_main", rst_edn_ni: "lc_main"},
       base_addrs: {
-        core: {hart: "0x30130000"},
+        core: {hart: "0x40010000"},
       },
       attr: "ipgen",
     },
@@ -300,7 +300,7 @@
       clock_group: "secure",
       reset_connections: {rst_ni: "lc_main"},
       base_addrs: {
-        prim: {hart: "0x30140000"},
+        prim: {hart: "0x40020000"},
       },
       param_decl: {
         Width: "otp_ctrl_macro_pkg::OtpWidth",
@@ -316,7 +316,7 @@
       clock_group: "secure",
       reset_connections: {rst_ni: "lc_main", rst_kmac_ni: "lc_main"},
       base_addrs: {
-        regs: {hart: "0x30150000"},
+        regs: {hart: "0x40030000"},
         dmi:  {soc_dbg: "0x3000"},
       },
       param_decl: {
@@ -345,14 +345,14 @@
         SecMasking: "1",
         SecSBoxImpl: "aes_pkg::SBoxImplDom"
       },
-      base_addr: {hart: "0x21100000"},
+      base_addr: {hart: "0x40100000"},
     },
     { name: "hmac",
       type: "hmac",
       clock_srcs: {clk_i: "main"},
       clock_group: "secure",
       reset_connections: {rst_ni: "lc_main"},
-      base_addr: {hart: "0x21110000"},
+      base_addr: {hart: "0x40110000"},
     },
     { name: "kmac",
       type: "kmac",
@@ -364,14 +364,14 @@
       clock_srcs: {clk_i: "main", clk_edn_i: "main"},
       clock_group: "secure",
       reset_connections: {rst_ni: "lc_main", rst_edn_ni: "lc_main"},
-      base_addr: {hart: "0x21120000"},
+      base_addr: {hart: "0x40120000"},
     },
     { name: "otbn",
       type: "otbn",
       clock_srcs: {clk_i: "main", clk_edn_i: "main", clk_otp_i: "main"},
       clock_group: "secure",
       reset_connections: {rst_ni: "lc_main", rst_edn_ni: "lc_main", rst_otp_ni: "lc_main"},
-      base_addr: {hart: "0x21130000"},
+      base_addr: {hart: "0x40130000"},
     },
     { name: "keymgr_dpe",
       type: "keymgr_dpe",
@@ -381,21 +381,21 @@
       clock_srcs: {clk_i: "main", clk_edn_i: "main"},
       clock_group: "secure",
       reset_connections: {rst_ni: "lc_main", rst_edn_ni: "lc_main"},
-      base_addr: {hart: "0x21140000"},
+      base_addr: {hart: "0x40140000"},
     },
     { name: "csrng",
       type: "csrng",
       clock_srcs: {clk_i: "main"},
       clock_group: "secure",
       reset_connections: {rst_ni: "lc_main"},
-      base_addr: {hart: "0x21150000"},
+      base_addr: {hart: "0x40150000"},
     },
     { name: "entropy_src",
       type: "entropy_src",
       clock_srcs: {clk_i: "main"},
       clock_group: "secure",
       reset_connections: {rst_ni: "lc_main"},
-      base_addr: {hart: "0x21160000"},
+      base_addr: {hart: "0x40160000"},
       // 4 independent noise source channels.
       param_decl: {
         RngBusWidth: "4",
@@ -407,7 +407,7 @@
       clock_srcs: {clk_i: "main"},
       clock_group: "secure",
       reset_connections: {rst_ni: "lc_main"},
-      base_addr: {hart: "0x21170000"},
+      base_addr: {hart: "0x40170000"},
       param_decl: {NumEndPoints: "8"},
     },
     { name: "edn1",
@@ -415,7 +415,7 @@
       clock_srcs: {clk_i: "main"},
       clock_group: "secure",
       reset_connections: {rst_ni: "lc_main"},
-      base_addr: {hart: "0x21180000"},
+      base_addr: {hart: "0x40180000"},
       param_decl: {NumEndPoints: "1"},
     },
     // Category: controllers
@@ -430,7 +430,7 @@
         InstSize: "196608", // 192 KiB
       },
       base_addrs: {
-        regs: {hart: "0x211c0000"},
+        regs: {hart: "0x40200000"},
         ram: {hart: "0x10000000"},
       },
       memory: {
@@ -450,8 +450,8 @@
       clock_group: "secure",
       reset_connections: {rst_ni: "lc_main"},
       base_addrs: {
-        rom:  {hart: "0x00020000"},
-        regs: {hart: "0x211e0000"},
+        rom:  {hart: "0x00040000"},
+        regs: {hart: "0x40210000"},
       }
       memory: {
         rom: {
@@ -521,7 +521,7 @@
         rst_esc_ni: "lc_aon",
         rst_otp_ni: "lc_main",
       },
-      base_addr: {hart: "0x211f0000"},
+      base_addr: {hart: "0x40220000"},
     },
     { name: "rv_dm",
       type: "rv_dm",
@@ -529,8 +529,8 @@
       clock_group: "secure",
       reset_connections: {rst_ni: "sys", rst_lc_ni: "lc_main"},
       base_addrs: {
-        mem: {hart: "0x00050000"},
-        regs: {hart: "0x21200000"},
+        mem: {hart: "0x00010000"},
+        regs: {hart: "0x40230000"},
         dbg: {soc_dbg: "0x00000000"},
       },
       param_decl: {
@@ -547,7 +547,7 @@
       clock_srcs: {clk_i: "main"},
       clock_group: "secure",
       reset_connections: {rst_ni: "lc_main"},
-      base_addr: {hart: "0x22010000"},
+      base_addr: {hart: "0x40300000"},
     },
     { name: "mbx0",
       type: "mbx",
@@ -556,7 +556,7 @@
       clock_group: "secure",
       reset_connections: {rst_ni: "lc_main"},
       base_addrs: {
-        core: {hart: "0x22000000"},
+        core: {hart: "0x40310000"},
         soc:  {soc_mbx: "0x00000000"},
       },
     },
@@ -567,8 +567,8 @@
       clock_group: "secure",
       reset_connections: {rst_ni: "lc_main"},
       base_addrs: {
-        core: {hart: "0x22000100"},
-        soc:  {soc_mbx: "0x00000100"},
+        core: {hart: "0x40320000"},
+        soc:  {soc_mbx: "0x00010000"},
       },
     },
     // Category: always-on
@@ -591,7 +591,7 @@
       },
       domain: "Aon",
       base_addr: {
-        hart: "0x40400000",
+        hart: "0x41000000",
       },
       param_decl: {
         EscNumSeverities: "AlertHandlerEscNumSeverities",
@@ -610,7 +610,7 @@
       },
       domain: "Aon",
       base_addr: {
-        hart: "0x40410000",
+        hart: "0x41010000",
       },
       param_decl: {
         SecCheck: "0",
@@ -641,7 +641,7 @@
       },
       domain: "Aon",
       base_addr: {
-        hart: "0x40420000",
+        hart: "0x41020000",
       },
       ipgen_params: {
         ext_clk_bypass: false
@@ -659,7 +659,7 @@
       },
       domain: "Aon",
       base_addr: {
-        hart: "0x40450000",
+        hart: "0x41040000",
       },
       param_decl: {
         EscNumSeverities: "4",
@@ -682,8 +682,8 @@
         InstSize: 8192
       }
       base_addrs: {
-        regs: {hart: "0x40460000"},
-        ram:  {hart: "0x40470000"},
+        regs: {hart: "0x41050000"},
+        ram:  {hart: "0x41100000"},
       }
       // Memory regions must be associated with a dedicated
       // TL-UL device interface.
@@ -705,7 +705,7 @@
       clock_srcs: {clk_i: "main"},
       clock_group: "secure",
       reset_connections: {rst_ni: "lc_main"},
-      base_addr: {hart: "0x28000000"},
+      base_addr: {hart: "0x48000000"},
       attr: "ipgen",
       targets: ["rv_core_ibex"],
       incoming_interrupt: ["incoming_interrupts_soc.hjson"],
@@ -727,7 +727,7 @@
           data_intg_passthru: "true",
           exec: "True",
           byte_write: "True",
-          size: "0x10000000"
+          size: "0x80000000"
         }
       },
     },

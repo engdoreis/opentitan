@@ -36,12 +36,12 @@ package ibex_pmp_reset_pkg;
   // off at coarser granularities.
   //
   // Note: The size of region 2 below must match the ROM size configured in
-  // top_peppermint.hjson (rom_ctrl.rom: base 0x0002_0000, 128 KiB) and, once
+  // top_peppermint.hjson (rom_ctrl.rom: base 0x0004_0000, 128 KiB) and, once
   // Peppermint's ROM software exists, its `_epmp_reset_rx_size` linker symbol.
   localparam logic [33:0] PmpAddrRst[16] = '{
     34'h00000000, // rgn 0
     34'h00000000, // rgn 1
-    34'h0002fffc, // rgn 2  [ROM: base=0x0002_0000 size=0x2_0000 (128KiB)]
+    34'h0004fffc, // rgn 2  [ROM: base=0x0004_0000, NAPOT of 128 KiB indicated by a 0 followed by 14 ones]
     34'h00000000, // rgn 3
     34'h00000000, // rgn 4
     34'h00000000, // rgn 5
