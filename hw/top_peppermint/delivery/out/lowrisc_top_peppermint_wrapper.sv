@@ -2,7 +2,7 @@
 // Licensed under the Apache License, Version 2.0, see LICENSE for details.
 // SPDX-License-Identifier: Apache-2.0
 
-// Release Peppermint-1.0-M1-RC2.
+// Release Peppermint-1.0-M1-RC3.
 
 module lowrisc_top_peppermint_wrapper
   import lowrisc_top_peppermint_pkg::*;
