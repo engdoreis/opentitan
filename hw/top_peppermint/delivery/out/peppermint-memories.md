@@ -1,3 +1,5 @@
+# Peppermint Memory (SRAM/OTP/ROM) Macros
+
 |           Memory Name | Data Size (KiB) | Word Width (bits) | Num Words | Mask Width (bits) | Num Ports | Resp Latency | Internal Ecc |
 | --------------------- | --------------- | ----------------- | --------- | ----------------- | --------- | ------------ | ------------ |
 |             Main SRAM |             192 |                39 |     49152 |                 1 |         1 |            1 |           No |
