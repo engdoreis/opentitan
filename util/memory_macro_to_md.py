@@ -9,7 +9,7 @@ import tomllib
 from pathlib import Path
 
 
-def header_label(key: str, meta: dict[str,str]) -> str:
+def header_label(key: str, meta: dict[str, str]) -> str:
     # Example: converts "data_size" into "Data Size (KiB)"
     label = key.replace("_", " ").title()
     if unit := meta.get("unit"):
@@ -17,8 +17,11 @@ def header_label(key: str, meta: dict[str,str]) -> str:
             label += f" ({unit})"
     return label
 
+
 def format_row(cells: list[str], col_widths: list[int]) -> str:
-    return "| " + " | ".join(cell.rjust(col_widths[index]) for index, cell in enumerate(cells)) + " |\n"
+    padded = (cell.rjust(col_widths[index]) for index, cell in enumerate(cells))
+    return "| " + " | ".join(padded) + " |\n"
+
 
 def main() -> None:
     memory_macros = Path(sys.argv[1])
