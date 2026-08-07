@@ -590,6 +590,14 @@ pub enum PlicIrqId {
     Mbx1MbxAbort = 37,
     /// mbx1_mbx_error
     Mbx1MbxError = 38,
+    /// soc_irq_0
+    SocIrq0 = 39,
+    /// soc_irq_1
+    SocIrq1 = 40,
+    /// soc_irq_2
+    SocIrq2 = 41,
+    /// soc_irq_3
+    SocIrq3 = 42,
 }
 
 impl TryFrom<u32> for PlicIrqId {
@@ -635,6 +643,10 @@ impl TryFrom<u32> for PlicIrqId {
             36 => Ok(Self::Mbx1MbxReady),
             37 => Ok(Self::Mbx1MbxAbort),
             38 => Ok(Self::Mbx1MbxError),
+            39 => Ok(Self::SocIrq0),
+            40 => Ok(Self::SocIrq1),
+            41 => Ok(Self::SocIrq2),
+            42 => Ok(Self::SocIrq3),
             _ => Err(val),
         }
     }
@@ -655,7 +667,7 @@ pub enum PlicTarget {
 ///
 /// This array is a mapping from `PlicIrqId` to
 /// `PlicPeripheral`.
-pub const PLIC_INTERRUPT_FOR_PERIPHERAL: [PlicPeripheral; 39] = [
+pub const PLIC_INTERRUPT_FOR_PERIPHERAL: [PlicPeripheral; 43] = [
     // None -> PlicPeripheral::Unknown
     PlicPeripheral::Unknown,
     // PwrmgrWakeup -> PlicPeripheral::Pwrmgr
@@ -734,6 +746,14 @@ pub const PLIC_INTERRUPT_FOR_PERIPHERAL: [PlicPeripheral; 39] = [
     PlicPeripheral::Mbx1,
     // Mbx1MbxError -> PlicPeripheral::Mbx1
     PlicPeripheral::Mbx1,
+    // SocIrq0 -> PlicPeripheral::Unknown
+    PlicPeripheral::Unknown,
+    // SocIrq1 -> PlicPeripheral::Unknown
+    PlicPeripheral::Unknown,
+    // SocIrq2 -> PlicPeripheral::Unknown
+    PlicPeripheral::Unknown,
+    // SocIrq3 -> PlicPeripheral::Unknown
+    PlicPeripheral::Unknown,
 ];
 
 /// Alert Handler Source Peripheral.

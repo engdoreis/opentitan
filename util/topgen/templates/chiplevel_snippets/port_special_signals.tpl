@@ -49,6 +49,14 @@
   input  prim_mubi_pkg::mubi4_t     [top_${top["name"]}_pkg::NIncomingLpgs${alert_group.capitalize()}-1:0]   incoming_lpg_rst_en_${alert_group}_i,
 % endfor
 
+% for irq_group in top['incoming_interrupt'].keys():
+
+  // Incoming interrupt for group ${irq_group}
+  input logic [top_${top["name"]}_pkg::NIncomingInterrupts${irq_group.capitalize()}-1:0] incoming_interrupt_${irq_group}_i,
+% endfor
+% if top['incoming_interrupt']:
+
+% endif
 % if feature_info["has_pinmux"]:
 % if cio_info["num_mio_pads"] != 0:
   // Multiplexed I/O

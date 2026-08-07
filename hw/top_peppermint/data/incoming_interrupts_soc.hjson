@@ -1,0 +1,35 @@
+// Copyright lowRISC contributors (OpenTitan project).
+// Licensed under the Apache License, Version 2.0, see LICENSE for details.
+// SPDX-License-Identifier: Apache-2.0
+{
+    soc: [
+        {
+            name: irq_0
+            module_name: soc
+            domain: Main
+            intr_type: Status
+            default_val: "false"
+        }
+        {
+            name: irq_1
+            module_name: soc
+            domain: Main
+            intr_type: Status
+            default_val: "false"
+        }
+        {
+            name: irq_2
+            module_name: soc
+            domain: Main
+            intr_type: Status
+            default_val: "false"
+        }
+        {
+            name: irq_3
+            module_name: soc
+            domain: Main
+            intr_type: Status
+            default_val: "false"
+        }
+    ]
+}

@@ -2377,9 +2377,25 @@ package lowrisc_top_peppermint_pkg;
     TopPeppermintPlicIrqIdMbx1MbxReady = 36,
     TopPeppermintPlicIrqIdMbx1MbxAbort = 37,
     TopPeppermintPlicIrqIdMbx1MbxError = 38,
+    TopPeppermintPlicIrqIdSocIrq0 = 39,
+    TopPeppermintPlicIrqIdSocIrq1 = 40,
+    TopPeppermintPlicIrqIdSocIrq2 = 41,
+    TopPeppermintPlicIrqIdSocIrq3 = 42,
     TopPeppermintPlicIrqIdCount
   } interrupt_rv_plic_id_e;
 
+
+  // Number of soc incoming interrupts
+  parameter int unsigned NIncomingInterruptsSoc = 4;
+
+  // Enumeration of interrupts for incoming group soc
+  typedef enum int unsigned {
+    TopPeppermintIncomingIrqSocIdSocIrq0 = 0,
+    TopPeppermintIncomingIrqSocIdSocIrq1 = 1,
+    TopPeppermintIncomingIrqSocIdSocIrq2 = 2,
+    TopPeppermintIncomingIrqSocIdSocIrq3 = 3,
+    TopPeppermintIncomingIrqSocIdCount
+  } incoming_interrupt_soc_id_e;
 
   // List of peripheral instantiated in this chip.
   typedef enum {

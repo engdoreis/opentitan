@@ -179367,7 +179367,7 @@ endmodule
 package lowrisc_rv_plic_reg_pkg;
 
   // Param list
-  parameter int NumSrc = 39;
+  parameter int NumSrc = 43;
   parameter int NumTarget = 1;
   parameter int PrioWidth = 2;
   parameter int NumAlerts = 1;
@@ -179376,7 +179376,7 @@ package lowrisc_rv_plic_reg_pkg;
   parameter int BlockAw = 27;
 
   // Number of registers for every interface
-  parameter int NumRegs = 47;
+  parameter int NumRegs = 51;
 
   // Alert indices
   typedef enum int {
@@ -179425,8 +179425,8 @@ package lowrisc_rv_plic_reg_pkg;
 
   // Register -> HW type
   typedef struct packed {
-    rv_plic_reg2hw_prio_mreg_t [38:0] prio; // [129:52]
-    rv_plic_reg2hw_ie0_mreg_t [38:0] ie0; // [51:13]
+    rv_plic_reg2hw_prio_mreg_t [42:0] prio; // [141:56]
+    rv_plic_reg2hw_ie0_mreg_t [42:0] ie0; // [55:13]
     rv_plic_reg2hw_threshold0_reg_t threshold0; // [12:11]
     rv_plic_reg2hw_cc0_reg_t cc0; // [10:3]
     rv_plic_reg2hw_msip0_reg_t msip0; // [2:2]
@@ -179435,7 +179435,7 @@ package lowrisc_rv_plic_reg_pkg;
 
   // HW -> register type
   typedef struct packed {
-    rv_plic_hw2reg_ip_mreg_t [38:0] ip; // [83:6]
+    rv_plic_hw2reg_ip_mreg_t [42:0] ip; // [91:6]
     rv_plic_hw2reg_cc0_reg_t cc0; // [5:0]
   } rv_plic_hw2reg_t;
 
@@ -179479,6 +179479,10 @@ package lowrisc_rv_plic_reg_pkg;
   parameter logic [BlockAw-1:0] RV_PLIC_PRIO_36_OFFSET = 27'h 90;
   parameter logic [BlockAw-1:0] RV_PLIC_PRIO_37_OFFSET = 27'h 94;
   parameter logic [BlockAw-1:0] RV_PLIC_PRIO_38_OFFSET = 27'h 98;
+  parameter logic [BlockAw-1:0] RV_PLIC_PRIO_39_OFFSET = 27'h 9c;
+  parameter logic [BlockAw-1:0] RV_PLIC_PRIO_40_OFFSET = 27'h a0;
+  parameter logic [BlockAw-1:0] RV_PLIC_PRIO_41_OFFSET = 27'h a4;
+  parameter logic [BlockAw-1:0] RV_PLIC_PRIO_42_OFFSET = 27'h a8;
   parameter logic [BlockAw-1:0] RV_PLIC_IP_0_OFFSET = 27'h 1000;
   parameter logic [BlockAw-1:0] RV_PLIC_IP_1_OFFSET = 27'h 1004;
   parameter logic [BlockAw-1:0] RV_PLIC_IE0_0_OFFSET = 27'h 2000;
@@ -179533,6 +179537,10 @@ package lowrisc_rv_plic_reg_pkg;
     RV_PLIC_PRIO_36,
     RV_PLIC_PRIO_37,
     RV_PLIC_PRIO_38,
+    RV_PLIC_PRIO_39,
+    RV_PLIC_PRIO_40,
+    RV_PLIC_PRIO_41,
+    RV_PLIC_PRIO_42,
     RV_PLIC_IP_0,
     RV_PLIC_IP_1,
     RV_PLIC_IE0_0,
@@ -179544,7 +179552,7 @@ package lowrisc_rv_plic_reg_pkg;
   } rv_plic_id_e;
 
   // Register width information to check illegal writes
-  parameter logic [3:0] RV_PLIC_PERMIT [47] = '{
+  parameter logic [3:0] RV_PLIC_PERMIT [51] = '{
     4'b 0001, // index[ 0] RV_PLIC_PRIO_0
     4'b 0001, // index[ 1] RV_PLIC_PRIO_1
     4'b 0001, // index[ 2] RV_PLIC_PRIO_2
@@ -179584,14 +179592,18 @@ package lowrisc_rv_plic_reg_pkg;
     4'b 0001, // index[36] RV_PLIC_PRIO_36
     4'b 0001, // index[37] RV_PLIC_PRIO_37
     4'b 0001, // index[38] RV_PLIC_PRIO_38
-    4'b 1111, // index[39] RV_PLIC_IP_0
-    4'b 0001, // index[40] RV_PLIC_IP_1
-    4'b 1111, // index[41] RV_PLIC_IE0_0
-    4'b 0001, // index[42] RV_PLIC_IE0_1
-    4'b 0001, // index[43] RV_PLIC_THRESHOLD0
-    4'b 0001, // index[44] RV_PLIC_CC0
-    4'b 0001, // index[45] RV_PLIC_MSIP0
-    4'b 0001  // index[46] RV_PLIC_ALERT_TEST
+    4'b 0001, // index[39] RV_PLIC_PRIO_39
+    4'b 0001, // index[40] RV_PLIC_PRIO_40
+    4'b 0001, // index[41] RV_PLIC_PRIO_41
+    4'b 0001, // index[42] RV_PLIC_PRIO_42
+    4'b 1111, // index[43] RV_PLIC_IP_0
+    4'b 0011, // index[44] RV_PLIC_IP_1
+    4'b 1111, // index[45] RV_PLIC_IE0_0
+    4'b 0011, // index[46] RV_PLIC_IE0_1
+    4'b 0001, // index[47] RV_PLIC_THRESHOLD0
+    4'b 0001, // index[48] RV_PLIC_CC0
+    4'b 0001, // index[49] RV_PLIC_MSIP0
+    4'b 0001  // index[50] RV_PLIC_ALERT_TEST
   };
 
 endpackage
@@ -179940,9 +179952,9 @@ module lowrisc_rv_plic_reg_top (
 
   // also check for spurious write enables
   logic reg_we_err;
-  logic [46:0] reg_we_check;
+  logic [50:0] reg_we_check;
   lowrisc_prim_reg_we_check #(
-    .OneHotWidth(47)
+    .OneHotWidth(51)
   ) u_prim_reg_we_check (
     .clk_i(clk_i),
     .rst_ni(rst_ni),
@@ -180126,6 +180138,18 @@ module lowrisc_rv_plic_reg_top (
   logic prio_38_we;
   logic [1:0] prio_38_qs;
   logic [1:0] prio_38_wd;
+  logic prio_39_we;
+  logic [1:0] prio_39_qs;
+  logic [1:0] prio_39_wd;
+  logic prio_40_we;
+  logic [1:0] prio_40_qs;
+  logic [1:0] prio_40_wd;
+  logic prio_41_we;
+  logic [1:0] prio_41_qs;
+  logic [1:0] prio_41_wd;
+  logic prio_42_we;
+  logic [1:0] prio_42_qs;
+  logic [1:0] prio_42_wd;
   logic ip_0_p_0_qs;
   logic ip_0_p_1_qs;
   logic ip_0_p_2_qs;
@@ -180165,6 +180189,10 @@ module lowrisc_rv_plic_reg_top (
   logic ip_1_p_36_qs;
   logic ip_1_p_37_qs;
   logic ip_1_p_38_qs;
+  logic ip_1_p_39_qs;
+  logic ip_1_p_40_qs;
+  logic ip_1_p_41_qs;
+  logic ip_1_p_42_qs;
   logic ie0_0_we;
   logic ie0_0_e_0_qs;
   logic ie0_0_e_0_wd;
@@ -180245,6 +180273,14 @@ module lowrisc_rv_plic_reg_top (
   logic ie0_1_e_37_wd;
   logic ie0_1_e_38_qs;
   logic ie0_1_e_38_wd;
+  logic ie0_1_e_39_qs;
+  logic ie0_1_e_39_wd;
+  logic ie0_1_e_40_qs;
+  logic ie0_1_e_40_wd;
+  logic ie0_1_e_41_qs;
+  logic ie0_1_e_41_wd;
+  logic ie0_1_e_42_qs;
+  logic ie0_1_e_42_wd;
   logic threshold0_we;
   logic [1:0] threshold0_qs;
   logic [1:0] threshold0_wd;
@@ -181390,6 +181426,122 @@ module lowrisc_rv_plic_reg_top (
   );
 
 
+  // Subregister 39 of Multireg prio
+  // R[prio_39]: V(False)
+  lowrisc_prim_subreg #(
+    .DW      (2),
+    .SwAccess(lowrisc_prim_subreg_pkg::SwAccessRW),
+    .RESVAL  (2'h0),
+    .Mubi    (1'b0)
+  ) u_prio_39 (
+    .clk_i   (clk_i),
+    .rst_ni  (rst_ni),
+
+    // from register interface
+    .we     (prio_39_we),
+    .wd     (prio_39_wd),
+
+    // from internal hardware
+    .de     (1'b0),
+    .d      ('0),
+
+    // to internal hardware
+    .qe     (),
+    .q      (reg2hw.prio[39].q),
+    .ds     (),
+
+    // to register interface (read)
+    .qs     (prio_39_qs)
+  );
+
+
+  // Subregister 40 of Multireg prio
+  // R[prio_40]: V(False)
+  lowrisc_prim_subreg #(
+    .DW      (2),
+    .SwAccess(lowrisc_prim_subreg_pkg::SwAccessRW),
+    .RESVAL  (2'h0),
+    .Mubi    (1'b0)
+  ) u_prio_40 (
+    .clk_i   (clk_i),
+    .rst_ni  (rst_ni),
+
+    // from register interface
+    .we     (prio_40_we),
+    .wd     (prio_40_wd),
+
+    // from internal hardware
+    .de     (1'b0),
+    .d      ('0),
+
+    // to internal hardware
+    .qe     (),
+    .q      (reg2hw.prio[40].q),
+    .ds     (),
+
+    // to register interface (read)
+    .qs     (prio_40_qs)
+  );
+
+
+  // Subregister 41 of Multireg prio
+  // R[prio_41]: V(False)
+  lowrisc_prim_subreg #(
+    .DW      (2),
+    .SwAccess(lowrisc_prim_subreg_pkg::SwAccessRW),
+    .RESVAL  (2'h0),
+    .Mubi    (1'b0)
+  ) u_prio_41 (
+    .clk_i   (clk_i),
+    .rst_ni  (rst_ni),
+
+    // from register interface
+    .we     (prio_41_we),
+    .wd     (prio_41_wd),
+
+    // from internal hardware
+    .de     (1'b0),
+    .d      ('0),
+
+    // to internal hardware
+    .qe     (),
+    .q      (reg2hw.prio[41].q),
+    .ds     (),
+
+    // to register interface (read)
+    .qs     (prio_41_qs)
+  );
+
+
+  // Subregister 42 of Multireg prio
+  // R[prio_42]: V(False)
+  lowrisc_prim_subreg #(
+    .DW      (2),
+    .SwAccess(lowrisc_prim_subreg_pkg::SwAccessRW),
+    .RESVAL  (2'h0),
+    .Mubi    (1'b0)
+  ) u_prio_42 (
+    .clk_i   (clk_i),
+    .rst_ni  (rst_ni),
+
+    // from register interface
+    .we     (prio_42_we),
+    .wd     (prio_42_wd),
+
+    // from internal hardware
+    .de     (1'b0),
+    .d      ('0),
+
+    // to internal hardware
+    .qe     (),
+    .q      (reg2hw.prio[42].q),
+    .ds     (),
+
+    // to register interface (read)
+    .qs     (prio_42_qs)
+  );
+
+
   // Subregister 0 of Multireg ip
   // R[ip_0]: V(False)
   //   F[p_0]: 0:0
@@ -182446,6 +182598,114 @@ module lowrisc_rv_plic_reg_top (
 
     // to register interface (read)
     .qs     (ip_1_p_38_qs)
+  );
+
+  //   F[p_39]: 7:7
+  lowrisc_prim_subreg #(
+    .DW      (1),
+    .SwAccess(lowrisc_prim_subreg_pkg::SwAccessRO),
+    .RESVAL  (1'h0),
+    .Mubi    (1'b0)
+  ) u_ip_1_p_39 (
+    .clk_i   (clk_i),
+    .rst_ni  (rst_ni),
+
+    // from register interface
+    .we     (1'b0),
+    .wd     ('0),
+
+    // from internal hardware
+    .de     (hw2reg.ip[39].de),
+    .d      (hw2reg.ip[39].d),
+
+    // to internal hardware
+    .qe     (),
+    .q      (),
+    .ds     (),
+
+    // to register interface (read)
+    .qs     (ip_1_p_39_qs)
+  );
+
+  //   F[p_40]: 8:8
+  lowrisc_prim_subreg #(
+    .DW      (1),
+    .SwAccess(lowrisc_prim_subreg_pkg::SwAccessRO),
+    .RESVAL  (1'h0),
+    .Mubi    (1'b0)
+  ) u_ip_1_p_40 (
+    .clk_i   (clk_i),
+    .rst_ni  (rst_ni),
+
+    // from register interface
+    .we     (1'b0),
+    .wd     ('0),
+
+    // from internal hardware
+    .de     (hw2reg.ip[40].de),
+    .d      (hw2reg.ip[40].d),
+
+    // to internal hardware
+    .qe     (),
+    .q      (),
+    .ds     (),
+
+    // to register interface (read)
+    .qs     (ip_1_p_40_qs)
+  );
+
+  //   F[p_41]: 9:9
+  lowrisc_prim_subreg #(
+    .DW      (1),
+    .SwAccess(lowrisc_prim_subreg_pkg::SwAccessRO),
+    .RESVAL  (1'h0),
+    .Mubi    (1'b0)
+  ) u_ip_1_p_41 (
+    .clk_i   (clk_i),
+    .rst_ni  (rst_ni),
+
+    // from register interface
+    .we     (1'b0),
+    .wd     ('0),
+
+    // from internal hardware
+    .de     (hw2reg.ip[41].de),
+    .d      (hw2reg.ip[41].d),
+
+    // to internal hardware
+    .qe     (),
+    .q      (),
+    .ds     (),
+
+    // to register interface (read)
+    .qs     (ip_1_p_41_qs)
+  );
+
+  //   F[p_42]: 10:10
+  lowrisc_prim_subreg #(
+    .DW      (1),
+    .SwAccess(lowrisc_prim_subreg_pkg::SwAccessRO),
+    .RESVAL  (1'h0),
+    .Mubi    (1'b0)
+  ) u_ip_1_p_42 (
+    .clk_i   (clk_i),
+    .rst_ni  (rst_ni),
+
+    // from register interface
+    .we     (1'b0),
+    .wd     ('0),
+
+    // from internal hardware
+    .de     (hw2reg.ip[42].de),
+    .d      (hw2reg.ip[42].d),
+
+    // to internal hardware
+    .qe     (),
+    .q      (),
+    .ds     (),
+
+    // to register interface (read)
+    .qs     (ip_1_p_42_qs)
   );
 
 
@@ -183507,6 +183767,114 @@ module lowrisc_rv_plic_reg_top (
     .qs     (ie0_1_e_38_qs)
   );
 
+  //   F[e_39]: 7:7
+  lowrisc_prim_subreg #(
+    .DW      (1),
+    .SwAccess(lowrisc_prim_subreg_pkg::SwAccessRW),
+    .RESVAL  (1'h0),
+    .Mubi    (1'b0)
+  ) u_ie0_1_e_39 (
+    .clk_i   (clk_i),
+    .rst_ni  (rst_ni),
+
+    // from register interface
+    .we     (ie0_1_we),
+    .wd     (ie0_1_e_39_wd),
+
+    // from internal hardware
+    .de     (1'b0),
+    .d      ('0),
+
+    // to internal hardware
+    .qe     (),
+    .q      (reg2hw.ie0[39].q),
+    .ds     (),
+
+    // to register interface (read)
+    .qs     (ie0_1_e_39_qs)
+  );
+
+  //   F[e_40]: 8:8
+  lowrisc_prim_subreg #(
+    .DW      (1),
+    .SwAccess(lowrisc_prim_subreg_pkg::SwAccessRW),
+    .RESVAL  (1'h0),
+    .Mubi    (1'b0)
+  ) u_ie0_1_e_40 (
+    .clk_i   (clk_i),
+    .rst_ni  (rst_ni),
+
+    // from register interface
+    .we     (ie0_1_we),
+    .wd     (ie0_1_e_40_wd),
+
+    // from internal hardware
+    .de     (1'b0),
+    .d      ('0),
+
+    // to internal hardware
+    .qe     (),
+    .q      (reg2hw.ie0[40].q),
+    .ds     (),
+
+    // to register interface (read)
+    .qs     (ie0_1_e_40_qs)
+  );
+
+  //   F[e_41]: 9:9
+  lowrisc_prim_subreg #(
+    .DW      (1),
+    .SwAccess(lowrisc_prim_subreg_pkg::SwAccessRW),
+    .RESVAL  (1'h0),
+    .Mubi    (1'b0)
+  ) u_ie0_1_e_41 (
+    .clk_i   (clk_i),
+    .rst_ni  (rst_ni),
+
+    // from register interface
+    .we     (ie0_1_we),
+    .wd     (ie0_1_e_41_wd),
+
+    // from internal hardware
+    .de     (1'b0),
+    .d      ('0),
+
+    // to internal hardware
+    .qe     (),
+    .q      (reg2hw.ie0[41].q),
+    .ds     (),
+
+    // to register interface (read)
+    .qs     (ie0_1_e_41_qs)
+  );
+
+  //   F[e_42]: 10:10
+  lowrisc_prim_subreg #(
+    .DW      (1),
+    .SwAccess(lowrisc_prim_subreg_pkg::SwAccessRW),
+    .RESVAL  (1'h0),
+    .Mubi    (1'b0)
+  ) u_ie0_1_e_42 (
+    .clk_i   (clk_i),
+    .rst_ni  (rst_ni),
+
+    // from register interface
+    .we     (ie0_1_we),
+    .wd     (ie0_1_e_42_wd),
+
+    // from internal hardware
+    .de     (1'b0),
+    .d      ('0),
+
+    // to internal hardware
+    .qe     (),
+    .q      (reg2hw.ie0[42].q),
+    .ds     (),
+
+    // to register interface (read)
+    .qs     (ie0_1_e_42_qs)
+  );
+
 
   // R[threshold0]: V(False)
   lowrisc_prim_subreg #(
@@ -183605,7 +183973,7 @@ module lowrisc_rv_plic_reg_top (
 
 
 
-  logic [46:0] addr_hit;
+  logic [50:0] addr_hit;
   always_comb begin
     addr_hit[ 0] = (reg_addr == RV_PLIC_PRIO_0_OFFSET);
     addr_hit[ 1] = (reg_addr == RV_PLIC_PRIO_1_OFFSET);
@@ -183646,14 +184014,18 @@ module lowrisc_rv_plic_reg_top (
     addr_hit[36] = (reg_addr == RV_PLIC_PRIO_36_OFFSET);
     addr_hit[37] = (reg_addr == RV_PLIC_PRIO_37_OFFSET);
     addr_hit[38] = (reg_addr == RV_PLIC_PRIO_38_OFFSET);
-    addr_hit[39] = (reg_addr == RV_PLIC_IP_0_OFFSET);
-    addr_hit[40] = (reg_addr == RV_PLIC_IP_1_OFFSET);
-    addr_hit[41] = (reg_addr == RV_PLIC_IE0_0_OFFSET);
-    addr_hit[42] = (reg_addr == RV_PLIC_IE0_1_OFFSET);
-    addr_hit[43] = (reg_addr == RV_PLIC_THRESHOLD0_OFFSET);
-    addr_hit[44] = (reg_addr == RV_PLIC_CC0_OFFSET);
-    addr_hit[45] = (reg_addr == RV_PLIC_MSIP0_OFFSET);
-    addr_hit[46] = (reg_addr == RV_PLIC_ALERT_TEST_OFFSET);
+    addr_hit[39] = (reg_addr == RV_PLIC_PRIO_39_OFFSET);
+    addr_hit[40] = (reg_addr == RV_PLIC_PRIO_40_OFFSET);
+    addr_hit[41] = (reg_addr == RV_PLIC_PRIO_41_OFFSET);
+    addr_hit[42] = (reg_addr == RV_PLIC_PRIO_42_OFFSET);
+    addr_hit[43] = (reg_addr == RV_PLIC_IP_0_OFFSET);
+    addr_hit[44] = (reg_addr == RV_PLIC_IP_1_OFFSET);
+    addr_hit[45] = (reg_addr == RV_PLIC_IE0_0_OFFSET);
+    addr_hit[46] = (reg_addr == RV_PLIC_IE0_1_OFFSET);
+    addr_hit[47] = (reg_addr == RV_PLIC_THRESHOLD0_OFFSET);
+    addr_hit[48] = (reg_addr == RV_PLIC_CC0_OFFSET);
+    addr_hit[49] = (reg_addr == RV_PLIC_MSIP0_OFFSET);
+    addr_hit[50] = (reg_addr == RV_PLIC_ALERT_TEST_OFFSET);
   end
 
   assign addrmiss = (reg_re || reg_we) ? ~|addr_hit : 1'b0 ;
@@ -183707,7 +184079,11 @@ module lowrisc_rv_plic_reg_top (
                (addr_hit[43] & (|(RV_PLIC_PERMIT[43] & ~reg_be))) |
                (addr_hit[44] & (|(RV_PLIC_PERMIT[44] & ~reg_be))) |
                (addr_hit[45] & (|(RV_PLIC_PERMIT[45] & ~reg_be))) |
-               (addr_hit[46] & (|(RV_PLIC_PERMIT[46] & ~reg_be)))));
+               (addr_hit[46] & (|(RV_PLIC_PERMIT[46] & ~reg_be))) |
+               (addr_hit[47] & (|(RV_PLIC_PERMIT[47] & ~reg_be))) |
+               (addr_hit[48] & (|(RV_PLIC_PERMIT[48] & ~reg_be))) |
+               (addr_hit[49] & (|(RV_PLIC_PERMIT[49] & ~reg_be))) |
+               (addr_hit[50] & (|(RV_PLIC_PERMIT[50] & ~reg_be)))));
   end
 
   // Generate write-enables
@@ -183828,7 +184204,19 @@ module lowrisc_rv_plic_reg_top (
   assign prio_38_we = addr_hit[38] & reg_we & !reg_error;
 
   assign prio_38_wd = reg_wdata[1:0];
-  assign ie0_0_we = addr_hit[41] & reg_we & !reg_error;
+  assign prio_39_we = addr_hit[39] & reg_we & !reg_error;
+
+  assign prio_39_wd = reg_wdata[1:0];
+  assign prio_40_we = addr_hit[40] & reg_we & !reg_error;
+
+  assign prio_40_wd = reg_wdata[1:0];
+  assign prio_41_we = addr_hit[41] & reg_we & !reg_error;
+
+  assign prio_41_wd = reg_wdata[1:0];
+  assign prio_42_we = addr_hit[42] & reg_we & !reg_error;
+
+  assign prio_42_wd = reg_wdata[1:0];
+  assign ie0_0_we = addr_hit[45] & reg_we & !reg_error;
 
   assign ie0_0_e_0_wd = reg_wdata[0];
 
@@ -183893,7 +184281,7 @@ module lowrisc_rv_plic_reg_top (
   assign ie0_0_e_30_wd = reg_wdata[30];
 
   assign ie0_0_e_31_wd = reg_wdata[31];
-  assign ie0_1_we = addr_hit[42] & reg_we & !reg_error;
+  assign ie0_1_we = addr_hit[46] & reg_we & !reg_error;
 
   assign ie0_1_e_32_wd = reg_wdata[0];
 
@@ -183908,17 +184296,25 @@ module lowrisc_rv_plic_reg_top (
   assign ie0_1_e_37_wd = reg_wdata[5];
 
   assign ie0_1_e_38_wd = reg_wdata[6];
-  assign threshold0_we = addr_hit[43] & reg_we & !reg_error;
+
+  assign ie0_1_e_39_wd = reg_wdata[7];
+
+  assign ie0_1_e_40_wd = reg_wdata[8];
+
+  assign ie0_1_e_41_wd = reg_wdata[9];
+
+  assign ie0_1_e_42_wd = reg_wdata[10];
+  assign threshold0_we = addr_hit[47] & reg_we & !reg_error;
 
   assign threshold0_wd = reg_wdata[1:0];
-  assign cc0_re = addr_hit[44] & reg_re & !reg_error;
-  assign cc0_we = addr_hit[44] & reg_we & !reg_error;
+  assign cc0_re = addr_hit[48] & reg_re & !reg_error;
+  assign cc0_we = addr_hit[48] & reg_we & !reg_error;
 
   assign cc0_wd = reg_wdata[5:0];
-  assign msip0_we = addr_hit[45] & reg_we & !reg_error;
+  assign msip0_we = addr_hit[49] & reg_we & !reg_error;
 
   assign msip0_wd = reg_wdata[0];
-  assign alert_test_we = addr_hit[46] & reg_we & !reg_error;
+  assign alert_test_we = addr_hit[50] & reg_we & !reg_error;
 
   assign alert_test_wd = reg_wdata[0];
 
@@ -183963,14 +184359,18 @@ module lowrisc_rv_plic_reg_top (
     reg_we_check[36] = prio_36_we;
     reg_we_check[37] = prio_37_we;
     reg_we_check[38] = prio_38_we;
-    reg_we_check[39] = 1'b0;
-    reg_we_check[40] = 1'b0;
-    reg_we_check[41] = ie0_0_we;
-    reg_we_check[42] = ie0_1_we;
-    reg_we_check[43] = threshold0_we;
-    reg_we_check[44] = cc0_we;
-    reg_we_check[45] = msip0_we;
-    reg_we_check[46] = alert_test_we;
+    reg_we_check[39] = prio_39_we;
+    reg_we_check[40] = prio_40_we;
+    reg_we_check[41] = prio_41_we;
+    reg_we_check[42] = prio_42_we;
+    reg_we_check[43] = 1'b0;
+    reg_we_check[44] = 1'b0;
+    reg_we_check[45] = ie0_0_we;
+    reg_we_check[46] = ie0_1_we;
+    reg_we_check[47] = threshold0_we;
+    reg_we_check[48] = cc0_we;
+    reg_we_check[49] = msip0_we;
+    reg_we_check[50] = alert_test_we;
   end
 
   // Read data return
@@ -184134,6 +184534,22 @@ module lowrisc_rv_plic_reg_top (
       end
 
       addr_hit[39]: begin
+        reg_rdata_next[1:0] = prio_39_qs;
+      end
+
+      addr_hit[40]: begin
+        reg_rdata_next[1:0] = prio_40_qs;
+      end
+
+      addr_hit[41]: begin
+        reg_rdata_next[1:0] = prio_41_qs;
+      end
+
+      addr_hit[42]: begin
+        reg_rdata_next[1:0] = prio_42_qs;
+      end
+
+      addr_hit[43]: begin
         reg_rdata_next[0] = ip_0_p_0_qs;
         reg_rdata_next[1] = ip_0_p_1_qs;
         reg_rdata_next[2] = ip_0_p_2_qs;
@@ -184168,7 +184584,7 @@ module lowrisc_rv_plic_reg_top (
         reg_rdata_next[31] = ip_0_p_31_qs;
       end
 
-      addr_hit[40]: begin
+      addr_hit[44]: begin
         reg_rdata_next[0] = ip_1_p_32_qs;
         reg_rdata_next[1] = ip_1_p_33_qs;
         reg_rdata_next[2] = ip_1_p_34_qs;
@@ -184176,9 +184592,13 @@ module lowrisc_rv_plic_reg_top (
         reg_rdata_next[4] = ip_1_p_36_qs;
         reg_rdata_next[5] = ip_1_p_37_qs;
         reg_rdata_next[6] = ip_1_p_38_qs;
+        reg_rdata_next[7] = ip_1_p_39_qs;
+        reg_rdata_next[8] = ip_1_p_40_qs;
+        reg_rdata_next[9] = ip_1_p_41_qs;
+        reg_rdata_next[10] = ip_1_p_42_qs;
       end
 
-      addr_hit[41]: begin
+      addr_hit[45]: begin
         reg_rdata_next[0] = ie0_0_e_0_qs;
         reg_rdata_next[1] = ie0_0_e_1_qs;
         reg_rdata_next[2] = ie0_0_e_2_qs;
@@ -184213,7 +184633,7 @@ module lowrisc_rv_plic_reg_top (
         reg_rdata_next[31] = ie0_0_e_31_qs;
       end
 
-      addr_hit[42]: begin
+      addr_hit[46]: begin
         reg_rdata_next[0] = ie0_1_e_32_qs;
         reg_rdata_next[1] = ie0_1_e_33_qs;
         reg_rdata_next[2] = ie0_1_e_34_qs;
@@ -184221,21 +184641,25 @@ module lowrisc_rv_plic_reg_top (
         reg_rdata_next[4] = ie0_1_e_36_qs;
         reg_rdata_next[5] = ie0_1_e_37_qs;
         reg_rdata_next[6] = ie0_1_e_38_qs;
+        reg_rdata_next[7] = ie0_1_e_39_qs;
+        reg_rdata_next[8] = ie0_1_e_40_qs;
+        reg_rdata_next[9] = ie0_1_e_41_qs;
+        reg_rdata_next[10] = ie0_1_e_42_qs;
       end
 
-      addr_hit[43]: begin
+      addr_hit[47]: begin
         reg_rdata_next[1:0] = threshold0_qs;
       end
 
-      addr_hit[44]: begin
+      addr_hit[48]: begin
         reg_rdata_next[5:0] = cc0_qs;
       end
 
-      addr_hit[45]: begin
+      addr_hit[49]: begin
         reg_rdata_next[0] = msip0_qs;
       end
 
-      addr_hit[46]: begin
+      addr_hit[50]: begin
         reg_rdata_next[0] = '0;
       end
 
@@ -184702,11 +185126,15 @@ module lowrisc_rv_plic import lowrisc_rv_plic_reg_pkg::*; #(
   assign prio[36] = reg2hw.prio[36].q;
   assign prio[37] = reg2hw.prio[37].q;
   assign prio[38] = reg2hw.prio[38].q;
+  assign prio[39] = reg2hw.prio[39].q;
+  assign prio[40] = reg2hw.prio[40].q;
+  assign prio[41] = reg2hw.prio[41].q;
+  assign prio[42] = reg2hw.prio[42].q;
 
   //////////////////////
   // Interrupt Enable //
   //////////////////////
-  for (genvar s = 0; s < 39; s++) begin : gen_ie0
+  for (genvar s = 0; s < 43; s++) begin : gen_ie0
     assign ie[0][s] = reg2hw.ie0[s].q;
   end
 
@@ -184732,7 +185160,7 @@ module lowrisc_rv_plic import lowrisc_rv_plic_reg_pkg::*; #(
   ////////
   // IP //
   ////////
-  for (genvar s = 0; s < 39; s++) begin : gen_ip
+  for (genvar s = 0; s < 43; s++) begin : gen_ip
     assign hw2reg.ip[s].de = 1'b1; // Always write
     assign hw2reg.ip[s].d  = ip[s];
   end
@@ -282628,6 +283056,10 @@ module lowrisc_top_peppermint #(
   input  lowrisc_prim_mubi_pkg::mubi4_t     [lowrisc_top_peppermint_pkg::NIncomingLpgsSoc-1:0]   incoming_lpg_cg_en_soc_i,
   input  lowrisc_prim_mubi_pkg::mubi4_t     [lowrisc_top_peppermint_pkg::NIncomingLpgsSoc-1:0]   incoming_lpg_rst_en_soc_i,
 
+
+  // Incoming interrupt for group soc
+  input logic [lowrisc_top_peppermint_pkg::NIncomingInterruptsSoc-1:0] incoming_interrupt_soc_i,
+
   // Inter-module Signal External type
   input  logic       wakeup_main_i,
   output logic       es_rng_enable_o,
@@ -282823,6 +283255,8 @@ module lowrisc_top_peppermint #(
 
     .alert_tx_o(alert_tx_pd_main),
     .alert_rx_i(alert_rx_pd_main),
+    // Incoming interrupt for group soc
+    .incoming_interrupt_soc_i(incoming_interrupt_soc_i),
 
     // Ports to and from other power domains (auto-generated)
     .pwrmgr_pwr_otp_req_i       (pwrmgr_pwr_otp_req       ),
@@ -283404,6 +283838,8 @@ module lowrisc_peppermint_pd_main #(
 
   output lowrisc_lc_ctrl_pkg::lc_tx_t lc_ctrl_lc_nvm_debug_en_o,
   output lowrisc_lc_ctrl_pkg::lc_tx_t lc_ctrl_lc_cpu_en_o,
+  // Incoming interrupt of group soc
+  input logic [lowrisc_top_peppermint_pkg::NIncomingInterruptsSoc-1:0] incoming_interrupt_soc_i,
   // Interrupts from power domain Aon
   input  logic [5:0] intr_vector_pd_aon_i,
 
@@ -283451,7 +283887,7 @@ module lowrisc_peppermint_pd_main #(
   // Signals
 
 
-  logic [38:0] intr_vector;
+  logic [42:0] intr_vector;
   // Interrupt source list
   logic intr_otp_ctrl_otp_operation_done;
   logic intr_otp_ctrl_otp_error;
@@ -284611,44 +285047,45 @@ module lowrisc_peppermint_pd_main #(
 
   // Interrupt assignments
   assign intr_vector = {
-    intr_mbx1_mbx_error,                          // ID 38
-    intr_mbx1_mbx_abort,                          // ID 37
-    intr_mbx1_mbx_ready,                          // ID 36
-    intr_mbx0_mbx_error,                          // ID 35
-    intr_mbx0_mbx_abort,                          // ID 34
-    intr_mbx0_mbx_ready,                          // ID 33
-    intr_dma_dma_error,                           // ID 32
-    intr_dma_dma_chunk_done,                      // ID 31
-    intr_dma_dma_done,                            // ID 30
-    intr_edn1_edn_fatal_err,                      // ID 29
-    intr_edn1_edn_cmd_req_done,                   // ID 28
-    intr_edn0_edn_fatal_err,                      // ID 27
-    intr_edn0_edn_cmd_req_done,                   // ID 26
-    intr_entropy_src_es_fatal_err,                // ID 25
-    intr_entropy_src_es_observe_fifo_ready,       // ID 24
-    intr_entropy_src_es_health_test_failed,       // ID 23
-    intr_entropy_src_es_entropy_valid,            // ID 22
-    intr_csrng_cs_fatal_err,                      // ID 21
-    intr_csrng_cs_hw_inst_exc,                    // ID 20
-    intr_csrng_cs_entropy_req,                    // ID 19
-    intr_csrng_cs_cmd_req_done,                   // ID 18
-    intr_keymgr_dpe_op_done,                      // ID 17
-    intr_otbn_done,                               // ID 16
-    intr_kmac_kmac_err,                           // ID 15
-    intr_kmac_fifo_empty,                         // ID 14
-    intr_kmac_kmac_done,                          // ID 13
-    intr_hmac_hmac_err,                           // ID 12
-    intr_hmac_fifo_empty,                         // ID 11
-    intr_hmac_hmac_done,                          // ID 10
-    intr_rv_timer_timer_expired_hart0_timer0,     // ID 9
-    intr_otp_ctrl_otp_error,                      // ID 8
-    intr_otp_ctrl_otp_operation_done,             // ID 7
-    intr_vector_pd_aon_i[5],                      // ID 6 (rv_timer_aon_timer_expired_hart0_timer0)
-    intr_vector_pd_aon_i[4],                      // ID 5 (alert_handler_classd)
-    intr_vector_pd_aon_i[3],                      // ID 4 (alert_handler_classc)
-    intr_vector_pd_aon_i[2],                      // ID 3 (alert_handler_classb)
-    intr_vector_pd_aon_i[1],                      // ID 2 (alert_handler_classa)
-    intr_vector_pd_aon_i[0],                      // ID 1 (pwrmgr_wakeup)
+    incoming_interrupt_soc_i,                                     // IDs [39 +: 4]
+    intr_mbx1_mbx_error,                                          // ID 38
+    intr_mbx1_mbx_abort,                                          // ID 37
+    intr_mbx1_mbx_ready,                                          // ID 36
+    intr_mbx0_mbx_error,                                          // ID 35
+    intr_mbx0_mbx_abort,                                          // ID 34
+    intr_mbx0_mbx_ready,                                          // ID 33
+    intr_dma_dma_error,                                           // ID 32
+    intr_dma_dma_chunk_done,                                      // ID 31
+    intr_dma_dma_done,                                            // ID 30
+    intr_edn1_edn_fatal_err,                                      // ID 29
+    intr_edn1_edn_cmd_req_done,                                   // ID 28
+    intr_edn0_edn_fatal_err,                                      // ID 27
+    intr_edn0_edn_cmd_req_done,                                   // ID 26
+    intr_entropy_src_es_fatal_err,                                // ID 25
+    intr_entropy_src_es_observe_fifo_ready,                       // ID 24
+    intr_entropy_src_es_health_test_failed,                       // ID 23
+    intr_entropy_src_es_entropy_valid,                            // ID 22
+    intr_csrng_cs_fatal_err,                                      // ID 21
+    intr_csrng_cs_hw_inst_exc,                                    // ID 20
+    intr_csrng_cs_entropy_req,                                    // ID 19
+    intr_csrng_cs_cmd_req_done,                                   // ID 18
+    intr_keymgr_dpe_op_done,                                      // ID 17
+    intr_otbn_done,                                               // ID 16
+    intr_kmac_kmac_err,                                           // ID 15
+    intr_kmac_fifo_empty,                                         // ID 14
+    intr_kmac_kmac_done,                                          // ID 13
+    intr_hmac_hmac_err,                                           // ID 12
+    intr_hmac_fifo_empty,                                         // ID 11
+    intr_hmac_hmac_done,                                          // ID 10
+    intr_rv_timer_timer_expired_hart0_timer0,                     // ID 9
+    intr_otp_ctrl_otp_error,                                      // ID 8
+    intr_otp_ctrl_otp_operation_done,                             // ID 7
+    intr_vector_pd_aon_i[5],                                      // ID 6 (rv_timer_aon_timer_expired_hart0_timer0)
+    intr_vector_pd_aon_i[4],                                      // ID 5 (alert_handler_classd)
+    intr_vector_pd_aon_i[3],                                      // ID 4 (alert_handler_classc)
+    intr_vector_pd_aon_i[2],                                      // ID 3 (alert_handler_classb)
+    intr_vector_pd_aon_i[1],                                      // ID 2 (alert_handler_classa)
+    intr_vector_pd_aon_i[0],                                      // ID 1 (pwrmgr_wakeup)
     1'b0 // ID 0 is a special case and tied to zero.
   };
 

@@ -12,7 +12,7 @@
 // ahb_bridge's AHB egress (manager) and ingress (subordinate) ports to the
 // wider SoC, the debug TL-UL window (still raw TL, to be fronted by a bridge
 // later), the mailbox DOE interrupts, the noise source interface, the
-// incoming SoC alerts, the debug policy bus, and the SoC-side
+// incoming SoC alerts and interrupts, the debug policy bus, and the SoC-side
 // power-handshake signals (main power domain request, wakeup request). DMA's
 // SYS port, the low-speed IO triggers and pwrmgr's off-chip reset requests
 // have no target in this integration and are tied off internally (see
@@ -84,6 +84,9 @@ module chip_${top["name"]}_${target["name"]} (
   output prim_alert_pkg::alert_rx_t [top_${top["name"]}_pkg::NIncomingAlertsSoc-1:0] incoming_alert_soc_rx,
   input  prim_mubi_pkg::mubi4_t     [top_${top["name"]}_pkg::NIncomingLpgsSoc-1:0]   incoming_lpg_cg_en_soc,
   input  prim_mubi_pkg::mubi4_t     [top_${top["name"]}_pkg::NIncomingLpgsSoc-1:0]   incoming_lpg_rst_en_soc,
+
+  // Interrupts from the wider SoC.
+  input  logic [top_${top["name"]}_pkg::NIncomingInterruptsSoc-1:0] incoming_interrupt_soc,
 
   // Main power domain request to the SoC's power manager.
   output logic power_main_req_o,

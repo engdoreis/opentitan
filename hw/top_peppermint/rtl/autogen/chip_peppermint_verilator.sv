@@ -12,7 +12,7 @@
 // ahb_bridge's AHB egress (manager) and ingress (subordinate) ports to the
 // wider SoC, the debug TL-UL window (still raw TL, to be fronted by a bridge
 // later), the mailbox DOE interrupts, the noise source interface, the
-// incoming SoC alerts, the debug policy bus, and the SoC-side
+// incoming SoC alerts and interrupts, the debug policy bus, and the SoC-side
 // power-handshake signals (main power domain request, wakeup request). DMA's
 // SYS port, the low-speed IO triggers and pwrmgr's off-chip reset requests
 // have no target in this integration and are tied off internally (see
@@ -83,6 +83,9 @@ module chip_peppermint_verilator (
   output prim_alert_pkg::alert_rx_t [top_peppermint_pkg::NIncomingAlertsSoc-1:0] incoming_alert_soc_rx,
   input  prim_mubi_pkg::mubi4_t     [top_peppermint_pkg::NIncomingLpgsSoc-1:0]   incoming_lpg_cg_en_soc,
   input  prim_mubi_pkg::mubi4_t     [top_peppermint_pkg::NIncomingLpgsSoc-1:0]   incoming_lpg_rst_en_soc,
+
+  // Interrupts from the wider SoC.
+  input  logic [top_peppermint_pkg::NIncomingInterruptsSoc-1:0] incoming_interrupt_soc,
 
   // Main power domain request to the SoC's power manager.
   output logic power_main_req_o,
@@ -195,6 +198,9 @@ module chip_peppermint_verilator (
     .incoming_alert_soc_rx_o(incoming_alert_soc_rx),
     .incoming_lpg_cg_en_soc_i(incoming_lpg_cg_en_soc),
     .incoming_lpg_rst_en_soc_i(incoming_lpg_rst_en_soc),
+
+    // Incoming interrupts for group soc
+    .incoming_interrupt_soc_i(incoming_interrupt_soc),
 
     // Regular ports (auto-generated)
     .wakeup_main_i               (wakeup_main          ),

@@ -3343,6 +3343,10 @@
       [
         rv_core_ibex
       ]
+      incoming_interrupt:
+      [
+        incoming_interrupts_soc.hjson
+      ]
       clock_connections:
       {
         clk_i: clk_main_i
@@ -9335,7 +9339,40 @@
       }
     ]
   }
-  incoming_interrupt: {}
+  incoming_interrupt:
+  {
+    soc:
+    [
+      {
+        name: irq_0
+        module_name: soc
+        domain: Main
+        intr_type: Status
+        default_val: "false"
+      }
+      {
+        name: irq_1
+        module_name: soc
+        domain: Main
+        intr_type: Status
+        default_val: "false"
+      }
+      {
+        name: irq_2
+        module_name: soc
+        domain: Main
+        intr_type: Status
+        default_val: "false"
+      }
+      {
+        name: irq_3
+        module_name: soc
+        domain: Main
+        intr_type: Status
+        default_val: "false"
+      }
+    ]
+  }
   exported_clks: {}
   wakeups:
   [
@@ -10353,6 +10390,54 @@
       plic: rv_plic
       outgoing: false
     }
+    {
+      name: soc_irq_0
+      module_name: soc
+      domain: Main
+      intr_type: Status
+      default_val: "false"
+      desc: soc irq_0 incoming interrupt
+      incoming: true
+      width: 1
+      plic: rv_plic
+      outgoing: false
+    }
+    {
+      name: soc_irq_1
+      module_name: soc
+      domain: Main
+      intr_type: Status
+      default_val: "false"
+      desc: soc irq_1 incoming interrupt
+      incoming: true
+      width: 1
+      plic: rv_plic
+      outgoing: false
+    }
+    {
+      name: soc_irq_2
+      module_name: soc
+      domain: Main
+      intr_type: Status
+      default_val: "false"
+      desc: soc irq_2 incoming interrupt
+      incoming: true
+      width: 1
+      plic: rv_plic
+      outgoing: false
+    }
+    {
+      name: soc_irq_3
+      module_name: soc
+      domain: Main
+      intr_type: Status
+      default_val: "false"
+      desc: soc irq_3 incoming interrupt
+      incoming: true
+      width: 1
+      plic: rv_plic
+      outgoing: false
+    }
   ]
   outgoing_interrupt: {}
   plic_info:
@@ -10360,11 +10445,11 @@
     rv_plic:
     {
       domain: Main
-      count_tot: 39
+      count_tot: 43
       count_pd:
       {
         Aon: 6
-        Main: 32
+        Main: 36
       }
     }
   }

@@ -648,7 +648,11 @@ typedef enum top_peppermint_plic_irq_id {
   kTopPeppermintPlicIrqIdMbx1MbxReady = 36, /**< mbx1_mbx_ready */
   kTopPeppermintPlicIrqIdMbx1MbxAbort = 37, /**< mbx1_mbx_abort */
   kTopPeppermintPlicIrqIdMbx1MbxError = 38, /**< mbx1_mbx_error */
-  kTopPeppermintPlicIrqIdLast = 38, /**< \internal The Last Valid Interrupt ID. */
+  kTopPeppermintPlicIrqIdSocIrq0 = 39, /**< soc_irq_0 */
+  kTopPeppermintPlicIrqIdSocIrq1 = 40, /**< soc_irq_1 */
+  kTopPeppermintPlicIrqIdSocIrq2 = 41, /**< soc_irq_2 */
+  kTopPeppermintPlicIrqIdSocIrq3 = 42, /**< soc_irq_3 */
+  kTopPeppermintPlicIrqIdLast = 42, /**< \internal The Last Valid Interrupt ID. */
 } top_peppermint_plic_irq_id_t;
 
 /**
@@ -658,7 +662,7 @@ typedef enum top_peppermint_plic_irq_id {
  * `top_peppermint_plic_peripheral_t`.
  */
 extern const top_peppermint_plic_peripheral_t
-    top_peppermint_plic_interrupt_for_peripheral[39];
+    top_peppermint_plic_interrupt_for_peripheral[43];
 
 /**
  * PLIC Interrupt Target.

@@ -76,7 +76,7 @@ const top_peppermint_alert_peripheral_t
  * `top_peppermint_plic_peripheral_t`.
  */
 const top_peppermint_plic_peripheral_t
-    top_peppermint_plic_interrupt_for_peripheral[39] = {
+    top_peppermint_plic_interrupt_for_peripheral[43] = {
   [kTopPeppermintPlicIrqIdNone] = kTopPeppermintPlicPeripheralUnknown,
   [kTopPeppermintPlicIrqIdPwrmgrWakeup] = kTopPeppermintPlicPeripheralPwrmgr,
   [kTopPeppermintPlicIrqIdAlertHandlerClassa] = kTopPeppermintPlicPeripheralAlertHandler,
@@ -116,4 +116,8 @@ const top_peppermint_plic_peripheral_t
   [kTopPeppermintPlicIrqIdMbx1MbxReady] = kTopPeppermintPlicPeripheralMbx1,
   [kTopPeppermintPlicIrqIdMbx1MbxAbort] = kTopPeppermintPlicPeripheralMbx1,
   [kTopPeppermintPlicIrqIdMbx1MbxError] = kTopPeppermintPlicPeripheralMbx1,
+  [kTopPeppermintPlicIrqIdSocIrq0] = kTopPeppermintPlicPeripheralUnknown,
+  [kTopPeppermintPlicIrqIdSocIrq1] = kTopPeppermintPlicPeripheralUnknown,
+  [kTopPeppermintPlicIrqIdSocIrq2] = kTopPeppermintPlicPeripheralUnknown,
+  [kTopPeppermintPlicIrqIdSocIrq3] = kTopPeppermintPlicPeripheralUnknown,
 };

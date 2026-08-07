@@ -13,8 +13,8 @@
   max_namelen = max(len(irq["name"]) for irq in top["interrupt"]
     if not(irq['incoming'] or irq['plic'] != plic))
   if plic == default_plic and top['incoming_interrupt']:
-    max_namelen = max(max_namelen +
-      [len(irq["irq_group"]) for irq, _ in top["incoming_interrupt"]])
+    max_namelen = max([max_namelen] +
+      [len(irq_group) for irq_group in top["incoming_interrupt"]])
     max_namelen += 22
   else:
     max_namelen += 6
@@ -26,11 +26,11 @@
 <%
   base -= len(irqs)
   if len(irqs) > 1:
-    intr_comment = f"// IDs [{base} +: {intr['width']}]"
+    intr_comment = f"// IDs [{base} +: {len(irqs)}]"
   else:
     intr_comment = f"// ID {base}"
 %>\
-    ${lib.ljust(f"incoming_interrupt_${irq_group}_i,", max_namelen)} ${intr_comment}
+    ${lib.ljust(f"incoming_interrupt_{irq_group}_i,", max_namelen)} ${intr_comment}
   %   endfor
   % endif
   % for intr in top["interrupt"][::-1]:

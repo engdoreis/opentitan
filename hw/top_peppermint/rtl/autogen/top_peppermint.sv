@@ -140,6 +140,10 @@ module top_peppermint #(
   input  prim_mubi_pkg::mubi4_t     [top_peppermint_pkg::NIncomingLpgsSoc-1:0]   incoming_lpg_cg_en_soc_i,
   input  prim_mubi_pkg::mubi4_t     [top_peppermint_pkg::NIncomingLpgsSoc-1:0]   incoming_lpg_rst_en_soc_i,
 
+
+  // Incoming interrupt for group soc
+  input logic [top_peppermint_pkg::NIncomingInterruptsSoc-1:0] incoming_interrupt_soc_i,
+
   // Inter-module Signal External type
   input  logic       wakeup_main_i,
   output logic       es_rng_enable_o,
@@ -335,6 +339,8 @@ module top_peppermint #(
 
     .alert_tx_o(alert_tx_pd_main),
     .alert_rx_i(alert_rx_pd_main),
+    // Incoming interrupt for group soc
+    .incoming_interrupt_soc_i(incoming_interrupt_soc_i),
 
     // Ports to and from other power domains (auto-generated)
     .pwrmgr_pwr_otp_req_i       (pwrmgr_pwr_otp_req       ),

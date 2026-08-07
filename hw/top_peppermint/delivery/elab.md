@@ -27,6 +27,12 @@ vlogan -sverilog -full64 \
 vcs -full64 lowrisc_top_peppermint_wrapper -o simv.lowrisc_top_peppermint_wrapper
 ```
 
+In the case of `undefined reference to '__nptl_change_stack_perm@GLIBC_PRIVATE'`:
+```sh
+vcs -full64 -LDFLAGS "-Wl,--allow-shlib-undefined" \
+    lowrisc_top_peppermint_wrapper -o simv.lowrisc_top_peppermint_wrapper
+```
+
 
 ## Vivado
 

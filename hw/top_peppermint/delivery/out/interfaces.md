@@ -234,6 +234,22 @@ The low-power group (LPG) inputs tell the alert handler when alert senders in LP
 If the alert senders in an LPG are permanently clocked and out of reset, tie these signals to `MuBi4False`.
 
 
+## Incoming interrupts from the SoC
+
+| Port | Type |
+|---|---|
+| `incoming_interrupt_soc_i` | `logic [NIncomingInterruptsSoc-1:0]` |
+
+This signal is synchronous to `clk_main_i` and is reset with `rst_main_no`.
+
+Peppermint is currently configured to support four interrupts from the SoC (`NIncomingInterruptsSoc = 4`).
+Different values for this internal parameter can be requested from the supplier.
+
+Each line is level-sensitive and active-high; it must be held asserted for as long as the condition it reports is pending, and deasserted once handled.
+
+These incoming interrupts don't provide any wake-up functionality.
+
+
 ## Life cycle function and SoC control
 
 | Port | Type |

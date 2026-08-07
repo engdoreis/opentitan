@@ -31,6 +31,11 @@
     .incoming_lpg_cg_en_${alert_group}_i(incoming_lpg_cg_en_${alert_group}),
     .incoming_lpg_rst_en_${alert_group}_i(incoming_lpg_rst_en_${alert_group}),
 % endfor
+% for irq_group in top['incoming_interrupt'].keys():
+
+    // Incoming interrupts for group ${irq_group}
+    .incoming_interrupt_${irq_group}_i(incoming_interrupt_${irq_group}),
+% endfor
 
 % if feature_info["has_pinmux"]:
 % if cio_info["num_mio_pads"] != 0:

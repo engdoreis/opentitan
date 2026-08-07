@@ -29,10 +29,12 @@
 % endif
 % endif\
 
+% if lib.find_module(top["module"], "rv_plic", domain=domain):
 % for irq_group, irqs in top['incoming_interrupt'].items():
   // Incoming interrupt of group ${irq_group}
-  input logic [${len(irqs)-1}:0] incoming_interrupt_${irq_group}_i,
-% endfor\
+  input logic [top_${top["name"]}_pkg::NIncomingInterrupts${irq_group.capitalize()}-1:0] incoming_interrupt_${irq_group}_i,
+% endfor
+% endif\
 
 % for irq_group, irqs in top["outgoing_interrupt"].items():
   // Outgoing interrupt of group ${irq_group}

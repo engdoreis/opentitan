@@ -156,3 +156,10 @@
     .incoming_lpg_rst_en_${alert_group}_i(incoming_lpg_rst_en_${alert_group}_i),
 % endfor
 % endif\
+
+% if lib.find_module(top["module"], "rv_plic", domain=domain):
+% for irq_group in top['incoming_interrupt'].keys():
+    // Incoming interrupt for group ${irq_group}
+    .incoming_interrupt_${irq_group}_i(incoming_interrupt_${irq_group}_i),
+% endfor
+% endif\

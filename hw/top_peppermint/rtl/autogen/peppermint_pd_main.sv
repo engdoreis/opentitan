@@ -156,6 +156,8 @@ module peppermint_pd_main #(
 
   output lc_ctrl_pkg::lc_tx_t lc_ctrl_lc_nvm_debug_en_o,
   output lc_ctrl_pkg::lc_tx_t lc_ctrl_lc_cpu_en_o,
+  // Incoming interrupt of group soc
+  input logic [top_peppermint_pkg::NIncomingInterruptsSoc-1:0] incoming_interrupt_soc_i,
   // Interrupts from power domain Aon
   input  logic [5:0] intr_vector_pd_aon_i,
 
@@ -203,7 +205,7 @@ module peppermint_pd_main #(
   // Signals
 
 
-  logic [38:0] intr_vector;
+  logic [42:0] intr_vector;
   // Interrupt source list
   logic intr_otp_ctrl_otp_operation_done;
   logic intr_otp_ctrl_otp_error;
@@ -1363,44 +1365,45 @@ module peppermint_pd_main #(
 
   // Interrupt assignments
   assign intr_vector = {
-    intr_mbx1_mbx_error,                          // ID 38
-    intr_mbx1_mbx_abort,                          // ID 37
-    intr_mbx1_mbx_ready,                          // ID 36
-    intr_mbx0_mbx_error,                          // ID 35
-    intr_mbx0_mbx_abort,                          // ID 34
-    intr_mbx0_mbx_ready,                          // ID 33
-    intr_dma_dma_error,                           // ID 32
-    intr_dma_dma_chunk_done,                      // ID 31
-    intr_dma_dma_done,                            // ID 30
-    intr_edn1_edn_fatal_err,                      // ID 29
-    intr_edn1_edn_cmd_req_done,                   // ID 28
-    intr_edn0_edn_fatal_err,                      // ID 27
-    intr_edn0_edn_cmd_req_done,                   // ID 26
-    intr_entropy_src_es_fatal_err,                // ID 25
-    intr_entropy_src_es_observe_fifo_ready,       // ID 24
-    intr_entropy_src_es_health_test_failed,       // ID 23
-    intr_entropy_src_es_entropy_valid,            // ID 22
-    intr_csrng_cs_fatal_err,                      // ID 21
-    intr_csrng_cs_hw_inst_exc,                    // ID 20
-    intr_csrng_cs_entropy_req,                    // ID 19
-    intr_csrng_cs_cmd_req_done,                   // ID 18
-    intr_keymgr_dpe_op_done,                      // ID 17
-    intr_otbn_done,                               // ID 16
-    intr_kmac_kmac_err,                           // ID 15
-    intr_kmac_fifo_empty,                         // ID 14
-    intr_kmac_kmac_done,                          // ID 13
-    intr_hmac_hmac_err,                           // ID 12
-    intr_hmac_fifo_empty,                         // ID 11
-    intr_hmac_hmac_done,                          // ID 10
-    intr_rv_timer_timer_expired_hart0_timer0,     // ID 9
-    intr_otp_ctrl_otp_error,                      // ID 8
-    intr_otp_ctrl_otp_operation_done,             // ID 7
-    intr_vector_pd_aon_i[5],                      // ID 6 (rv_timer_aon_timer_expired_hart0_timer0)
-    intr_vector_pd_aon_i[4],                      // ID 5 (alert_handler_classd)
-    intr_vector_pd_aon_i[3],                      // ID 4 (alert_handler_classc)
-    intr_vector_pd_aon_i[2],                      // ID 3 (alert_handler_classb)
-    intr_vector_pd_aon_i[1],                      // ID 2 (alert_handler_classa)
-    intr_vector_pd_aon_i[0],                      // ID 1 (pwrmgr_wakeup)
+    incoming_interrupt_soc_i,                                     // IDs [39 +: 4]
+    intr_mbx1_mbx_error,                                          // ID 38
+    intr_mbx1_mbx_abort,                                          // ID 37
+    intr_mbx1_mbx_ready,                                          // ID 36
+    intr_mbx0_mbx_error,                                          // ID 35
+    intr_mbx0_mbx_abort,                                          // ID 34
+    intr_mbx0_mbx_ready,                                          // ID 33
+    intr_dma_dma_error,                                           // ID 32
+    intr_dma_dma_chunk_done,                                      // ID 31
+    intr_dma_dma_done,                                            // ID 30
+    intr_edn1_edn_fatal_err,                                      // ID 29
+    intr_edn1_edn_cmd_req_done,                                   // ID 28
+    intr_edn0_edn_fatal_err,                                      // ID 27
+    intr_edn0_edn_cmd_req_done,                                   // ID 26
+    intr_entropy_src_es_fatal_err,                                // ID 25
+    intr_entropy_src_es_observe_fifo_ready,                       // ID 24
+    intr_entropy_src_es_health_test_failed,                       // ID 23
+    intr_entropy_src_es_entropy_valid,                            // ID 22
+    intr_csrng_cs_fatal_err,                                      // ID 21
+    intr_csrng_cs_hw_inst_exc,                                    // ID 20
+    intr_csrng_cs_entropy_req,                                    // ID 19
+    intr_csrng_cs_cmd_req_done,                                   // ID 18
+    intr_keymgr_dpe_op_done,                                      // ID 17
+    intr_otbn_done,                                               // ID 16
+    intr_kmac_kmac_err,                                           // ID 15
+    intr_kmac_fifo_empty,                                         // ID 14
+    intr_kmac_kmac_done,                                          // ID 13
+    intr_hmac_hmac_err,                                           // ID 12
+    intr_hmac_fifo_empty,                                         // ID 11
+    intr_hmac_hmac_done,                                          // ID 10
+    intr_rv_timer_timer_expired_hart0_timer0,                     // ID 9
+    intr_otp_ctrl_otp_error,                                      // ID 8
+    intr_otp_ctrl_otp_operation_done,                             // ID 7
+    intr_vector_pd_aon_i[5],                                      // ID 6 (rv_timer_aon_timer_expired_hart0_timer0)
+    intr_vector_pd_aon_i[4],                                      // ID 5 (alert_handler_classd)
+    intr_vector_pd_aon_i[3],                                      // ID 4 (alert_handler_classc)
+    intr_vector_pd_aon_i[2],                                      // ID 3 (alert_handler_classb)
+    intr_vector_pd_aon_i[1],                                      // ID 2 (alert_handler_classa)
+    intr_vector_pd_aon_i[0],                                      // ID 1 (pwrmgr_wakeup)
     1'b0 // ID 0 is a special case and tied to zero.
   };
 

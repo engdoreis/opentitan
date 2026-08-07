@@ -25,6 +25,9 @@ module lowrisc_top_peppermint_wrapper
   input  lowrisc_prim_mubi_pkg::mubi4_t     [lowrisc_top_peppermint_pkg::NIncomingLpgsSoc-1:0]   incoming_lpg_cg_en_soc_i,
   input  lowrisc_prim_mubi_pkg::mubi4_t     [lowrisc_top_peppermint_pkg::NIncomingLpgsSoc-1:0]   incoming_lpg_rst_en_soc_i,
 
+  // Incoming interrupts for group soc
+  input  logic [lowrisc_top_peppermint_pkg::NIncomingInterruptsSoc-1:0] incoming_interrupt_soc_i,
+
   // Inter-module Signal External type
   input  logic       wakeup_main_i,
   output logic       es_rng_enable_o,
@@ -84,6 +87,7 @@ module lowrisc_top_peppermint_wrapper
     .incoming_alert_soc_rx_o      (incoming_alert_soc_rx_o),
     .incoming_lpg_cg_en_soc_i     (incoming_lpg_cg_en_soc_i),
     .incoming_lpg_rst_en_soc_i    (incoming_lpg_rst_en_soc_i),
+    .incoming_interrupt_soc_i     (incoming_interrupt_soc_i),
     .wakeup_main_i                (wakeup_main_i),
     .es_rng_enable_o              (es_rng_enable_o),
     .es_rng_valid_i               (es_rng_valid_i),
