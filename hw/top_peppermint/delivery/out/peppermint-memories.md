@@ -1,4 +1,4 @@
-# Peppermint Memory (SRAM/OTP/ROM) Macros
+# Peppermint Memory (SRAM/OTP/ROM) Macros (Release `Peppermint-1.0-M1-RC2`)
 
 |           Memory Name | Data Size (KiB) | Word Width (bits) | Num Words | Mask Width (bits) | Num Ports | Resp Latency | Internal Ecc |
 | --------------------- | --------------- | ----------------- | --------- | ----------------- | --------- | ------------ | ------------ |
