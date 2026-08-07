@@ -81,11 +81,73 @@ def strip_comments(text):
 # connections among the contexts that allow an unprefixed '{...} pattern.
 # We rewrite them here.
 ASSIGN_PATTERN_PORT_RE = re.compile(r"(\.\w+)\s*\(\s*'\{([^{}]*)\}\s*\)")
+# Rewriting to '0 only works where the formal is packed. An unpacked array
+# takes neither the pattern nor '0, so those ports are driven from a signal
+# declared next to the instance. Every one of them is a prim_arbiter data_i.
+UNPACKED_PATTERN_PORT_RE = re.compile(r"(\.data_i\s*\(\s*)'\{[^{}]*\}(\s*\))")
+ARBITER_N_RE = re.compile(r"\.N\s*\(\s*([^()]*?)\s*\)")
+ARBITER_DW_RE = re.compile(r"\.DW\s*\(\s*([^()]*?)\s*\)")
+# The module name of an arbiter instantiation, which is followed by "#(" --
+# unlike the instance name, which also contains "prim_arbiter".
+ARBITER_HEAD_RE = re.compile(r"(\w*prim_arbiter\w*)\s*#\s*\(")
+INST_NAME_RE = re.compile(r"\)\s*(\w+)\s*\(")
 ZERO_PARAM_RE = re.compile(
     r"(?:^|\n)\s*(?:parameter|localparam)\s+[\w:]+\s+(\w+)\s*=\s*'0\s*;", re.M)
 ZERO_LITERAL_RE = re.compile(r"^(?:'0|\d*'[bB]0+)$")
 DEFAULT_ITEM_RE = re.compile(r"^\s*default\s*:\s*(.+?)\s*$")
 NAME_REF_RE = re.compile(r"^(?:\w+::)?(\w+)$")
+
+
+def arbiter_dw_default(text, module):
+    """The DW default of an arbiter, for instances that do not override it."""
+    m = re.search(r"^module\s+" + re.escape(module)
+                  + r"\b[^;]*?\bparameter\s+int\s+(?:unsigned\s+)?DW\s*=\s*([^,\n]+)",
+                  text, re.M | re.S)
+    if not m:
+        sys.exit(f"error: cannot find the DW default of {module}")
+    return m.group(1).strip()
+
+
+def fix_unpacked_pattern_port_connections(text):
+    """Drive the prim_arbiter `data_i` ports from an intermediate signal.
+
+    See UNPACKED_PATTERN_PORT_RE for why these cannot take '0 like every other
+    connection does. The signal's dimensions come from the N and DW of the
+    instance the connection belongs to, so it matches the formal exactly.
+    """
+    fixed, edits = [], []
+    for m in UNPACKED_PATTERN_PORT_RE.finditer(text):
+        start = max(0, m.start() - 1000)
+        window = text[start:m.start()]
+        heads = list(ARBITER_HEAD_RE.finditer(window))
+        if not heads:
+            sys.exit("error: no arbiter instantiation found for "
+                     f"{m.group(0).strip()} -- resolve by hand")
+        head = heads[-1]
+        params = window[head.end():]
+        sizes = ARBITER_N_RE.findall(params)
+        widths = ARBITER_DW_RE.findall(params)
+        name = INST_NAME_RE.search(params)
+        if len(sizes) != 1 or len(widths) > 1 or not name:
+            sys.exit("error: cannot read the instance of "
+                     f"{m.group(0).strip()} -- resolve by hand")
+
+        size = sizes[0]
+        width = widths[0] if widths else arbiter_dw_default(text, head.group(1))
+        signal = f"{name.group(1)}_data_i_tieoff"
+        line_start = text.rfind("\n", 0, start + head.start()) + 1
+        indent = text[line_start:start + head.start()]
+
+        fixed.append(f"{name.group(1)}: {signal} [{size}] of [{width}-1:0]")
+        edits.append((line_start, line_start,
+                      f"{indent}logic [{width}-1:0] {signal} [{size}];\n"
+                      f"{indent}always_comb {signal} = '{{default: '0}};\n"))
+        edits.append((m.start(), m.end(),
+                      f"{m.group(1)}{signal}{m.group(2)}"))
+
+    for begin, end, replacement in sorted(edits, reverse=True):
+        text = text[:begin] + replacement + text[end:]
+    return text, fixed
 
 
 def fix_assignment_pattern_port_connections(text):
@@ -248,6 +310,13 @@ def main():
 
     with open(args.pickle) as fh:
         text = fh.read()
+
+    text, unpacked_fixes = fix_unpacked_pattern_port_connections(text)
+    if unpacked_fixes:
+        print(f"==> sized {len(unpacked_fixes)} unpacked-array port "
+              "connection(s) explicitly, which '0 cannot drive:")
+        for f in unpacked_fixes:
+            print(f"    {f}")
 
     text, port_fixes = fix_assignment_pattern_port_connections(text)
     if port_fixes:

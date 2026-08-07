@@ -112314,6 +112314,8 @@ module lowrisc_edn_core import lowrisc_edn_pkg::*;
   // packer arbitration
   //--------------------------------------------
 
+  logic [1-1:0] u_prim_arbiter_ppc_packer_arb_data_i_tieoff [NumEndPoints];
+  always_comb u_prim_arbiter_ppc_packer_arb_data_i_tieoff = '{default: '0};
   lowrisc_prim_arbiter_ppc #(
     .EnDataPort(0),    // Ignore data port
     .N(NumEndPoints),  // Number of request ports
@@ -112323,7 +112325,7 @@ module lowrisc_edn_core import lowrisc_edn_pkg::*;
     .rst_ni(rst_ni),
     .req_chk_i(1'b1),
     .req_i(packer_arb_req), // N number of reqs
-    .data_i('0),
+    .data_i(u_prim_arbiter_ppc_packer_arb_data_i_tieoff),
     .gnt_o(packer_arb_gnt), // N number of gnts
     .idx_o(), //NC
     .valid_o(packer_arb_valid),
@@ -192978,6 +192980,8 @@ module lowrisc_csrng_core import lowrisc_csrng_pkg::*; #(
   assign acmd_eop = cmd_arb_eop[cmd_arb_idx_q]; // End-of-Packet
   assign acmd_bus = cmd_arb_bus[cmd_arb_idx_q]; // Actual bus data; content changes with s/m/eop
 
+  logic [1-1:0] u_prim_arbiter_ppc_acmd_data_i_tieoff [NumApps];
+  always_comb u_prim_arbiter_ppc_acmd_data_i_tieoff = '{default: '0};
   lowrisc_prim_arbiter_ppc #(
     .EnDataPort(0),    // Ignore data port
     .N(NumApps),  // Number of request ports
@@ -192987,7 +192991,7 @@ module lowrisc_csrng_core import lowrisc_csrng_pkg::*; #(
     .rst_ni   (rst_ni),
     .req_chk_i(cs_enable_fo[1]),
     .req_i    (cmd_arb_req),
-    .data_i('0),
+    .data_i   (u_prim_arbiter_ppc_acmd_data_i_tieoff),
     .gnt_o    (cmd_arb_gnt),
     .idx_o    (cmd_arb_idx),
     .valid_o  (acmd_avail), // 1 req
@@ -222684,6 +222688,8 @@ module lowrisc_kmac_app
     end
   end
 
+  logic [1-1:0] u_appid_arb_data_i_tieoff [NumAppIntf];
+  always_comb u_appid_arb_data_i_tieoff = '{default: '0};
   lowrisc_prim_arbiter_fixed #(
     .N (NumAppIntf),
     .DW(1),
@@ -222693,7 +222699,7 @@ module lowrisc_kmac_app
     .rst_ni,
 
     .req_i  (app_req_valids),
-    .data_i('0),
+    .data_i (u_appid_arb_data_i_tieoff),
     .gnt_o  (), // not used
     .idx_o  (arb_idx),
 
@@ -278832,6 +278838,8 @@ module lowrisc_otp_ctrl_dai
 
 
 
+  logic [32-1:0] u_part_sel_idx_data_i_tieoff [NumPart];
+  always_comb u_part_sel_idx_data_i_tieoff = '{default: '0};
   lowrisc_prim_arbiter_fixed #(
     .N(NumPart),
     .EnDataPort(0)
@@ -278839,7 +278847,7 @@ module lowrisc_otp_ctrl_dai
     .clk_i,
     .rst_ni,
     .req_i   ( part_sel_oh    ),
-    .data_i('0),
+    .data_i  ( u_part_sel_idx_data_i_tieoff ),
     .gnt_o   (                ), // unused
     .idx_o   ( part_idx       ),
     .valid_o ( part_sel_valid ), // used for detecting OOB addresses
@@ -281071,6 +281079,8 @@ module lowrisc_otp_ctrl
 
 
   logic [NumPartWidth-1:0] tlul_part_idx;
+  logic [32-1:0] u_part_sel_idx_data_i_tieoff [NumPart];
+  always_comb u_part_sel_idx_data_i_tieoff = '{default: '0};
   lowrisc_prim_arbiter_fixed #(
     .N(NumPart),
     .EnDataPort(0)
@@ -281078,7 +281088,7 @@ module lowrisc_otp_ctrl
     .clk_i,
     .rst_ni,
     .req_i   ( tlul_part_sel_oh  ),
-    .data_i('0),
+    .data_i  ( u_part_sel_idx_data_i_tieoff    ),
     .gnt_o   (                   ), // unused
     .idx_o   ( tlul_part_idx     ),
     .valid_o (                   ), // unused
@@ -281574,6 +281584,8 @@ end
   // hence they can share the same EDN interface.
   logic edn_req, edn_ack;
   logic key_edn_req, key_edn_ack;
+  logic [32-1:0] u_edn_arb_data_i_tieoff [2];
+  always_comb u_edn_arb_data_i_tieoff = '{default: '0};
   lowrisc_prim_arbiter_tree #(
     .N(2),
     .EnDataPort(0)
@@ -281582,7 +281594,7 @@ end
     .rst_ni,
     .req_chk_i ( ~lc_escalate_en_any         ),
     .req_i     ( {lfsr_edn_req, key_edn_req} ),
-    .data_i('0),
+    .data_i    ( u_edn_arb_data_i_tieoff              ),
     .gnt_o     ( {lfsr_edn_ack, key_edn_ack} ),
     .idx_o     (                             ), // unused
     .valid_o   ( edn_req                     ),
