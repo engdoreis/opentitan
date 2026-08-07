@@ -87,8 +87,8 @@ sed -i -e 's/“/"/g' -e 's/”/"/g' out/*.sv
 
 Copy the memory macro descriptions:
 ```sh
-cp ../doc/peppermint-memories.toml out
-../../../util/memory_macro_to_md.py out/peppermint-memories.toml
+cp ../doc/memories.toml out
+../../../util/memory_macro_to_md.py out/memories.toml
 ```
 
 ### Tool Versions
