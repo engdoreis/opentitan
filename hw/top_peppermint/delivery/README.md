@@ -95,22 +95,31 @@ cp ../doc/memories.toml out
 * `bender 0.32.1`
 
 
-## Delivery
+## Release
 
 The deliverables land in `out/`.  See [`out/README.md`](out/README.md), which
 ships with them, for what each file contains and the order they must be read
 in.
 
-As the final step, pack them into the archive that gets handed over.  Run this
-from this directory.
+`scripts/create_release.py` turns them into a release.  It stamps the release
+identifier into every file in `out/`, commits that on a release branch, opens a
+pull request, tags the merged commit, packs the archive, and opens a draft
+GitHub release whose notes Claude drafts from the commits since the previous
+release.
 ```sh
-tar -I 'zstd -19 -T0' \
-    -cf lowrisc_top_peppermint_1p0_m1_rc0.tar.zst \
-    --transform 's,^out,lowrisc_top_peppermint_1p0_m1_rc0,' \
-    --owner=0 --group=0 --numeric-owner --sort=name \
-    out
+python3 scripts/create_release.py --version 1.0 --milestone 1 --release-candidate 0
 ```
 
-`--transform` renames `out/` to `lowrisc_top_peppermint_1p0_m1_rc0/` inside the
-archive, so it unpacks into a directory named after the delivery.  The
-remaining flags keep the archive reproducible and free of local uid/gid.
+Drop `--release-candidate` for the final release of a milestone.  The script
+runs as a sequence of named steps and stops for confirmation before each step
+that anyone else can see.  Every step is idempotent, so an interrupted run can
+be resumed with `--from-step`; since waiting for the pull request to be merged
+usually takes longer than one sitting, the second half is normally run on its
+own.
+```sh
+python3 scripts/create_release.py --version 1.0 --milestone 1 --release-candidate 0 \
+    --from-step verify-merge
+```
+
+`--dry-run` prints rather than runs every command that reaches the remote,
+GitHub or the archive, which leaves a release commit to inspect and throw away.
