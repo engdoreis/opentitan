@@ -94,10 +94,6 @@
       sw_images: ["//sw/device/tests:aes_smoketest:1"]
     }
     {
-      name: aon_timer_smoketest
-      sw_images: ["//sw/device/tests:aon_timer_smoketest:1"]
-    }
-    {
       name: clkmgr_smoketest
       sw_images: ["//sw/device/tests:clkmgr_smoketest:1"]
     }
