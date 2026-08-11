@@ -63,7 +63,7 @@ extern "C" {
  * address between #TOP_PEPPERMINT_OTP_CTRL_CORE_BASE_ADDR and
  * `TOP_PEPPERMINT_OTP_CTRL_CORE_BASE_ADDR + TOP_PEPPERMINT_OTP_CTRL_CORE_SIZE_BYTES`.
  */
-#define TOP_PEPPERMINT_OTP_CTRL_CORE_SIZE_BYTES 0x4000u
+#define TOP_PEPPERMINT_OTP_CTRL_CORE_SIZE_BYTES 0x1000u
 
 /**
  * Peripheral base address for prim device on otp_macro in top peppermint.

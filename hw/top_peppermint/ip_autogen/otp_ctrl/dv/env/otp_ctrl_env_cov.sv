@@ -63,8 +63,6 @@ class otp_ctrl_csr_rd_after_alert_cg_wrap;
         ral.creator_sw_cfg_digest[1].get_offset(),
         ral.owner_sw_cfg_digest[0].get_offset(),
         ral.owner_sw_cfg_digest[1].get_offset(),
-        ral.rot_creator_auth_digest[0].get_offset(),
-        ral.rot_creator_auth_digest[1].get_offset(),
         ral.rot_firmware_auth_slot0_digest[0].get_offset(),
         ral.rot_firmware_auth_slot0_digest[1].get_offset(),
         ral.rot_firmware_auth_slot1_digest[0].get_offset(),
@@ -127,8 +125,7 @@ class otp_ctrl_csr_rd_after_alert_cg_wrap;
         ral.err_code[18].get_offset(),
         ral.err_code[19].get_offset(),
         ral.err_code[20].get_offset(),
-        ral.err_code[21].get_offset(),
-        ral.err_code[22].get_offset()
+        ral.err_code[21].get_offset()
       };
     }
   endgroup
@@ -191,22 +188,21 @@ class otp_ctrl_env_cov extends cip_base_env_cov #(.CFG_T(otp_ctrl_env_cfg));
     creator_sw_cfg_lock: coverpoint parts_locked[1];
     owner_sw_cfg_lock: coverpoint parts_locked[2];
     auth_slot_state_lock: coverpoint parts_locked[3];
-    rot_creator_auth_lock: coverpoint parts_locked[4];
-    rot_firmware_auth_slot0_lock: coverpoint parts_locked[5];
-    rot_firmware_auth_slot1_lock: coverpoint parts_locked[6];
-    rot_firmware_auth_slot2_lock: coverpoint parts_locked[7];
-    rot_firmware_auth_slot3_lock: coverpoint parts_locked[8];
-    soc_firmware_auth_slot0_lock: coverpoint parts_locked[9];
-    soc_firmware_auth_slot1_lock: coverpoint parts_locked[10];
-    soc_firmware_auth_slot2_lock: coverpoint parts_locked[11];
-    soc_firmware_auth_slot3_lock: coverpoint parts_locked[12];
-    ext_nvm_lock: coverpoint parts_locked[13];
-    hw_cfg0_lock: coverpoint parts_locked[14];
-    hw_cfg1_lock: coverpoint parts_locked[15];
-    secret0_lock: coverpoint parts_locked[16];
-    secret1_lock: coverpoint parts_locked[17];
-    secret2_lock: coverpoint parts_locked[18];
-    secret3_lock: coverpoint parts_locked[19];
+    rot_firmware_auth_slot0_lock: coverpoint parts_locked[4];
+    rot_firmware_auth_slot1_lock: coverpoint parts_locked[5];
+    rot_firmware_auth_slot2_lock: coverpoint parts_locked[6];
+    rot_firmware_auth_slot3_lock: coverpoint parts_locked[7];
+    soc_firmware_auth_slot0_lock: coverpoint parts_locked[8];
+    soc_firmware_auth_slot1_lock: coverpoint parts_locked[9];
+    soc_firmware_auth_slot2_lock: coverpoint parts_locked[10];
+    soc_firmware_auth_slot3_lock: coverpoint parts_locked[11];
+    ext_nvm_lock: coverpoint parts_locked[12];
+    hw_cfg0_lock: coverpoint parts_locked[13];
+    hw_cfg1_lock: coverpoint parts_locked[14];
+    secret0_lock: coverpoint parts_locked[15];
+    secret1_lock: coverpoint parts_locked[16];
+    secret2_lock: coverpoint parts_locked[17];
+    secret3_lock: coverpoint parts_locked[18];
   endgroup
 
   // This covergroup is sampled only if sram request passed scb check.
@@ -262,7 +258,6 @@ class otp_ctrl_env_cov extends cip_base_env_cov #(.CFG_T(otp_ctrl_env_cfg));
       bins creator_sw_cfg = {CreatorSwCfgIdx};
       bins owner_sw_cfg = {OwnerSwCfgIdx};
       bins auth_slot_state = {AuthSlotStateIdx};
-      bins rot_creator_auth = {RotCreatorAuthIdx};
       bins rot_firmware_auth_slot0 = {RotFirmwareAuthSlot0Idx};
       bins rot_firmware_auth_slot1 = {RotFirmwareAuthSlot1Idx};
       bins rot_firmware_auth_slot2 = {RotFirmwareAuthSlot2Idx};
@@ -386,9 +381,6 @@ class otp_ctrl_env_cov extends cip_base_env_cov #(.CFG_T(otp_ctrl_env_cfg));
         unbuf_err_code_cg_wrap[part_idx].unbuf_err_code_cg.sample(val);
       end
       AuthSlotStateIdx: begin
-        unbuf_err_code_cg_wrap[part_idx].unbuf_err_code_cg.sample(val);
-      end
-      RotCreatorAuthIdx: begin
         unbuf_err_code_cg_wrap[part_idx].unbuf_err_code_cg.sample(val);
       end
       RotFirmwareAuthSlot0Idx: begin

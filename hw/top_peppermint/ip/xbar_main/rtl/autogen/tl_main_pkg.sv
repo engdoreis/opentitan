@@ -44,7 +44,7 @@ package tl_main_pkg;
   localparam logic [31:0] ADDR_MASK_ROM_CTRL__REGS       = 32'h 0000007f;
   localparam logic [31:0] ADDR_MASK_SRAM_CTRL_MAIN__REGS = 32'h 0000003f;
   localparam logic [31:0] ADDR_SIZE_SRAM_CTRL_MAIN__RAM  = 32'h 00030000;
-  localparam logic [31:0] ADDR_MASK_OTP_CTRL__CORE       = 32'h 00003fff;
+  localparam logic [31:0] ADDR_MASK_OTP_CTRL__CORE       = 32'h 00000fff;
   localparam logic [31:0] ADDR_MASK_OTP_MACRO__PRIM      = 32'h 0000001f;
   localparam logic [31:0] ADDR_MASK_LC_CTRL__REGS        = 32'h 000000ff;
   localparam logic [31:0] ADDR_MASK_RV_PLIC              = 32'h 07ffffff;

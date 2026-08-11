@@ -713,8 +713,6 @@ class otp_ctrl_scoreboard #(type CFG_T = otp_ctrl_env_cfg)
             sw_read_lock = `gmv(ral.owner_sw_cfg_read_lock) == 0;
           end else if (part_idx == AuthSlotStateIdx) begin
             sw_read_lock = `gmv(ral.auth_slot_state_read_lock) == 0;
-          end else if (part_idx == RotCreatorAuthIdx) begin
-            sw_read_lock = `gmv(ral.rot_creator_auth_read_lock) == 0;
           end else if (part_idx == RotFirmwareAuthSlot0Idx) begin
             sw_read_lock = `gmv(ral.rot_firmware_auth_slot0_read_lock) == 0;
           end else if (part_idx == RotFirmwareAuthSlot1Idx) begin
@@ -1241,19 +1239,9 @@ class otp_ctrl_scoreboard #(type CFG_T = otp_ctrl_env_cfg)
                                    otp_partition_e'(access_part_idx));
         end
       end
-      "err_code_22": begin
-        if (cfg.m_lc_prog_pull_agent_cfg.vif.req) do_read_check = 0;
-        if (cfg.en_cov && do_read_check && data_phase_read) begin
-          bit [TL_DW-1:0] dai_addr = `gmv(ral.direct_access_address) >> 2 << 2;
-          int access_part_idx = get_part_index(dai_addr);
-          cov.collect_err_code_cov(part_idx_e'(22), item.d_data,
-                                   otp_partition_e'(access_part_idx));
-        end
-      end
       "vendor_test_digest_0", "vendor_test_digest_1",
       "creator_sw_cfg_digest_0", "creator_sw_cfg_digest_1",
       "owner_sw_cfg_digest_0", "owner_sw_cfg_digest_1",
-      "rot_creator_auth_digest_0", "rot_creator_auth_digest_1",
       "rot_firmware_auth_slot0_digest_0", "rot_firmware_auth_slot0_digest_1",
       "rot_firmware_auth_slot1_digest_0", "rot_firmware_auth_slot1_digest_1",
       "rot_firmware_auth_slot2_digest_0", "rot_firmware_auth_slot2_digest_1",
@@ -1274,7 +1262,6 @@ class otp_ctrl_scoreboard #(type CFG_T = otp_ctrl_env_cfg)
       "creator_sw_cfg_read_lock",
       "owner_sw_cfg_read_lock",
       "auth_slot_state_read_lock",
-      "rot_creator_auth_read_lock",
       "rot_firmware_auth_slot0_read_lock",
       "rot_firmware_auth_slot1_read_lock",
       "rot_firmware_auth_slot2_read_lock",
@@ -1455,13 +1442,6 @@ class otp_ctrl_scoreboard #(type CFG_T = otp_ctrl_env_cfg)
           .kind(UVM_PREDICT_DIRECT)));
     void'(ral.owner_sw_cfg_digest[1].predict(
           .value(otp_a[PART_OTP_DIGEST_ADDRS[OwnerSwCfgIdx] + 1]),
-          .kind(UVM_PREDICT_DIRECT)));
-
-    void'(ral.rot_creator_auth_digest[0].predict(
-          .value(otp_a[PART_OTP_DIGEST_ADDRS[RotCreatorAuthIdx]]),
-          .kind(UVM_PREDICT_DIRECT)));
-    void'(ral.rot_creator_auth_digest[1].predict(
-          .value(otp_a[PART_OTP_DIGEST_ADDRS[RotCreatorAuthIdx] + 1]),
           .kind(UVM_PREDICT_DIRECT)));
 
     void'(ral.rot_firmware_auth_slot0_digest[0].predict(
@@ -1801,10 +1781,6 @@ class otp_ctrl_scoreboard #(type CFG_T = otp_ctrl_env_cfg)
         digest = {`gmv(ral.owner_sw_cfg_digest[1]),
                   `gmv(ral.owner_sw_cfg_digest[0])};
       end
-      RotCreatorAuthIdx: begin
-        digest = {`gmv(ral.rot_creator_auth_digest[1]),
-                  `gmv(ral.rot_creator_auth_digest[0])};
-      end
       RotFirmwareAuthSlot0Idx: begin
         digest = {`gmv(ral.rot_firmware_auth_slot0_digest[1]),
                   `gmv(ral.rot_firmware_auth_slot0_digest[0])};
@@ -1953,22 +1929,6 @@ class otp_ctrl_scoreboard #(type CFG_T = otp_ctrl_env_cfg)
             // for unbuffered partitions without digest.
             cov.unbuf_access_lock_cg_wrap[AuthSlotStateIdx].sample(.read_lock(1),
                 .write_lock(0), .is_write(0));
-          end
-          return 0;
-        end
-      end
-      if (`gmv(ral.rot_creator_auth_read_lock) == 0 ||
-          cfg.otp_ctrl_vif.under_error_states()) begin
-        uvm_reg_addr_t partition_start = mem_ranges[0].start_addr + RotCreatorAuthOffset;
-        uvm_reg_addr_t partition_end   = partition_start + RotCreatorAuthSize;
-        if (partition_start <= addr && addr < partition_end) begin
-          predict_err(OtpPartitionErrorIdx,
-                      OtpPartitionRotCreatorAuthIdx,
-                      OtpAccessError);
-          custom_err = 1;
-          if (cfg.en_cov) begin
-            cov.unbuf_access_lock_cg_wrap[RotCreatorAuthIdx].sample(.read_lock(1),
-                .write_lock(get_digest_reg_val(RotCreatorAuthIdx) != 0), .is_write(0));
           end
           return 0;
         end

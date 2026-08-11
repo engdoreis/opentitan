@@ -33,7 +33,7 @@ module otp_ctrl
   parameter digest_const_t RndCnstDigestConst1 = '0,
   parameter digest_iv_t RndCnstDigestIV0 = '0,
   parameter digest_iv_t RndCnstDigestIV1 = '0,
-  parameter logic [39807:0] RndCnstPartInvDefault = '0,
+  parameter logic [16319:0] RndCnstPartInvDefault = '0,
   parameter lfsr_seed_t RndCnstLfsrSeed = RndCnstLfsrSeedDefault,
   parameter lfsr_perm_t RndCnstLfsrPerm = RndCnstLfsrPermDefault,
   parameter scrmbl_key_init_t RndCnstScrmblKeyInit = RndCnstScrmblKeyInitDefault
@@ -620,7 +620,6 @@ module otp_ctrl
     hw2reg.partition_status_0.creator_sw_cfg_error.d = part_errors_reduced[CreatorSwCfgIdx];
     hw2reg.partition_status_0.owner_sw_cfg_error.d = part_errors_reduced[OwnerSwCfgIdx];
     hw2reg.partition_status_0.auth_slot_state_error.d = part_errors_reduced[AuthSlotStateIdx];
-    hw2reg.partition_status_0.rot_creator_auth_error.d = part_errors_reduced[RotCreatorAuthIdx];
     hw2reg.partition_status_0.rot_firmware_auth_slot0_error.d =
       part_errors_reduced[RotFirmwareAuthSlot0Idx];
     hw2reg.partition_status_0.rot_firmware_auth_slot1_error.d =

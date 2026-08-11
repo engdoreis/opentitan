@@ -100,7 +100,7 @@ package otp_ctrl_part_pkg;
     // VENDOR_TEST
     '{
       variant:          Unbuffered,
-      offset:           13'd0,
+      offset:           11'd0,
       size:             64,
       key_sel:          key_sel_e'('0),
       secret:           1'b0,
@@ -117,8 +117,8 @@ package otp_ctrl_part_pkg;
     // CREATOR_SW_CFG
     '{
       variant:          Unbuffered,
-      offset:           13'd64,
-      size:             312,
+      offset:           11'd64,
+      size:             168,
       key_sel:          key_sel_e'('0),
       secret:           1'b0,
       sw_digest:        1'b1,
@@ -134,7 +134,7 @@ package otp_ctrl_part_pkg;
     // OWNER_SW_CFG
     '{
       variant:          Unbuffered,
-      offset:           13'd376,
+      offset:           11'd232,
       size:             600,
       key_sel:          key_sel_e'('0),
       secret:           1'b0,
@@ -151,7 +151,7 @@ package otp_ctrl_part_pkg;
     // AUTH_SLOT_STATE
     '{
       variant:          Unbuffered,
-      offset:           13'd976,
+      offset:           11'd832,
       size:             32,
       key_sel:          key_sel_e'('0),
       secret:           1'b0,
@@ -165,28 +165,11 @@ package otp_ctrl_part_pkg;
       zeroizable:       1'b0,
       ignore_read_lock_in_rma: 1'b0
     },
-    // ROT_CREATOR_AUTH
-    '{
-      variant:          Unbuffered,
-      offset:           13'd1008,
-      size:             1424,
-      key_sel:          key_sel_e'('0),
-      secret:           1'b0,
-      sw_digest:        1'b1,
-      hw_digest:        1'b0,
-      write_lock:       1'b1,
-      read_lock:        1'b0,
-      integrity:        1'b1,
-      iskeymgr_creator: 1'b0,
-      iskeymgr_owner:   1'b0,
-      zeroizable:       1'b0,
-      ignore_read_lock_in_rma: 1'b0
-    },
     // ROT_FIRMWARE_AUTH_SLOT0
     '{
       variant:          Unbuffered,
-      offset:           13'd2432,
-      size:             136,
+      offset:           11'd864,
+      size:             40,
       key_sel:          key_sel_e'('0),
       secret:           1'b0,
       sw_digest:        1'b1,
@@ -202,8 +185,8 @@ package otp_ctrl_part_pkg;
     // ROT_FIRMWARE_AUTH_SLOT1
     '{
       variant:          Unbuffered,
-      offset:           13'd2568,
-      size:             136,
+      offset:           11'd904,
+      size:             40,
       key_sel:          key_sel_e'('0),
       secret:           1'b0,
       sw_digest:        1'b1,
@@ -219,8 +202,8 @@ package otp_ctrl_part_pkg;
     // ROT_FIRMWARE_AUTH_SLOT2
     '{
       variant:          Unbuffered,
-      offset:           13'd2704,
-      size:             136,
+      offset:           11'd944,
+      size:             40,
       key_sel:          key_sel_e'('0),
       secret:           1'b0,
       sw_digest:        1'b1,
@@ -236,8 +219,8 @@ package otp_ctrl_part_pkg;
     // ROT_FIRMWARE_AUTH_SLOT3
     '{
       variant:          Unbuffered,
-      offset:           13'd2840,
-      size:             136,
+      offset:           11'd984,
+      size:             40,
       key_sel:          key_sel_e'('0),
       secret:           1'b0,
       sw_digest:        1'b1,
@@ -253,8 +236,8 @@ package otp_ctrl_part_pkg;
     // SOC_FIRMWARE_AUTH_SLOT0
     '{
       variant:          Unbuffered,
-      offset:           13'd2976,
-      size:             136,
+      offset:           11'd1024,
+      size:             40,
       key_sel:          key_sel_e'('0),
       secret:           1'b0,
       sw_digest:        1'b1,
@@ -270,8 +253,8 @@ package otp_ctrl_part_pkg;
     // SOC_FIRMWARE_AUTH_SLOT1
     '{
       variant:          Unbuffered,
-      offset:           13'd3112,
-      size:             136,
+      offset:           11'd1064,
+      size:             40,
       key_sel:          key_sel_e'('0),
       secret:           1'b0,
       sw_digest:        1'b1,
@@ -287,8 +270,8 @@ package otp_ctrl_part_pkg;
     // SOC_FIRMWARE_AUTH_SLOT2
     '{
       variant:          Unbuffered,
-      offset:           13'd3248,
-      size:             136,
+      offset:           11'd1104,
+      size:             40,
       key_sel:          key_sel_e'('0),
       secret:           1'b0,
       sw_digest:        1'b1,
@@ -304,8 +287,8 @@ package otp_ctrl_part_pkg;
     // SOC_FIRMWARE_AUTH_SLOT3
     '{
       variant:          Unbuffered,
-      offset:           13'd3384,
-      size:             136,
+      offset:           11'd1144,
+      size:             40,
       key_sel:          key_sel_e'('0),
       secret:           1'b0,
       sw_digest:        1'b1,
@@ -321,8 +304,8 @@ package otp_ctrl_part_pkg;
     // EXT_NVM
     '{
       variant:          Unbuffered,
-      offset:           13'd3520,
-      size:             1024,
+      offset:           11'd1184,
+      size:             424,
       key_sel:          key_sel_e'('0),
       secret:           1'b0,
       sw_digest:        1'b0,
@@ -338,7 +321,7 @@ package otp_ctrl_part_pkg;
     // HW_CFG0
     '{
       variant:          Buffered,
-      offset:           13'd4544,
+      offset:           11'd1608,
       size:             72,
       key_sel:          key_sel_e'('0),
       secret:           1'b0,
@@ -355,7 +338,7 @@ package otp_ctrl_part_pkg;
     // HW_CFG1
     '{
       variant:          Buffered,
-      offset:           13'd4616,
+      offset:           11'd1680,
       size:             16,
       key_sel:          key_sel_e'('0),
       secret:           1'b0,
@@ -372,7 +355,7 @@ package otp_ctrl_part_pkg;
     // SECRET0
     '{
       variant:          Buffered,
-      offset:           13'd4632,
+      offset:           11'd1696,
       size:             48,
       key_sel:          Secret0Key,
       secret:           1'b1,
@@ -389,7 +372,7 @@ package otp_ctrl_part_pkg;
     // SECRET1
     '{
       variant:          Buffered,
-      offset:           13'd4680,
+      offset:           11'd1744,
       size:             32,
       key_sel:          Secret1Key,
       secret:           1'b1,
@@ -406,7 +389,7 @@ package otp_ctrl_part_pkg;
     // SECRET2
     '{
       variant:          Buffered,
-      offset:           13'd4712,
+      offset:           11'd1776,
       size:             128,
       key_sel:          Secret2Key,
       secret:           1'b1,
@@ -423,7 +406,7 @@ package otp_ctrl_part_pkg;
     // SECRET3
     '{
       variant:          Buffered,
-      offset:           13'd4840,
+      offset:           11'd1904,
       size:             48,
       key_sel:          Secret3Key,
       secret:           1'b1,
@@ -440,7 +423,7 @@ package otp_ctrl_part_pkg;
     // LIFE_CYCLE
     '{
       variant:          LifeCycle,
-      offset:           13'd4888,
+      offset:           11'd1952,
       size:             88,
       key_sel:          key_sel_e'('0),
       secret:           1'b0,
@@ -461,7 +444,6 @@ package otp_ctrl_part_pkg;
     CreatorSwCfgIdx,
     OwnerSwCfgIdx,
     AuthSlotStateIdx,
-    RotCreatorAuthIdx,
     RotFirmwareAuthSlot0Idx,
     RotFirmwareAuthSlot1Idx,
     RotFirmwareAuthSlot2Idx,
@@ -523,7 +505,6 @@ package otp_ctrl_part_pkg;
     hw2reg.vendor_test_digest = part_digest[VendorTestIdx];
     hw2reg.creator_sw_cfg_digest = part_digest[CreatorSwCfgIdx];
     hw2reg.owner_sw_cfg_digest = part_digest[OwnerSwCfgIdx];
-    hw2reg.rot_creator_auth_digest = part_digest[RotCreatorAuthIdx];
     hw2reg.rot_firmware_auth_slot0_digest = part_digest[RotFirmwareAuthSlot0Idx];
     hw2reg.rot_firmware_auth_slot1_digest = part_digest[RotFirmwareAuthSlot1Idx];
     hw2reg.rot_firmware_auth_slot2_digest = part_digest[RotFirmwareAuthSlot2Idx];
@@ -566,10 +547,6 @@ package otp_ctrl_part_pkg;
     if (!reg2hw.auth_slot_state_read_lock) begin
       part_access_pre[AuthSlotStateIdx].read_lock = prim_mubi_pkg::MuBi8True;
     end
-    // ROT_CREATOR_AUTH
-    if (!reg2hw.rot_creator_auth_read_lock) begin
-      part_access_pre[RotCreatorAuthIdx].read_lock = prim_mubi_pkg::MuBi8True;
-    end
     // ROT_FIRMWARE_AUTH_SLOT0
     if (!reg2hw.rot_firmware_auth_slot0_read_lock) begin
       part_access_pre[RotFirmwareAuthSlot0Idx].read_lock = prim_mubi_pkg::MuBi8True;
@@ -611,7 +588,7 @@ package otp_ctrl_part_pkg;
 
   function automatic otp_broadcast_t named_broadcast_assign(
       logic [NumPart-1:0] part_init_done,
-      logic [4975:0][7:0] part_buf_data);
+      logic [2039:0][7:0] part_buf_data);
     otp_broadcast_t otp_broadcast;
     logic valid, unused;
     unused = 1'b0;
@@ -628,9 +605,6 @@ package otp_ctrl_part_pkg;
     // AUTH_SLOT_STATE
     unused ^= ^{part_init_done[AuthSlotStateIdx],
                 part_buf_data[AuthSlotStateOffset +: AuthSlotStateSize]};
-    // ROT_CREATOR_AUTH
-    unused ^= ^{part_init_done[RotCreatorAuthIdx],
-                part_buf_data[RotCreatorAuthOffset +: RotCreatorAuthSize]};
     // ROT_FIRMWARE_AUTH_SLOT0
     unused ^= ^{part_init_done[RotFirmwareAuthSlot0Idx],
                 part_buf_data[RotFirmwareAuthSlot0Offset +: RotFirmwareAuthSlot0Size]};
@@ -685,8 +659,8 @@ package otp_ctrl_part_pkg;
 
   function automatic otp_keymgr_key_t named_keymgr_key_assign(
       logic [NumPart-1:0][ScrmblBlockWidth-1:0] part_digest,
-      logic [4975:0][7:0] part_buf_data,
-      logic [39807:0] part_inv_default,
+      logic [2039:0][7:0] part_buf_data,
+      logic [16319:0] part_inv_default,
       lc_ctrl_pkg::lc_tx_t lc_seed_hw_rd_en);
     otp_keymgr_key_t otp_keymgr_key;
     logic valid, unused;
@@ -707,9 +681,6 @@ package otp_ctrl_part_pkg;
     // AUTH_SLOT_STATE
     unused ^= ^{part_digest[AuthSlotStateIdx],
                 part_buf_data[AuthSlotStateOffset +: AuthSlotStateSize]};
-    // ROT_CREATOR_AUTH
-    unused ^= ^{part_digest[RotCreatorAuthIdx],
-                part_buf_data[RotCreatorAuthOffset +: RotCreatorAuthSize]};
     // ROT_FIRMWARE_AUTH_SLOT0
     unused ^= ^{part_digest[RotFirmwareAuthSlot0Idx],
                 part_buf_data[RotFirmwareAuthSlot0Offset +: RotFirmwareAuthSlot0Size]};

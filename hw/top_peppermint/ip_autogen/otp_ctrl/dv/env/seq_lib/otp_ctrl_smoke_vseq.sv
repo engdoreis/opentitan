@@ -36,8 +36,6 @@ class otp_ctrl_smoke_vseq extends otp_ctrl_base_vseq;
         dai_addr inside `PART_CONTENT_RANGE(OwnerSwCfgIdx);
     if (part_idx == AuthSlotStateIdx)
         dai_addr inside `PART_CONTENT_RANGE(AuthSlotStateIdx);
-    if (part_idx == RotCreatorAuthIdx)
-        dai_addr inside `PART_CONTENT_RANGE(RotCreatorAuthIdx);
     if (part_idx == RotFirmwareAuthSlot0Idx)
         dai_addr inside `PART_CONTENT_RANGE(RotFirmwareAuthSlot0Idx);
     if (part_idx == RotFirmwareAuthSlot1Idx)

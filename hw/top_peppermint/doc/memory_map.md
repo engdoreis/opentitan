@@ -15,7 +15,7 @@ The main address space, shared between the CPU and DM
 | Module         | Interface   | Base Address   | Size (bytes)   | Size (words)   | Description                   |
 |----------------|-------------|----------------|----------------|----------------|-------------------------------|
 | rv_timer       | default     | `0x40000000`   | `0x200`        | `0x80`         | rv_timer                      |
-| otp_ctrl       | core        | `0x40010000`   | `0x4000`       | `0x1000`       | core device on otp_ctrl       |
+| otp_ctrl       | core        | `0x40010000`   | `0x1000`       | `0x400`        | core device on otp_ctrl       |
 | otp_macro      | prim        | `0x40020000`   | `0x20`         | `0x8`          | prim device on otp_macro      |
 | lc_ctrl        | regs        | `0x40030000`   | `0x100`        | `0x40`         | regs device on lc_ctrl        |
 | aes            | default     | `0x40100000`   | `0x100`        | `0x40`         | aes                           |

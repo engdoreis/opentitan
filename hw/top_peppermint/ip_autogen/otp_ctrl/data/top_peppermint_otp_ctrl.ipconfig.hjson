@@ -10,10 +10,10 @@
       otp:
       {
         width: 2
-        depth: 4096
-        size: 8192
-        addr_width: 12
-        byte_addr_width: 13
+        depth: 1024
+        size: 2048
+        addr_width: 10
+        byte_addr_width: 11
       }
       scrambling:
       {
@@ -127,28 +127,6 @@
           items:
           [
             {
-              name: CREATOR_SW_CFG_AST_CFG
-              size: 124
-              isdigest: false
-              iszer: false
-              ismubi: false
-              iskeymgr_creator: false
-              iskeymgr_owner: false
-              inv_default: 0
-              offset: 64
-            }
-            {
-              name: CREATOR_SW_CFG_AST_INIT_EN
-              size: 4
-              isdigest: false
-              iszer: false
-              ismubi: false
-              iskeymgr_creator: false
-              iskeymgr_owner: false
-              inv_default: 0
-              offset: 188
-            }
-            {
               name: CREATOR_SW_CFG_OVERRIDES
               size: 32
               isdigest: false
@@ -157,7 +135,7 @@
               iskeymgr_creator: false
               iskeymgr_owner: false
               inv_default: 0
-              offset: 192
+              offset: 64
             }
             {
               name: CREATOR_SW_CFG_ROM_EXT_SKU
@@ -168,7 +146,7 @@
               iskeymgr_creator: false
               iskeymgr_owner: false
               inv_default: 0
-              offset: 224
+              offset: 96
             }
             {
               name: CREATOR_SW_CFG_SIGVERIFY_RSA_MOD_EXP_IBEX_EN
@@ -179,7 +157,7 @@
               iskeymgr_creator: false
               iskeymgr_owner: false
               inv_default: 0
-              offset: 228
+              offset: 100
             }
             {
               name: CREATOR_SW_CFG_SIGVERIFY_RSA_KEY_EN
@@ -190,7 +168,7 @@
               iskeymgr_creator: false
               iskeymgr_owner: false
               inv_default: 0
-              offset: 232
+              offset: 104
             }
             {
               name: CREATOR_SW_CFG_SIGVERIFY_SPX_EN
@@ -201,7 +179,7 @@
               iskeymgr_creator: false
               iskeymgr_owner: false
               inv_default: 0
-              offset: 240
+              offset: 112
             }
             {
               name: CREATOR_SW_CFG_SIGVERIFY_SPX_KEY_EN
@@ -212,40 +190,7 @@
               iskeymgr_creator: false
               iskeymgr_owner: false
               inv_default: 0
-              offset: 244
-            }
-            {
-              name: CREATOR_SW_CFG_FLASH_DATA_DEFAULT_CFG
-              size: 4
-              isdigest: false
-              iszer: false
-              ismubi: false
-              iskeymgr_creator: false
-              iskeymgr_owner: false
-              inv_default: 0
-              offset: 252
-            }
-            {
-              name: CREATOR_SW_CFG_FLASH_INFO_BOOT_DATA_CFG
-              size: 4
-              isdigest: false
-              iszer: false
-              ismubi: false
-              iskeymgr_creator: false
-              iskeymgr_owner: false
-              inv_default: 0
-              offset: 256
-            }
-            {
-              name: CREATOR_SW_CFG_FLASH_HW_INFO_CFG_OVERRIDE
-              size: 4
-              isdigest: false
-              iszer: false
-              ismubi: false
-              iskeymgr_creator: false
-              iskeymgr_owner: false
-              inv_default: 0
-              offset: 260
+              offset: 116
             }
             {
               name: CREATOR_SW_CFG_RNG_EN
@@ -256,7 +201,7 @@
               iskeymgr_creator: false
               iskeymgr_owner: false
               inv_default: 0
-              offset: 264
+              offset: 124
             }
             {
               name: CREATOR_SW_CFG_JITTER_EN
@@ -267,7 +212,7 @@
               iskeymgr_creator: false
               iskeymgr_owner: false
               inv_default: 0
-              offset: 268
+              offset: 128
             }
             {
               name: CREATOR_SW_CFG_RET_RAM_RESET_MASK
@@ -278,7 +223,7 @@
               iskeymgr_creator: false
               iskeymgr_owner: false
               inv_default: 0
-              offset: 272
+              offset: 132
             }
             {
               name: CREATOR_SW_CFG_MANUF_STATE
@@ -289,7 +234,7 @@
               iskeymgr_creator: false
               iskeymgr_owner: false
               inv_default: 0
-              offset: 276
+              offset: 136
             }
             {
               name: CREATOR_SW_CFG_ROM_EXEC_EN
@@ -300,7 +245,7 @@
               iskeymgr_creator: false
               iskeymgr_owner: false
               inv_default: 0
-              offset: 280
+              offset: 140
             }
             {
               name: CREATOR_SW_CFG_CPUCTRL
@@ -311,7 +256,7 @@
               iskeymgr_creator: false
               iskeymgr_owner: false
               inv_default: 0
-              offset: 284
+              offset: 144
             }
             {
               name: CREATOR_SW_CFG_MIN_SEC_VER_ROM_EXT
@@ -322,7 +267,7 @@
               iskeymgr_creator: false
               iskeymgr_owner: false
               inv_default: 0
-              offset: 288
+              offset: 148
             }
             {
               name: CREATOR_SW_CFG_MIN_SEC_VER_BL0
@@ -333,7 +278,7 @@
               iskeymgr_creator: false
               iskeymgr_owner: false
               inv_default: 0
-              offset: 292
+              offset: 152
             }
             {
               name: CREATOR_SW_CFG_DEFAULT_BOOT_DATA_IN_PROD_EN
@@ -344,7 +289,7 @@
               iskeymgr_creator: false
               iskeymgr_owner: false
               inv_default: 0
-              offset: 296
+              offset: 156
             }
             {
               name: CREATOR_SW_CFG_RMA_SPIN_EN
@@ -355,7 +300,7 @@
               iskeymgr_creator: false
               iskeymgr_owner: false
               inv_default: 0
-              offset: 300
+              offset: 160
             }
             {
               name: CREATOR_SW_CFG_RMA_SPIN_CYCLES
@@ -366,7 +311,7 @@
               iskeymgr_creator: false
               iskeymgr_owner: false
               inv_default: 0
-              offset: 304
+              offset: 164
             }
             {
               name: CREATOR_SW_CFG_RNG_REPCNT_THRESHOLDS
@@ -377,7 +322,7 @@
               iskeymgr_creator: false
               iskeymgr_owner: false
               inv_default: 0
-              offset: 308
+              offset: 168
             }
             {
               name: CREATOR_SW_CFG_RNG_REPCNTS_THRESHOLDS
@@ -388,7 +333,7 @@
               iskeymgr_creator: false
               iskeymgr_owner: false
               inv_default: 0
-              offset: 312
+              offset: 172
             }
             {
               name: CREATOR_SW_CFG_RNG_ADAPTP_HI_THRESHOLDS
@@ -399,7 +344,7 @@
               iskeymgr_creator: false
               iskeymgr_owner: false
               inv_default: 0
-              offset: 316
+              offset: 176
             }
             {
               name: CREATOR_SW_CFG_RNG_ADAPTP_LO_THRESHOLDS
@@ -410,7 +355,7 @@
               iskeymgr_creator: false
               iskeymgr_owner: false
               inv_default: 0
-              offset: 320
+              offset: 180
             }
             {
               name: CREATOR_SW_CFG_RNG_BUCKET_THRESHOLDS
@@ -421,7 +366,7 @@
               iskeymgr_creator: false
               iskeymgr_owner: false
               inv_default: 0
-              offset: 324
+              offset: 184
             }
             {
               name: CREATOR_SW_CFG_RNG_MARKOV_HI_THRESHOLDS
@@ -432,7 +377,7 @@
               iskeymgr_creator: false
               iskeymgr_owner: false
               inv_default: 0
-              offset: 328
+              offset: 188
             }
             {
               name: CREATOR_SW_CFG_RNG_MARKOV_LO_THRESHOLDS
@@ -443,7 +388,7 @@
               iskeymgr_creator: false
               iskeymgr_owner: false
               inv_default: 0
-              offset: 332
+              offset: 192
             }
             {
               name: CREATOR_SW_CFG_RNG_EXTHT_HI_THRESHOLDS
@@ -454,7 +399,7 @@
               iskeymgr_creator: false
               iskeymgr_owner: false
               inv_default: 0
-              offset: 336
+              offset: 196
             }
             {
               name: CREATOR_SW_CFG_RNG_EXTHT_LO_THRESHOLDS
@@ -465,7 +410,7 @@
               iskeymgr_creator: false
               iskeymgr_owner: false
               inv_default: 0
-              offset: 340
+              offset: 200
             }
             {
               name: CREATOR_SW_CFG_RNG_BOOT_ALERT_THRESHOLD
@@ -476,7 +421,7 @@
               iskeymgr_creator: false
               iskeymgr_owner: false
               inv_default: 0
-              offset: 344
+              offset: 204
             }
             {
               name: CREATOR_SW_CFG_RNG_FIPS_ALERT_THRESHOLD
@@ -487,7 +432,7 @@
               iskeymgr_creator: false
               iskeymgr_owner: false
               inv_default: 0
-              offset: 348
+              offset: 208
             }
             {
               name: CREATOR_SW_CFG_RNG_BOOT_CONFIG_DIGEST
@@ -498,7 +443,7 @@
               iskeymgr_creator: false
               iskeymgr_owner: false
               inv_default: 0
-              offset: 352
+              offset: 212
             }
             {
               name: CREATOR_SW_CFG_RNG_FIPS_CONFIG_DIGEST
@@ -509,7 +454,7 @@
               iskeymgr_creator: false
               iskeymgr_owner: false
               inv_default: 0
-              offset: 356
+              offset: 216
             }
             {
               name: CREATOR_SW_CFG_SRAM_KEY_RENEW_AND_INIT_EN
@@ -520,12 +465,12 @@
               iskeymgr_creator: false
               iskeymgr_owner: false
               inv_default: 0
-              offset: 360
+              offset: 220
             }
             {
               name: CREATOR_SW_CFG_DIGEST
               size: 8
-              offset: 368
+              offset: 224
               ismubi: false
               isdigest: true
               iszer: false
@@ -543,7 +488,7 @@
           iskeymgr_creator: false
           iskeymgr_owner: false
           ignore_read_lock_in_rma: false
-          size: 312
+          size: 168
           offset: 64
         }
         {
@@ -570,7 +515,7 @@
               iskeymgr_creator: false
               iskeymgr_owner: false
               inv_default: 0
-              offset: 376
+              offset: 232
             }
             {
               name: OWNER_SW_CFG_ROM_BOOTSTRAP_DIS
@@ -581,7 +526,7 @@
               iskeymgr_creator: false
               iskeymgr_owner: false
               inv_default: 0
-              offset: 380
+              offset: 236
             }
             {
               name: OWNER_SW_CFG_ROM_ALERT_CLASS_EN
@@ -592,7 +537,7 @@
               iskeymgr_creator: false
               iskeymgr_owner: false
               inv_default: 0
-              offset: 384
+              offset: 240
             }
             {
               name: OWNER_SW_CFG_ROM_ALERT_ESCALATION
@@ -603,7 +548,7 @@
               iskeymgr_creator: false
               iskeymgr_owner: false
               inv_default: 0
-              offset: 388
+              offset: 244
             }
             {
               name: OWNER_SW_CFG_ROM_ALERT_CLASSIFICATION
@@ -614,7 +559,7 @@
               iskeymgr_creator: false
               iskeymgr_owner: false
               inv_default: 0
-              offset: 392
+              offset: 248
             }
             {
               name: OWNER_SW_CFG_ROM_LOCAL_ALERT_CLASSIFICATION
@@ -625,7 +570,7 @@
               iskeymgr_creator: false
               iskeymgr_owner: false
               inv_default: 0
-              offset: 812
+              offset: 668
             }
             {
               name: OWNER_SW_CFG_ROM_ALERT_ACCUM_THRESH
@@ -636,7 +581,7 @@
               iskeymgr_creator: false
               iskeymgr_owner: false
               inv_default: 0
-              offset: 840
+              offset: 696
             }
             {
               name: OWNER_SW_CFG_ROM_ALERT_TIMEOUT_CYCLES
@@ -647,7 +592,7 @@
               iskeymgr_creator: false
               iskeymgr_owner: false
               inv_default: 0
-              offset: 856
+              offset: 712
             }
             {
               name: OWNER_SW_CFG_ROM_ALERT_PHASE_CYCLES
@@ -658,7 +603,7 @@
               iskeymgr_creator: false
               iskeymgr_owner: false
               inv_default: 0
-              offset: 872
+              offset: 728
             }
             {
               name: OWNER_SW_CFG_ROM_ALERT_DIGEST_PROD
@@ -669,7 +614,7 @@
               iskeymgr_creator: false
               iskeymgr_owner: false
               inv_default: 0
-              offset: 936
+              offset: 792
             }
             {
               name: OWNER_SW_CFG_ROM_ALERT_DIGEST_PROD_END
@@ -680,7 +625,7 @@
               iskeymgr_creator: false
               iskeymgr_owner: false
               inv_default: 0
-              offset: 940
+              offset: 796
             }
             {
               name: OWNER_SW_CFG_ROM_ALERT_DIGEST_DEV
@@ -691,7 +636,7 @@
               iskeymgr_creator: false
               iskeymgr_owner: false
               inv_default: 0
-              offset: 944
+              offset: 800
             }
             {
               name: OWNER_SW_CFG_ROM_ALERT_DIGEST_RMA
@@ -702,7 +647,7 @@
               iskeymgr_creator: false
               iskeymgr_owner: false
               inv_default: 0
-              offset: 948
+              offset: 804
             }
             {
               name: OWNER_SW_CFG_ROM_WATCHDOG_BITE_THRESHOLD_CYCLES
@@ -713,7 +658,7 @@
               iskeymgr_creator: false
               iskeymgr_owner: false
               inv_default: 0
-              offset: 952
+              offset: 808
             }
             {
               name: OWNER_SW_CFG_ROM_KEYMGR_ROM_EXT_MEAS_EN
@@ -724,7 +669,7 @@
               iskeymgr_creator: false
               iskeymgr_owner: false
               inv_default: 0
-              offset: 956
+              offset: 812
             }
             {
               name: OWNER_SW_CFG_MANUF_STATE
@@ -735,7 +680,7 @@
               iskeymgr_creator: false
               iskeymgr_owner: false
               inv_default: 0
-              offset: 960
+              offset: 816
             }
             {
               name: OWNER_SW_CFG_ROM_RSTMGR_INFO_EN
@@ -746,12 +691,12 @@
               iskeymgr_creator: false
               iskeymgr_owner: false
               inv_default: 0
-              offset: 964
+              offset: 820
             }
             {
               name: OWNER_SW_CFG_DIGEST
               size: 8
-              offset: 968
+              offset: 824
               ismubi: false
               isdigest: true
               iszer: false
@@ -771,7 +716,7 @@
           iskeymgr_owner: false
           ignore_read_lock_in_rma: false
           size: 600
-          offset: 376
+          offset: 232
         }
         {
           name: AUTH_SLOT_STATE
@@ -810,7 +755,7 @@
               iskeymgr_creator: false
               iskeymgr_owner: false
               inv_default: 0
-              offset: 976
+              offset: 832
             }
             {
               name: AUTH_SLOT_STATE_SOC_FIRMWARE
@@ -834,7 +779,7 @@
               iskeymgr_creator: false
               iskeymgr_owner: false
               inv_default: 0
-              offset: 992
+              offset: 848
             }
           ]
           desc:
@@ -865,146 +810,7 @@
           iskeymgr_owner: false
           ignore_read_lock_in_rma: false
           size: 32
-          offset: 976
-        }
-        {
-          name: ROT_CREATOR_AUTH
-          variant: Unbuffered
-          absorb: false
-          secret: false
-          sw_digest: true
-          hw_digest: false
-          write_lock: Digest
-          read_lock: CSR
-          key_sel: NoKey
-          integrity: true
-          bkout_type: false
-          zeroizable: false
-          items:
-          [
-            {
-              name: ROT_CREATOR_AUTH_NON_RAW_MFW_CODESIGN_KEY
-              size: 160
-              desc:
-                '''
-                Pub Key used to verify the manufacturing provisioning Software container
-                160B = Custom Cert --> {PubKey:48, Signature:48, Device ID:32, metadata:16}
-                It is expected to be provisioned at Chip Probe stage when LC = TEST
-                i.e. provisioning protected under proper lifecycle logistics / secure supplychain management
-                '''
-              isdigest: false
-              iszer: false
-              ismubi: false
-              iskeymgr_creator: false
-              iskeymgr_owner: false
-              inv_default: 0
-              offset: 1008
-            }
-            {
-              name: ROT_CREATOR_AUTH_OWNERSHIP_STATE
-              size: 4
-              desc:
-                '''
-                Creator Ownership transfer state management
-                UNLOCKED - ownership of ROT not yet claimed
-                LOCKED   - ownership claimed and
-                RELEASED - Release ownership (assets have been cleared, ready to xfer)
-                '''
-              isdigest: false
-              iszer: false
-              ismubi: false
-              iskeymgr_creator: false
-              iskeymgr_owner: false
-              inv_default: 0
-              offset: 1168
-            }
-            {
-              name: ROT_CREATOR_AUTH_ROM2_PATCH_SIGVERIFY_KEY
-              size: 160
-              desc:
-                '''
-                Pub Key used to verify the ROM2 OTP based patch
-                160B = Custom Cert --> {PubKey:48, Signature:48, Device ID:32, metadata:16}
-                It is expected to be provisioned at Chip Probe stage when LC = TEST
-                i.e. provisioning protected under proper lifecycle logistics / secure supplychain management
-                  OTP based key (instead of ROM) facilitates easy key rotation
-                '''
-              isdigest: false
-              iszer: false
-              ismubi: false
-              iskeymgr_creator: false
-              iskeymgr_owner: false
-              inv_default: 0
-              offset: 1172
-            }
-            {
-              name: ROT_CREATOR_AUTH_KEYMANIFEST_KEY
-              size: 160
-              desc:
-                '''
-                Pub Key used to verify the ROT CREATOR KEY MANIFEST.
-                KM is used to provisioning additional keys in (external) flash
-                160B = Custom Cert --> {PubKey:48, Signature:48, Device ID:32, metadata:16}
-                It is expected to be provisioned at Chip Probe stage when LC = TEST
-                i.e. provisioning protected under proper lifecycle logistics / secure supplychain management
-                '''
-              isdigest: false
-              iszer: false
-              ismubi: false
-              iskeymgr_creator: false
-              iskeymgr_owner: false
-              inv_default: 0
-              offset: 1332
-            }
-            {
-              name: ROT_CREATOR_AUTH_UNLOCK4XFER_KEY
-              size: 160
-              desc:
-                '''
-                Pub Key used to verify the ROT CREATOR KEY MANIFEST.
-                Used to authenticate the Unlock Ownership payload. Key Type: ECC NIST-P384 Curve.
-                160B = Custom Cert --> {PubKey:48, Signature:48, Device ID:32, metadata:16}
-                Can be made part bound i.e. unique per part key cert
-                i.e. provisioning protected under proper lifecycle logistics / secure supplychain management
-                '''
-              isdigest: false
-              iszer: false
-              ismubi: false
-              iskeymgr_creator: false
-              iskeymgr_owner: false
-              inv_default: 0
-              offset: 1492
-            }
-            {
-              name: ROT_CREATOR_AUTH_IDENTITY_CERT
-              size: 768
-              desc: ROT Device Identity Certificate endorsed by Silicon Creator stable off device PKI
-              isdigest: false
-              iszer: false
-              ismubi: false
-              iskeymgr_creator: false
-              iskeymgr_owner: false
-              inv_default: 0
-              offset: 1652
-            }
-            {
-              name: ROT_CREATOR_AUTH_DIGEST
-              size: 8
-              offset: 2424
-              ismubi: false
-              isdigest: true
-              iszer: false
-              inv_default: <random>
-              iskeymgr_creator: false
-              iskeymgr_owner: false
-            }
-          ]
-          desc: Software managed creator partition.
-          iskeymgr_creator: false
-          iskeymgr_owner: false
-          ignore_read_lock_in_rma: false
-          size: 1424
-          offset: 1008
+          offset: 832
         }
         {
           name: ROT_FIRMWARE_AUTH_SLOT0
@@ -1023,7 +829,7 @@
           [
             {
               name: ROT_FIRMWARE_AUTH_SLOT0_HASH
-              size: 128
+              size: 32
               desc: Hash of public key for RoT firmware (slot 0)
               isdigest: false
               iszer: false
@@ -1031,12 +837,12 @@
               iskeymgr_creator: false
               iskeymgr_owner: false
               inv_default: 0
-              offset: 2432
+              offset: 864
             }
             {
               name: ROT_FIRMWARE_AUTH_SLOT0_DIGEST
               size: 8
-              offset: 2560
+              offset: 896
               ismubi: false
               isdigest: true
               iszer: false
@@ -1049,8 +855,8 @@
           iskeymgr_creator: false
           iskeymgr_owner: false
           ignore_read_lock_in_rma: false
-          size: 136
-          offset: 2432
+          size: 40
+          offset: 864
         }
         {
           name: ROT_FIRMWARE_AUTH_SLOT1
@@ -1069,7 +875,7 @@
           [
             {
               name: ROT_FIRMWARE_AUTH_SLOT1_HASH
-              size: 128
+              size: 32
               desc: Hash of public key for RoT firmware (slot 1)
               isdigest: false
               iszer: false
@@ -1077,12 +883,12 @@
               iskeymgr_creator: false
               iskeymgr_owner: false
               inv_default: 0
-              offset: 2568
+              offset: 904
             }
             {
               name: ROT_FIRMWARE_AUTH_SLOT1_DIGEST
               size: 8
-              offset: 2696
+              offset: 936
               ismubi: false
               isdigest: true
               iszer: false
@@ -1095,8 +901,8 @@
           iskeymgr_creator: false
           iskeymgr_owner: false
           ignore_read_lock_in_rma: false
-          size: 136
-          offset: 2568
+          size: 40
+          offset: 904
         }
         {
           name: ROT_FIRMWARE_AUTH_SLOT2
@@ -1115,7 +921,7 @@
           [
             {
               name: ROT_FIRMWARE_AUTH_SLOT2_HASH
-              size: 128
+              size: 32
               desc: Hash of public key for RoT firmware (slot 2)
               isdigest: false
               iszer: false
@@ -1123,12 +929,12 @@
               iskeymgr_creator: false
               iskeymgr_owner: false
               inv_default: 0
-              offset: 2704
+              offset: 944
             }
             {
               name: ROT_FIRMWARE_AUTH_SLOT2_DIGEST
               size: 8
-              offset: 2832
+              offset: 976
               ismubi: false
               isdigest: true
               iszer: false
@@ -1141,8 +947,8 @@
           iskeymgr_creator: false
           iskeymgr_owner: false
           ignore_read_lock_in_rma: false
-          size: 136
-          offset: 2704
+          size: 40
+          offset: 944
         }
         {
           name: ROT_FIRMWARE_AUTH_SLOT3
@@ -1161,7 +967,7 @@
           [
             {
               name: ROT_FIRMWARE_AUTH_SLOT3_HASH
-              size: 128
+              size: 32
               desc: Hash of public key for RoT firmware (slot 3)
               isdigest: false
               iszer: false
@@ -1169,12 +975,12 @@
               iskeymgr_creator: false
               iskeymgr_owner: false
               inv_default: 0
-              offset: 2840
+              offset: 984
             }
             {
               name: ROT_FIRMWARE_AUTH_SLOT3_DIGEST
               size: 8
-              offset: 2968
+              offset: 1016
               ismubi: false
               isdigest: true
               iszer: false
@@ -1187,8 +993,8 @@
           iskeymgr_creator: false
           iskeymgr_owner: false
           ignore_read_lock_in_rma: false
-          size: 136
-          offset: 2840
+          size: 40
+          offset: 984
         }
         {
           name: SOC_FIRMWARE_AUTH_SLOT0
@@ -1207,7 +1013,7 @@
           [
             {
               name: SOC_FIRMWARE_AUTH_SLOT0_HASH
-              size: 128
+              size: 32
               desc: Hash of public key for SoC firmware (slot 0)
               isdigest: false
               iszer: false
@@ -1215,12 +1021,12 @@
               iskeymgr_creator: false
               iskeymgr_owner: false
               inv_default: 0
-              offset: 2976
+              offset: 1024
             }
             {
               name: SOC_FIRMWARE_AUTH_SLOT0_DIGEST
               size: 8
-              offset: 3104
+              offset: 1056
               ismubi: false
               isdigest: true
               iszer: false
@@ -1233,8 +1039,8 @@
           iskeymgr_creator: false
           iskeymgr_owner: false
           ignore_read_lock_in_rma: false
-          size: 136
-          offset: 2976
+          size: 40
+          offset: 1024
         }
         {
           name: SOC_FIRMWARE_AUTH_SLOT1
@@ -1253,7 +1059,7 @@
           [
             {
               name: SOC_FIRMWARE_AUTH_SLOT1_HASH
-              size: 128
+              size: 32
               desc: Hash of public key for SoC firmware (slot 1)
               isdigest: false
               iszer: false
@@ -1261,12 +1067,12 @@
               iskeymgr_creator: false
               iskeymgr_owner: false
               inv_default: 0
-              offset: 3112
+              offset: 1064
             }
             {
               name: SOC_FIRMWARE_AUTH_SLOT1_DIGEST
               size: 8
-              offset: 3240
+              offset: 1096
               ismubi: false
               isdigest: true
               iszer: false
@@ -1279,8 +1085,8 @@
           iskeymgr_creator: false
           iskeymgr_owner: false
           ignore_read_lock_in_rma: false
-          size: 136
-          offset: 3112
+          size: 40
+          offset: 1064
         }
         {
           name: SOC_FIRMWARE_AUTH_SLOT2
@@ -1299,7 +1105,7 @@
           [
             {
               name: SOC_FIRMWARE_AUTH_SLOT2_HASH
-              size: 128
+              size: 32
               desc: Hash of public key for SoC firmware (slot 2)
               isdigest: false
               iszer: false
@@ -1307,12 +1113,12 @@
               iskeymgr_creator: false
               iskeymgr_owner: false
               inv_default: 0
-              offset: 3248
+              offset: 1104
             }
             {
               name: SOC_FIRMWARE_AUTH_SLOT2_DIGEST
               size: 8
-              offset: 3376
+              offset: 1136
               ismubi: false
               isdigest: true
               iszer: false
@@ -1325,8 +1131,8 @@
           iskeymgr_creator: false
           iskeymgr_owner: false
           ignore_read_lock_in_rma: false
-          size: 136
-          offset: 3248
+          size: 40
+          offset: 1104
         }
         {
           name: SOC_FIRMWARE_AUTH_SLOT3
@@ -1345,7 +1151,7 @@
           [
             {
               name: SOC_FIRMWARE_AUTH_SLOT3_HASH
-              size: 128
+              size: 32
               desc: Hash of public key for SoC firmware (slot 3)
               isdigest: false
               iszer: false
@@ -1353,12 +1159,12 @@
               iskeymgr_creator: false
               iskeymgr_owner: false
               inv_default: 0
-              offset: 3384
+              offset: 1144
             }
             {
               name: SOC_FIRMWARE_AUTH_SLOT3_DIGEST
               size: 8
-              offset: 3512
+              offset: 1176
               ismubi: false
               isdigest: true
               iszer: false
@@ -1371,8 +1177,8 @@
           iskeymgr_creator: false
           iskeymgr_owner: false
           ignore_read_lock_in_rma: false
-          size: 136
-          offset: 3384
+          size: 40
+          offset: 1144
         }
         {
           name: EXT_NVM
@@ -1390,13 +1196,13 @@
           items:
           [
             {
-              name: EXT_NVM_ANTIREPLAY_FRESHNESS_CNT
-              size: 1024
+              name: EXT_ROM_FRESHNESS_CNT
+              size: 140
               desc:
                 '''
-                Fully SW managed partition
-                1 bit (double bit allocated for redundancy - i.e. 2 physical bits for every logical bit) per day
-                assuming 10 year product lifecycle, allocating 8192 bits of freshness protection.
+                ROM_EXT rollback protection Strike Counter
+                1 bit (double bit allocated for redundancy - i.e. 2 physical bits for every logical bit) per half week
+                assuming 5 year product lifecycle, allocating 1120 bits of freshness protection.
                 Implemented as thermometer encoding. Redundant bit programming & logical OR-ing managed by
                 software. Cannot be ECC protected since different bits in a fuse row are programmed at different times.
                 '''
@@ -1406,15 +1212,53 @@
               iskeymgr_creator: false
               iskeymgr_owner: false
               inv_default: 0
-              offset: 3520
+              offset: 1184
+            }
+            {
+              name: EXT_SOC_FIRMWARE_FRESHNESS_CNT
+              size: 140
+              desc:
+                '''
+                SoC firmware rollback protection Strike Counter
+                1 bit (double bit allocated for redundancy - i.e. 2 physical bits for every logical bit) per half week
+                assuming 5 year product lifecycle, allocating 1120 bits of freshness protection.
+                Implemented as thermometer encoding. Redundant bit programming & logical OR-ing managed by
+                software. Cannot be ECC protected since different bits in a fuse row are programmed at different times.
+                '''
+              isdigest: false
+              iszer: false
+              ismubi: false
+              iskeymgr_creator: false
+              iskeymgr_owner: false
+              inv_default: 0
+              offset: 1324
+            }
+            {
+              name: EXT_SOC_RECOVERY_FIRMWARE_FRESHNESS_CNT
+              size: 140
+              desc:
+                '''
+                SoC recovery firmware rollback protection Strike Counter
+                1 bit (double bit allocated for redundancy - i.e. 2 physical bits for every logical bit) per half week
+                assuming 5 year product lifecycle, allocating 1120 bits of freshness protection.
+                Implemented as thermometer encoding. Redundant bit programming & logical OR-ing managed by
+                software. Cannot be ECC protected since different bits in a fuse row are programmed at different times.
+                '''
+              isdigest: false
+              iszer: false
+              ismubi: false
+              iskeymgr_creator: false
+              iskeymgr_owner: false
+              inv_default: 0
+              offset: 1464
             }
           ]
-          desc: Anti-replay protection Strike Counters partition.
+          desc: SW managed Anti-replay protection Strike Counters partition.
           iskeymgr_creator: false
           iskeymgr_owner: false
           ignore_read_lock_in_rma: false
-          size: 1024
-          offset: 3520
+          size: 424
+          offset: 1184
         }
         {
           name: HW_CFG0
@@ -1440,7 +1284,7 @@
               ismubi: false
               iskeymgr_creator: false
               iskeymgr_owner: false
-              offset: 4544
+              offset: 1608
             }
             {
               name: MANUF_STATE
@@ -1451,12 +1295,12 @@
               ismubi: false
               iskeymgr_creator: false
               iskeymgr_owner: false
-              offset: 4576
+              offset: 1640
             }
             {
               name: HW_CFG0_DIGEST
               size: 8
-              offset: 4608
+              offset: 1672
               ismubi: false
               isdigest: true
               iszer: false
@@ -1477,7 +1321,7 @@
           iskeymgr_owner: false
           ignore_read_lock_in_rma: false
           size: 72
-          offset: 4544
+          offset: 1608
         }
         {
           name: HW_CFG1
@@ -1508,7 +1352,7 @@
               ismubi: false
               iskeymgr_creator: false
               iskeymgr_owner: false
-              offset: 4616
+              offset: 1680
             }
             {
               name: EN_CSRNG_SW_APP_READ
@@ -1526,7 +1370,7 @@
               iszer: false
               iskeymgr_creator: false
               iskeymgr_owner: false
-              offset: 4620
+              offset: 1684
             }
             {
               name: EN_SRAM_IFETCH
@@ -1537,12 +1381,12 @@
               iszer: false
               iskeymgr_creator: false
               iskeymgr_owner: false
-              offset: 4621
+              offset: 1685
             }
             {
               name: HW_CFG1_DIGEST
               size: 8
-              offset: 4624
+              offset: 1688
               ismubi: false
               isdigest: true
               iszer: false
@@ -1573,7 +1417,7 @@
           iskeymgr_owner: false
           ignore_read_lock_in_rma: false
           size: 16
-          offset: 4616
+          offset: 1680
         }
         {
           name: SECRET0
@@ -1600,7 +1444,7 @@
               ismubi: false
               iskeymgr_creator: false
               iskeymgr_owner: false
-              offset: 4632
+              offset: 1696
             }
             {
               name: TEST_EXIT_TOKEN
@@ -1611,12 +1455,12 @@
               ismubi: false
               iskeymgr_creator: false
               iskeymgr_owner: false
-              offset: 4648
+              offset: 1712
             }
             {
               name: SECRET0_DIGEST
               size: 8
-              offset: 4664
+              offset: 1728
               ismubi: false
               isdigest: true
               iszer: false
@@ -1627,7 +1471,7 @@
             {
               name: SECRET0_ZER
               size: 8
-              offset: 4672
+              offset: 1736
               ismubi: false
               isdigest: false
               iszer: true
@@ -1645,7 +1489,7 @@
           iskeymgr_creator: false
           iskeymgr_owner: false
           size: 48
-          offset: 4632
+          offset: 1696
         }
         {
           name: SECRET1
@@ -1672,12 +1516,12 @@
               ismubi: false
               iskeymgr_creator: false
               iskeymgr_owner: false
-              offset: 4680
+              offset: 1744
             }
             {
               name: SECRET1_DIGEST
               size: 8
-              offset: 4696
+              offset: 1760
               ismubi: false
               isdigest: true
               iszer: false
@@ -1688,7 +1532,7 @@
             {
               name: SECRET1_ZER
               size: 8
-              offset: 4704
+              offset: 1768
               ismubi: false
               isdigest: false
               iszer: true
@@ -1706,7 +1550,7 @@
           iskeymgr_creator: false
           iskeymgr_owner: false
           size: 32
-          offset: 4680
+          offset: 1744
         }
         {
           name: SECRET2
@@ -1733,7 +1577,7 @@
               ismubi: false
               iskeymgr_creator: false
               iskeymgr_owner: false
-              offset: 4712
+              offset: 1776
             }
             {
               name: CREATOR_ROOT_KEY_SHARE0
@@ -1744,7 +1588,7 @@
               iszer: false
               ismubi: false
               iskeymgr_owner: false
-              offset: 4728
+              offset: 1792
             }
             {
               name: CREATOR_ROOT_KEY_SHARE1
@@ -1755,7 +1599,7 @@
               iszer: false
               ismubi: false
               iskeymgr_owner: false
-              offset: 4760
+              offset: 1824
             }
             {
               name: CREATOR_SEED
@@ -1766,12 +1610,12 @@
               iszer: false
               ismubi: false
               iskeymgr_owner: false
-              offset: 4792
+              offset: 1856
             }
             {
               name: SECRET2_DIGEST
               size: 8
-              offset: 4824
+              offset: 1888
               ismubi: false
               isdigest: true
               iszer: false
@@ -1782,7 +1626,7 @@
             {
               name: SECRET2_ZER
               size: 8
-              offset: 4832
+              offset: 1896
               ismubi: false
               isdigest: false
               iszer: true
@@ -1800,7 +1644,7 @@
           iskeymgr_creator: true
           iskeymgr_owner: false
           size: 128
-          offset: 4712
+          offset: 1776
         }
         {
           name: SECRET3
@@ -1826,12 +1670,12 @@
               iszer: false
               ismubi: false
               iskeymgr_creator: false
-              offset: 4840
+              offset: 1904
             }
             {
               name: SECRET3_DIGEST
               size: 8
-              offset: 4872
+              offset: 1936
               ismubi: false
               isdigest: true
               iszer: false
@@ -1842,7 +1686,7 @@
             {
               name: SECRET3_ZER
               size: 8
-              offset: 4880
+              offset: 1944
               ismubi: false
               isdigest: false
               iszer: true
@@ -1861,7 +1705,7 @@
           iskeymgr_owner: true
           ignore_read_lock_in_rma: false
           size: 48
-          offset: 4840
+          offset: 1904
         }
         {
           name: LIFE_CYCLE
@@ -1886,7 +1730,7 @@
               ismubi: false
               iskeymgr_creator: false
               iskeymgr_owner: false
-              offset: 4888
+              offset: 1952
             }
             {
               name: LC_STATE
@@ -1897,7 +1741,7 @@
               ismubi: false
               iskeymgr_creator: false
               iskeymgr_owner: false
-              offset: 4936
+              offset: 2000
             }
           ]
           desc:
@@ -1918,7 +1762,7 @@
           zeroizable: false
           ignore_read_lock_in_rma: false
           size: 88
-          offset: 4888
+          offset: 1952
         }
       ]
     }

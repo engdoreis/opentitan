@@ -16,7 +16,7 @@
 {
     otp: {
         width: "2", // bytes
-        depth: "4096"
+        depth: "1024"
     }
 
     // Definition of scrambling and digest constants and keys.
@@ -107,14 +107,6 @@
             zeroizable: false,
             items: [
                 {
-                    name: "CREATOR_SW_CFG_AST_CFG",
-                    size: "124"
-                }
-                {
-                    name: "CREATOR_SW_CFG_AST_INIT_EN",
-                    size: "4"
-                }
-                {
                     name: "CREATOR_SW_CFG_OVERRIDES",
                     size: "32"
                 }
@@ -137,18 +129,6 @@
                 {
                     name: "CREATOR_SW_CFG_SIGVERIFY_SPX_KEY_EN",
                     size: "8"
-                }
-                {
-                    name: "CREATOR_SW_CFG_FLASH_DATA_DEFAULT_CFG",
-                    size: "4"
-                }
-                {
-                    name: "CREATOR_SW_CFG_FLASH_INFO_BOOT_DATA_CFG",
-                    size: "4"
-                }
-                {
-                    name: "CREATOR_SW_CFG_FLASH_HW_INFO_CFG_OVERRIDE",
-                    size: "4"
                 }
                 {
                     name: "CREATOR_SW_CFG_RNG_EN",
@@ -414,78 +394,6 @@
             '''
         }
         {
-            name:       "ROT_CREATOR_AUTH",
-            variant:    "Unbuffered",
-            absorb:     false,
-            secret:     false,
-            sw_digest:  true,
-            hw_digest:  false,
-            write_lock: "Digest",
-            read_lock:  "CSR",
-            key_sel:    "NoKey",
-            integrity:  true,
-            bkout_type: false,
-            zeroizable: false,
-            items: [
-                {
-                    name: "ROT_CREATOR_AUTH_NON_RAW_MFW_CODESIGN_KEY",
-                    size: "160"
-                    desc: ''' Pub Key used to verify the manufacturing provisioning Software container
-                    160B = Custom Cert --> {PubKey:48, Signature:48, Device ID:32, metadata:16}
-                    It is expected to be provisioned at Chip Probe stage when LC = TEST
-                    i.e. provisioning protected under proper lifecycle logistics / secure supplychain management
-                    '''
-                }
-                {
-                    name: "ROT_CREATOR_AUTH_OWNERSHIP_STATE",
-                    size: "4"
-                    desc: ''' Creator Ownership transfer state management
-                    UNLOCKED - ownership of ROT not yet claimed
-                    LOCKED   - ownership claimed and
-                    RELEASED - Release ownership (assets have been cleared, ready to xfer)
-                    '''
-                }
-                {
-                    name: "ROT_CREATOR_AUTH_ROM2_PATCH_SIGVERIFY_KEY",
-                    size: "160"
-                    desc: ''' Pub Key used to verify the ROM2 OTP based patch
-                    160B = Custom Cert --> {PubKey:48, Signature:48, Device ID:32, metadata:16}
-                    It is expected to be provisioned at Chip Probe stage when LC = TEST
-                    i.e. provisioning protected under proper lifecycle logistics / secure supplychain management
-                            OTP based key (instead of ROM) facilitates easy key rotation
-                    '''
-                }
-                {
-                    name: "ROT_CREATOR_AUTH_KEYMANIFEST_KEY",
-                    size: "160"
-                    desc: ''' Pub Key used to verify the ROT CREATOR KEY MANIFEST.
-                    KM is used to provisioning additional keys in (external) flash
-                    160B = Custom Cert --> {PubKey:48, Signature:48, Device ID:32, metadata:16}
-                    It is expected to be provisioned at Chip Probe stage when LC = TEST
-                    i.e. provisioning protected under proper lifecycle logistics / secure supplychain management
-                    '''
-                }
-                {
-                    name: "ROT_CREATOR_AUTH_UNLOCK4XFER_KEY",
-                    size: "160"
-                    desc: ''' Pub Key used to verify the ROT CREATOR KEY MANIFEST.
-                    Used to authenticate the Unlock Ownership payload. Key Type: ECC NIST-P384 Curve.
-                    160B = Custom Cert --> {PubKey:48, Signature:48, Device ID:32, metadata:16}
-                    Can be made part bound i.e. unique per part key cert
-                    i.e. provisioning protected under proper lifecycle logistics / secure supplychain management
-                    '''
-                }
-                {
-                    name: "ROT_CREATOR_AUTH_IDENTITY_CERT",
-                    size: "768"
-                    desc: ''' ROT Device Identity Certificate endorsed by Silicon Creator stable off device PKI
-                    '''
-                }
-            ],
-            desc: '''Software managed creator partition.
-            '''
-        }
-        {
             name:       "ROT_FIRMWARE_AUTH_SLOT0",
             variant:    "Unbuffered",
             absorb:     false,
@@ -501,7 +409,7 @@
             items: [
                 {
                     name: "ROT_FIRMWARE_AUTH_SLOT0_HASH",
-                    size: "128"
+                    size: "32"
                     desc: '''Hash of public key for RoT firmware (slot 0)
                     '''
                 }
@@ -525,7 +433,7 @@
             items: [
                 {
                     name: "ROT_FIRMWARE_AUTH_SLOT1_HASH",
-                    size: "128"
+                    size: "32"
                     desc: '''Hash of public key for RoT firmware (slot 1)
                     '''
                 }
@@ -549,7 +457,7 @@
             items: [
                 {
                     name: "ROT_FIRMWARE_AUTH_SLOT2_HASH",
-                    size: "128"
+                    size: "32"
                     desc: '''Hash of public key for RoT firmware (slot 2)
                     '''
                 }
@@ -573,7 +481,7 @@
             items: [
                 {
                     name: "ROT_FIRMWARE_AUTH_SLOT3_HASH",
-                    size: "128"
+                    size: "32"
                     desc: '''Hash of public key for RoT firmware (slot 3)
                     '''
                 }
@@ -597,7 +505,7 @@
             items: [
                 {
                     name: "SOC_FIRMWARE_AUTH_SLOT0_HASH",
-                    size: "128"
+                    size: "32"
                     desc: '''Hash of public key for SoC firmware (slot 0)
                     '''
                 }
@@ -621,7 +529,7 @@
             items: [
                 {
                     name: "SOC_FIRMWARE_AUTH_SLOT1_HASH",
-                    size: "128"
+                    size: "32"
                     desc: '''Hash of public key for SoC firmware (slot 1)
                     '''
                 }
@@ -645,7 +553,7 @@
             items: [
                 {
                     name: "SOC_FIRMWARE_AUTH_SLOT2_HASH",
-                    size: "128"
+                    size: "32"
                     desc: '''Hash of public key for SoC firmware (slot 2)
                     '''
                 }
@@ -669,7 +577,7 @@
             items: [
                 {
                     name: "SOC_FIRMWARE_AUTH_SLOT3_HASH",
-                    size: "128"
+                    size: "32"
                     desc: '''Hash of public key for SoC firmware (slot 3)
                     '''
                 }
@@ -694,17 +602,37 @@
             zeroizable: false,
             items: [
                 {
-                    name: "EXT_NVM_ANTIREPLAY_FRESHNESS_CNT",
-                    size: "1024"
-                    desc: ''' Fully SW managed partition
-                    1 bit (double bit allocated for redundancy - i.e. 2 physical bits for every logical bit) per day
-                    assuming 10 year product lifecycle, allocating 8192 bits of freshness protection.
+                    name: "EXT_ROM_FRESHNESS_CNT",
+                    size: "140"
+                    desc: '''ROM_EXT rollback protection Strike Counter
+                    1 bit (double bit allocated for redundancy - i.e. 2 physical bits for every logical bit) per half week
+                    assuming 5 year product lifecycle, allocating 1120 bits of freshness protection.
+                    Implemented as thermometer encoding. Redundant bit programming & logical OR-ing managed by
+                    software. Cannot be ECC protected since different bits in a fuse row are programmed at different times.
+                    '''
+                }
+                {
+                    name: "EXT_SOC_FIRMWARE_FRESHNESS_CNT",
+                    size: "140"
+                    desc: '''SoC firmware rollback protection Strike Counter
+                    1 bit (double bit allocated for redundancy - i.e. 2 physical bits for every logical bit) per half week
+                    assuming 5 year product lifecycle, allocating 1120 bits of freshness protection.
+                    Implemented as thermometer encoding. Redundant bit programming & logical OR-ing managed by
+                    software. Cannot be ECC protected since different bits in a fuse row are programmed at different times.
+                    '''
+                }
+                {
+                    name: "EXT_SOC_RECOVERY_FIRMWARE_FRESHNESS_CNT",
+                    size: "140"
+                    desc: '''SoC recovery firmware rollback protection Strike Counter
+                    1 bit (double bit allocated for redundancy - i.e. 2 physical bits for every logical bit) per half week
+                    assuming 5 year product lifecycle, allocating 1120 bits of freshness protection.
                     Implemented as thermometer encoding. Redundant bit programming & logical OR-ing managed by
                     software. Cannot be ECC protected since different bits in a fuse row are programmed at different times.
                     '''
                 }
             ],
-            desc: '''Anti-replay protection Strike Counters partition.
+            desc: '''SW managed Anti-replay protection Strike Counters partition.
             '''
         }
         {

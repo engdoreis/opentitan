@@ -263,10 +263,6 @@ class otp_ctrl_base_vseq extends cip_base_vseq #(
       `DV_CHECK_STD_RANDOMIZE_FATAL(wdata);
       dai_wr(OwnerSwCfgDigestOffset, wdata[TL_DW-1:0], wdata[TL_DW*2-1:TL_DW]);
     end
-    if (wr_digest[RotCreatorAuthIdx]) begin
-      `DV_CHECK_STD_RANDOMIZE_FATAL(wdata);
-      dai_wr(RotCreatorAuthDigestOffset, wdata[TL_DW-1:0], wdata[TL_DW*2-1:TL_DW]);
-    end
     if (wr_digest[RotFirmwareAuthSlot0Idx]) begin
       `DV_CHECK_STD_RANDOMIZE_FATAL(wdata);
       dai_wr(RotFirmwareAuthSlot0DigestOffset, wdata[TL_DW-1:0], wdata[TL_DW*2-1:TL_DW]);
@@ -306,7 +302,6 @@ class otp_ctrl_base_vseq extends cip_base_vseq #(
     if (do_rd_lock[CreatorSwCfgIdx]) csr_wr(ral.creator_sw_cfg_read_lock, 0);
     if (do_rd_lock[OwnerSwCfgIdx]) csr_wr(ral.owner_sw_cfg_read_lock, 0);
     if (do_rd_lock[AuthSlotStateIdx]) csr_wr(ral.auth_slot_state_read_lock, 0);
-    if (do_rd_lock[RotCreatorAuthIdx]) csr_wr(ral.rot_creator_auth_read_lock, 0);
     if (do_rd_lock[RotFirmwareAuthSlot0Idx]) csr_wr(ral.rot_firmware_auth_slot0_read_lock, 0);
     if (do_rd_lock[RotFirmwareAuthSlot1Idx]) csr_wr(ral.rot_firmware_auth_slot1_read_lock, 0);
     if (do_rd_lock[RotFirmwareAuthSlot2Idx]) csr_wr(ral.rot_firmware_auth_slot2_read_lock, 0);
@@ -327,8 +322,6 @@ class otp_ctrl_base_vseq extends cip_base_vseq #(
     csr_rd(.ptr(ral.creator_sw_cfg_digest[1]), .value(val));
     csr_rd(.ptr(ral.owner_sw_cfg_digest[0]), .value(val));
     csr_rd(.ptr(ral.owner_sw_cfg_digest[1]), .value(val));
-    csr_rd(.ptr(ral.rot_creator_auth_digest[0]), .value(val));
-    csr_rd(.ptr(ral.rot_creator_auth_digest[1]), .value(val));
     csr_rd(.ptr(ral.rot_firmware_auth_slot0_digest[0]), .value(val));
     csr_rd(.ptr(ral.rot_firmware_auth_slot0_digest[1]), .value(val));
     csr_rd(.ptr(ral.rot_firmware_auth_slot1_digest[0]), .value(val));
@@ -382,11 +375,6 @@ class otp_ctrl_base_vseq extends cip_base_vseq #(
            `gmv(ral.owner_sw_cfg_digest[1])) &&
           !$urandom_range(0, 4)) begin
         forced_mubi_part_access[OwnerSwCfgIdx].write_lock = 1;
-      end
-      if ((`gmv(ral.rot_creator_auth_digest[0]) ||
-           `gmv(ral.rot_creator_auth_digest[1])) &&
-          !$urandom_range(0, 4)) begin
-        forced_mubi_part_access[RotCreatorAuthIdx].write_lock = 1;
       end
       if ((`gmv(ral.rot_firmware_auth_slot0_digest[0]) ||
            `gmv(ral.rot_firmware_auth_slot0_digest[1])) &&
@@ -471,9 +459,6 @@ class otp_ctrl_base_vseq extends cip_base_vseq #(
       end
       if ((`gmv(ral.auth_slot_state_read_lock) == 0) && !$urandom_range(0, 4)) begin
         forced_mubi_part_access[AuthSlotStateIdx].read_lock = 1;
-      end
-      if ((`gmv(ral.rot_creator_auth_read_lock) == 0) && !$urandom_range(0, 4)) begin
-        forced_mubi_part_access[RotCreatorAuthIdx].read_lock = 1;
       end
       if ((`gmv(ral.rot_firmware_auth_slot0_read_lock) == 0) && !$urandom_range(0, 4)) begin
         forced_mubi_part_access[RotFirmwareAuthSlot0Idx].read_lock = 1;

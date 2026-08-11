@@ -26,7 +26,7 @@ module otp_ctrl_core_reg_top (
 
   import otp_ctrl_reg_pkg::* ;
 
-  localparam int AW = 14;
+  localparam int AW = 12;
   localparam int DW = 32;
   localparam int DBW = DW/8;                    // Byte Width
 
@@ -57,9 +57,9 @@ module otp_ctrl_core_reg_top (
 
   // also check for spurious write enables
   logic reg_we_err;
-  logic [91:0] reg_we_check;
+  logic [87:0] reg_we_check;
   prim_reg_we_check #(
-    .OneHotWidth(92)
+    .OneHotWidth(88)
   ) u_prim_reg_we_check (
     .clk_i(clk_i),
     .rst_ni(rst_ni),
@@ -128,7 +128,7 @@ module otp_ctrl_core_reg_top (
   // Create steering logic
   always_comb begin
     reg_steer =
-        tl_i.a_address[AW-1:0] inside {[8192:16383]} ? 1'd0 :
+        tl_i.a_address[AW-1:0] inside {[2048:4095]} ? 1'd0 :
         // Default set to register
         1'd1;
 
@@ -205,7 +205,6 @@ module otp_ctrl_core_reg_top (
   logic partition_status_0_creator_sw_cfg_error_qs;
   logic partition_status_0_owner_sw_cfg_error_qs;
   logic partition_status_0_auth_slot_state_error_qs;
-  logic partition_status_0_rot_creator_auth_error_qs;
   logic partition_status_0_rot_firmware_auth_slot0_error_qs;
   logic partition_status_0_rot_firmware_auth_slot1_error_qs;
   logic partition_status_0_rot_firmware_auth_slot2_error_qs;
@@ -266,8 +265,6 @@ module otp_ctrl_core_reg_top (
   logic [2:0] err_code_20_qs;
   logic err_code_21_re;
   logic [2:0] err_code_21_qs;
-  logic err_code_22_re;
-  logic [2:0] err_code_22_qs;
   logic direct_access_regwen_re;
   logic direct_access_regwen_we;
   logic direct_access_regwen_qs;
@@ -278,8 +275,8 @@ module otp_ctrl_core_reg_top (
   logic direct_access_cmd_digest_wd;
   logic direct_access_cmd_zeroize_wd;
   logic direct_access_address_we;
-  logic [12:0] direct_access_address_qs;
-  logic [12:0] direct_access_address_wd;
+  logic [10:0] direct_access_address_qs;
+  logic [10:0] direct_access_address_wd;
   logic direct_access_wdata_0_we;
   logic [31:0] direct_access_wdata_0_qs;
   logic [31:0] direct_access_wdata_0_wd;
@@ -320,9 +317,6 @@ module otp_ctrl_core_reg_top (
   logic auth_slot_state_read_lock_we;
   logic auth_slot_state_read_lock_qs;
   logic auth_slot_state_read_lock_wd;
-  logic rot_creator_auth_read_lock_we;
-  logic rot_creator_auth_read_lock_qs;
-  logic rot_creator_auth_read_lock_wd;
   logic rot_firmware_auth_slot0_read_lock_we;
   logic rot_firmware_auth_slot0_read_lock_qs;
   logic rot_firmware_auth_slot0_read_lock_wd;
@@ -362,10 +356,6 @@ module otp_ctrl_core_reg_top (
   logic [31:0] owner_sw_cfg_digest_0_qs;
   logic owner_sw_cfg_digest_1_re;
   logic [31:0] owner_sw_cfg_digest_1_qs;
-  logic rot_creator_auth_digest_0_re;
-  logic [31:0] rot_creator_auth_digest_0_qs;
-  logic rot_creator_auth_digest_1_re;
-  logic [31:0] rot_creator_auth_digest_1_qs;
   logic rot_firmware_auth_slot0_digest_0_re;
   logic [31:0] rot_firmware_auth_slot0_digest_0_qs;
   logic rot_firmware_auth_slot0_digest_1_re;
@@ -871,22 +861,7 @@ module otp_ctrl_core_reg_top (
     .qs     (partition_status_0_auth_slot_state_error_qs)
   );
 
-  //   F[rot_creator_auth_error]: 4:4
-  prim_subreg_ext #(
-    .DW    (1)
-  ) u_partition_status_0_rot_creator_auth_error (
-    .re     (partition_status_0_re),
-    .we     (1'b0),
-    .wd     ('0),
-    .d      (hw2reg.partition_status_0.rot_creator_auth_error.d),
-    .qre    (),
-    .qe     (),
-    .q      (),
-    .ds     (),
-    .qs     (partition_status_0_rot_creator_auth_error_qs)
-  );
-
-  //   F[rot_firmware_auth_slot0_error]: 5:5
+  //   F[rot_firmware_auth_slot0_error]: 4:4
   prim_subreg_ext #(
     .DW    (1)
   ) u_partition_status_0_rot_firmware_auth_slot0_error (
@@ -901,7 +876,7 @@ module otp_ctrl_core_reg_top (
     .qs     (partition_status_0_rot_firmware_auth_slot0_error_qs)
   );
 
-  //   F[rot_firmware_auth_slot1_error]: 6:6
+  //   F[rot_firmware_auth_slot1_error]: 5:5
   prim_subreg_ext #(
     .DW    (1)
   ) u_partition_status_0_rot_firmware_auth_slot1_error (
@@ -916,7 +891,7 @@ module otp_ctrl_core_reg_top (
     .qs     (partition_status_0_rot_firmware_auth_slot1_error_qs)
   );
 
-  //   F[rot_firmware_auth_slot2_error]: 7:7
+  //   F[rot_firmware_auth_slot2_error]: 6:6
   prim_subreg_ext #(
     .DW    (1)
   ) u_partition_status_0_rot_firmware_auth_slot2_error (
@@ -931,7 +906,7 @@ module otp_ctrl_core_reg_top (
     .qs     (partition_status_0_rot_firmware_auth_slot2_error_qs)
   );
 
-  //   F[rot_firmware_auth_slot3_error]: 8:8
+  //   F[rot_firmware_auth_slot3_error]: 7:7
   prim_subreg_ext #(
     .DW    (1)
   ) u_partition_status_0_rot_firmware_auth_slot3_error (
@@ -946,7 +921,7 @@ module otp_ctrl_core_reg_top (
     .qs     (partition_status_0_rot_firmware_auth_slot3_error_qs)
   );
 
-  //   F[soc_firmware_auth_slot0_error]: 9:9
+  //   F[soc_firmware_auth_slot0_error]: 8:8
   prim_subreg_ext #(
     .DW    (1)
   ) u_partition_status_0_soc_firmware_auth_slot0_error (
@@ -961,7 +936,7 @@ module otp_ctrl_core_reg_top (
     .qs     (partition_status_0_soc_firmware_auth_slot0_error_qs)
   );
 
-  //   F[soc_firmware_auth_slot1_error]: 10:10
+  //   F[soc_firmware_auth_slot1_error]: 9:9
   prim_subreg_ext #(
     .DW    (1)
   ) u_partition_status_0_soc_firmware_auth_slot1_error (
@@ -976,7 +951,7 @@ module otp_ctrl_core_reg_top (
     .qs     (partition_status_0_soc_firmware_auth_slot1_error_qs)
   );
 
-  //   F[soc_firmware_auth_slot2_error]: 11:11
+  //   F[soc_firmware_auth_slot2_error]: 10:10
   prim_subreg_ext #(
     .DW    (1)
   ) u_partition_status_0_soc_firmware_auth_slot2_error (
@@ -991,7 +966,7 @@ module otp_ctrl_core_reg_top (
     .qs     (partition_status_0_soc_firmware_auth_slot2_error_qs)
   );
 
-  //   F[soc_firmware_auth_slot3_error]: 12:12
+  //   F[soc_firmware_auth_slot3_error]: 11:11
   prim_subreg_ext #(
     .DW    (1)
   ) u_partition_status_0_soc_firmware_auth_slot3_error (
@@ -1006,7 +981,7 @@ module otp_ctrl_core_reg_top (
     .qs     (partition_status_0_soc_firmware_auth_slot3_error_qs)
   );
 
-  //   F[ext_nvm_error]: 13:13
+  //   F[ext_nvm_error]: 12:12
   prim_subreg_ext #(
     .DW    (1)
   ) u_partition_status_0_ext_nvm_error (
@@ -1021,7 +996,7 @@ module otp_ctrl_core_reg_top (
     .qs     (partition_status_0_ext_nvm_error_qs)
   );
 
-  //   F[hw_cfg0_error]: 14:14
+  //   F[hw_cfg0_error]: 13:13
   prim_subreg_ext #(
     .DW    (1)
   ) u_partition_status_0_hw_cfg0_error (
@@ -1036,7 +1011,7 @@ module otp_ctrl_core_reg_top (
     .qs     (partition_status_0_hw_cfg0_error_qs)
   );
 
-  //   F[hw_cfg1_error]: 15:15
+  //   F[hw_cfg1_error]: 14:14
   prim_subreg_ext #(
     .DW    (1)
   ) u_partition_status_0_hw_cfg1_error (
@@ -1051,7 +1026,7 @@ module otp_ctrl_core_reg_top (
     .qs     (partition_status_0_hw_cfg1_error_qs)
   );
 
-  //   F[secret0_error]: 16:16
+  //   F[secret0_error]: 15:15
   prim_subreg_ext #(
     .DW    (1)
   ) u_partition_status_0_secret0_error (
@@ -1066,7 +1041,7 @@ module otp_ctrl_core_reg_top (
     .qs     (partition_status_0_secret0_error_qs)
   );
 
-  //   F[secret1_error]: 17:17
+  //   F[secret1_error]: 16:16
   prim_subreg_ext #(
     .DW    (1)
   ) u_partition_status_0_secret1_error (
@@ -1081,7 +1056,7 @@ module otp_ctrl_core_reg_top (
     .qs     (partition_status_0_secret1_error_qs)
   );
 
-  //   F[secret2_error]: 18:18
+  //   F[secret2_error]: 17:17
   prim_subreg_ext #(
     .DW    (1)
   ) u_partition_status_0_secret2_error (
@@ -1096,7 +1071,7 @@ module otp_ctrl_core_reg_top (
     .qs     (partition_status_0_secret2_error_qs)
   );
 
-  //   F[secret3_error]: 19:19
+  //   F[secret3_error]: 18:18
   prim_subreg_ext #(
     .DW    (1)
   ) u_partition_status_0_secret3_error (
@@ -1111,7 +1086,7 @@ module otp_ctrl_core_reg_top (
     .qs     (partition_status_0_secret3_error_qs)
   );
 
-  //   F[life_cycle_error]: 20:20
+  //   F[life_cycle_error]: 19:19
   prim_subreg_ext #(
     .DW    (1)
   ) u_partition_status_0_life_cycle_error (
@@ -1501,23 +1476,6 @@ module otp_ctrl_core_reg_top (
   );
 
 
-  // Subregister 22 of Multireg err_code
-  // R[err_code_22]: V(True)
-  prim_subreg_ext #(
-    .DW    (3)
-  ) u_err_code_22 (
-    .re     (err_code_22_re),
-    .we     (1'b0),
-    .wd     ('0),
-    .d      (hw2reg.err_code[22].d),
-    .qre    (),
-    .qe     (),
-    .q      (),
-    .ds     (),
-    .qs     (err_code_22_qs)
-  );
-
-
   // R[direct_access_regwen]: V(True)
   logic direct_access_regwen_qe;
   logic [0:0] direct_access_regwen_flds_we;
@@ -1615,9 +1573,9 @@ module otp_ctrl_core_reg_top (
   logic direct_access_address_gated_we;
   assign direct_access_address_gated_we = direct_access_address_we & direct_access_regwen_qs;
   prim_subreg #(
-    .DW      (13),
+    .DW      (11),
     .SwAccess(prim_subreg_pkg::SwAccessRW),
-    .RESVAL  (13'h0),
+    .RESVAL  (11'h0),
     .Mubi    (1'b0)
   ) u_direct_access_address (
     .clk_i   (clk_i),
@@ -2053,38 +2011,6 @@ module otp_ctrl_core_reg_top (
   );
 
 
-  // R[rot_creator_auth_read_lock]: V(False)
-  // Create REGWEN-gated WE signal
-  logic rot_creator_auth_read_lock_gated_we;
-  assign rot_creator_auth_read_lock_gated_we =
-    rot_creator_auth_read_lock_we & direct_access_regwen_qs;
-  prim_subreg #(
-    .DW      (1),
-    .SwAccess(prim_subreg_pkg::SwAccessW0C),
-    .RESVAL  (1'h1),
-    .Mubi    (1'b0)
-  ) u_rot_creator_auth_read_lock (
-    .clk_i   (clk_i),
-    .rst_ni  (rst_ni),
-
-    // from register interface
-    .we     (rot_creator_auth_read_lock_gated_we),
-    .wd     (rot_creator_auth_read_lock_wd),
-
-    // from internal hardware
-    .de     (1'b0),
-    .d      ('0),
-
-    // to internal hardware
-    .qe     (),
-    .q      (reg2hw.rot_creator_auth_read_lock.q),
-    .ds     (),
-
-    // to register interface (read)
-    .qs     (rot_creator_auth_read_lock_qs)
-  );
-
-
   // R[rot_firmware_auth_slot0_read_lock]: V(False)
   // Create REGWEN-gated WE signal
   logic rot_firmware_auth_slot0_read_lock_gated_we;
@@ -2471,40 +2397,6 @@ module otp_ctrl_core_reg_top (
     .q      (),
     .ds     (),
     .qs     (owner_sw_cfg_digest_1_qs)
-  );
-
-
-  // Subregister 0 of Multireg rot_creator_auth_digest
-  // R[rot_creator_auth_digest_0]: V(True)
-  prim_subreg_ext #(
-    .DW    (32)
-  ) u_rot_creator_auth_digest_0 (
-    .re     (rot_creator_auth_digest_0_re),
-    .we     (1'b0),
-    .wd     ('0),
-    .d      (hw2reg.rot_creator_auth_digest[0].d),
-    .qre    (),
-    .qe     (),
-    .q      (),
-    .ds     (),
-    .qs     (rot_creator_auth_digest_0_qs)
-  );
-
-
-  // Subregister 1 of Multireg rot_creator_auth_digest
-  // R[rot_creator_auth_digest_1]: V(True)
-  prim_subreg_ext #(
-    .DW    (32)
-  ) u_rot_creator_auth_digest_1 (
-    .re     (rot_creator_auth_digest_1_re),
-    .we     (1'b0),
-    .wd     ('0),
-    .d      (hw2reg.rot_creator_auth_digest[1].d),
-    .qre    (),
-    .qe     (),
-    .q      (),
-    .ds     (),
-    .qs     (rot_creator_auth_digest_1_qs)
   );
 
 
@@ -2985,7 +2877,7 @@ module otp_ctrl_core_reg_top (
 
 
 
-  logic [91:0] addr_hit;
+  logic [87:0] addr_hit;
   always_comb begin
     addr_hit[ 0] = (reg_addr == OTP_CTRL_INTR_STATE_OFFSET);
     addr_hit[ 1] = (reg_addr == OTP_CTRL_INTR_ENABLE_OFFSET);
@@ -3015,70 +2907,66 @@ module otp_ctrl_core_reg_top (
     addr_hit[25] = (reg_addr == OTP_CTRL_ERR_CODE_19_OFFSET);
     addr_hit[26] = (reg_addr == OTP_CTRL_ERR_CODE_20_OFFSET);
     addr_hit[27] = (reg_addr == OTP_CTRL_ERR_CODE_21_OFFSET);
-    addr_hit[28] = (reg_addr == OTP_CTRL_ERR_CODE_22_OFFSET);
-    addr_hit[29] = (reg_addr == OTP_CTRL_DIRECT_ACCESS_REGWEN_OFFSET);
-    addr_hit[30] = (reg_addr == OTP_CTRL_DIRECT_ACCESS_CMD_OFFSET);
-    addr_hit[31] = (reg_addr == OTP_CTRL_DIRECT_ACCESS_ADDRESS_OFFSET);
-    addr_hit[32] = (reg_addr == OTP_CTRL_DIRECT_ACCESS_WDATA_0_OFFSET);
-    addr_hit[33] = (reg_addr == OTP_CTRL_DIRECT_ACCESS_WDATA_1_OFFSET);
-    addr_hit[34] = (reg_addr == OTP_CTRL_DIRECT_ACCESS_RDATA_0_OFFSET);
-    addr_hit[35] = (reg_addr == OTP_CTRL_DIRECT_ACCESS_RDATA_1_OFFSET);
-    addr_hit[36] = (reg_addr == OTP_CTRL_CHECK_TRIGGER_REGWEN_OFFSET);
-    addr_hit[37] = (reg_addr == OTP_CTRL_CHECK_TRIGGER_OFFSET);
-    addr_hit[38] = (reg_addr == OTP_CTRL_CHECK_REGWEN_OFFSET);
-    addr_hit[39] = (reg_addr == OTP_CTRL_CHECK_TIMEOUT_OFFSET);
-    addr_hit[40] = (reg_addr == OTP_CTRL_INTEGRITY_CHECK_PERIOD_OFFSET);
-    addr_hit[41] = (reg_addr == OTP_CTRL_CONSISTENCY_CHECK_PERIOD_OFFSET);
-    addr_hit[42] = (reg_addr == OTP_CTRL_VENDOR_TEST_READ_LOCK_OFFSET);
-    addr_hit[43] = (reg_addr == OTP_CTRL_CREATOR_SW_CFG_READ_LOCK_OFFSET);
-    addr_hit[44] = (reg_addr == OTP_CTRL_OWNER_SW_CFG_READ_LOCK_OFFSET);
-    addr_hit[45] = (reg_addr == OTP_CTRL_AUTH_SLOT_STATE_READ_LOCK_OFFSET);
-    addr_hit[46] = (reg_addr == OTP_CTRL_ROT_CREATOR_AUTH_READ_LOCK_OFFSET);
-    addr_hit[47] = (reg_addr == OTP_CTRL_ROT_FIRMWARE_AUTH_SLOT0_READ_LOCK_OFFSET);
-    addr_hit[48] = (reg_addr == OTP_CTRL_ROT_FIRMWARE_AUTH_SLOT1_READ_LOCK_OFFSET);
-    addr_hit[49] = (reg_addr == OTP_CTRL_ROT_FIRMWARE_AUTH_SLOT2_READ_LOCK_OFFSET);
-    addr_hit[50] = (reg_addr == OTP_CTRL_ROT_FIRMWARE_AUTH_SLOT3_READ_LOCK_OFFSET);
-    addr_hit[51] = (reg_addr == OTP_CTRL_SOC_FIRMWARE_AUTH_SLOT0_READ_LOCK_OFFSET);
-    addr_hit[52] = (reg_addr == OTP_CTRL_SOC_FIRMWARE_AUTH_SLOT1_READ_LOCK_OFFSET);
-    addr_hit[53] = (reg_addr == OTP_CTRL_SOC_FIRMWARE_AUTH_SLOT2_READ_LOCK_OFFSET);
-    addr_hit[54] = (reg_addr == OTP_CTRL_SOC_FIRMWARE_AUTH_SLOT3_READ_LOCK_OFFSET);
-    addr_hit[55] = (reg_addr == OTP_CTRL_EXT_NVM_READ_LOCK_OFFSET);
-    addr_hit[56] = (reg_addr == OTP_CTRL_VENDOR_TEST_DIGEST_0_OFFSET);
-    addr_hit[57] = (reg_addr == OTP_CTRL_VENDOR_TEST_DIGEST_1_OFFSET);
-    addr_hit[58] = (reg_addr == OTP_CTRL_CREATOR_SW_CFG_DIGEST_0_OFFSET);
-    addr_hit[59] = (reg_addr == OTP_CTRL_CREATOR_SW_CFG_DIGEST_1_OFFSET);
-    addr_hit[60] = (reg_addr == OTP_CTRL_OWNER_SW_CFG_DIGEST_0_OFFSET);
-    addr_hit[61] = (reg_addr == OTP_CTRL_OWNER_SW_CFG_DIGEST_1_OFFSET);
-    addr_hit[62] = (reg_addr == OTP_CTRL_ROT_CREATOR_AUTH_DIGEST_0_OFFSET);
-    addr_hit[63] = (reg_addr == OTP_CTRL_ROT_CREATOR_AUTH_DIGEST_1_OFFSET);
-    addr_hit[64] = (reg_addr == OTP_CTRL_ROT_FIRMWARE_AUTH_SLOT0_DIGEST_0_OFFSET);
-    addr_hit[65] = (reg_addr == OTP_CTRL_ROT_FIRMWARE_AUTH_SLOT0_DIGEST_1_OFFSET);
-    addr_hit[66] = (reg_addr == OTP_CTRL_ROT_FIRMWARE_AUTH_SLOT1_DIGEST_0_OFFSET);
-    addr_hit[67] = (reg_addr == OTP_CTRL_ROT_FIRMWARE_AUTH_SLOT1_DIGEST_1_OFFSET);
-    addr_hit[68] = (reg_addr == OTP_CTRL_ROT_FIRMWARE_AUTH_SLOT2_DIGEST_0_OFFSET);
-    addr_hit[69] = (reg_addr == OTP_CTRL_ROT_FIRMWARE_AUTH_SLOT2_DIGEST_1_OFFSET);
-    addr_hit[70] = (reg_addr == OTP_CTRL_ROT_FIRMWARE_AUTH_SLOT3_DIGEST_0_OFFSET);
-    addr_hit[71] = (reg_addr == OTP_CTRL_ROT_FIRMWARE_AUTH_SLOT3_DIGEST_1_OFFSET);
-    addr_hit[72] = (reg_addr == OTP_CTRL_SOC_FIRMWARE_AUTH_SLOT0_DIGEST_0_OFFSET);
-    addr_hit[73] = (reg_addr == OTP_CTRL_SOC_FIRMWARE_AUTH_SLOT0_DIGEST_1_OFFSET);
-    addr_hit[74] = (reg_addr == OTP_CTRL_SOC_FIRMWARE_AUTH_SLOT1_DIGEST_0_OFFSET);
-    addr_hit[75] = (reg_addr == OTP_CTRL_SOC_FIRMWARE_AUTH_SLOT1_DIGEST_1_OFFSET);
-    addr_hit[76] = (reg_addr == OTP_CTRL_SOC_FIRMWARE_AUTH_SLOT2_DIGEST_0_OFFSET);
-    addr_hit[77] = (reg_addr == OTP_CTRL_SOC_FIRMWARE_AUTH_SLOT2_DIGEST_1_OFFSET);
-    addr_hit[78] = (reg_addr == OTP_CTRL_SOC_FIRMWARE_AUTH_SLOT3_DIGEST_0_OFFSET);
-    addr_hit[79] = (reg_addr == OTP_CTRL_SOC_FIRMWARE_AUTH_SLOT3_DIGEST_1_OFFSET);
-    addr_hit[80] = (reg_addr == OTP_CTRL_HW_CFG0_DIGEST_0_OFFSET);
-    addr_hit[81] = (reg_addr == OTP_CTRL_HW_CFG0_DIGEST_1_OFFSET);
-    addr_hit[82] = (reg_addr == OTP_CTRL_HW_CFG1_DIGEST_0_OFFSET);
-    addr_hit[83] = (reg_addr == OTP_CTRL_HW_CFG1_DIGEST_1_OFFSET);
-    addr_hit[84] = (reg_addr == OTP_CTRL_SECRET0_DIGEST_0_OFFSET);
-    addr_hit[85] = (reg_addr == OTP_CTRL_SECRET0_DIGEST_1_OFFSET);
-    addr_hit[86] = (reg_addr == OTP_CTRL_SECRET1_DIGEST_0_OFFSET);
-    addr_hit[87] = (reg_addr == OTP_CTRL_SECRET1_DIGEST_1_OFFSET);
-    addr_hit[88] = (reg_addr == OTP_CTRL_SECRET2_DIGEST_0_OFFSET);
-    addr_hit[89] = (reg_addr == OTP_CTRL_SECRET2_DIGEST_1_OFFSET);
-    addr_hit[90] = (reg_addr == OTP_CTRL_SECRET3_DIGEST_0_OFFSET);
-    addr_hit[91] = (reg_addr == OTP_CTRL_SECRET3_DIGEST_1_OFFSET);
+    addr_hit[28] = (reg_addr == OTP_CTRL_DIRECT_ACCESS_REGWEN_OFFSET);
+    addr_hit[29] = (reg_addr == OTP_CTRL_DIRECT_ACCESS_CMD_OFFSET);
+    addr_hit[30] = (reg_addr == OTP_CTRL_DIRECT_ACCESS_ADDRESS_OFFSET);
+    addr_hit[31] = (reg_addr == OTP_CTRL_DIRECT_ACCESS_WDATA_0_OFFSET);
+    addr_hit[32] = (reg_addr == OTP_CTRL_DIRECT_ACCESS_WDATA_1_OFFSET);
+    addr_hit[33] = (reg_addr == OTP_CTRL_DIRECT_ACCESS_RDATA_0_OFFSET);
+    addr_hit[34] = (reg_addr == OTP_CTRL_DIRECT_ACCESS_RDATA_1_OFFSET);
+    addr_hit[35] = (reg_addr == OTP_CTRL_CHECK_TRIGGER_REGWEN_OFFSET);
+    addr_hit[36] = (reg_addr == OTP_CTRL_CHECK_TRIGGER_OFFSET);
+    addr_hit[37] = (reg_addr == OTP_CTRL_CHECK_REGWEN_OFFSET);
+    addr_hit[38] = (reg_addr == OTP_CTRL_CHECK_TIMEOUT_OFFSET);
+    addr_hit[39] = (reg_addr == OTP_CTRL_INTEGRITY_CHECK_PERIOD_OFFSET);
+    addr_hit[40] = (reg_addr == OTP_CTRL_CONSISTENCY_CHECK_PERIOD_OFFSET);
+    addr_hit[41] = (reg_addr == OTP_CTRL_VENDOR_TEST_READ_LOCK_OFFSET);
+    addr_hit[42] = (reg_addr == OTP_CTRL_CREATOR_SW_CFG_READ_LOCK_OFFSET);
+    addr_hit[43] = (reg_addr == OTP_CTRL_OWNER_SW_CFG_READ_LOCK_OFFSET);
+    addr_hit[44] = (reg_addr == OTP_CTRL_AUTH_SLOT_STATE_READ_LOCK_OFFSET);
+    addr_hit[45] = (reg_addr == OTP_CTRL_ROT_FIRMWARE_AUTH_SLOT0_READ_LOCK_OFFSET);
+    addr_hit[46] = (reg_addr == OTP_CTRL_ROT_FIRMWARE_AUTH_SLOT1_READ_LOCK_OFFSET);
+    addr_hit[47] = (reg_addr == OTP_CTRL_ROT_FIRMWARE_AUTH_SLOT2_READ_LOCK_OFFSET);
+    addr_hit[48] = (reg_addr == OTP_CTRL_ROT_FIRMWARE_AUTH_SLOT3_READ_LOCK_OFFSET);
+    addr_hit[49] = (reg_addr == OTP_CTRL_SOC_FIRMWARE_AUTH_SLOT0_READ_LOCK_OFFSET);
+    addr_hit[50] = (reg_addr == OTP_CTRL_SOC_FIRMWARE_AUTH_SLOT1_READ_LOCK_OFFSET);
+    addr_hit[51] = (reg_addr == OTP_CTRL_SOC_FIRMWARE_AUTH_SLOT2_READ_LOCK_OFFSET);
+    addr_hit[52] = (reg_addr == OTP_CTRL_SOC_FIRMWARE_AUTH_SLOT3_READ_LOCK_OFFSET);
+    addr_hit[53] = (reg_addr == OTP_CTRL_EXT_NVM_READ_LOCK_OFFSET);
+    addr_hit[54] = (reg_addr == OTP_CTRL_VENDOR_TEST_DIGEST_0_OFFSET);
+    addr_hit[55] = (reg_addr == OTP_CTRL_VENDOR_TEST_DIGEST_1_OFFSET);
+    addr_hit[56] = (reg_addr == OTP_CTRL_CREATOR_SW_CFG_DIGEST_0_OFFSET);
+    addr_hit[57] = (reg_addr == OTP_CTRL_CREATOR_SW_CFG_DIGEST_1_OFFSET);
+    addr_hit[58] = (reg_addr == OTP_CTRL_OWNER_SW_CFG_DIGEST_0_OFFSET);
+    addr_hit[59] = (reg_addr == OTP_CTRL_OWNER_SW_CFG_DIGEST_1_OFFSET);
+    addr_hit[60] = (reg_addr == OTP_CTRL_ROT_FIRMWARE_AUTH_SLOT0_DIGEST_0_OFFSET);
+    addr_hit[61] = (reg_addr == OTP_CTRL_ROT_FIRMWARE_AUTH_SLOT0_DIGEST_1_OFFSET);
+    addr_hit[62] = (reg_addr == OTP_CTRL_ROT_FIRMWARE_AUTH_SLOT1_DIGEST_0_OFFSET);
+    addr_hit[63] = (reg_addr == OTP_CTRL_ROT_FIRMWARE_AUTH_SLOT1_DIGEST_1_OFFSET);
+    addr_hit[64] = (reg_addr == OTP_CTRL_ROT_FIRMWARE_AUTH_SLOT2_DIGEST_0_OFFSET);
+    addr_hit[65] = (reg_addr == OTP_CTRL_ROT_FIRMWARE_AUTH_SLOT2_DIGEST_1_OFFSET);
+    addr_hit[66] = (reg_addr == OTP_CTRL_ROT_FIRMWARE_AUTH_SLOT3_DIGEST_0_OFFSET);
+    addr_hit[67] = (reg_addr == OTP_CTRL_ROT_FIRMWARE_AUTH_SLOT3_DIGEST_1_OFFSET);
+    addr_hit[68] = (reg_addr == OTP_CTRL_SOC_FIRMWARE_AUTH_SLOT0_DIGEST_0_OFFSET);
+    addr_hit[69] = (reg_addr == OTP_CTRL_SOC_FIRMWARE_AUTH_SLOT0_DIGEST_1_OFFSET);
+    addr_hit[70] = (reg_addr == OTP_CTRL_SOC_FIRMWARE_AUTH_SLOT1_DIGEST_0_OFFSET);
+    addr_hit[71] = (reg_addr == OTP_CTRL_SOC_FIRMWARE_AUTH_SLOT1_DIGEST_1_OFFSET);
+    addr_hit[72] = (reg_addr == OTP_CTRL_SOC_FIRMWARE_AUTH_SLOT2_DIGEST_0_OFFSET);
+    addr_hit[73] = (reg_addr == OTP_CTRL_SOC_FIRMWARE_AUTH_SLOT2_DIGEST_1_OFFSET);
+    addr_hit[74] = (reg_addr == OTP_CTRL_SOC_FIRMWARE_AUTH_SLOT3_DIGEST_0_OFFSET);
+    addr_hit[75] = (reg_addr == OTP_CTRL_SOC_FIRMWARE_AUTH_SLOT3_DIGEST_1_OFFSET);
+    addr_hit[76] = (reg_addr == OTP_CTRL_HW_CFG0_DIGEST_0_OFFSET);
+    addr_hit[77] = (reg_addr == OTP_CTRL_HW_CFG0_DIGEST_1_OFFSET);
+    addr_hit[78] = (reg_addr == OTP_CTRL_HW_CFG1_DIGEST_0_OFFSET);
+    addr_hit[79] = (reg_addr == OTP_CTRL_HW_CFG1_DIGEST_1_OFFSET);
+    addr_hit[80] = (reg_addr == OTP_CTRL_SECRET0_DIGEST_0_OFFSET);
+    addr_hit[81] = (reg_addr == OTP_CTRL_SECRET0_DIGEST_1_OFFSET);
+    addr_hit[82] = (reg_addr == OTP_CTRL_SECRET1_DIGEST_0_OFFSET);
+    addr_hit[83] = (reg_addr == OTP_CTRL_SECRET1_DIGEST_1_OFFSET);
+    addr_hit[84] = (reg_addr == OTP_CTRL_SECRET2_DIGEST_0_OFFSET);
+    addr_hit[85] = (reg_addr == OTP_CTRL_SECRET2_DIGEST_1_OFFSET);
+    addr_hit[86] = (reg_addr == OTP_CTRL_SECRET3_DIGEST_0_OFFSET);
+    addr_hit[87] = (reg_addr == OTP_CTRL_SECRET3_DIGEST_1_OFFSET);
   end
 
   assign addrmiss = (reg_re || reg_we) ? ~|addr_hit : 1'b0 ;
@@ -3173,11 +3061,7 @@ module otp_ctrl_core_reg_top (
                (addr_hit[84] & (|(OTP_CTRL_CORE_PERMIT[84] & ~reg_be))) |
                (addr_hit[85] & (|(OTP_CTRL_CORE_PERMIT[85] & ~reg_be))) |
                (addr_hit[86] & (|(OTP_CTRL_CORE_PERMIT[86] & ~reg_be))) |
-               (addr_hit[87] & (|(OTP_CTRL_CORE_PERMIT[87] & ~reg_be))) |
-               (addr_hit[88] & (|(OTP_CTRL_CORE_PERMIT[88] & ~reg_be))) |
-               (addr_hit[89] & (|(OTP_CTRL_CORE_PERMIT[89] & ~reg_be))) |
-               (addr_hit[90] & (|(OTP_CTRL_CORE_PERMIT[90] & ~reg_be))) |
-               (addr_hit[91] & (|(OTP_CTRL_CORE_PERMIT[91] & ~reg_be)))));
+               (addr_hit[87] & (|(OTP_CTRL_CORE_PERMIT[87] & ~reg_be)))));
   end
 
   // Generate write-enables
@@ -3231,12 +3115,11 @@ module otp_ctrl_core_reg_top (
   assign err_code_19_re = addr_hit[25] & reg_re & !reg_error;
   assign err_code_20_re = addr_hit[26] & reg_re & !reg_error;
   assign err_code_21_re = addr_hit[27] & reg_re & !reg_error;
-  assign err_code_22_re = addr_hit[28] & reg_re & !reg_error;
-  assign direct_access_regwen_re = addr_hit[29] & reg_re & !reg_error;
-  assign direct_access_regwen_we = addr_hit[29] & reg_we & !reg_error;
+  assign direct_access_regwen_re = addr_hit[28] & reg_re & !reg_error;
+  assign direct_access_regwen_we = addr_hit[28] & reg_we & !reg_error;
 
   assign direct_access_regwen_wd = reg_wdata[0];
-  assign direct_access_cmd_we = addr_hit[30] & reg_we & !reg_error;
+  assign direct_access_cmd_we = addr_hit[29] & reg_we & !reg_error;
 
   assign direct_access_cmd_rd_wd = reg_wdata[0];
 
@@ -3245,115 +3128,110 @@ module otp_ctrl_core_reg_top (
   assign direct_access_cmd_digest_wd = reg_wdata[2];
 
   assign direct_access_cmd_zeroize_wd = reg_wdata[3];
-  assign direct_access_address_we = addr_hit[31] & reg_we & !reg_error;
+  assign direct_access_address_we = addr_hit[30] & reg_we & !reg_error;
 
-  assign direct_access_address_wd = reg_wdata[12:0];
-  assign direct_access_wdata_0_we = addr_hit[32] & reg_we & !reg_error;
+  assign direct_access_address_wd = reg_wdata[10:0];
+  assign direct_access_wdata_0_we = addr_hit[31] & reg_we & !reg_error;
 
   assign direct_access_wdata_0_wd = reg_wdata[31:0];
-  assign direct_access_wdata_1_we = addr_hit[33] & reg_we & !reg_error;
+  assign direct_access_wdata_1_we = addr_hit[32] & reg_we & !reg_error;
 
   assign direct_access_wdata_1_wd = reg_wdata[31:0];
-  assign direct_access_rdata_0_re = addr_hit[34] & reg_re & !reg_error;
-  assign direct_access_rdata_1_re = addr_hit[35] & reg_re & !reg_error;
-  assign check_trigger_regwen_we = addr_hit[36] & reg_we & !reg_error;
+  assign direct_access_rdata_0_re = addr_hit[33] & reg_re & !reg_error;
+  assign direct_access_rdata_1_re = addr_hit[34] & reg_re & !reg_error;
+  assign check_trigger_regwen_we = addr_hit[35] & reg_we & !reg_error;
 
   assign check_trigger_regwen_wd = reg_wdata[0];
-  assign check_trigger_we = addr_hit[37] & reg_we & !reg_error;
+  assign check_trigger_we = addr_hit[36] & reg_we & !reg_error;
 
   assign check_trigger_integrity_wd = reg_wdata[0];
 
   assign check_trigger_consistency_wd = reg_wdata[1];
-  assign check_regwen_we = addr_hit[38] & reg_we & !reg_error;
+  assign check_regwen_we = addr_hit[37] & reg_we & !reg_error;
 
   assign check_regwen_wd = reg_wdata[0];
-  assign check_timeout_we = addr_hit[39] & reg_we & !reg_error;
+  assign check_timeout_we = addr_hit[38] & reg_we & !reg_error;
 
   assign check_timeout_wd = reg_wdata[31:0];
-  assign integrity_check_period_we = addr_hit[40] & reg_we & !reg_error;
+  assign integrity_check_period_we = addr_hit[39] & reg_we & !reg_error;
 
   assign integrity_check_period_wd = reg_wdata[31:0];
-  assign consistency_check_period_we = addr_hit[41] & reg_we & !reg_error;
+  assign consistency_check_period_we = addr_hit[40] & reg_we & !reg_error;
 
   assign consistency_check_period_wd = reg_wdata[31:0];
-  assign vendor_test_read_lock_we = addr_hit[42] & reg_we & !reg_error;
+  assign vendor_test_read_lock_we = addr_hit[41] & reg_we & !reg_error;
 
   assign vendor_test_read_lock_wd = reg_wdata[0];
-  assign creator_sw_cfg_read_lock_we = addr_hit[43] & reg_we & !reg_error;
+  assign creator_sw_cfg_read_lock_we = addr_hit[42] & reg_we & !reg_error;
 
   assign creator_sw_cfg_read_lock_wd = reg_wdata[0];
-  assign owner_sw_cfg_read_lock_we = addr_hit[44] & reg_we & !reg_error;
+  assign owner_sw_cfg_read_lock_we = addr_hit[43] & reg_we & !reg_error;
 
   assign owner_sw_cfg_read_lock_wd = reg_wdata[0];
-  assign auth_slot_state_read_lock_we = addr_hit[45] & reg_we & !reg_error;
+  assign auth_slot_state_read_lock_we = addr_hit[44] & reg_we & !reg_error;
 
   assign auth_slot_state_read_lock_wd = reg_wdata[0];
-  assign rot_creator_auth_read_lock_we = addr_hit[46] & reg_we & !reg_error;
-
-  assign rot_creator_auth_read_lock_wd = reg_wdata[0];
-  assign rot_firmware_auth_slot0_read_lock_we = addr_hit[47] & reg_we & !reg_error;
+  assign rot_firmware_auth_slot0_read_lock_we = addr_hit[45] & reg_we & !reg_error;
 
   assign rot_firmware_auth_slot0_read_lock_wd = reg_wdata[0];
-  assign rot_firmware_auth_slot1_read_lock_we = addr_hit[48] & reg_we & !reg_error;
+  assign rot_firmware_auth_slot1_read_lock_we = addr_hit[46] & reg_we & !reg_error;
 
   assign rot_firmware_auth_slot1_read_lock_wd = reg_wdata[0];
-  assign rot_firmware_auth_slot2_read_lock_we = addr_hit[49] & reg_we & !reg_error;
+  assign rot_firmware_auth_slot2_read_lock_we = addr_hit[47] & reg_we & !reg_error;
 
   assign rot_firmware_auth_slot2_read_lock_wd = reg_wdata[0];
-  assign rot_firmware_auth_slot3_read_lock_we = addr_hit[50] & reg_we & !reg_error;
+  assign rot_firmware_auth_slot3_read_lock_we = addr_hit[48] & reg_we & !reg_error;
 
   assign rot_firmware_auth_slot3_read_lock_wd = reg_wdata[0];
-  assign soc_firmware_auth_slot0_read_lock_we = addr_hit[51] & reg_we & !reg_error;
+  assign soc_firmware_auth_slot0_read_lock_we = addr_hit[49] & reg_we & !reg_error;
 
   assign soc_firmware_auth_slot0_read_lock_wd = reg_wdata[0];
-  assign soc_firmware_auth_slot1_read_lock_we = addr_hit[52] & reg_we & !reg_error;
+  assign soc_firmware_auth_slot1_read_lock_we = addr_hit[50] & reg_we & !reg_error;
 
   assign soc_firmware_auth_slot1_read_lock_wd = reg_wdata[0];
-  assign soc_firmware_auth_slot2_read_lock_we = addr_hit[53] & reg_we & !reg_error;
+  assign soc_firmware_auth_slot2_read_lock_we = addr_hit[51] & reg_we & !reg_error;
 
   assign soc_firmware_auth_slot2_read_lock_wd = reg_wdata[0];
-  assign soc_firmware_auth_slot3_read_lock_we = addr_hit[54] & reg_we & !reg_error;
+  assign soc_firmware_auth_slot3_read_lock_we = addr_hit[52] & reg_we & !reg_error;
 
   assign soc_firmware_auth_slot3_read_lock_wd = reg_wdata[0];
-  assign ext_nvm_read_lock_we = addr_hit[55] & reg_we & !reg_error;
+  assign ext_nvm_read_lock_we = addr_hit[53] & reg_we & !reg_error;
 
   assign ext_nvm_read_lock_wd = reg_wdata[0];
-  assign vendor_test_digest_0_re = addr_hit[56] & reg_re & !reg_error;
-  assign vendor_test_digest_1_re = addr_hit[57] & reg_re & !reg_error;
-  assign creator_sw_cfg_digest_0_re = addr_hit[58] & reg_re & !reg_error;
-  assign creator_sw_cfg_digest_1_re = addr_hit[59] & reg_re & !reg_error;
-  assign owner_sw_cfg_digest_0_re = addr_hit[60] & reg_re & !reg_error;
-  assign owner_sw_cfg_digest_1_re = addr_hit[61] & reg_re & !reg_error;
-  assign rot_creator_auth_digest_0_re = addr_hit[62] & reg_re & !reg_error;
-  assign rot_creator_auth_digest_1_re = addr_hit[63] & reg_re & !reg_error;
-  assign rot_firmware_auth_slot0_digest_0_re = addr_hit[64] & reg_re & !reg_error;
-  assign rot_firmware_auth_slot0_digest_1_re = addr_hit[65] & reg_re & !reg_error;
-  assign rot_firmware_auth_slot1_digest_0_re = addr_hit[66] & reg_re & !reg_error;
-  assign rot_firmware_auth_slot1_digest_1_re = addr_hit[67] & reg_re & !reg_error;
-  assign rot_firmware_auth_slot2_digest_0_re = addr_hit[68] & reg_re & !reg_error;
-  assign rot_firmware_auth_slot2_digest_1_re = addr_hit[69] & reg_re & !reg_error;
-  assign rot_firmware_auth_slot3_digest_0_re = addr_hit[70] & reg_re & !reg_error;
-  assign rot_firmware_auth_slot3_digest_1_re = addr_hit[71] & reg_re & !reg_error;
-  assign soc_firmware_auth_slot0_digest_0_re = addr_hit[72] & reg_re & !reg_error;
-  assign soc_firmware_auth_slot0_digest_1_re = addr_hit[73] & reg_re & !reg_error;
-  assign soc_firmware_auth_slot1_digest_0_re = addr_hit[74] & reg_re & !reg_error;
-  assign soc_firmware_auth_slot1_digest_1_re = addr_hit[75] & reg_re & !reg_error;
-  assign soc_firmware_auth_slot2_digest_0_re = addr_hit[76] & reg_re & !reg_error;
-  assign soc_firmware_auth_slot2_digest_1_re = addr_hit[77] & reg_re & !reg_error;
-  assign soc_firmware_auth_slot3_digest_0_re = addr_hit[78] & reg_re & !reg_error;
-  assign soc_firmware_auth_slot3_digest_1_re = addr_hit[79] & reg_re & !reg_error;
-  assign hw_cfg0_digest_0_re = addr_hit[80] & reg_re & !reg_error;
-  assign hw_cfg0_digest_1_re = addr_hit[81] & reg_re & !reg_error;
-  assign hw_cfg1_digest_0_re = addr_hit[82] & reg_re & !reg_error;
-  assign hw_cfg1_digest_1_re = addr_hit[83] & reg_re & !reg_error;
-  assign secret0_digest_0_re = addr_hit[84] & reg_re & !reg_error;
-  assign secret0_digest_1_re = addr_hit[85] & reg_re & !reg_error;
-  assign secret1_digest_0_re = addr_hit[86] & reg_re & !reg_error;
-  assign secret1_digest_1_re = addr_hit[87] & reg_re & !reg_error;
-  assign secret2_digest_0_re = addr_hit[88] & reg_re & !reg_error;
-  assign secret2_digest_1_re = addr_hit[89] & reg_re & !reg_error;
-  assign secret3_digest_0_re = addr_hit[90] & reg_re & !reg_error;
-  assign secret3_digest_1_re = addr_hit[91] & reg_re & !reg_error;
+  assign vendor_test_digest_0_re = addr_hit[54] & reg_re & !reg_error;
+  assign vendor_test_digest_1_re = addr_hit[55] & reg_re & !reg_error;
+  assign creator_sw_cfg_digest_0_re = addr_hit[56] & reg_re & !reg_error;
+  assign creator_sw_cfg_digest_1_re = addr_hit[57] & reg_re & !reg_error;
+  assign owner_sw_cfg_digest_0_re = addr_hit[58] & reg_re & !reg_error;
+  assign owner_sw_cfg_digest_1_re = addr_hit[59] & reg_re & !reg_error;
+  assign rot_firmware_auth_slot0_digest_0_re = addr_hit[60] & reg_re & !reg_error;
+  assign rot_firmware_auth_slot0_digest_1_re = addr_hit[61] & reg_re & !reg_error;
+  assign rot_firmware_auth_slot1_digest_0_re = addr_hit[62] & reg_re & !reg_error;
+  assign rot_firmware_auth_slot1_digest_1_re = addr_hit[63] & reg_re & !reg_error;
+  assign rot_firmware_auth_slot2_digest_0_re = addr_hit[64] & reg_re & !reg_error;
+  assign rot_firmware_auth_slot2_digest_1_re = addr_hit[65] & reg_re & !reg_error;
+  assign rot_firmware_auth_slot3_digest_0_re = addr_hit[66] & reg_re & !reg_error;
+  assign rot_firmware_auth_slot3_digest_1_re = addr_hit[67] & reg_re & !reg_error;
+  assign soc_firmware_auth_slot0_digest_0_re = addr_hit[68] & reg_re & !reg_error;
+  assign soc_firmware_auth_slot0_digest_1_re = addr_hit[69] & reg_re & !reg_error;
+  assign soc_firmware_auth_slot1_digest_0_re = addr_hit[70] & reg_re & !reg_error;
+  assign soc_firmware_auth_slot1_digest_1_re = addr_hit[71] & reg_re & !reg_error;
+  assign soc_firmware_auth_slot2_digest_0_re = addr_hit[72] & reg_re & !reg_error;
+  assign soc_firmware_auth_slot2_digest_1_re = addr_hit[73] & reg_re & !reg_error;
+  assign soc_firmware_auth_slot3_digest_0_re = addr_hit[74] & reg_re & !reg_error;
+  assign soc_firmware_auth_slot3_digest_1_re = addr_hit[75] & reg_re & !reg_error;
+  assign hw_cfg0_digest_0_re = addr_hit[76] & reg_re & !reg_error;
+  assign hw_cfg0_digest_1_re = addr_hit[77] & reg_re & !reg_error;
+  assign hw_cfg1_digest_0_re = addr_hit[78] & reg_re & !reg_error;
+  assign hw_cfg1_digest_1_re = addr_hit[79] & reg_re & !reg_error;
+  assign secret0_digest_0_re = addr_hit[80] & reg_re & !reg_error;
+  assign secret0_digest_1_re = addr_hit[81] & reg_re & !reg_error;
+  assign secret1_digest_0_re = addr_hit[82] & reg_re & !reg_error;
+  assign secret1_digest_1_re = addr_hit[83] & reg_re & !reg_error;
+  assign secret2_digest_0_re = addr_hit[84] & reg_re & !reg_error;
+  assign secret2_digest_1_re = addr_hit[85] & reg_re & !reg_error;
+  assign secret3_digest_0_re = addr_hit[86] & reg_re & !reg_error;
+  assign secret3_digest_1_re = addr_hit[87] & reg_re & !reg_error;
 
   // Assign write-enables to checker logic vector.
   always_comb begin
@@ -3385,34 +3263,34 @@ module otp_ctrl_core_reg_top (
     reg_we_check[25] = 1'b0;
     reg_we_check[26] = 1'b0;
     reg_we_check[27] = 1'b0;
-    reg_we_check[28] = 1'b0;
-    reg_we_check[29] = direct_access_regwen_we;
-    reg_we_check[30] = direct_access_cmd_gated_we;
-    reg_we_check[31] = direct_access_address_gated_we;
-    reg_we_check[32] = direct_access_wdata_0_gated_we;
-    reg_we_check[33] = direct_access_wdata_1_gated_we;
+    reg_we_check[28] = direct_access_regwen_we;
+    reg_we_check[29] = direct_access_cmd_gated_we;
+    reg_we_check[30] = direct_access_address_gated_we;
+    reg_we_check[31] = direct_access_wdata_0_gated_we;
+    reg_we_check[32] = direct_access_wdata_1_gated_we;
+    reg_we_check[33] = 1'b0;
     reg_we_check[34] = 1'b0;
-    reg_we_check[35] = 1'b0;
-    reg_we_check[36] = check_trigger_regwen_we;
-    reg_we_check[37] = check_trigger_gated_we;
-    reg_we_check[38] = check_regwen_we;
-    reg_we_check[39] = check_timeout_gated_we;
-    reg_we_check[40] = integrity_check_period_gated_we;
-    reg_we_check[41] = consistency_check_period_gated_we;
-    reg_we_check[42] = vendor_test_read_lock_gated_we;
-    reg_we_check[43] = creator_sw_cfg_read_lock_gated_we;
-    reg_we_check[44] = owner_sw_cfg_read_lock_gated_we;
-    reg_we_check[45] = auth_slot_state_read_lock_gated_we;
-    reg_we_check[46] = rot_creator_auth_read_lock_gated_we;
-    reg_we_check[47] = rot_firmware_auth_slot0_read_lock_gated_we;
-    reg_we_check[48] = rot_firmware_auth_slot1_read_lock_gated_we;
-    reg_we_check[49] = rot_firmware_auth_slot2_read_lock_gated_we;
-    reg_we_check[50] = rot_firmware_auth_slot3_read_lock_gated_we;
-    reg_we_check[51] = soc_firmware_auth_slot0_read_lock_gated_we;
-    reg_we_check[52] = soc_firmware_auth_slot1_read_lock_gated_we;
-    reg_we_check[53] = soc_firmware_auth_slot2_read_lock_gated_we;
-    reg_we_check[54] = soc_firmware_auth_slot3_read_lock_gated_we;
-    reg_we_check[55] = ext_nvm_read_lock_gated_we;
+    reg_we_check[35] = check_trigger_regwen_we;
+    reg_we_check[36] = check_trigger_gated_we;
+    reg_we_check[37] = check_regwen_we;
+    reg_we_check[38] = check_timeout_gated_we;
+    reg_we_check[39] = integrity_check_period_gated_we;
+    reg_we_check[40] = consistency_check_period_gated_we;
+    reg_we_check[41] = vendor_test_read_lock_gated_we;
+    reg_we_check[42] = creator_sw_cfg_read_lock_gated_we;
+    reg_we_check[43] = owner_sw_cfg_read_lock_gated_we;
+    reg_we_check[44] = auth_slot_state_read_lock_gated_we;
+    reg_we_check[45] = rot_firmware_auth_slot0_read_lock_gated_we;
+    reg_we_check[46] = rot_firmware_auth_slot1_read_lock_gated_we;
+    reg_we_check[47] = rot_firmware_auth_slot2_read_lock_gated_we;
+    reg_we_check[48] = rot_firmware_auth_slot3_read_lock_gated_we;
+    reg_we_check[49] = soc_firmware_auth_slot0_read_lock_gated_we;
+    reg_we_check[50] = soc_firmware_auth_slot1_read_lock_gated_we;
+    reg_we_check[51] = soc_firmware_auth_slot2_read_lock_gated_we;
+    reg_we_check[52] = soc_firmware_auth_slot3_read_lock_gated_we;
+    reg_we_check[53] = ext_nvm_read_lock_gated_we;
+    reg_we_check[54] = 1'b0;
+    reg_we_check[55] = 1'b0;
     reg_we_check[56] = 1'b0;
     reg_we_check[57] = 1'b0;
     reg_we_check[58] = 1'b0;
@@ -3445,10 +3323,6 @@ module otp_ctrl_core_reg_top (
     reg_we_check[85] = 1'b0;
     reg_we_check[86] = 1'b0;
     reg_we_check[87] = 1'b0;
-    reg_we_check[88] = 1'b0;
-    reg_we_check[89] = 1'b0;
-    reg_we_check[90] = 1'b0;
-    reg_we_check[91] = 1'b0;
   end
 
   // Read data return
@@ -3496,23 +3370,22 @@ module otp_ctrl_core_reg_top (
         reg_rdata_next[1] = partition_status_0_creator_sw_cfg_error_qs;
         reg_rdata_next[2] = partition_status_0_owner_sw_cfg_error_qs;
         reg_rdata_next[3] = partition_status_0_auth_slot_state_error_qs;
-        reg_rdata_next[4] = partition_status_0_rot_creator_auth_error_qs;
-        reg_rdata_next[5] = partition_status_0_rot_firmware_auth_slot0_error_qs;
-        reg_rdata_next[6] = partition_status_0_rot_firmware_auth_slot1_error_qs;
-        reg_rdata_next[7] = partition_status_0_rot_firmware_auth_slot2_error_qs;
-        reg_rdata_next[8] = partition_status_0_rot_firmware_auth_slot3_error_qs;
-        reg_rdata_next[9] = partition_status_0_soc_firmware_auth_slot0_error_qs;
-        reg_rdata_next[10] = partition_status_0_soc_firmware_auth_slot1_error_qs;
-        reg_rdata_next[11] = partition_status_0_soc_firmware_auth_slot2_error_qs;
-        reg_rdata_next[12] = partition_status_0_soc_firmware_auth_slot3_error_qs;
-        reg_rdata_next[13] = partition_status_0_ext_nvm_error_qs;
-        reg_rdata_next[14] = partition_status_0_hw_cfg0_error_qs;
-        reg_rdata_next[15] = partition_status_0_hw_cfg1_error_qs;
-        reg_rdata_next[16] = partition_status_0_secret0_error_qs;
-        reg_rdata_next[17] = partition_status_0_secret1_error_qs;
-        reg_rdata_next[18] = partition_status_0_secret2_error_qs;
-        reg_rdata_next[19] = partition_status_0_secret3_error_qs;
-        reg_rdata_next[20] = partition_status_0_life_cycle_error_qs;
+        reg_rdata_next[4] = partition_status_0_rot_firmware_auth_slot0_error_qs;
+        reg_rdata_next[5] = partition_status_0_rot_firmware_auth_slot1_error_qs;
+        reg_rdata_next[6] = partition_status_0_rot_firmware_auth_slot2_error_qs;
+        reg_rdata_next[7] = partition_status_0_rot_firmware_auth_slot3_error_qs;
+        reg_rdata_next[8] = partition_status_0_soc_firmware_auth_slot0_error_qs;
+        reg_rdata_next[9] = partition_status_0_soc_firmware_auth_slot1_error_qs;
+        reg_rdata_next[10] = partition_status_0_soc_firmware_auth_slot2_error_qs;
+        reg_rdata_next[11] = partition_status_0_soc_firmware_auth_slot3_error_qs;
+        reg_rdata_next[12] = partition_status_0_ext_nvm_error_qs;
+        reg_rdata_next[13] = partition_status_0_hw_cfg0_error_qs;
+        reg_rdata_next[14] = partition_status_0_hw_cfg1_error_qs;
+        reg_rdata_next[15] = partition_status_0_secret0_error_qs;
+        reg_rdata_next[16] = partition_status_0_secret1_error_qs;
+        reg_rdata_next[17] = partition_status_0_secret2_error_qs;
+        reg_rdata_next[18] = partition_status_0_secret3_error_qs;
+        reg_rdata_next[19] = partition_status_0_life_cycle_error_qs;
       end
 
       addr_hit[6]: begin
@@ -3604,262 +3477,246 @@ module otp_ctrl_core_reg_top (
       end
 
       addr_hit[28]: begin
-        reg_rdata_next[2:0] = err_code_22_qs;
-      end
-
-      addr_hit[29]: begin
         reg_rdata_next[0] = direct_access_regwen_qs;
       end
 
-      addr_hit[30]: begin
+      addr_hit[29]: begin
         reg_rdata_next[0] = '0;
         reg_rdata_next[1] = '0;
         reg_rdata_next[2] = '0;
         reg_rdata_next[3] = '0;
       end
 
-      addr_hit[31]: begin
-        reg_rdata_next[12:0] = direct_access_address_qs;
+      addr_hit[30]: begin
+        reg_rdata_next[10:0] = direct_access_address_qs;
       end
 
-      addr_hit[32]: begin
+      addr_hit[31]: begin
         reg_rdata_next[31:0] = direct_access_wdata_0_qs;
       end
 
-      addr_hit[33]: begin
+      addr_hit[32]: begin
         reg_rdata_next[31:0] = direct_access_wdata_1_qs;
       end
 
-      addr_hit[34]: begin
+      addr_hit[33]: begin
         reg_rdata_next[31:0] = direct_access_rdata_0_qs;
       end
 
-      addr_hit[35]: begin
+      addr_hit[34]: begin
         reg_rdata_next[31:0] = direct_access_rdata_1_qs;
       end
 
-      addr_hit[36]: begin
+      addr_hit[35]: begin
         reg_rdata_next[0] = check_trigger_regwen_qs;
       end
 
-      addr_hit[37]: begin
+      addr_hit[36]: begin
         reg_rdata_next[0] = '0;
         reg_rdata_next[1] = '0;
       end
 
-      addr_hit[38]: begin
+      addr_hit[37]: begin
         reg_rdata_next[0] = check_regwen_qs;
       end
 
-      addr_hit[39]: begin
+      addr_hit[38]: begin
         reg_rdata_next[31:0] = check_timeout_qs;
       end
 
-      addr_hit[40]: begin
+      addr_hit[39]: begin
         reg_rdata_next[31:0] = integrity_check_period_qs;
       end
 
-      addr_hit[41]: begin
+      addr_hit[40]: begin
         reg_rdata_next[31:0] = consistency_check_period_qs;
       end
 
-      addr_hit[42]: begin
+      addr_hit[41]: begin
         reg_rdata_next[0] = vendor_test_read_lock_qs;
       end
 
-      addr_hit[43]: begin
+      addr_hit[42]: begin
         reg_rdata_next[0] = creator_sw_cfg_read_lock_qs;
       end
 
-      addr_hit[44]: begin
+      addr_hit[43]: begin
         reg_rdata_next[0] = owner_sw_cfg_read_lock_qs;
       end
 
-      addr_hit[45]: begin
+      addr_hit[44]: begin
         reg_rdata_next[0] = auth_slot_state_read_lock_qs;
       end
 
-      addr_hit[46]: begin
-        reg_rdata_next[0] = rot_creator_auth_read_lock_qs;
-      end
-
-      addr_hit[47]: begin
+      addr_hit[45]: begin
         reg_rdata_next[0] = rot_firmware_auth_slot0_read_lock_qs;
       end
 
-      addr_hit[48]: begin
+      addr_hit[46]: begin
         reg_rdata_next[0] = rot_firmware_auth_slot1_read_lock_qs;
       end
 
-      addr_hit[49]: begin
+      addr_hit[47]: begin
         reg_rdata_next[0] = rot_firmware_auth_slot2_read_lock_qs;
       end
 
-      addr_hit[50]: begin
+      addr_hit[48]: begin
         reg_rdata_next[0] = rot_firmware_auth_slot3_read_lock_qs;
       end
 
-      addr_hit[51]: begin
+      addr_hit[49]: begin
         reg_rdata_next[0] = soc_firmware_auth_slot0_read_lock_qs;
       end
 
-      addr_hit[52]: begin
+      addr_hit[50]: begin
         reg_rdata_next[0] = soc_firmware_auth_slot1_read_lock_qs;
       end
 
-      addr_hit[53]: begin
+      addr_hit[51]: begin
         reg_rdata_next[0] = soc_firmware_auth_slot2_read_lock_qs;
       end
 
-      addr_hit[54]: begin
+      addr_hit[52]: begin
         reg_rdata_next[0] = soc_firmware_auth_slot3_read_lock_qs;
       end
 
-      addr_hit[55]: begin
+      addr_hit[53]: begin
         reg_rdata_next[0] = ext_nvm_read_lock_qs;
       end
 
-      addr_hit[56]: begin
+      addr_hit[54]: begin
         reg_rdata_next[31:0] = vendor_test_digest_0_qs;
       end
 
-      addr_hit[57]: begin
+      addr_hit[55]: begin
         reg_rdata_next[31:0] = vendor_test_digest_1_qs;
       end
 
-      addr_hit[58]: begin
+      addr_hit[56]: begin
         reg_rdata_next[31:0] = creator_sw_cfg_digest_0_qs;
       end
 
-      addr_hit[59]: begin
+      addr_hit[57]: begin
         reg_rdata_next[31:0] = creator_sw_cfg_digest_1_qs;
       end
 
-      addr_hit[60]: begin
+      addr_hit[58]: begin
         reg_rdata_next[31:0] = owner_sw_cfg_digest_0_qs;
       end
 
-      addr_hit[61]: begin
+      addr_hit[59]: begin
         reg_rdata_next[31:0] = owner_sw_cfg_digest_1_qs;
       end
 
-      addr_hit[62]: begin
-        reg_rdata_next[31:0] = rot_creator_auth_digest_0_qs;
-      end
-
-      addr_hit[63]: begin
-        reg_rdata_next[31:0] = rot_creator_auth_digest_1_qs;
-      end
-
-      addr_hit[64]: begin
+      addr_hit[60]: begin
         reg_rdata_next[31:0] = rot_firmware_auth_slot0_digest_0_qs;
       end
 
-      addr_hit[65]: begin
+      addr_hit[61]: begin
         reg_rdata_next[31:0] = rot_firmware_auth_slot0_digest_1_qs;
       end
 
-      addr_hit[66]: begin
+      addr_hit[62]: begin
         reg_rdata_next[31:0] = rot_firmware_auth_slot1_digest_0_qs;
       end
 
-      addr_hit[67]: begin
+      addr_hit[63]: begin
         reg_rdata_next[31:0] = rot_firmware_auth_slot1_digest_1_qs;
       end
 
-      addr_hit[68]: begin
+      addr_hit[64]: begin
         reg_rdata_next[31:0] = rot_firmware_auth_slot2_digest_0_qs;
       end
 
-      addr_hit[69]: begin
+      addr_hit[65]: begin
         reg_rdata_next[31:0] = rot_firmware_auth_slot2_digest_1_qs;
       end
 
-      addr_hit[70]: begin
+      addr_hit[66]: begin
         reg_rdata_next[31:0] = rot_firmware_auth_slot3_digest_0_qs;
       end
 
-      addr_hit[71]: begin
+      addr_hit[67]: begin
         reg_rdata_next[31:0] = rot_firmware_auth_slot3_digest_1_qs;
       end
 
-      addr_hit[72]: begin
+      addr_hit[68]: begin
         reg_rdata_next[31:0] = soc_firmware_auth_slot0_digest_0_qs;
       end
 
-      addr_hit[73]: begin
+      addr_hit[69]: begin
         reg_rdata_next[31:0] = soc_firmware_auth_slot0_digest_1_qs;
       end
 
-      addr_hit[74]: begin
+      addr_hit[70]: begin
         reg_rdata_next[31:0] = soc_firmware_auth_slot1_digest_0_qs;
       end
 
-      addr_hit[75]: begin
+      addr_hit[71]: begin
         reg_rdata_next[31:0] = soc_firmware_auth_slot1_digest_1_qs;
       end
 
-      addr_hit[76]: begin
+      addr_hit[72]: begin
         reg_rdata_next[31:0] = soc_firmware_auth_slot2_digest_0_qs;
       end
 
-      addr_hit[77]: begin
+      addr_hit[73]: begin
         reg_rdata_next[31:0] = soc_firmware_auth_slot2_digest_1_qs;
       end
 
-      addr_hit[78]: begin
+      addr_hit[74]: begin
         reg_rdata_next[31:0] = soc_firmware_auth_slot3_digest_0_qs;
       end
 
-      addr_hit[79]: begin
+      addr_hit[75]: begin
         reg_rdata_next[31:0] = soc_firmware_auth_slot3_digest_1_qs;
       end
 
-      addr_hit[80]: begin
+      addr_hit[76]: begin
         reg_rdata_next[31:0] = hw_cfg0_digest_0_qs;
       end
 
-      addr_hit[81]: begin
+      addr_hit[77]: begin
         reg_rdata_next[31:0] = hw_cfg0_digest_1_qs;
       end
 
-      addr_hit[82]: begin
+      addr_hit[78]: begin
         reg_rdata_next[31:0] = hw_cfg1_digest_0_qs;
       end
 
-      addr_hit[83]: begin
+      addr_hit[79]: begin
         reg_rdata_next[31:0] = hw_cfg1_digest_1_qs;
       end
 
-      addr_hit[84]: begin
+      addr_hit[80]: begin
         reg_rdata_next[31:0] = secret0_digest_0_qs;
       end
 
-      addr_hit[85]: begin
+      addr_hit[81]: begin
         reg_rdata_next[31:0] = secret0_digest_1_qs;
       end
 
-      addr_hit[86]: begin
+      addr_hit[82]: begin
         reg_rdata_next[31:0] = secret1_digest_0_qs;
       end
 
-      addr_hit[87]: begin
+      addr_hit[83]: begin
         reg_rdata_next[31:0] = secret1_digest_1_qs;
       end
 
-      addr_hit[88]: begin
+      addr_hit[84]: begin
         reg_rdata_next[31:0] = secret2_digest_0_qs;
       end
 
-      addr_hit[89]: begin
+      addr_hit[85]: begin
         reg_rdata_next[31:0] = secret2_digest_1_qs;
       end
 
-      addr_hit[90]: begin
+      addr_hit[86]: begin
         reg_rdata_next[31:0] = secret3_digest_0_qs;
       end
 
-      addr_hit[91]: begin
+      addr_hit[87]: begin
         reg_rdata_next[31:0] = secret3_digest_1_qs;
       end
 
