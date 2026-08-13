@@ -2,6 +2,11 @@
 # Licensed under the Apache License, Version 2.0, see LICENSE for details.
 # SPDX-License-Identifier: Apache-2.0
 
+load(
+    "//rules/opentitan:defs.bzl",
+    "sim_dv",
+)
+
 package(default_visibility = ["//visibility:public"])
 
 filegroup(
@@ -25,4 +30,25 @@ filegroup(
         "//hw/top_peppermint/ip_autogen/rv_core_ibex:doc_files",
         "//hw/top_peppermint/ip_autogen/rv_plic:doc_files",
     ],
+)
+
+sim_dv(
+    name = "sim_dv_base",
+    design = "peppermint",
+    exec_env = "sim_dv",
+    extract_sw_logs = "//util/device_sw_utils:extract_sw_logs_db",
+    flash_scramble_tool = "//util/design:gen-flash-img",
+    libs = [
+        "//sw/device/lib/arch:boot_stage_rom_ext",
+        "//sw/device/lib/arch:sim_dv",
+    ],
+    linker_script = "//sw/device/lib/testing/test_framework:ottf_ld_silicon_creator_slot_a",
+)
+
+sim_dv(
+    name = "sim_dv",
+    testonly = True,
+    base = ":sim_dv_base",
+    exec_env = "sim_dv",
+    rom = "//sw/device/lib/testing/test_rom:test_rom",
 )
