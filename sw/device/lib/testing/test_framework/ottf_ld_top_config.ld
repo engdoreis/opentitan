@@ -3,7 +3,7 @@
 /* SPDX-License-Identifier: Apache-2.0 */
 
 /* TODO This configuration should be split into per-top headers */
-#ifdef OPENTITAN_IS_DARJEELING
+#if defined(OPENTITAN_IS_DARJEELING) || defined(OPENTITAN_IS_PEPPERMINT)
 MEMORY {
     /* There is a 1MiB RAM within the CTN at offset 16MiB to hold the
      * firmware under test in DV. */
