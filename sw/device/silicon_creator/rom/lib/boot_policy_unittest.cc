@@ -2,13 +2,13 @@
 // Licensed under the Apache License, Version 2.0, see LICENSE for details.
 // SPDX-License-Identifier: Apache-2.0
 
-#include "sw/device/silicon_creator/rom/boot_policy.h"
+#include "sw/device/silicon_creator/rom/lib/boot_policy.h"
 
 #include "gtest/gtest.h"
 #include "sw/device/silicon_creator/lib/base/chip.h"
 #include "sw/device/silicon_creator/lib/mock_manifest.h"
 #include "sw/device/silicon_creator/lib/mock_shutdown.h"
-#include "sw/device/silicon_creator/rom/mock_boot_policy_ptrs.h"
+#include "sw/device/silicon_creator/rom/lib/mock_boot_policy_ptrs.h"
 #include "sw/device/silicon_creator/testing/rom_test.h"
 
 namespace manifest_unittest {

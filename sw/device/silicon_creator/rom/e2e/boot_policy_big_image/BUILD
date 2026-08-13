@@ -46,7 +46,7 @@ BOOT_POLICY_BIG_IMAGE_CASES = [
             "//sw/device/lib/testing/test_framework:check",
             "//sw/device/lib/testing/test_framework:ottf_ld_silicon_creator_slot_a",
             "//sw/device/lib/testing/test_framework:ottf_main",
-            "//sw/device/silicon_creator/rom:boot_policy_ptrs",
+            "//sw/device/silicon_creator/rom/lib:boot_policy_ptrs",
         ],
     )
     for lc_state, lc_state_val in get_lc_items()

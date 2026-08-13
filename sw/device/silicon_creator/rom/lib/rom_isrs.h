@@ -2,8 +2,8 @@
 // Licensed under the Apache License, Version 2.0, see LICENSE for details.
 // SPDX-License-Identifier: Apache-2.0
 
-#ifndef OPENTITAN_SW_DEVICE_SILICON_CREATOR_ROM_ROM_ISRS_H_
-#define OPENTITAN_SW_DEVICE_SILICON_CREATOR_ROM_ROM_ISRS_H_
+#ifndef OPENTITAN_SW_DEVICE_SILICON_CREATOR_ROM_LIB_ROM_ISRS_H_
+#define OPENTITAN_SW_DEVICE_SILICON_CREATOR_ROM_LIB_ROM_ISRS_H_
 
 #include <stdnoreturn.h>
 
@@ -37,4 +37,4 @@ noreturn void rom_interrupt_handler(void);
 }  // extern "C"
 #endif  // __cplusplus
 
-#endif  // OPENTITAN_SW_DEVICE_SILICON_CREATOR_ROM_ROM_ISRS_H_
+#endif  // OPENTITAN_SW_DEVICE_SILICON_CREATOR_ROM_LIB_ROM_ISRS_H_

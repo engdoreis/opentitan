@@ -38,7 +38,7 @@ static inline void init_nvm(uint32_t nvm_default_cfg) {
 #ifdef SKIP_BOOTSTRAP
 static inline void run_bootstrap(void) {}
 #else
-#include "sw/device/silicon_creator/rom/bootstrap.h"
+#include "sw/device/silicon_creator/rom/lib/bootstrap.h"
 
 static inline void run_bootstrap(void) {
   if (bootstrap_requested() == kHardenedBoolTrue) {

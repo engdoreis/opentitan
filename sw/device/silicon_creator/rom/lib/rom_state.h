@@ -2,8 +2,8 @@
 // Licensed under the Apache License, Version 2.0, see LICENSE for details.
 // SPDX-License-Identifier: Apache-2.0
 
-#ifndef OPENTITAN_SW_DEVICE_SILICON_CREATOR_ROM_ROM_STATE_H_
-#define OPENTITAN_SW_DEVICE_SILICON_CREATOR_ROM_ROM_STATE_H_
+#ifndef OPENTITAN_SW_DEVICE_SILICON_CREATOR_ROM_LIB_ROM_STATE_H_
+#define OPENTITAN_SW_DEVICE_SILICON_CREATOR_ROM_LIB_ROM_STATE_H_
 
 #include <stdint.h>
 #include <stdnoreturn.h>
@@ -214,4 +214,4 @@ OT_WARN_UNUSED_RESULT rom_error_t rom_state_fsm_walk(
 }  // extern "C"
 #endif  // __cplusplus
 
-#endif  // OPENTITAN_SW_DEVICE_SILICON_CREATOR_ROM_ROM_STATE_H_
+#endif  // OPENTITAN_SW_DEVICE_SILICON_CREATOR_ROM_LIB_ROM_STATE_H_

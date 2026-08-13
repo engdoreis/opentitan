@@ -21,7 +21,7 @@
 #include "sw/device/silicon_creator/lib/drivers/retention_sram.h"
 #include "sw/device/silicon_creator/lib/manifest.h"
 #include "sw/device/silicon_creator/lib/manifest_def.h"
-#include "sw/device/silicon_creator/rom/boot_policy_ptrs.h"
+#include "sw/device/silicon_creator/rom/lib/boot_policy_ptrs.h"
 
 #include "hw/top/flash_ctrl_regs.h"  // Generated.
 #include "hw/top/otp_ctrl_regs.h"    // Generated.

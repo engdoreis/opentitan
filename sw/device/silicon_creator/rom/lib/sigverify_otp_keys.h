@@ -2,8 +2,8 @@
 // Licensed under the Apache License, Version 2.0, see LICENSE for details.
 // SPDX-License-Identifier: Apache-2.0
 
-#ifndef OPENTITAN_SW_DEVICE_SILICON_CREATOR_ROM_SIGVERIFY_OTP_KEYS_H_
-#define OPENTITAN_SW_DEVICE_SILICON_CREATOR_ROM_SIGVERIFY_OTP_KEYS_H_
+#ifndef OPENTITAN_SW_DEVICE_SILICON_CREATOR_ROM_LIB_SIGVERIFY_OTP_KEYS_H_
+#define OPENTITAN_SW_DEVICE_SILICON_CREATOR_ROM_LIB_SIGVERIFY_OTP_KEYS_H_
 
 #include <stdint.h>
 
@@ -11,7 +11,7 @@
 #include "sw/device/silicon_creator/lib/drivers/hmac.h"
 #include "sw/device/silicon_creator/lib/drivers/lifecycle.h"
 #include "sw/device/silicon_creator/lib/error.h"
-#include "sw/device/silicon_creator/rom/sigverify_key_types.h"
+#include "sw/device/silicon_creator/rom/lib/sigverify_key_types.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -143,4 +143,4 @@ rom_error_t sigverify_otp_keys_get(sigverify_otp_keys_get_params_t params,
 }  // extern "C"
 #endif  // __cplusplus
 
-#endif  // OPENTITAN_SW_DEVICE_SILICON_CREATOR_ROM_SIGVERIFY_OTP_KEYS_H_
+#endif  // OPENTITAN_SW_DEVICE_SILICON_CREATOR_ROM_LIB_SIGVERIFY_OTP_KEYS_H_

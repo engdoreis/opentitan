@@ -9,7 +9,7 @@
 #include "sw/device/lib/base/mock_abs_mmio.h"
 #include "sw/device/silicon_creator/lib/base/chip.h"
 #include "sw/device/silicon_creator/lib/bootstrap_fuzzer_util.h"
-#include "sw/device/silicon_creator/rom/bootstrap.h"
+#include "sw/device/silicon_creator/rom/lib/bootstrap.h"
 
 #include "hw/top/gpio_regs.h"
 #include "hw/top/otp_ctrl_regs.h"

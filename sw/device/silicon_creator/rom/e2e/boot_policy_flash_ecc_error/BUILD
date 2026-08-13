@@ -170,7 +170,7 @@ otp_image(
             "//sw/device/silicon_creator/lib:manifest_def",
             "//sw/device/silicon_creator/lib/base:chip",
             "//sw/device/silicon_creator/lib/drivers:retention_sram",
-            "//sw/device/silicon_creator/rom:boot_policy_ptrs",
+            "//sw/device/silicon_creator/rom/lib:boot_policy_ptrs",
         ],
     )
     for slot in SLOTS

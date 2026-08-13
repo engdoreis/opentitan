@@ -7,6 +7,6 @@ package(default_visibility = ["//visibility:public"])
 cc_library(
     name = "rom_hooks",
     srcs = ["default_rom_hooks.c"],
-    deps = ["@@//sw/device/silicon_creator/rom:rom_state"],
+    deps = ["@@//sw/device/silicon_creator/rom/lib:rom_state"],
     alwayslink = True,
 )

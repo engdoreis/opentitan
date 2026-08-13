@@ -44,15 +44,15 @@
 #include "sw/device/silicon_creator/lib/shutdown.h"
 #include "sw/device/silicon_creator/lib/sigverify/sigverify.h"
 #include "sw/device/silicon_creator/lib/stack_utilization.h"
-#include "sw/device/silicon_creator/rom/boot_policy.h"
-#include "sw/device/silicon_creator/rom/boot_policy_ptrs.h"
-#include "sw/device/silicon_creator/rom/bootstrap.h"
-#include "sw/device/silicon_creator/rom/rom.h"
-#include "sw/device/silicon_creator/rom/rom_epmp.h"
-#include "sw/device/silicon_creator/rom/rom_state.h"
-#include "sw/device/silicon_creator/rom/sigverify_keys_ecdsa_p256.h"
-#include "sw/device/silicon_creator/rom/sigverify_keys_spx.h"
-#include "sw/device/silicon_creator/rom/sigverify_otp_keys.h"
+#include "sw/device/silicon_creator/rom/lib/boot_policy.h"
+#include "sw/device/silicon_creator/rom/lib/boot_policy_ptrs.h"
+#include "sw/device/silicon_creator/rom/lib/bootstrap.h"
+#include "sw/device/silicon_creator/rom/lib/rom.h"
+#include "sw/device/silicon_creator/rom/lib/rom_epmp.h"
+#include "sw/device/silicon_creator/rom/lib/rom_state.h"
+#include "sw/device/silicon_creator/rom/lib/sigverify_keys_ecdsa_p256.h"
+#include "sw/device/silicon_creator/rom/lib/sigverify_keys_spx.h"
+#include "sw/device/silicon_creator/rom/lib/sigverify_otp_keys.h"
 
 #include "hw/top/hmac_regs.h"  // Generated.
 #include "hw/top/otp_ctrl_regs.h"
@@ -448,7 +448,7 @@ static rom_error_t rom_verify(const manifest_t *manifest, uint32_t *nvm_exec) {
 }
 
 /* These symbols are defined in
- * `opentitan/sw/device/silicon_creator/rom/rom.ld`, and describes the
+ * `opentitan/sw/device/silicon_creator/rom/lib/rom.ld`, and describes the
  * location of the flash header.
  */
 extern char _rom_ext_virtual_start_address[];

@@ -8,7 +8,7 @@
 #include "sw/device/lib/testing/test_framework/check.h"
 #include "sw/device/lib/testing/test_framework/ottf_main.h"
 #include "sw/device/silicon_creator/lib/manifest_def.h"
-#include "sw/device/silicon_creator/rom/boot_policy_ptrs.h"
+#include "sw/device/silicon_creator/rom/lib/boot_policy_ptrs.h"
 
 OTTF_DEFINE_TEST_CONFIG();
 
