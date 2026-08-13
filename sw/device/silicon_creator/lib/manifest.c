@@ -12,6 +12,9 @@
 #elif defined(OPENTITAN_IS_DARJEELING)
 #include "hw/top_darjeeling/sw/autogen/top_darjeeling.h"
 #define NVM_SIZE_BYTES TOP_DARJEELING_SRAM_CTRL_MAIN_RAM_SIZE_BYTES
+#elif defined(OPENTITAN_IS_PEPPERMINT)
+#include "hw/top_peppermint/sw/autogen/top_peppermint.h"
+#define NVM_SIZE_BYTES TOP_PEPPERMINT_SRAM_CTRL_MAIN_RAM_SIZE_BYTES
 #else
 #error unsupported top
 #endif
@@ -26,9 +29,12 @@ static_assert(CHIP_BL0_SIZE_MIN >= CHIP_MANIFEST_SIZE,
               "`CHIP_BL0_SIZE_MIN` is too small");
 static_assert(CHIP_BL0_SIZE_MAX >= CHIP_BL0_SIZE_MIN,
               "`CHIP_BL0_SIZE_MAX` is too small");
+// In Peppermint the BL0 firmware doesn't live in flash.
+#ifndef OPENTITAN_IS_PEPPERMINT
 static_assert(CHIP_BL0_SIZE_MAX <=
                   ((NVM_SIZE_BYTES / 2) - CHIP_ROM_EXT_SIZE_MAX),
               "`CHIP_BL0_SIZE_MAX` is too large");
+#endif /* OPENTITAN_IS_PEPPERMINT */
 
 // Extern declarations for the inline functions in the manifest header.
 extern rom_error_t manifest_check(const manifest_t *manifest);
