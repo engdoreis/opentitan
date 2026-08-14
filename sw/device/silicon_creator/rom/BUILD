@@ -339,7 +339,6 @@ opentitan_test(
     ],
     deps = [
         ":mask_rom_lib",
-        "//hw/top:flash_ctrl_c_regs",
         "//sw/device/lib/arch:device",
         "//sw/device/lib/base:abs_mmio",
         "//sw/device/lib/base:bitfield",
@@ -358,10 +357,10 @@ opentitan_test(
         "//sw/device/silicon_creator/lib:epmp_state",
         "//sw/device/silicon_creator/lib:epmp_test_unlock",
         "//sw/device/silicon_creator/lib:irq_asm",
+        "//sw/device/silicon_creator/lib:nvm_ctrl",
         "//sw/device/silicon_creator/lib/base:chip",
         "//sw/device/silicon_creator/lib/base:sec_mmio",
         "//sw/device/silicon_creator/lib/base:static_critical",
-        "//sw/device/silicon_creator/lib/drivers:flash_ctrl",
         "//sw/device/silicon_creator/lib/drivers:uart",
     ],
 )
