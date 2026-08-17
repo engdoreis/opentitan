@@ -7,7 +7,9 @@
 
 #include <stdnoreturn.h>
 
+#include "sw/device/silicon_creator/lib/boot_data.h"
 #include "sw/device/silicon_creator/lib/error.h"
+#include "sw/device/silicon_creator/rom/lib/sigverify_otp_keys.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -24,6 +26,19 @@ static OT_WARN_UNUSED_RESULT rom_error_t
 rom_state_bootstrap(void *arg, uint32_t *next_state);
 static OT_WARN_UNUSED_RESULT rom_error_t
 rom_state_boot_rom_ext(void *arg, uint32_t *next_state);
+// A context struct with data shared accross ROM states.
+typedef struct rom_ctx {
+  // Life cycle state of the chip.
+  lifecycle_state_t lc_state;
+  // Boot data from flash.
+  boot_data_t boot_data;
+  // Whether we are "simply" waking from low power mode.
+  hardened_bool_t waking_from_low_power;
+  // First stage (ROM-->ROM_EXT) secure boot keys loaded from OTP.
+  sigverify_otp_key_ctx_t sigverify_ctx;
+  // A check value for the reset reason.
+  uint32_t reset_reason_check;
+} rom_ctx_t;
 
 /**
  * The first C function executed by the ROM (defined in `rom.c`)
