@@ -83,7 +83,7 @@ typedef enum dif_otp_ctrl_partition {
   /**
    * SW managed asset ownership states partition.
    *
-   * Multibit enable value for the tracking the asset ownership states.
+   * Multibit enable value for tracking the asset ownership states.
    * Note that the states can be written multiple times in a device lifetime.
    * The values to be written are engineered in the same way as the LC_CTRL
    * state encoding words so that the ECC encoding remains valid even after
@@ -160,6 +160,75 @@ typedef enum dif_otp_ctrl_partition {
    * May contain multiple signed ROM2 patches.
    */
   kDifOtpCtrlPartitionRomPatch,
+#elif defined(OPENTITAN_IS_PEPPERMINT)
+  /**
+   * SW managed authentication slot states partition.
+   *
+   * Multibit enable value for the tracking the authentication slot states.
+   * Note that the states can be written multiple times in a device lifetime.
+   * The values to be written are engineered in the same way as the LC_CTRL
+   * state encoding words so that the ECC encoding remains valid even after
+   * updating the values.
+   *
+   * The constants can be found in the lc_ctrl_state_pkg.sv package.
+   *
+   * The programming order has to adhere to:
+   * SLOT_ST_RAW (factory all-zero state) ->
+   * SLOT_ST_LOCKED0 ->
+   * SLOT_ST_RELEASED0 ->
+   * ...
+   * SLOT_ST_SCRAPPED
+   *
+   * Note that if there are less than 4 slots available the higher slot states
+   * become logically equivalent to SLOT_ST_SCRAPPED (firmware has to handle
+   * this correctly).
+   */
+  kDifOtpCtrlPartitionAuthSlotState,
+  /**
+   * Software managed creator partition.
+   *
+   */
+  kDifOtpCtrlPartitionRotFirmwareAuthSlot0,
+  /**
+   * Software managed RoT firmware authentication slot 1 partition.
+   *
+   */
+  kDifOtpCtrlPartitionRotFirmwareAuthSlot1,
+  /**
+   * Software managed RoT firmware authentication slot 2 partition.
+   *
+   */
+  kDifOtpCtrlPartitionRotFirmwareAuthSlot2,
+  /**
+   * Software managed RoT firmware authentication slot 3 partition.
+   *
+   */
+  kDifOtpCtrlPartitionRotFirmwareAuthSlot3,
+  /**
+   * Software managed SoC firmware authentication slot 0 partition.
+   *
+   */
+  kDifOtpCtrlPartitionSocFirmwareAuthSlot0,
+  /**
+   * Software managed SoC firmware authentication slot 1 partition.
+   *
+   */
+  kDifOtpCtrlPartitionSocFirmwareAuthSlot1,
+  /**
+   * Software managed SoC firmware authentication slot 2 partition.
+   *
+   */
+  kDifOtpCtrlPartitionSocFirmwareAuthSlot2,
+  /**
+   * Software managed SoC firmware authentication slot 3 partition.
+   *
+   */
+  kDifOtpCtrlPartitionSocFirmwareAuthSlot3,
+  /**
+   * Anti-replay protection Strike Counters partition.
+   *
+   */
+  kDifOtpCtrlPartitionExtNvm,
 #else
 #error "dif_otp_ctrl does not support this top"
 #endif
@@ -193,7 +262,7 @@ typedef enum dif_otp_ctrl_partition {
    * This contains RMA unlock token, creator root key, and creator seed.
    */
   kDifOtpCtrlPartitionSecret2,
-#if defined(OPENTITAN_IS_DARJEELING)
+#if defined(OPENTITAN_IS_DARJEELING) || defined(OPENTITAN_IS_PEPPERMINT)
   /**
    * Secret partition 3.
    *

@@ -285,6 +285,56 @@ static bool sw_read_lock_reg_offset(dif_otp_ctrl_partition_t partition,
       *reg_offset = OTP_CTRL_ROM_PATCH_READ_LOCK_REG_OFFSET;
       *index = OTP_CTRL_ROM_PATCH_READ_LOCK_ROM_PATCH_READ_LOCK_BIT;
       break;
+#elif defined(OPENTITAN_IS_PEPPERMINT)
+    case kDifOtpCtrlPartitionAuthSlotState:
+      *reg_offset = OTP_CTRL_AUTH_SLOT_STATE_READ_LOCK_REG_OFFSET;
+      *index =
+          OTP_CTRL_AUTH_SLOT_STATE_READ_LOCK_AUTH_SLOT_STATE_READ_LOCK_BIT;
+      break;
+    case kDifOtpCtrlPartitionRotFirmwareAuthSlot0:
+      *reg_offset = OTP_CTRL_ROT_FIRMWARE_AUTH_SLOT0_READ_LOCK_REG_OFFSET;
+      *index =
+          OTP_CTRL_ROT_FIRMWARE_AUTH_SLOT0_READ_LOCK_ROT_FIRMWARE_AUTH_SLOT0_READ_LOCK_BIT;
+      break;
+    case kDifOtpCtrlPartitionRotFirmwareAuthSlot1:
+      *reg_offset = OTP_CTRL_ROT_FIRMWARE_AUTH_SLOT1_READ_LOCK_REG_OFFSET;
+      *index =
+          OTP_CTRL_ROT_FIRMWARE_AUTH_SLOT1_READ_LOCK_ROT_FIRMWARE_AUTH_SLOT1_READ_LOCK_BIT;
+      break;
+    case kDifOtpCtrlPartitionRotFirmwareAuthSlot2:
+      *reg_offset = OTP_CTRL_ROT_FIRMWARE_AUTH_SLOT2_READ_LOCK_REG_OFFSET;
+      *index =
+          OTP_CTRL_ROT_FIRMWARE_AUTH_SLOT2_READ_LOCK_ROT_FIRMWARE_AUTH_SLOT2_READ_LOCK_BIT;
+      break;
+    case kDifOtpCtrlPartitionRotFirmwareAuthSlot3:
+      *reg_offset = OTP_CTRL_ROT_FIRMWARE_AUTH_SLOT3_READ_LOCK_REG_OFFSET;
+      *index =
+          OTP_CTRL_ROT_FIRMWARE_AUTH_SLOT3_READ_LOCK_ROT_FIRMWARE_AUTH_SLOT3_READ_LOCK_BIT;
+      break;
+    case kDifOtpCtrlPartitionSocFirmwareAuthSlot0:
+      *reg_offset = OTP_CTRL_SOC_FIRMWARE_AUTH_SLOT0_READ_LOCK_REG_OFFSET;
+      *index =
+          OTP_CTRL_SOC_FIRMWARE_AUTH_SLOT0_READ_LOCK_SOC_FIRMWARE_AUTH_SLOT0_READ_LOCK_BIT;
+      break;
+    case kDifOtpCtrlPartitionSocFirmwareAuthSlot1:
+      *reg_offset = OTP_CTRL_SOC_FIRMWARE_AUTH_SLOT1_READ_LOCK_REG_OFFSET;
+      *index =
+          OTP_CTRL_SOC_FIRMWARE_AUTH_SLOT1_READ_LOCK_SOC_FIRMWARE_AUTH_SLOT1_READ_LOCK_BIT;
+      break;
+    case kDifOtpCtrlPartitionSocFirmwareAuthSlot2:
+      *reg_offset = OTP_CTRL_SOC_FIRMWARE_AUTH_SLOT2_READ_LOCK_REG_OFFSET;
+      *index =
+          OTP_CTRL_SOC_FIRMWARE_AUTH_SLOT2_READ_LOCK_SOC_FIRMWARE_AUTH_SLOT2_READ_LOCK_BIT;
+      break;
+    case kDifOtpCtrlPartitionSocFirmwareAuthSlot3:
+      *reg_offset = OTP_CTRL_SOC_FIRMWARE_AUTH_SLOT3_READ_LOCK_REG_OFFSET;
+      *index =
+          OTP_CTRL_SOC_FIRMWARE_AUTH_SLOT3_READ_LOCK_SOC_FIRMWARE_AUTH_SLOT3_READ_LOCK_BIT;
+      break;
+    case kDifOtpCtrlPartitionExtNvm:
+      *reg_offset = OTP_CTRL_EXT_NVM_READ_LOCK_REG_OFFSET;
+      *index = OTP_CTRL_EXT_NVM_READ_LOCK_EXT_NVM_READ_LOCK_BIT;
+      break;
 #else
 #error "dif_otp_ctrl does not support this top"
 #endif
@@ -583,6 +633,77 @@ static const partition_info_t kPartitions[] = {
         .is_software = true,
         .has_digest = true,
         .is_lifecycle = false},
+#elif defined(OPENTITAN_IS_PEPPERMINT)
+    [kDifOtpCtrlPartitionAuthSlotState] = {
+        .start_addr = OTP_CTRL_PARAM_AUTH_SLOT_STATE_OFFSET,
+        .len = OTP_CTRL_PARAM_AUTH_SLOT_STATE_SIZE,
+        .align_mask = 0x3,
+        .is_software = true,
+        .has_digest = false,
+        .is_lifecycle = false},
+    [kDifOtpCtrlPartitionRotFirmwareAuthSlot0] = {
+        .start_addr = OTP_CTRL_PARAM_ROT_FIRMWARE_AUTH_SLOT0_OFFSET,
+        .len = OTP_CTRL_PARAM_ROT_FIRMWARE_AUTH_SLOT0_SIZE,
+        .align_mask = 0x3,
+        .is_software = true,
+        .has_digest = true,
+        .is_lifecycle = false},
+    [kDifOtpCtrlPartitionRotFirmwareAuthSlot1] = {
+        .start_addr = OTP_CTRL_PARAM_ROT_FIRMWARE_AUTH_SLOT1_OFFSET,
+        .len = OTP_CTRL_PARAM_ROT_FIRMWARE_AUTH_SLOT1_SIZE,
+        .align_mask = 0x3,
+        .is_software = true,
+        .has_digest = true,
+        .is_lifecycle = false},
+    [kDifOtpCtrlPartitionRotFirmwareAuthSlot2] = {
+        .start_addr = OTP_CTRL_PARAM_ROT_FIRMWARE_AUTH_SLOT2_OFFSET,
+        .len = OTP_CTRL_PARAM_ROT_FIRMWARE_AUTH_SLOT2_SIZE,
+        .align_mask = 0x3,
+        .is_software = true,
+        .has_digest = true,
+        .is_lifecycle = false},
+    [kDifOtpCtrlPartitionRotFirmwareAuthSlot3] = {
+        .start_addr = OTP_CTRL_PARAM_ROT_FIRMWARE_AUTH_SLOT3_OFFSET,
+        .len = OTP_CTRL_PARAM_ROT_FIRMWARE_AUTH_SLOT3_SIZE,
+        .align_mask = 0x3,
+        .is_software = true,
+        .has_digest = true,
+        .is_lifecycle = false},
+    [kDifOtpCtrlPartitionSocFirmwareAuthSlot0] = {
+        .start_addr = OTP_CTRL_PARAM_SOC_FIRMWARE_AUTH_SLOT0_OFFSET,
+        .len = OTP_CTRL_PARAM_SOC_FIRMWARE_AUTH_SLOT0_SIZE,
+        .align_mask = 0x3,
+        .is_software = true,
+        .has_digest = true,
+        .is_lifecycle = false},
+    [kDifOtpCtrlPartitionSocFirmwareAuthSlot1] = {
+        .start_addr = OTP_CTRL_PARAM_SOC_FIRMWARE_AUTH_SLOT1_OFFSET,
+        .len = OTP_CTRL_PARAM_SOC_FIRMWARE_AUTH_SLOT1_SIZE,
+        .align_mask = 0x3,
+        .is_software = true,
+        .has_digest = true,
+        .is_lifecycle = false},
+    [kDifOtpCtrlPartitionSocFirmwareAuthSlot2] = {
+        .start_addr = OTP_CTRL_PARAM_SOC_FIRMWARE_AUTH_SLOT2_OFFSET,
+        .len = OTP_CTRL_PARAM_SOC_FIRMWARE_AUTH_SLOT2_SIZE,
+        .align_mask = 0x3,
+        .is_software = true,
+        .has_digest = true,
+        .is_lifecycle = false},
+    [kDifOtpCtrlPartitionSocFirmwareAuthSlot3] = {
+        .start_addr = OTP_CTRL_PARAM_SOC_FIRMWARE_AUTH_SLOT2_OFFSET,
+        .len = OTP_CTRL_PARAM_SOC_FIRMWARE_AUTH_SLOT2_SIZE,
+        .align_mask = 0x3,
+        .is_software = true,
+        .has_digest = true,
+        .is_lifecycle = false},
+    [kDifOtpCtrlPartitionExtNvm] = {
+        .start_addr = OTP_CTRL_PARAM_EXT_NVM_OFFSET,
+        .len = OTP_CTRL_PARAM_EXT_NVM_SIZE,
+        .align_mask = 0x3,
+        .is_software = true,
+        .has_digest = false,
+        .is_lifecycle = false},
 #else
 #error "dif_otp_ctrl does not support this top"
 #endif
@@ -621,7 +742,7 @@ static const partition_info_t kPartitions[] = {
         .is_software = false,
         .has_digest = true,
         .is_lifecycle = false},
-#if defined(OPENTITAN_IS_DARJEELING)
+#if defined(OPENTITAN_IS_DARJEELING) || defined(OPENTITAN_IS_PEPPERMINT)
     [kDifOtpCtrlPartitionSecret3] = {
         .start_addr = OTP_CTRL_PARAM_SECRET3_OFFSET,
         .len = OTP_CTRL_PARAM_SECRET3_SIZE,
@@ -917,6 +1038,39 @@ static bool get_digest_regs(dif_otp_ctrl_partition_t partition, ptrdiff_t *reg0,
       *reg0 = OTP_CTRL_ROM_PATCH_DIGEST_0_REG_OFFSET;
       *reg1 = OTP_CTRL_ROM_PATCH_DIGEST_1_REG_OFFSET;
       break;
+#elif defined(OPENTITAN_IS_PEPPERMINT)
+    case kDifOtpCtrlPartitionRotFirmwareAuthSlot0:
+      *reg0 = OTP_CTRL_ROT_FIRMWARE_AUTH_SLOT0_DIGEST_0_REG_OFFSET;
+      *reg1 = OTP_CTRL_ROT_FIRMWARE_AUTH_SLOT0_DIGEST_1_REG_OFFSET;
+      break;
+    case kDifOtpCtrlPartitionRotFirmwareAuthSlot1:
+      *reg0 = OTP_CTRL_ROT_FIRMWARE_AUTH_SLOT1_DIGEST_0_REG_OFFSET;
+      *reg1 = OTP_CTRL_ROT_FIRMWARE_AUTH_SLOT1_DIGEST_1_REG_OFFSET;
+      break;
+    case kDifOtpCtrlPartitionRotFirmwareAuthSlot2:
+      *reg0 = OTP_CTRL_ROT_FIRMWARE_AUTH_SLOT2_DIGEST_0_REG_OFFSET;
+      *reg1 = OTP_CTRL_ROT_FIRMWARE_AUTH_SLOT2_DIGEST_1_REG_OFFSET;
+      break;
+    case kDifOtpCtrlPartitionRotFirmwareAuthSlot3:
+      *reg0 = OTP_CTRL_ROT_FIRMWARE_AUTH_SLOT3_DIGEST_0_REG_OFFSET;
+      *reg1 = OTP_CTRL_ROT_FIRMWARE_AUTH_SLOT3_DIGEST_1_REG_OFFSET;
+      break;
+    case kDifOtpCtrlPartitionSocFirmwareAuthSlot0:
+      *reg0 = OTP_CTRL_SOC_FIRMWARE_AUTH_SLOT0_DIGEST_0_REG_OFFSET;
+      *reg1 = OTP_CTRL_SOC_FIRMWARE_AUTH_SLOT0_DIGEST_1_REG_OFFSET;
+      break;
+    case kDifOtpCtrlPartitionSocFirmwareAuthSlot1:
+      *reg0 = OTP_CTRL_SOC_FIRMWARE_AUTH_SLOT1_DIGEST_0_REG_OFFSET;
+      *reg1 = OTP_CTRL_SOC_FIRMWARE_AUTH_SLOT1_DIGEST_1_REG_OFFSET;
+      break;
+    case kDifOtpCtrlPartitionSocFirmwareAuthSlot2:
+      *reg0 = OTP_CTRL_SOC_FIRMWARE_AUTH_SLOT2_DIGEST_0_REG_OFFSET;
+      *reg1 = OTP_CTRL_SOC_FIRMWARE_AUTH_SLOT2_DIGEST_1_REG_OFFSET;
+      break;
+    case kDifOtpCtrlPartitionSocFirmwareAuthSlot3:
+      *reg0 = OTP_CTRL_SOC_FIRMWARE_AUTH_SLOT3_DIGEST_0_REG_OFFSET;
+      *reg1 = OTP_CTRL_SOC_FIRMWARE_AUTH_SLOT3_DIGEST_1_REG_OFFSET;
+      break;
 #else
 #error "dif_otp_ctrl does not support this top"
 #endif
@@ -940,7 +1094,7 @@ static bool get_digest_regs(dif_otp_ctrl_partition_t partition, ptrdiff_t *reg0,
       *reg0 = OTP_CTRL_SECRET2_DIGEST_0_REG_OFFSET;
       *reg1 = OTP_CTRL_SECRET2_DIGEST_1_REG_OFFSET;
       break;
-#if defined(OPENTITAN_IS_DARJEELING)
+#if defined(OPENTITAN_IS_DARJEELING) || defined(OPENTITAN_IS_PEPPERMINT)
     case kDifOtpCtrlPartitionSecret3:
       *reg0 = OTP_CTRL_SECRET3_DIGEST_0_REG_OFFSET;
       *reg1 = OTP_CTRL_SECRET3_DIGEST_1_REG_OFFSET;
