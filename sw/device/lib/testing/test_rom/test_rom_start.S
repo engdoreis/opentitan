@@ -4,19 +4,19 @@
 
 #include "sw/device/lib/base/macros.h"
 #include "sw/device/lib/base/multibits_asm.h"
-#include "hw/top/ast_regs.h"
 #include "hw/top/clkmgr_regs.h"
 #include "hw/top/csrng_regs.h"
 #include "hw/top/edn_regs.h"
 #include "hw/top/sram_ctrl_regs.h"
 
 #if defined(OPENTITAN_IS_ENGLISHBREAKFAST)
+#include "hw/top/ast_regs.h"
 #include "hw/top/otp_ctrl_regs.h"
 #include "hw/top/sensor_ctrl_regs.h"
 #include "hw/top_englishbreakfast/sw/autogen/top_englishbreakfast_memory.h"
 #define OTP_CTRL_CORE_BASE_ADDR             TOP_ENGLISHBREAKFAST_OTP_CTRL_CORE_BASE_ADDR
 #define AST_BASE_ADDR                       TOP_ENGLISHBREAKFAST_AST_BASE_ADDR
-#define CLKMGR_BASE_ADDR                TOP_ENGLISHBREAKFAST_CLKMGR_BASE_ADDR
+#define CLKMGR_BASE_ADDR                    TOP_ENGLISHBREAKFAST_CLKMGR_BASE_ADDR
 #define SRAM_CTRL_MAIN_REGS_BASE_ADDR       TOP_ENGLISHBREAKFAST_SRAM_CTRL_MAIN_REGS_BASE_ADDR
 #define ENTROPY_SRC_BASE_ADDR               TOP_ENGLISHBREAKFAST_ENTROPY_SRC_BASE_ADDR
 #define CSRNG_BASE_ADDR                     TOP_ENGLISHBREAKFAST_CSRNG_BASE_ADDR
@@ -24,12 +24,13 @@
 #define SENSOR_CTRL_BASE_ADDR               TOP_ENGLISHBREAKFAST_SENSOR_CTRL_BASE_ADDR
 
 #elif defined(OPENTITAN_IS_EARLGREY)
+#include "hw/top/ast_regs.h"
 #include "hw/top/otp_ctrl_regs.h"
 #include "hw/top/sensor_ctrl_regs.h"
 #include "hw/top_earlgrey/sw/autogen/top_earlgrey_memory.h"
 #define OTP_CTRL_CORE_BASE_ADDR             TOP_EARLGREY_OTP_CTRL_CORE_BASE_ADDR
 #define AST_BASE_ADDR                       TOP_EARLGREY_AST_BASE_ADDR
-#define CLKMGR_BASE_ADDR                TOP_EARLGREY_CLKMGR_BASE_ADDR
+#define CLKMGR_BASE_ADDR                    TOP_EARLGREY_CLKMGR_BASE_ADDR
 #define SRAM_CTRL_MAIN_REGS_BASE_ADDR       TOP_EARLGREY_SRAM_CTRL_MAIN_REGS_BASE_ADDR
 #define ENTROPY_SRC_BASE_ADDR               TOP_EARLGREY_ENTROPY_SRC_BASE_ADDR
 #define CSRNG_BASE_ADDR                     TOP_EARLGREY_CSRNG_BASE_ADDR
@@ -37,15 +38,27 @@
 #define SENSOR_CTRL_BASE_ADDR               TOP_EARLGREY_SENSOR_CTRL_BASE_ADDR
 
 #elif defined(OPENTITAN_IS_DARJEELING)
+#include "hw/top/ast_regs.h"
 #include "hw/top/otp_ctrl_regs.h"
 #include "hw/top_darjeeling/sw/autogen/top_darjeeling_memory.h"
 #define OTP_CTRL_CORE_BASE_ADDR             TOP_DARJEELING_OTP_CTRL_CORE_BASE_ADDR
 #define AST_BASE_ADDR                       TOP_DARJEELING_AST_BASE_ADDR
-#define CLKMGR_BASE_ADDR                TOP_DARJEELING_CLKMGR_BASE_ADDR
+#define CLKMGR_BASE_ADDR                    TOP_DARJEELING_CLKMGR_BASE_ADDR
 #define SRAM_CTRL_MAIN_REGS_BASE_ADDR       TOP_DARJEELING_SRAM_CTRL_MAIN_REGS_BASE_ADDR
 #define ENTROPY_SRC_BASE_ADDR               TOP_DARJEELING_ENTROPY_SRC_BASE_ADDR
 #define CSRNG_BASE_ADDR                     TOP_DARJEELING_CSRNG_BASE_ADDR
 #define EDN0_BASE_ADDR                      TOP_DARJEELING_EDN0_BASE_ADDR
+#undef SENSOR_CTRL_BASE_ADDR                /* No sensor control */
+
+#elif defined(OPENTITAN_IS_PEPPERMINT)
+#include "hw/top/otp_ctrl_regs.h"
+#include "hw/top_peppermint/sw/autogen/top_peppermint_memory.h"
+#define OTP_CTRL_CORE_BASE_ADDR             TOP_PEPPERMINT_OTP_CTRL_CORE_BASE_ADDR
+#define CLKMGR_BASE_ADDR                    TOP_PEPPERMINT_CLKMGR_BASE_ADDR
+#define SRAM_CTRL_MAIN_REGS_BASE_ADDR       TOP_PEPPERMINT_SRAM_CTRL_MAIN_REGS_BASE_ADDR
+#define ENTROPY_SRC_BASE_ADDR               TOP_PEPPERMINT_ENTROPY_SRC_BASE_ADDR
+#define CSRNG_BASE_ADDR                     TOP_PEPPERMINT_CSRNG_BASE_ADDR
+#define EDN0_BASE_ADDR                      TOP_PEPPERMINT_EDN0_BASE_ADDR
 #undef SENSOR_CTRL_BASE_ADDR                /* No sensor control */
 
 #else
@@ -204,6 +217,7 @@ _start:
   csrw pmpcfg1, zero
   csrw pmpcfg2, zero
 
+#ifdef AST_BASE_ADDR
   // Check if AST initialization should be skipped.
   li   a0, (OTP_CTRL_CORE_BASE_ADDR + \
             OTP_CTRL_SW_CFG_WINDOW_REG_OFFSET)
@@ -239,7 +253,8 @@ _start:
   li   a0, CLKMGR_BASE_ADDR
   li   t1, MULTIBIT_ASM_BOOL4_TRUE
   sw   t1, CLKMGR_JITTER_ENABLE_REG_OFFSET(a0)
-#endif
+#endif /* OPENTITAN_IS_EARLGREY */
+#endif /* AST_BASE_ADDR */
 
 .L_ast_init_skip:
 #ifdef ENTROPY_SRC_BASE_ADDR

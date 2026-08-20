@@ -37,6 +37,7 @@ opentitan_binary(
         "//hw/top_earlgrey:sim_verilator_base",
         "//hw/top_darjeeling:sim_dv_base",
         "//hw/top_darjeeling:sim_verilator_base",
+        "//hw/top_peppermint:sim_dv_base",
     ],
     features = ["use_lld"],
     kind = "rom",
@@ -127,12 +128,21 @@ cc_library(
     ],
 )
 
+cc_library(
+    name = "peppermint_test_rom_lib",
+    deps = [
+        "//sw/device/lib/dif:rstmgr",
+        "//sw/device/silicon_creator/lib/drivers:retention_sram",
+    ],
+)
+
 alias(
     name = "target_test_rom_lib",
     actual = opentitan_select_top(
         {
             "darjeeling": ":darjeeling_test_rom_lib",
             "englishbreakfast": ":english_breakfast_test_rom_lib",
+            "peppermint": ":peppermint_test_rom_lib",
         },
         ":earl_grey_test_rom_lib",
     ),
@@ -193,6 +203,10 @@ cc_library(
             "darjeeling": [
                 "HAS_RETENTION_RAM",
                 "SKIP_BOOTSTRAP",  # FIXME bootstrap disabled for now
+            ],
+            "peppermint": [
+                "HAS_RETENTION_RAM",
+                "SKIP_BOOTSTRAP",
             ],
             "englishbreakfast": [],
         },

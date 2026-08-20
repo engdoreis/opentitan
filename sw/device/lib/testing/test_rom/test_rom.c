@@ -94,9 +94,14 @@ static inline uint32_t get_otp_cpuctrl(uint32_t otp_ctrl_base) {
 }
 
 static inline uint32_t get_otp_nvm_default_cfg(uint32_t otp_ctrl_base) {
+#ifdef HAS_NVM
   return abs_mmio_read32(
       otp_ctrl_base + OTP_CTRL_SW_CFG_WINDOW_REG_OFFSET +
       OTP_CTRL_PARAM_CREATOR_SW_CFG_NVM_DATA_DEFAULT_CFG_OFFSET);
+#else
+  OT_DISCARD(otp_ctrl_base);
+  return 0;
+#endif
 }
 #endif /* HAS_OTP_CTRL */
 
