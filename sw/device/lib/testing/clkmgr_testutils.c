@@ -214,8 +214,8 @@ status_t clkmgr_testutils_enable_clock_counts_with_expected_thresholds(
                 dt_clkmgr_measurable_clock_count(clkmgr_dt),
             "this clock is not measurable!");
       count_info = &kNoJitterCountInfos[dt_clk_to_meas_clk[dt_actual_clk]];
-#elif defined(OPENTITAN_IS_DARJEELING)
-      TRY_CHECK(false, "Darjeeling has no external clock");
+#elif defined(OPENTITAN_IS_DARJEELING) || defined(OPENTITAN_IS_PEPPERMINT)
+      TRY_CHECK(false, "This top has no external clock");
       OT_UNREACHABLE();
 #else
 #error Unsupported top
