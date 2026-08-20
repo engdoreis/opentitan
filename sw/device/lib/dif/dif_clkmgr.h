@@ -109,6 +109,19 @@ typedef enum dif_clkmgr_recov_err_type {
    * A recoverable timeout error for MAIN clock.
    */
   kDifClkmgrRecovErrTypeMainTimeout = 1u << 4,
+#elif defined(OPENTITAN_IS_PEPPERMINT)
+  /**
+   * A recoverable update error for one of the clocks.
+   */
+  kDifClkmgrRecovErrTypeShadowUpdate = 1u << 0,
+  /**
+   * A recoverable measurement error for MAIN clock.
+   */
+  kDifClkmgrRecovErrTypeMainMeas = 1u << 1,
+  /**
+   * A recoverable timeout error for MAIN clock.
+   */
+  kDifClkmgrRecovErrTypeMainTimeout = 1u << 2,
 #else
 #error "dif_clkmgr does not support this top"
 #endif
