@@ -79,12 +79,12 @@ typedef enum dif_rstmgr_reset_info {
    * Device has reset due to software request.
    */
   kDifRstmgrResetInfoSw = (0x1 << 2),
+#if defined(OPENTITAN_IS_EARLGREY)
   /**
    * Device has reset due to a peripheral request. This can be an alert
    * escalation, watchdog or anything else.
    */
   kDifRstmgrResetInfoHwReq = (0x1f << 3),
-#if defined(OPENTITAN_IS_EARLGREY)
   /**
    * Device has reset due to the peripheral system reset control request.
    */
@@ -93,18 +93,6 @@ typedef enum dif_rstmgr_reset_info {
    * Device has reset due to watchdog bite.
    */
   kDifRstmgrResetInfoWatchdog = (1 << 4),
-#elif defined(OPENTITAN_IS_DARJEELING)
-  /**
-   * Device has reset due to watchdog bite.
-   */
-  kDifRstmgrResetInfoWatchdog = (1 << 3),
-  /**
-   * Device has reset due to an external reset request via soc_proxy.
-   */
-  kDifRstmgrResetInfoExternalRst = (1 << 4),
-#else
-#error "dif_rstmgr does not support this top"
-#endif
   /**
    * Device has reset due to power unstable.
    */
@@ -117,6 +105,57 @@ typedef enum dif_rstmgr_reset_info {
    * Device has reset due to non-debug-module request.
    */
   kDifRstmgrResetInfoNdm = (1 << 7),
+#elif defined(OPENTITAN_IS_DARJEELING)
+  /**
+   * Device has reset due to a peripheral request. This can be an alert
+   * escalation, watchdog or anything else.
+   */
+  kDifRstmgrResetInfoHwReq = (0x1f << 3),
+  /**
+   * Device has reset due to watchdog bite.
+   */
+  kDifRstmgrResetInfoWatchdog = (1 << 3),
+  /**
+   * Device has reset due to an external reset request via soc_proxy.
+   */
+  kDifRstmgrResetInfoExternalRst = (1 << 4),
+  /**
+   * Device has reset due to power unstable.
+   */
+  kDifRstmgrResetInfoPowerUnstable = (1 << 5),
+  /**
+   * Device has reset due to alert escalation.
+   */
+  kDifRstmgrResetInfoEscalation = (1 << 6),
+  /**
+   * Device has reset due to non-debug-module request.
+   */
+  kDifRstmgrResetInfoNdm = (1 << 7),
+#elif defined(OPENTITAN_IS_PEPPERMINT)
+  /**
+   * Device has reset due to a peripheral request. This can be an alert
+   * escalation, watchdog or anything else.
+   */
+  kDifRstmgrResetInfoHwReq = (0xf << 3),
+  /**
+   * Device has reset due to an external reset request from the SoC.
+   */
+  kDifRstmgrResetInfoExternalRst = (1 << 3),
+  /**
+   * Device has reset due to power unstable.
+   */
+  kDifRstmgrResetInfoPowerUnstable = (1 << 4),
+  /**
+   * Device has reset due to alert escalation.
+   */
+  kDifRstmgrResetInfoEscalation = (1 << 5),
+  /**
+   * Device has reset due to non-debug-module request.
+   */
+  kDifRstmgrResetInfoNdm = (1 << 6),
+#else
+#error "dif_rstmgr does not support this top"
+#endif
 } dif_rstmgr_reset_info_t;
 
 /**

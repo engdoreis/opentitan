@@ -23,8 +23,7 @@
                 "kDifRstmgrResetInfo" #pub_name                   \
                 " must match the register definition!")
 
-// These assertions are only defined for the Earl Grey chip.
-#if defined(OPENTITAN_IS_EARLGREY)
+#if defined(OPENTITAN_IS_EARLGREY) || defined(OPENTITAN_IS_PEPPERMINT)
 
 RSTMGR_RESET_INFO_CHECK(Por, POR);
 RSTMGR_RESET_INFO_CHECK(LowPowerExit, LOW_POWER_EXIT);
