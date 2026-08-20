@@ -80,13 +80,13 @@ interface chip_if;
   // AHB egress: Peppermint is the manager, the SoC is the subordinate. Held at the idle default
   // until the AHB subordinate agent and its memory models take the response side over. hreadyout
   // must stay asserted in the default, otherwise the bridge stalls on the first access.
-  ahb_pkg::ahb_h2d_t soc_mgr_ahb_req;                                 // DUT output
-  ahb_pkg::ahb_d2h_t soc_mgr_ahb_rsp = ahb_pkg::AHB_D2H_DEFAULT;      // DUT input
+  ahb_pkg::ahb_m2s_t soc_mgr_ahb_req;                                 // DUT output
+  ahb_pkg::ahb_s2m_t soc_mgr_ahb_rsp = ahb_pkg::AHB_S2M_DEFAULT;      // DUT input
 
   // AHB ingress: the SoC is the manager driving the mailboxes, Peppermint is the subordinate. Held
   // idle until the reused AHB manager agent drives it.
-  ahb_pkg::ahb_h2d_t soc_mbx_ahb_req = ahb_pkg::AHB_H2D_DEFAULT;      // DUT input
-  ahb_pkg::ahb_d2h_t soc_mbx_ahb_rsp;                                 // DUT output
+  ahb_pkg::ahb_m2s_t soc_mbx_ahb_req = ahb_pkg::AHB_M2S_DEFAULT;      // DUT input
+  ahb_pkg::ahb_s2m_t soc_mbx_ahb_rsp;                                 // DUT output
 
   // SoC-facing debug window, covering lc_ctrl.dmi and rv_dm.dbg. Still raw TL-UL on the boundary;
   // the DMI-over-JTAG TAP lives in the wider SoC.

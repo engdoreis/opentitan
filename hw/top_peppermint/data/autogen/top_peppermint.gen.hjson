@@ -5869,9 +5869,9 @@
       inter_signal_list:
       [
         {
-          name: ahb_sub_h2d
+          name: ahb_sub_m2s
           desc: AHB subordinate request in (external SoC AHB manager)
-          struct: ahb_h2d
+          struct: ahb_m2s
           package: ahb_pkg
           type: uni
           act: rcv
@@ -5884,9 +5884,9 @@
           top_signame: soc_mbx_ahb_req
         }
         {
-          name: ahb_sub_d2h
+          name: ahb_sub_s2m
           desc: AHB subordinate response out
-          struct: ahb_d2h
+          struct: ahb_s2m
           package: ahb_pkg
           type: uni
           act: req
@@ -5899,9 +5899,9 @@
           top_signame: soc_mbx_ahb_rsp
         }
         {
-          name: ahb_mgr_h2d
+          name: ahb_mgr_m2s
           desc: AHB manager request out (to external SoC AHB subordinate)
-          struct: ahb_h2d
+          struct: ahb_m2s
           package: ahb_pkg
           type: uni
           act: req
@@ -5914,9 +5914,9 @@
           top_signame: soc_mgr_ahb_req
         }
         {
-          name: ahb_mgr_d2h
+          name: ahb_mgr_s2m
           desc: AHB manager response in
-          struct: ahb_d2h
+          struct: ahb_s2m
           package: ahb_pkg
           type: uni
           act: rcv
@@ -7468,10 +7468,10 @@
       mbx1.doe_intr_en: mbx1_doe_intr_en
       mbx1.doe_intr_support: mbx1_doe_intr_support
       mbx1.doe_async_msg_support: mbx1_doe_async_msg_support
-      ahb_bridge.ahb_mgr_h2d: soc_mgr_ahb_req
-      ahb_bridge.ahb_mgr_d2h: soc_mgr_ahb_rsp
-      ahb_bridge.ahb_sub_h2d: soc_mbx_ahb_req
-      ahb_bridge.ahb_sub_d2h: soc_mbx_ahb_rsp
+      ahb_bridge.ahb_mgr_m2s: soc_mgr_ahb_req
+      ahb_bridge.ahb_mgr_s2m: soc_mgr_ahb_rsp
+      ahb_bridge.ahb_sub_m2s: soc_mbx_ahb_req
+      ahb_bridge.ahb_sub_s2m: soc_mbx_ahb_rsp
       socdbg.tl_ext_socdbg_host: soc_dbg_tl
     }
   }
@@ -9267,19 +9267,19 @@
       {
         port_overrides:
         {
-          ahb_bridge.ahb_mgr_h2d:
+          ahb_bridge.ahb_mgr_m2s:
           {
             feedthrough: true
           }
-          ahb_bridge.ahb_mgr_d2h:
+          ahb_bridge.ahb_mgr_s2m:
           {
             feedthrough: true
           }
-          ahb_bridge.ahb_sub_h2d:
+          ahb_bridge.ahb_sub_m2s:
           {
             feedthrough: true
           }
-          ahb_bridge.ahb_sub_d2h:
+          ahb_bridge.ahb_sub_s2m:
           {
             feedthrough: true
           }
@@ -14905,9 +14905,9 @@
         index: -1
       }
       {
-        name: ahb_sub_h2d
+        name: ahb_sub_m2s
         desc: AHB subordinate request in (external SoC AHB manager)
-        struct: ahb_h2d
+        struct: ahb_m2s
         package: ahb_pkg
         type: uni
         act: rcv
@@ -14920,9 +14920,9 @@
         top_signame: soc_mbx_ahb_req
       }
       {
-        name: ahb_sub_d2h
+        name: ahb_sub_s2m
         desc: AHB subordinate response out
-        struct: ahb_d2h
+        struct: ahb_s2m
         package: ahb_pkg
         type: uni
         act: req
@@ -14935,9 +14935,9 @@
         top_signame: soc_mbx_ahb_rsp
       }
       {
-        name: ahb_mgr_h2d
+        name: ahb_mgr_m2s
         desc: AHB manager request out (to external SoC AHB subordinate)
-        struct: ahb_h2d
+        struct: ahb_m2s
         package: ahb_pkg
         type: uni
         act: req
@@ -14950,9 +14950,9 @@
         top_signame: soc_mgr_ahb_req
       }
       {
-        name: ahb_mgr_d2h
+        name: ahb_mgr_s2m
         desc: AHB manager response in
-        struct: ahb_d2h
+        struct: ahb_s2m
         package: ahb_pkg
         type: uni
         act: rcv
@@ -17176,7 +17176,7 @@
       }
       {
         package: ahb_pkg
-        struct: ahb_h2d
+        struct: ahb_m2s
         domain: Main
         inter_pd: false
         signame: soc_mgr_ahb_req_o
@@ -17194,7 +17194,7 @@
       }
       {
         package: ahb_pkg
-        struct: ahb_d2h
+        struct: ahb_s2m
         domain: Main
         inter_pd: false
         signame: soc_mgr_ahb_rsp_i
@@ -17212,7 +17212,7 @@
       }
       {
         package: ahb_pkg
-        struct: ahb_h2d
+        struct: ahb_m2s
         domain: Main
         inter_pd: false
         signame: soc_mbx_ahb_req_i
@@ -17230,7 +17230,7 @@
       }
       {
         package: ahb_pkg
-        struct: ahb_d2h
+        struct: ahb_s2m
         domain: Main
         inter_pd: false
         signame: soc_mbx_ahb_rsp_o

@@ -42,13 +42,13 @@ module chip_peppermint_verilator (
   // AHB egress port to the wider SoC: the outgoing AHB manager the
   // ahb_bridge drives from the CPU/DMA "ctn" egress window on xbar_main
   // (see hw/top_peppermint/ip/ahb_bridge).
-  output ahb_pkg::ahb_h2d_t     soc_mgr_ahb_req_o,
-  input  ahb_pkg::ahb_d2h_t     soc_mgr_ahb_rsp_i,
+  output ahb_pkg::ahb_m2s_t     soc_mgr_ahb_req_o,
+  input  ahb_pkg::ahb_s2m_t     soc_mgr_ahb_rsp_i,
 
   // AHB ingress port from the wider SoC: the incoming AHB subordinate the
   // ahb_bridge converts into the mailbox crossbar host (mbx0/mbx1.soc).
-  input  ahb_pkg::ahb_h2d_t     soc_mbx_ahb_req_i,
-  output ahb_pkg::ahb_d2h_t     soc_mbx_ahb_rsp_o,
+  input  ahb_pkg::ahb_m2s_t     soc_mbx_ahb_req_i,
+  output ahb_pkg::ahb_s2m_t     soc_mbx_ahb_rsp_o,
 
   // Mailbox interrupts to the SoC (DOE convention).
   output logic mbx0_doe_intr,

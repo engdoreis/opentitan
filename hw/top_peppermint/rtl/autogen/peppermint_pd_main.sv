@@ -147,10 +147,10 @@ module peppermint_pd_main #(
   output logic       mbx1_doe_intr_en_o,
   output logic       mbx1_doe_intr_support_o,
   output logic       mbx1_doe_async_msg_support_o,
-  output ahb_pkg::ahb_h2d_t       soc_mgr_ahb_req_o,
-  input  ahb_pkg::ahb_d2h_t       soc_mgr_ahb_rsp_i,
-  input  ahb_pkg::ahb_h2d_t       soc_mbx_ahb_req_i,
-  output ahb_pkg::ahb_d2h_t       soc_mbx_ahb_rsp_o,
+  output ahb_pkg::ahb_m2s_t       soc_mgr_ahb_req_o,
+  input  ahb_pkg::ahb_s2m_t       soc_mgr_ahb_rsp_i,
+  input  ahb_pkg::ahb_m2s_t       soc_mbx_ahb_req_i,
+  output ahb_pkg::ahb_s2m_t       soc_mbx_ahb_rsp_o,
   input  tlul_pkg::tl_h2d_t       soc_dbg_tl_req_i,
   output tlul_pkg::tl_d2h_t       soc_dbg_tl_rsp_o,
 
@@ -1206,10 +1206,10 @@ module peppermint_pd_main #(
 
 
     // Inter-module signals
-    .ahb_sub_h2d_i(soc_mbx_ahb_req_i),
-    .ahb_sub_d2h_o(soc_mbx_ahb_rsp_o),
-    .ahb_mgr_h2d_o(soc_mgr_ahb_req_o),
-    .ahb_mgr_d2h_i(soc_mgr_ahb_rsp_i),
+    .ahb_sub_m2s_i(soc_mbx_ahb_req_i),
+    .ahb_sub_s2m_o(soc_mbx_ahb_rsp_o),
+    .ahb_mgr_m2s_o(soc_mgr_ahb_req_o),
+    .ahb_mgr_s2m_i(soc_mgr_ahb_rsp_i),
     .socmbx_tl_h_o(socmbx_tl_ahb_bridge__socmbx_req),
     .socmbx_tl_h_i(socmbx_tl_ahb_bridge__socmbx_rsp),
     .ctn_tl_d_i(ahb_bridge_ctn_tl_d_req),

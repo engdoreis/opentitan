@@ -55,22 +55,22 @@ package ahb_pkg;
     logic       hmastlock;
     data_t      hwdata;
     logic       hready;
-  } ahb_h2d_t;
+  } ahb_m2s_t;
 
   // Subordinate -> Manager
   typedef struct packed {
     data_t     hrdata;
     logic      hreadyout;
     ahb_resp_e hresp;
-  } ahb_d2h_t;
+  } ahb_s2m_t;
 
-  localparam ahb_h2d_t AHB_H2D_DEFAULT = '{
+  localparam ahb_m2s_t AHB_M2S_DEFAULT = '{
     htrans: AhbTransIdle,
     hburst: AhbBurstSingle,
     default: '0
   };
 
-  localparam ahb_d2h_t AHB_D2H_DEFAULT = '{
+  localparam ahb_s2m_t AHB_S2M_DEFAULT = '{
     hreadyout: 1'b1,
     hresp: AhbRespOkay,
     default: '0

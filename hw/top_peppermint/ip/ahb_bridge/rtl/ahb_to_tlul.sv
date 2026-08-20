@@ -12,8 +12,8 @@ module ahb_to_tlul
   output tl_h2d_t tl_o,
   input  tl_d2h_t tl_i,
 
-  input  ahb_h2d_t ahb_i,
-  output ahb_d2h_t ahb_o
+  input  ahb_m2s_t ahb_i,
+  output ahb_s2m_t ahb_o
 );
 
   typedef struct packed {
@@ -81,10 +81,10 @@ module ahb_to_tlul
   assign tl_a_handshake = tl_a_valid && tl_i.a_ready;
   assign tl_a_sent_d    = ahb_handshake ? 1'b0 : (tl_a_sent_q || tl_a_handshake);
 
-  always_comb begin : proc_assemble_ahb_d2h
+  always_comb begin : proc_assemble_ahb_s2m
 
     // Default values: inert response
-    ahb_o = AHB_D2H_DEFAULT;
+    ahb_o = AHB_S2M_DEFAULT;
 
     // HRESP=ERROR across both cycles of the two-cycle ERROR response, and
     // whenever this module has not left reset yet.

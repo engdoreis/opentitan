@@ -23,14 +23,14 @@
 
   inter_signal_list: [
     // Incoming AHB subordinate port (external SoC manager -> bridge -> socmbx).
-    { struct: "ahb_h2d", package: "ahb_pkg", type: "uni", act: "rcv", name: "ahb_sub_h2d"
+    { struct: "ahb_m2s", package: "ahb_pkg", type: "uni", act: "rcv", name: "ahb_sub_m2s"
       desc: "AHB subordinate request in (external SoC AHB manager)" }
-    { struct: "ahb_d2h", package: "ahb_pkg", type: "uni", act: "req", name: "ahb_sub_d2h"
+    { struct: "ahb_s2m", package: "ahb_pkg", type: "uni", act: "req", name: "ahb_sub_s2m"
       desc: "AHB subordinate response out" }
     // Outgoing AHB manager port (ctn device -> bridge -> external SoC).
-    { struct: "ahb_h2d", package: "ahb_pkg", type: "uni", act: "req", name: "ahb_mgr_h2d"
+    { struct: "ahb_m2s", package: "ahb_pkg", type: "uni", act: "req", name: "ahb_mgr_m2s"
       desc: "AHB manager request out (to external SoC AHB subordinate)" }
-    { struct: "ahb_d2h", package: "ahb_pkg", type: "uni", act: "rcv", name: "ahb_mgr_d2h"
+    { struct: "ahb_s2m", package: "ahb_pkg", type: "uni", act: "rcv", name: "ahb_mgr_s2m"
       desc: "AHB manager response in" }
   ]
 

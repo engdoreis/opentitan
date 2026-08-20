@@ -185318,8 +185318,8 @@ module lowrisc_ahb_from_tlul
   input  tl_h2d_t tl_i,
   output tl_d2h_t tl_o,
 
-  output ahb_h2d_t ahb_o,
-  input  ahb_d2h_t ahb_i
+  output ahb_m2s_t ahb_o,
+  input  ahb_s2m_t ahb_i
 );
 
   typedef struct packed {
@@ -185430,10 +185430,10 @@ module lowrisc_ahb_from_tlul
 
   assign htrans = tl_i.a_valid && resp_in_ready ? AhbTransNonseq : AhbTransIdle;
 
-  always_comb begin : proc_assemble_ahb_h2d
+  always_comb begin : proc_assemble_ahb_m2s
 
     // Default values: inert transaction
-    ahb_o      = AHB_H2D_DEFAULT;
+    ahb_o      = AHB_M2S_DEFAULT;
     ahb_o.hsel = 1'b1;
 
     ahb_o.hwrite = meta_in.write;
@@ -185479,8 +185479,8 @@ module lowrisc_ahb_to_tlul
   output tl_h2d_t tl_o,
   input  tl_d2h_t tl_i,
 
-  input  ahb_h2d_t ahb_i,
-  output ahb_d2h_t ahb_o
+  input  ahb_m2s_t ahb_i,
+  output ahb_s2m_t ahb_o
 );
 
   typedef struct packed {
@@ -185548,10 +185548,10 @@ module lowrisc_ahb_to_tlul
   assign tl_a_handshake = tl_a_valid && tl_i.a_ready;
   assign tl_a_sent_d    = ahb_handshake ? 1'b0 : (tl_a_sent_q || tl_a_handshake);
 
-  always_comb begin : proc_assemble_ahb_d2h
+  always_comb begin : proc_assemble_ahb_s2m
 
     // Default values: inert response
-    ahb_o = AHB_D2H_DEFAULT;
+    ahb_o = AHB_S2M_DEFAULT;
 
     // HRESP=ERROR across both cycles of the two-cycle ERROR response, and
     // whenever this module has not left reset yet.
@@ -185597,16 +185597,16 @@ module lowrisc_ahb_bridge
   input  logic     rst_ni,
 
   // Ingress
-  input  ahb_h2d_t ahb_sub_h2d_i,
-  output ahb_d2h_t ahb_sub_d2h_o,
+  input  ahb_m2s_t ahb_sub_m2s_i,
+  output ahb_s2m_t ahb_sub_s2m_o,
   output tl_h2d_t  socmbx_tl_h_o,
   input  tl_d2h_t  socmbx_tl_h_i,
 
   // Egress
   input  tl_h2d_t  ctn_tl_d_i,
   output tl_d2h_t  ctn_tl_d_o,
-  output ahb_h2d_t ahb_mgr_h2d_o,
-  input  ahb_d2h_t ahb_mgr_d2h_i
+  output ahb_m2s_t ahb_mgr_m2s_o,
+  input  ahb_s2m_t ahb_mgr_s2m_i
 );
 
   lowrisc_ahb_to_tlul u_ahb_to_tlul (
@@ -185614,8 +185614,8 @@ module lowrisc_ahb_bridge
     .rst_ni,
     .tl_o  (socmbx_tl_h_o),
     .tl_i  (socmbx_tl_h_i),
-    .ahb_i (ahb_sub_h2d_i),
-    .ahb_o (ahb_sub_d2h_o)
+    .ahb_i (ahb_sub_m2s_i),
+    .ahb_o (ahb_sub_s2m_o)
   );
 
   lowrisc_ahb_from_tlul u_ahb_from_tlul (
@@ -185623,8 +185623,8 @@ module lowrisc_ahb_bridge
     .rst_ni,
     .tl_i  (ctn_tl_d_i),
     .tl_o  (ctn_tl_d_o),
-    .ahb_o (ahb_mgr_h2d_o),
-    .ahb_i (ahb_mgr_d2h_i)
+    .ahb_o (ahb_mgr_m2s_o),
+    .ahb_i (ahb_mgr_s2m_i)
   );
 
 endmodule
@@ -283074,10 +283074,10 @@ module lowrisc_top_peppermint #(
   output logic       mbx1_doe_intr_en_o,
   output logic       mbx1_doe_intr_support_o,
   output logic       mbx1_doe_async_msg_support_o,
-  output lowrisc_ahb_pkg::ahb_h2d_t       soc_mgr_ahb_req_o,
-  input  lowrisc_ahb_pkg::ahb_d2h_t       soc_mgr_ahb_rsp_i,
-  input  lowrisc_ahb_pkg::ahb_h2d_t       soc_mbx_ahb_req_i,
-  output lowrisc_ahb_pkg::ahb_d2h_t       soc_mbx_ahb_rsp_o,
+  output lowrisc_ahb_pkg::ahb_m2s_t       soc_mgr_ahb_req_o,
+  input  lowrisc_ahb_pkg::ahb_s2m_t       soc_mgr_ahb_rsp_i,
+  input  lowrisc_ahb_pkg::ahb_m2s_t       soc_mbx_ahb_req_i,
+  output lowrisc_ahb_pkg::ahb_s2m_t       soc_mbx_ahb_rsp_o,
   input  lowrisc_tlul_pkg::tl_h2d_t       soc_dbg_tl_req_i,
   output lowrisc_tlul_pkg::tl_d2h_t       soc_dbg_tl_rsp_o,
 
@@ -283838,10 +283838,10 @@ module lowrisc_peppermint_pd_main #(
   output logic       mbx1_doe_intr_en_o,
   output logic       mbx1_doe_intr_support_o,
   output logic       mbx1_doe_async_msg_support_o,
-  output lowrisc_ahb_pkg::ahb_h2d_t       soc_mgr_ahb_req_o,
-  input  lowrisc_ahb_pkg::ahb_d2h_t       soc_mgr_ahb_rsp_i,
-  input  lowrisc_ahb_pkg::ahb_h2d_t       soc_mbx_ahb_req_i,
-  output lowrisc_ahb_pkg::ahb_d2h_t       soc_mbx_ahb_rsp_o,
+  output lowrisc_ahb_pkg::ahb_m2s_t       soc_mgr_ahb_req_o,
+  input  lowrisc_ahb_pkg::ahb_s2m_t       soc_mgr_ahb_rsp_i,
+  input  lowrisc_ahb_pkg::ahb_m2s_t       soc_mbx_ahb_req_i,
+  output lowrisc_ahb_pkg::ahb_s2m_t       soc_mbx_ahb_rsp_o,
   input  lowrisc_tlul_pkg::tl_h2d_t       soc_dbg_tl_req_i,
   output lowrisc_tlul_pkg::tl_d2h_t       soc_dbg_tl_rsp_o,
 
@@ -284897,10 +284897,10 @@ module lowrisc_peppermint_pd_main #(
 
 
     // Inter-module signals
-    .ahb_sub_h2d_i(soc_mbx_ahb_req_i),
-    .ahb_sub_d2h_o(soc_mbx_ahb_rsp_o),
-    .ahb_mgr_h2d_o(soc_mgr_ahb_req_o),
-    .ahb_mgr_d2h_i(soc_mgr_ahb_rsp_i),
+    .ahb_sub_m2s_i(soc_mbx_ahb_req_i),
+    .ahb_sub_s2m_o(soc_mbx_ahb_rsp_o),
+    .ahb_mgr_m2s_o(soc_mgr_ahb_req_o),
+    .ahb_mgr_s2m_i(soc_mgr_ahb_rsp_i),
     .socmbx_tl_h_o(socmbx_tl_ahb_bridge__socmbx_req),
     .socmbx_tl_h_i(socmbx_tl_ahb_bridge__socmbx_rsp),
     .ctn_tl_d_i(ahb_bridge_ctn_tl_d_req),

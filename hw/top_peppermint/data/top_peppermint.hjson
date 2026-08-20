@@ -917,10 +917,10 @@
         'mbx1.doe_async_msg_support'     : 'mbx1_doe_async_msg_support',
 
         // AHB bridge SoC boundary
-        'ahb_bridge.ahb_mgr_h2d'         : 'soc_mgr_ahb_req',
-        'ahb_bridge.ahb_mgr_d2h'         : 'soc_mgr_ahb_rsp',
-        'ahb_bridge.ahb_sub_h2d'         : 'soc_mbx_ahb_req',
-        'ahb_bridge.ahb_sub_d2h'         : 'soc_mbx_ahb_rsp',
+        'ahb_bridge.ahb_mgr_m2s'         : 'soc_mgr_ahb_req',
+        'ahb_bridge.ahb_mgr_s2m'         : 'soc_mgr_ahb_rsp',
+        'ahb_bridge.ahb_sub_m2s'         : 'soc_mbx_ahb_req',
+        'ahb_bridge.ahb_sub_s2m'         : 'soc_mbx_ahb_rsp',
 
         // SoC-facing debug crossbar's external host stub.
         'socdbg.tl_ext_socdbg_host'      : 'soc_dbg_tl',
@@ -1062,10 +1062,10 @@
       //  - the OTP IO (bidir) test pads
       chiplevel: {
         port_overrides: {
-          'ahb_bridge.ahb_mgr_h2d' : { feedthrough: true },
-          'ahb_bridge.ahb_mgr_d2h' : { feedthrough: true },
-          'ahb_bridge.ahb_sub_h2d' : { feedthrough: true },
-          'ahb_bridge.ahb_sub_d2h' : { feedthrough: true },
+          'ahb_bridge.ahb_mgr_m2s' : { feedthrough: true },
+          'ahb_bridge.ahb_mgr_s2m' : { feedthrough: true },
+          'ahb_bridge.ahb_sub_m2s' : { feedthrough: true },
+          'ahb_bridge.ahb_sub_s2m' : { feedthrough: true },
         }
       }
 

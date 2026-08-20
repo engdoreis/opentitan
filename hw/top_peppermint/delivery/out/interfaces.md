@@ -69,7 +69,7 @@ The two legal values are bitwise complements, so no single-bit fault turns one i
 *Not* interchangeable with `mubi4_t`.
 
 
-### `lowrisc_ahb_pkg::ahb_h2d_t`
+### `lowrisc_ahb_pkg::ahb_m2s_t`
 
 ```systemverilog
 localparam int unsigned AhbAddrWidth = 32;
@@ -86,23 +86,23 @@ typedef struct packed {         // Manager -> Subordinate
   logic       hmastlock;
   data_t      hwdata;
   logic       hready;           // the interconnect's global HREADY
-} ahb_h2d_t;
+} ahb_m2s_t;
 ```
 
-AHB3-Lite host-to-device (manager -> subordinate) signal bundle.
+AHB3-Lite manager-to-subordinate signal bundle.
 
 
-### `lowrisc_ahb_pkg::ahb_d2h_t`
+### `lowrisc_ahb_pkg::ahb_s2m_t`
 
 ```systemverilog
 typedef struct packed {         // Subordinate -> Manager
   data_t     hrdata;
   logic      hreadyout;
   ahb_resp_e hresp;             // OKAY/ERROR = 1'b0/1'b1
-} ahb_d2h_t;
+} ahb_s2m_t;
 ```
 
-AHB3-Lite device-to-host (subordinate -> manager) signal bundle.
+AHB3-Lite subordinate-to-manager signal bundle.
 
 
 ### `lowrisc_tlul_pkg::tl_h2d_t`
@@ -310,8 +310,8 @@ The output `es_rng_fips_o` high asks the noise source for FIPS-grade entropy.
 
 | Port | Type |
 |---|---|
-| `soc_mbx_ahb_req_i` | `ahb_h2d_t` |
-| `soc_mbx_ahb_rsp_o` | `ahb_d2h_t` |
+| `soc_mbx_ahb_req_i` | `ahb_m2s_t` |
+| `soc_mbx_ahb_rsp_o` | `ahb_s2m_t` |
 | `mbx0_doe_intr_o` | `logic` |
 | `mbx0_doe_intr_en_o` | `logic` |
 | `mbx0_doe_intr_support_o` | `logic` |
@@ -341,8 +341,8 @@ All Mailbox IP instances feature an inbox (for messages from the SoC to Peppermi
 
 | Port | Type |
 |---|---|
-| `soc_mgr_ahb_req_o` | `ahb_h2d_t` |
-| `soc_mgr_ahb_rsp_i` | `ahb_d2h_t` |
+| `soc_mgr_ahb_req_o` | `ahb_m2s_t` |
+| `soc_mgr_ahb_rsp_i` | `ahb_s2m_t` |
 
 These signals are synchronous to `clk_main_i` and are reset with `rst_main_no`.
 

@@ -12,8 +12,8 @@ module ahb_from_tlul
   input  tl_h2d_t tl_i,
   output tl_d2h_t tl_o,
 
-  output ahb_h2d_t ahb_o,
-  input  ahb_d2h_t ahb_i
+  output ahb_m2s_t ahb_o,
+  input  ahb_s2m_t ahb_i
 );
 
   typedef struct packed {
@@ -124,10 +124,10 @@ module ahb_from_tlul
 
   assign htrans = tl_i.a_valid && resp_in_ready ? AhbTransNonseq : AhbTransIdle;
 
-  always_comb begin : proc_assemble_ahb_h2d
+  always_comb begin : proc_assemble_ahb_m2s
 
     // Default values: inert transaction
-    ahb_o      = AHB_H2D_DEFAULT;
+    ahb_o      = AHB_M2S_DEFAULT;
     ahb_o.hsel = 1'b1;
 
     ahb_o.hwrite = meta_in.write;
