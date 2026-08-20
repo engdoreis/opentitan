@@ -30,11 +30,11 @@ package chip_common_pkg;
   // changes. Anything less than one AON cycle is not reliably seen.
   parameter int NumAonClksPorAssert = 10;
 
-  // Budget for the rom_ctrl check to complete after reset. rom_ctrl digests the whole 192 KiB ROM
+  // Budget for the rom_ctrl check to complete after reset. rom_ctrl digests the whole 128 KiB ROM
   // through KMAC on clk_main, which runs at the 25 MHz PLL reset default until firmware raises it.
   //
   // TODO: revisit when the clock, reset and power managers are real (peppermint-embargoed#33).
-  // 100 ms is about 3x the slowest of 33 measured smoke runs (32.4 ms). Over-budgeted on purpose:
+  // 100 ms is about 7x the slowest of 33 measured smoke runs (14.2 ms). Over-budgeted on purpose:
   // it costs only a slower report on a genuine hang, and the power-handshake class of hang is
   // caught within about 3 ms by MainRstReleasedAfterPor_A regardless.
   parameter int RomCheckTimeoutNs = 100_000_000;

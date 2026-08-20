@@ -428,7 +428,7 @@ pub const SRAM_CTRL_MAIN_RAM_SIZE_BYTES: usize = 0x30000;
 pub const ROM_CTRL_ROM_BASE_ADDR: usize = 0x20000;
 
 /// Memory size for rom memory on rom_ctrl in top peppermint.
-pub const ROM_CTRL_ROM_SIZE_BYTES: usize = 0x30000;
+pub const ROM_CTRL_ROM_SIZE_BYTES: usize = 0x20000;
 
 /// Memory base address for ctn memory on ahb_bridge in top peppermint.
 pub const AHB_BRIDGE_CTN_BASE_ADDR: usize = 0x80000000;

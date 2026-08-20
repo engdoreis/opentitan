@@ -53,7 +53,7 @@
 /**
  * Memory size for rom memory on rom_ctrl in top peppermint.
  */
-#define TOP_PEPPERMINT_ROM_CTRL_ROM_SIZE_BYTES 0x30000
+#define TOP_PEPPERMINT_ROM_CTRL_ROM_SIZE_BYTES 0x20000
 
 /**
  * Memory base for ctn memory on ahb_bridge in top peppermint.

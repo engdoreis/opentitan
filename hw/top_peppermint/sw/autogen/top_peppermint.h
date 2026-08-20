@@ -562,7 +562,7 @@ extern "C" {
 /**
  * Memory size for rom memory on rom_ctrl in top peppermint.
  */
-#define TOP_PEPPERMINT_ROM_CTRL_ROM_SIZE_BYTES 0x30000u
+#define TOP_PEPPERMINT_ROM_CTRL_ROM_SIZE_BYTES 0x20000u
 
 /**
  * Memory base address for ctn memory on ahb_bridge in top peppermint.

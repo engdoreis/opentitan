@@ -617,7 +617,7 @@
           data_intg_passthru: "True",
           exec:               "True",
           byte_write:         "False",
-          size:               "0x30000", // 192 KiB
+          size:               "0x20000", // 128 KiB
         }
       },
       param_decl: {

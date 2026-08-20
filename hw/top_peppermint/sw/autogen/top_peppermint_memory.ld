@@ -16,7 +16,7 @@
 MEMORY {
   ram_ret_aon(rwx) : ORIGIN = 0x40470000, LENGTH = 0x2000
   ram_main(rwx) : ORIGIN = 0x10000000, LENGTH = 0x30000
-  rom(rx) : ORIGIN = 0x00020000, LENGTH = 0x30000
+  rom(rx) : ORIGIN = 0x00020000, LENGTH = 0x20000
   ctn(rwx) : ORIGIN = 0x80000000, LENGTH = 0x10000000
   rom_ext_virtual(rx) : ORIGIN = 0x90000000, LENGTH = 0x80000
   owner_virtual(rx) : ORIGIN = 0xa0000000, LENGTH = 0x80000

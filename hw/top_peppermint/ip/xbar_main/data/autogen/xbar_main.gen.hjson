@@ -250,7 +250,7 @@
           {
             hart: 0x20000
           }
-          size_byte: 0x30000
+          size_byte: 0x20000
         }
       ]
       xbar: false

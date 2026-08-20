@@ -756,8 +756,8 @@ module xbar_main (
          ~(ADDR_MASK_RV_DM__MEM)) == ADDR_SPACE_RV_DM__MEM) begin
       dev_sel_s1n_32 = 3'd0;
 
-    end else if (((tl_s1n_32_us_h2d.a_address < (ADDR_SPACE_ROM_CTRL__ROM + ADDR_SIZE_ROM_CTRL__ROM)) &&
-       (tl_s1n_32_us_h2d.a_address >= ADDR_SPACE_ROM_CTRL__ROM))) begin
+    end else if ((tl_s1n_32_us_h2d.a_address &
+                  ~(ADDR_MASK_ROM_CTRL__ROM)) == ADDR_SPACE_ROM_CTRL__ROM) begin
       dev_sel_s1n_32 = 3'd1;
 
     end else if ((tl_s1n_32_us_h2d.a_address &
@@ -781,8 +781,8 @@ end
                   ~(ADDR_MASK_RV_DM__MEM)) == ADDR_SPACE_RV_DM__MEM) begin
       dev_sel_s1n_37 = 5'd1;
 
-    end else if (((tl_s1n_37_us_h2d.a_address < (ADDR_SPACE_ROM_CTRL__ROM + ADDR_SIZE_ROM_CTRL__ROM)) &&
-       (tl_s1n_37_us_h2d.a_address >= ADDR_SPACE_ROM_CTRL__ROM))) begin
+    end else if ((tl_s1n_37_us_h2d.a_address &
+                  ~(ADDR_MASK_ROM_CTRL__ROM)) == ADDR_SPACE_ROM_CTRL__ROM) begin
       dev_sel_s1n_37 = 5'd2;
 
     end else if ((tl_s1n_37_us_h2d.a_address &
@@ -886,8 +886,8 @@ end
          ~(ADDR_MASK_RV_DM__REGS)) == ADDR_SPACE_RV_DM__REGS) begin
       dev_sel_s1n_61 = 5'd0;
 
-    end else if (((tl_s1n_61_us_h2d.a_address < (ADDR_SPACE_ROM_CTRL__ROM + ADDR_SIZE_ROM_CTRL__ROM)) &&
-       (tl_s1n_61_us_h2d.a_address >= ADDR_SPACE_ROM_CTRL__ROM))) begin
+    end else if ((tl_s1n_61_us_h2d.a_address &
+                  ~(ADDR_MASK_ROM_CTRL__ROM)) == ADDR_SPACE_ROM_CTRL__ROM) begin
       dev_sel_s1n_61 = 5'd1;
 
     end else if ((tl_s1n_61_us_h2d.a_address &
@@ -987,8 +987,8 @@ end
        (tl_s1n_62_us_h2d.a_address >= ADDR_SPACE_SRAM_CTRL_MAIN__RAM))) begin
       dev_sel_s1n_62 = 2'd0;
 
-    end else if (((tl_s1n_62_us_h2d.a_address < (ADDR_SPACE_ROM_CTRL__ROM + ADDR_SIZE_ROM_CTRL__ROM)) &&
-       (tl_s1n_62_us_h2d.a_address >= ADDR_SPACE_ROM_CTRL__ROM))) begin
+    end else if ((tl_s1n_62_us_h2d.a_address &
+                  ~(ADDR_MASK_ROM_CTRL__ROM)) == ADDR_SPACE_ROM_CTRL__ROM) begin
       dev_sel_s1n_62 = 2'd1;
 
     end else if ((tl_s1n_62_us_h2d.a_address &

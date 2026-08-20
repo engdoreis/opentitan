@@ -142,9 +142,9 @@ internal_ecc = "Yes"
 # Read only memory
 [memory_macros.rom]
 memory_name  = "ROM"
-data_size    = 192
+data_size    = 128
 word_width   = 39 # 32 bits of data and 7 bits of ECC: hw/ip/rom_ctrl/rtl/rom_ctrl.sv#L71-L74
-num_words    = 49152
+num_words    = 32768
 mask_width   = 0 # Not applicable because this is a read only memory
 num_ports    = 1 # hw/ip/rom_ctrl/rtl/rom_ctrl_scrambled_rom.sv#L200-L213
 resp_latency = 1 # Flowthrough

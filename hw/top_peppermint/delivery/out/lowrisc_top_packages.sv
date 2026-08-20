@@ -2227,7 +2227,7 @@ package lowrisc_top_peppermint_pkg;
   /**
    * Memory size for rom memory on rom_ctrl in top peppermint.
    */
-  parameter int unsigned TOP_PEPPERMINT_ROM_CTRL_ROM_SIZE_BYTES = 32'h30000;
+  parameter int unsigned TOP_PEPPERMINT_ROM_CTRL_ROM_SIZE_BYTES = 32'h20000;
 
   /**
    * Memory base address for ctn memory on ahb_bridge in top peppermint.

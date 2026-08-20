@@ -1137,7 +1137,7 @@ module peppermint_pd_main #(
     .RndCnstScrNonce(RndCnstRomCtrlScrNonce),
     .RndCnstScrKey(RndCnstRomCtrlScrKey),
     .SecDisableScrambling(SecRomCtrlDisableScrambling),
-    .MemSizeRom(196608)
+    .MemSizeRom(131072)
   ) u_rom_ctrl (
     // Clock and reset connections
     .clk_i(clk_main_i),

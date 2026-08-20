@@ -38,7 +38,7 @@
              // Variants are pinned to the Peppermint parametrisation:
              //   entropy_src  RngBusWidth 4, external digital noise source.
              //   lc_ctrl      DMI transport, both volatile-unlock builds.
-             //   rom_ctrl     192 kB. No other top runs this variant.
+             //   rom_ctrl     128 kB. No other top runs this variant.
              //   rv_dm        reached over the DMI, not through JTAG pads.
              //   sram_ctrl    main (192 kB) plus retention (8 kB).
              "{proj_root}/hw/ip/csrng/dv/csrng_sim_cfg.hjson",
@@ -50,7 +50,7 @@
              "{proj_root}/hw/ip/lc_ctrl/dv/lc_ctrl_dmi_volatile_unlock_enabled_sim_cfg.hjson",
              "{proj_root}/hw/ip/mbx/dv/mbx_sim_cfg.hjson",
              "{proj_root}/hw/ip/otbn/dv/uvm/otbn_sim_cfg.hjson",
-             "{proj_root}/hw/ip/rom_ctrl/dv/rom_ctrl_192kB_sim_cfg.hjson",
+             "{proj_root}/hw/ip/rom_ctrl/dv/rom_ctrl_128kB_sim_cfg.hjson",
              "{proj_root}/hw/ip/rv_dm/dv/rv_dm_use_dmi_interface_sim_cfg.hjson",
              "{proj_root}/hw/ip/sram_ctrl/dv/sram_ctrl_main_sim_cfg.hjson",
              "{proj_root}/hw/ip/sram_ctrl/dv/sram_ctrl_ret_sim_cfg.hjson",

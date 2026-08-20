@@ -5494,7 +5494,7 @@
           data_intg_passthru: True
           exec: True
           byte_write: False
-          size: 0x30000
+          size: 0x20000
         }
       }
       param_decl:
@@ -5551,7 +5551,7 @@
           desc: Memory size of the ROM (in bytes).
           type: int
           name_top: MemSizeRomCtrlRom
-          default: 196608
+          default: 131072
         }
       ]
       inter_signal_list:
@@ -7721,7 +7721,7 @@
               {
                 hart: 0x20000
               }
-              size_byte: 0x30000
+              size_byte: 0x20000
             }
           ]
           xbar: false

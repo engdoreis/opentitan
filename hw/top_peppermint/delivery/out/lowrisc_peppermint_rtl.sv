@@ -185850,7 +185850,7 @@ package lowrisc_tl_main_pkg;
 
   localparam logic [31:0] ADDR_MASK_RV_DM__REGS          = 32'h 0000000f;
   localparam logic [31:0] ADDR_MASK_RV_DM__MEM           = 32'h 00000fff;
-  localparam logic [31:0] ADDR_SIZE_ROM_CTRL__ROM        = 32'h 00030000;
+  localparam logic [31:0] ADDR_MASK_ROM_CTRL__ROM        = 32'h 0001ffff;
   localparam logic [31:0] ADDR_MASK_ROM_CTRL__REGS       = 32'h 0000007f;
   localparam logic [31:0] ADDR_MASK_SRAM_CTRL_MAIN__REGS = 32'h 0000003f;
   localparam logic [31:0] ADDR_SIZE_SRAM_CTRL_MAIN__RAM  = 32'h 00030000;
@@ -186677,8 +186677,8 @@ module lowrisc_xbar_main (
          ~(ADDR_MASK_RV_DM__MEM)) == ADDR_SPACE_RV_DM__MEM) begin
       dev_sel_s1n_32 = 3'd0;
 
-    end else if (((tl_s1n_32_us_h2d.a_address < (ADDR_SPACE_ROM_CTRL__ROM + ADDR_SIZE_ROM_CTRL__ROM)) &&
-       (tl_s1n_32_us_h2d.a_address >= ADDR_SPACE_ROM_CTRL__ROM))) begin
+    end else if ((tl_s1n_32_us_h2d.a_address &
+                  ~(ADDR_MASK_ROM_CTRL__ROM)) == ADDR_SPACE_ROM_CTRL__ROM) begin
       dev_sel_s1n_32 = 3'd1;
 
     end else if ((tl_s1n_32_us_h2d.a_address &
@@ -186702,8 +186702,8 @@ end
                   ~(ADDR_MASK_RV_DM__MEM)) == ADDR_SPACE_RV_DM__MEM) begin
       dev_sel_s1n_37 = 5'd1;
 
-    end else if (((tl_s1n_37_us_h2d.a_address < (ADDR_SPACE_ROM_CTRL__ROM + ADDR_SIZE_ROM_CTRL__ROM)) &&
-       (tl_s1n_37_us_h2d.a_address >= ADDR_SPACE_ROM_CTRL__ROM))) begin
+    end else if ((tl_s1n_37_us_h2d.a_address &
+                  ~(ADDR_MASK_ROM_CTRL__ROM)) == ADDR_SPACE_ROM_CTRL__ROM) begin
       dev_sel_s1n_37 = 5'd2;
 
     end else if ((tl_s1n_37_us_h2d.a_address &
@@ -186807,8 +186807,8 @@ end
          ~(ADDR_MASK_RV_DM__REGS)) == ADDR_SPACE_RV_DM__REGS) begin
       dev_sel_s1n_61 = 5'd0;
 
-    end else if (((tl_s1n_61_us_h2d.a_address < (ADDR_SPACE_ROM_CTRL__ROM + ADDR_SIZE_ROM_CTRL__ROM)) &&
-       (tl_s1n_61_us_h2d.a_address >= ADDR_SPACE_ROM_CTRL__ROM))) begin
+    end else if ((tl_s1n_61_us_h2d.a_address &
+                  ~(ADDR_MASK_ROM_CTRL__ROM)) == ADDR_SPACE_ROM_CTRL__ROM) begin
       dev_sel_s1n_61 = 5'd1;
 
     end else if ((tl_s1n_61_us_h2d.a_address &
@@ -186908,8 +186908,8 @@ end
        (tl_s1n_62_us_h2d.a_address >= ADDR_SPACE_SRAM_CTRL_MAIN__RAM))) begin
       dev_sel_s1n_62 = 2'd0;
 
-    end else if (((tl_s1n_62_us_h2d.a_address < (ADDR_SPACE_ROM_CTRL__ROM + ADDR_SIZE_ROM_CTRL__ROM)) &&
-       (tl_s1n_62_us_h2d.a_address >= ADDR_SPACE_ROM_CTRL__ROM))) begin
+    end else if ((tl_s1n_62_us_h2d.a_address &
+                  ~(ADDR_MASK_ROM_CTRL__ROM)) == ADDR_SPACE_ROM_CTRL__ROM) begin
       dev_sel_s1n_62 = 2'd1;
 
     end else if ((tl_s1n_62_us_h2d.a_address &
@@ -284828,7 +284828,7 @@ module lowrisc_peppermint_pd_main #(
     .RndCnstScrNonce(RndCnstRomCtrlScrNonce),
     .RndCnstScrKey(RndCnstRomCtrlScrKey),
     .SecDisableScrambling(SecRomCtrlDisableScrambling),
-    .MemSizeRom(196608)
+    .MemSizeRom(131072)
   ) u_rom_ctrl (
     // Clock and reset connections
     .clk_i(clk_main_i),
