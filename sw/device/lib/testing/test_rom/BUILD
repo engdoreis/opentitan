@@ -268,6 +268,7 @@ opentitan_test(
         "//hw/top_earlgrey:sim_dv": None,
         "//hw/top_earlgrey:sim_verilator": None,
         "//hw/top_darjeeling:sim_verilator": None,
+        "//hw/top_peppermint:sim_dv": None,
     },
     deps = [
         "//sw/device/lib/testing/test_framework:ottf_main",

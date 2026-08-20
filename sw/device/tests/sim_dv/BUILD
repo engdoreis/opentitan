@@ -172,6 +172,7 @@ opentitan_test(
     exec_env = {
         "//hw/top_earlgrey:sim_dv": None,
         "//hw/top_darjeeling:sim_dv": None,
+        "//hw/top_peppermint:sim_dv": None,
     },
     deps = [
         "//sw/device/lib/base:bitfield",
@@ -252,6 +253,7 @@ opentitan_test(
     exec_env = {
         "//hw/top_earlgrey:sim_dv": None,
         "//hw/top_darjeeling:sim_dv": None,
+        "//hw/top_peppermint:sim_dv": None,
     },
     deps = [
         "//hw/top/dt",
@@ -481,6 +483,7 @@ opentitan_test(
     exec_env = {
         "//hw/top_earlgrey:sim_dv": None,
         "//hw/top_darjeeling:sim_dv": None,
+        "//hw/top_peppermint:sim_dv": None,
     },
     deps = [
         "//hw/top/dt",
