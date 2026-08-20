@@ -29,10 +29,12 @@ static_assert(kDifPwrmgrDomainOptionCoreClockInLowPower ==
                           PWRMGR_CONTROL_CORE_CLK_EN_BIT)),
               "Layout of control register changed.");
 
+#if !defined(OPENTITAN_IS_PEPPERMINT)
 static_assert(kDifPwrmgrDomainOptionIoClockInLowPower ==
                   (1u << (PWRMGR_CONTROL_IO_CLK_EN_BIT -
                           PWRMGR_CONTROL_CORE_CLK_EN_BIT)),
               "Layout of control register changed.");
+#endif /* OPENTITAN_IS */
 
 #if defined(OPENTITAN_IS_EARLGREY)
 static_assert(kDifPwrmgrDomainOptionUsbClockInLowPower ==
@@ -57,12 +59,14 @@ static_assert(kDifPwrmgrDomainOptionMainPowerInLowPower ==
  */
 static const bitfield_field32_t kDomainConfigBitfield = {
     .mask = kDifPwrmgrDomainOptionCoreClockInLowPower |
-            kDifPwrmgrDomainOptionIoClockInLowPower |
 #if defined(OPENTITAN_IS_EARLGREY)
+            kDifPwrmgrDomainOptionIoClockInLowPower |
             kDifPwrmgrDomainOptionUsbClockInLowPower |
             kDifPwrmgrDomainOptionUsbClockInActivePower |
 #elif defined(OPENTITAN_IS_DARJEELING)
+            kDifPwrmgrDomainOptionIoClockInLowPower |
 /* Darjeeling has no USB clock. */
+#elif defined(OPENTITAN_IS_PEPPERMINT)
 #else
 #error "dif_pwrmgr does not support this top"
 #endif
