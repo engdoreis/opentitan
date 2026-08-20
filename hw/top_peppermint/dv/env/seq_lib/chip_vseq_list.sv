@@ -5,3 +5,4 @@
 // Peppermint top-level vseq list
 `include "chip_base_vseq.sv"
 `include "chip_stub_cpu_csr_access_vseq.sv"
+`include "chip_mem_bkdr_access_vseq.sv"

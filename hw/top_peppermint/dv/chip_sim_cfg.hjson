@@ -79,13 +79,20 @@
       uvm_test_seq: chip_stub_cpu_csr_access_vseq
       en_run_modes: ["stub_cpu_mode"]
     }
+    {
+      // Evidence for TOP_MEM_BACKDOOR_ACCESS
+      name: chip_mem_bkdr_access
+      uvm_test_seq: chip_mem_bkdr_access_vseq
+      en_run_modes: ["stub_cpu_mode"]
+    }
   ]
 
   // Regressions
   regressions: [
     {
       name: smoke
-      tests: ["chip_stub_cpu_csr_access"]
+      tests: ["chip_stub_cpu_csr_access",
+              "chip_mem_bkdr_access"]
     }
   ]
 }
