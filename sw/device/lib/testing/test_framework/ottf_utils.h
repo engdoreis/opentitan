@@ -88,7 +88,7 @@ static inline void ottf_backdoor_flush_read_buffers(void) {
   }
 }
 
-#elif defined(OPENTITAN_IS_DARJEELING)
+#elif defined(OPENTITAN_IS_DARJEELING) || defined(OPENTITAN_IS_PEPPERMINT)
 
 static inline void ottf_backdoor_flush_read_buffers(void) {}
 
