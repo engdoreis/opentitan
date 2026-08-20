@@ -7,7 +7,7 @@
 package rv_plic_reg_pkg;
 
   // Param list
-  parameter int NumSrc = 43;
+  parameter int NumSrc = 42;
   parameter int NumTarget = 1;
   parameter int PrioWidth = 2;
   parameter int NumAlerts = 1;
@@ -16,7 +16,7 @@ package rv_plic_reg_pkg;
   parameter int BlockAw = 27;
 
   // Number of registers for every interface
-  parameter int NumRegs = 51;
+  parameter int NumRegs = 50;
 
   // Alert indices
   typedef enum int {
@@ -65,8 +65,8 @@ package rv_plic_reg_pkg;
 
   // Register -> HW type
   typedef struct packed {
-    rv_plic_reg2hw_prio_mreg_t [42:0] prio; // [141:56]
-    rv_plic_reg2hw_ie0_mreg_t [42:0] ie0; // [55:13]
+    rv_plic_reg2hw_prio_mreg_t [41:0] prio; // [138:55]
+    rv_plic_reg2hw_ie0_mreg_t [41:0] ie0; // [54:13]
     rv_plic_reg2hw_threshold0_reg_t threshold0; // [12:11]
     rv_plic_reg2hw_cc0_reg_t cc0; // [10:3]
     rv_plic_reg2hw_msip0_reg_t msip0; // [2:2]
@@ -75,7 +75,7 @@ package rv_plic_reg_pkg;
 
   // HW -> register type
   typedef struct packed {
-    rv_plic_hw2reg_ip_mreg_t [42:0] ip; // [91:6]
+    rv_plic_hw2reg_ip_mreg_t [41:0] ip; // [89:6]
     rv_plic_hw2reg_cc0_reg_t cc0; // [5:0]
   } rv_plic_hw2reg_t;
 
@@ -122,7 +122,6 @@ package rv_plic_reg_pkg;
   parameter logic [BlockAw-1:0] RV_PLIC_PRIO_39_OFFSET = 27'h 9c;
   parameter logic [BlockAw-1:0] RV_PLIC_PRIO_40_OFFSET = 27'h a0;
   parameter logic [BlockAw-1:0] RV_PLIC_PRIO_41_OFFSET = 27'h a4;
-  parameter logic [BlockAw-1:0] RV_PLIC_PRIO_42_OFFSET = 27'h a8;
   parameter logic [BlockAw-1:0] RV_PLIC_IP_0_OFFSET = 27'h 1000;
   parameter logic [BlockAw-1:0] RV_PLIC_IP_1_OFFSET = 27'h 1004;
   parameter logic [BlockAw-1:0] RV_PLIC_IE0_0_OFFSET = 27'h 2000;
@@ -180,7 +179,6 @@ package rv_plic_reg_pkg;
     RV_PLIC_PRIO_39,
     RV_PLIC_PRIO_40,
     RV_PLIC_PRIO_41,
-    RV_PLIC_PRIO_42,
     RV_PLIC_IP_0,
     RV_PLIC_IP_1,
     RV_PLIC_IE0_0,
@@ -192,7 +190,7 @@ package rv_plic_reg_pkg;
   } rv_plic_id_e;
 
   // Register width information to check illegal writes
-  parameter logic [3:0] RV_PLIC_PERMIT [51] = '{
+  parameter logic [3:0] RV_PLIC_PERMIT [50] = '{
     4'b 0001, // index[ 0] RV_PLIC_PRIO_0
     4'b 0001, // index[ 1] RV_PLIC_PRIO_1
     4'b 0001, // index[ 2] RV_PLIC_PRIO_2
@@ -235,15 +233,14 @@ package rv_plic_reg_pkg;
     4'b 0001, // index[39] RV_PLIC_PRIO_39
     4'b 0001, // index[40] RV_PLIC_PRIO_40
     4'b 0001, // index[41] RV_PLIC_PRIO_41
-    4'b 0001, // index[42] RV_PLIC_PRIO_42
-    4'b 1111, // index[43] RV_PLIC_IP_0
-    4'b 0011, // index[44] RV_PLIC_IP_1
-    4'b 1111, // index[45] RV_PLIC_IE0_0
-    4'b 0011, // index[46] RV_PLIC_IE0_1
-    4'b 0001, // index[47] RV_PLIC_THRESHOLD0
-    4'b 0001, // index[48] RV_PLIC_CC0
-    4'b 0001, // index[49] RV_PLIC_MSIP0
-    4'b 0001  // index[50] RV_PLIC_ALERT_TEST
+    4'b 1111, // index[42] RV_PLIC_IP_0
+    4'b 0011, // index[43] RV_PLIC_IP_1
+    4'b 1111, // index[44] RV_PLIC_IE0_0
+    4'b 0011, // index[45] RV_PLIC_IE0_1
+    4'b 0001, // index[46] RV_PLIC_THRESHOLD0
+    4'b 0001, // index[47] RV_PLIC_CC0
+    4'b 0001, // index[48] RV_PLIC_MSIP0
+    4'b 0001  // index[49] RV_PLIC_ALERT_TEST
   };
 
 endpackage

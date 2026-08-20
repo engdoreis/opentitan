@@ -65,7 +65,6 @@ PEPPERMINT_ALERTS = [
     "rstmgr_fatal_cnsty_fault",
     "clkmgr_recov_fault",
     "clkmgr_fatal_fault",
-    "rv_timer_aon_fatal_fault",
     "sram_ctrl_ret_aon_fatal_error",
     "otp_ctrl_fatal_macro_error",
     "otp_ctrl_fatal_check_error",

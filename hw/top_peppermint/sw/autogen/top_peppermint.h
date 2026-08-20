@@ -102,24 +102,6 @@ extern "C" {
 #define TOP_PEPPERMINT_ALERT_HANDLER_SIZE_BYTES 0x800u
 
 /**
- * Peripheral base address for rv_timer_aon in top peppermint.
- *
- * This should be used with #mmio_region_from_addr to access the memory-mapped
- * registers associated with the peripheral (usually via a DIF).
- */
-#define TOP_PEPPERMINT_RV_TIMER_AON_BASE_ADDR 0x40430000u
-
-/**
- * Peripheral size for rv_timer_aon in top peppermint.
- *
- * This is the size (in bytes) of the peripheral's reserved memory area. All
- * memory-mapped registers associated with this peripheral should have an
- * address between #TOP_PEPPERMINT_RV_TIMER_AON_BASE_ADDR and
- * `TOP_PEPPERMINT_RV_TIMER_AON_BASE_ADDR + TOP_PEPPERMINT_RV_TIMER_AON_SIZE_BYTES`.
- */
-#define TOP_PEPPERMINT_RV_TIMER_AON_SIZE_BYTES 0x200u
-
-/**
  * Peripheral base address for regs device on sram_ctrl_ret_aon in top peppermint.
  *
  * This should be used with #mmio_region_from_addr to access the memory-mapped
@@ -585,21 +567,20 @@ typedef enum top_peppermint_plic_peripheral {
   kTopPeppermintPlicPeripheralUnknown = 0, /**< Unknown Peripheral */
   kTopPeppermintPlicPeripheralPwrmgr = 1, /**< pwrmgr */
   kTopPeppermintPlicPeripheralAlertHandler = 2, /**< alert_handler */
-  kTopPeppermintPlicPeripheralRvTimerAon = 3, /**< rv_timer_aon */
-  kTopPeppermintPlicPeripheralOtpCtrl = 4, /**< otp_ctrl */
-  kTopPeppermintPlicPeripheralRvTimer = 5, /**< rv_timer */
-  kTopPeppermintPlicPeripheralHmac = 6, /**< hmac */
-  kTopPeppermintPlicPeripheralKmac = 7, /**< kmac */
-  kTopPeppermintPlicPeripheralOtbn = 8, /**< otbn */
-  kTopPeppermintPlicPeripheralKeymgrDpe = 9, /**< keymgr_dpe */
-  kTopPeppermintPlicPeripheralCsrng = 10, /**< csrng */
-  kTopPeppermintPlicPeripheralEntropySrc = 11, /**< entropy_src */
-  kTopPeppermintPlicPeripheralEdn0 = 12, /**< edn0 */
-  kTopPeppermintPlicPeripheralEdn1 = 13, /**< edn1 */
-  kTopPeppermintPlicPeripheralDma = 14, /**< dma */
-  kTopPeppermintPlicPeripheralMbx0 = 15, /**< mbx0 */
-  kTopPeppermintPlicPeripheralMbx1 = 16, /**< mbx1 */
-  kTopPeppermintPlicPeripheralLast = 16, /**< \internal Final PLIC peripheral */
+  kTopPeppermintPlicPeripheralOtpCtrl = 3, /**< otp_ctrl */
+  kTopPeppermintPlicPeripheralRvTimer = 4, /**< rv_timer */
+  kTopPeppermintPlicPeripheralHmac = 5, /**< hmac */
+  kTopPeppermintPlicPeripheralKmac = 6, /**< kmac */
+  kTopPeppermintPlicPeripheralOtbn = 7, /**< otbn */
+  kTopPeppermintPlicPeripheralKeymgrDpe = 8, /**< keymgr_dpe */
+  kTopPeppermintPlicPeripheralCsrng = 9, /**< csrng */
+  kTopPeppermintPlicPeripheralEntropySrc = 10, /**< entropy_src */
+  kTopPeppermintPlicPeripheralEdn0 = 11, /**< edn0 */
+  kTopPeppermintPlicPeripheralEdn1 = 12, /**< edn1 */
+  kTopPeppermintPlicPeripheralDma = 13, /**< dma */
+  kTopPeppermintPlicPeripheralMbx0 = 14, /**< mbx0 */
+  kTopPeppermintPlicPeripheralMbx1 = 15, /**< mbx1 */
+  kTopPeppermintPlicPeripheralLast = 15, /**< \internal Final PLIC peripheral */
 } top_peppermint_plic_peripheral_t;
 
 /**
@@ -615,44 +596,43 @@ typedef enum top_peppermint_plic_irq_id {
   kTopPeppermintPlicIrqIdAlertHandlerClassb = 3, /**< alert_handler_classb */
   kTopPeppermintPlicIrqIdAlertHandlerClassc = 4, /**< alert_handler_classc */
   kTopPeppermintPlicIrqIdAlertHandlerClassd = 5, /**< alert_handler_classd */
-  kTopPeppermintPlicIrqIdRvTimerAonTimerExpiredHart0Timer0 = 6, /**< rv_timer_aon_timer_expired_hart0_timer0 */
-  kTopPeppermintPlicIrqIdOtpCtrlOtpOperationDone = 7, /**< otp_ctrl_otp_operation_done */
-  kTopPeppermintPlicIrqIdOtpCtrlOtpError = 8, /**< otp_ctrl_otp_error */
-  kTopPeppermintPlicIrqIdRvTimerTimerExpiredHart0Timer0 = 9, /**< rv_timer_timer_expired_hart0_timer0 */
-  kTopPeppermintPlicIrqIdHmacHmacDone = 10, /**< hmac_hmac_done */
-  kTopPeppermintPlicIrqIdHmacFifoEmpty = 11, /**< hmac_fifo_empty */
-  kTopPeppermintPlicIrqIdHmacHmacErr = 12, /**< hmac_hmac_err */
-  kTopPeppermintPlicIrqIdKmacKmacDone = 13, /**< kmac_kmac_done */
-  kTopPeppermintPlicIrqIdKmacFifoEmpty = 14, /**< kmac_fifo_empty */
-  kTopPeppermintPlicIrqIdKmacKmacErr = 15, /**< kmac_kmac_err */
-  kTopPeppermintPlicIrqIdOtbnDone = 16, /**< otbn_done */
-  kTopPeppermintPlicIrqIdKeymgrDpeOpDone = 17, /**< keymgr_dpe_op_done */
-  kTopPeppermintPlicIrqIdCsrngCsCmdReqDone = 18, /**< csrng_cs_cmd_req_done */
-  kTopPeppermintPlicIrqIdCsrngCsEntropyReq = 19, /**< csrng_cs_entropy_req */
-  kTopPeppermintPlicIrqIdCsrngCsHwInstExc = 20, /**< csrng_cs_hw_inst_exc */
-  kTopPeppermintPlicIrqIdCsrngCsFatalErr = 21, /**< csrng_cs_fatal_err */
-  kTopPeppermintPlicIrqIdEntropySrcEsEntropyValid = 22, /**< entropy_src_es_entropy_valid */
-  kTopPeppermintPlicIrqIdEntropySrcEsHealthTestFailed = 23, /**< entropy_src_es_health_test_failed */
-  kTopPeppermintPlicIrqIdEntropySrcEsObserveFifoReady = 24, /**< entropy_src_es_observe_fifo_ready */
-  kTopPeppermintPlicIrqIdEntropySrcEsFatalErr = 25, /**< entropy_src_es_fatal_err */
-  kTopPeppermintPlicIrqIdEdn0EdnCmdReqDone = 26, /**< edn0_edn_cmd_req_done */
-  kTopPeppermintPlicIrqIdEdn0EdnFatalErr = 27, /**< edn0_edn_fatal_err */
-  kTopPeppermintPlicIrqIdEdn1EdnCmdReqDone = 28, /**< edn1_edn_cmd_req_done */
-  kTopPeppermintPlicIrqIdEdn1EdnFatalErr = 29, /**< edn1_edn_fatal_err */
-  kTopPeppermintPlicIrqIdDmaDmaDone = 30, /**< dma_dma_done */
-  kTopPeppermintPlicIrqIdDmaDmaChunkDone = 31, /**< dma_dma_chunk_done */
-  kTopPeppermintPlicIrqIdDmaDmaError = 32, /**< dma_dma_error */
-  kTopPeppermintPlicIrqIdMbx0MbxReady = 33, /**< mbx0_mbx_ready */
-  kTopPeppermintPlicIrqIdMbx0MbxAbort = 34, /**< mbx0_mbx_abort */
-  kTopPeppermintPlicIrqIdMbx0MbxError = 35, /**< mbx0_mbx_error */
-  kTopPeppermintPlicIrqIdMbx1MbxReady = 36, /**< mbx1_mbx_ready */
-  kTopPeppermintPlicIrqIdMbx1MbxAbort = 37, /**< mbx1_mbx_abort */
-  kTopPeppermintPlicIrqIdMbx1MbxError = 38, /**< mbx1_mbx_error */
-  kTopPeppermintPlicIrqIdSocIrq0 = 39, /**< soc_irq_0 */
-  kTopPeppermintPlicIrqIdSocIrq1 = 40, /**< soc_irq_1 */
-  kTopPeppermintPlicIrqIdSocIrq2 = 41, /**< soc_irq_2 */
-  kTopPeppermintPlicIrqIdSocIrq3 = 42, /**< soc_irq_3 */
-  kTopPeppermintPlicIrqIdLast = 42, /**< \internal The Last Valid Interrupt ID. */
+  kTopPeppermintPlicIrqIdOtpCtrlOtpOperationDone = 6, /**< otp_ctrl_otp_operation_done */
+  kTopPeppermintPlicIrqIdOtpCtrlOtpError = 7, /**< otp_ctrl_otp_error */
+  kTopPeppermintPlicIrqIdRvTimerTimerExpiredHart0Timer0 = 8, /**< rv_timer_timer_expired_hart0_timer0 */
+  kTopPeppermintPlicIrqIdHmacHmacDone = 9, /**< hmac_hmac_done */
+  kTopPeppermintPlicIrqIdHmacFifoEmpty = 10, /**< hmac_fifo_empty */
+  kTopPeppermintPlicIrqIdHmacHmacErr = 11, /**< hmac_hmac_err */
+  kTopPeppermintPlicIrqIdKmacKmacDone = 12, /**< kmac_kmac_done */
+  kTopPeppermintPlicIrqIdKmacFifoEmpty = 13, /**< kmac_fifo_empty */
+  kTopPeppermintPlicIrqIdKmacKmacErr = 14, /**< kmac_kmac_err */
+  kTopPeppermintPlicIrqIdOtbnDone = 15, /**< otbn_done */
+  kTopPeppermintPlicIrqIdKeymgrDpeOpDone = 16, /**< keymgr_dpe_op_done */
+  kTopPeppermintPlicIrqIdCsrngCsCmdReqDone = 17, /**< csrng_cs_cmd_req_done */
+  kTopPeppermintPlicIrqIdCsrngCsEntropyReq = 18, /**< csrng_cs_entropy_req */
+  kTopPeppermintPlicIrqIdCsrngCsHwInstExc = 19, /**< csrng_cs_hw_inst_exc */
+  kTopPeppermintPlicIrqIdCsrngCsFatalErr = 20, /**< csrng_cs_fatal_err */
+  kTopPeppermintPlicIrqIdEntropySrcEsEntropyValid = 21, /**< entropy_src_es_entropy_valid */
+  kTopPeppermintPlicIrqIdEntropySrcEsHealthTestFailed = 22, /**< entropy_src_es_health_test_failed */
+  kTopPeppermintPlicIrqIdEntropySrcEsObserveFifoReady = 23, /**< entropy_src_es_observe_fifo_ready */
+  kTopPeppermintPlicIrqIdEntropySrcEsFatalErr = 24, /**< entropy_src_es_fatal_err */
+  kTopPeppermintPlicIrqIdEdn0EdnCmdReqDone = 25, /**< edn0_edn_cmd_req_done */
+  kTopPeppermintPlicIrqIdEdn0EdnFatalErr = 26, /**< edn0_edn_fatal_err */
+  kTopPeppermintPlicIrqIdEdn1EdnCmdReqDone = 27, /**< edn1_edn_cmd_req_done */
+  kTopPeppermintPlicIrqIdEdn1EdnFatalErr = 28, /**< edn1_edn_fatal_err */
+  kTopPeppermintPlicIrqIdDmaDmaDone = 29, /**< dma_dma_done */
+  kTopPeppermintPlicIrqIdDmaDmaChunkDone = 30, /**< dma_dma_chunk_done */
+  kTopPeppermintPlicIrqIdDmaDmaError = 31, /**< dma_dma_error */
+  kTopPeppermintPlicIrqIdMbx0MbxReady = 32, /**< mbx0_mbx_ready */
+  kTopPeppermintPlicIrqIdMbx0MbxAbort = 33, /**< mbx0_mbx_abort */
+  kTopPeppermintPlicIrqIdMbx0MbxError = 34, /**< mbx0_mbx_error */
+  kTopPeppermintPlicIrqIdMbx1MbxReady = 35, /**< mbx1_mbx_ready */
+  kTopPeppermintPlicIrqIdMbx1MbxAbort = 36, /**< mbx1_mbx_abort */
+  kTopPeppermintPlicIrqIdMbx1MbxError = 37, /**< mbx1_mbx_error */
+  kTopPeppermintPlicIrqIdSocIrq0 = 38, /**< soc_irq_0 */
+  kTopPeppermintPlicIrqIdSocIrq1 = 39, /**< soc_irq_1 */
+  kTopPeppermintPlicIrqIdSocIrq2 = 40, /**< soc_irq_2 */
+  kTopPeppermintPlicIrqIdSocIrq3 = 41, /**< soc_irq_3 */
+  kTopPeppermintPlicIrqIdLast = 41, /**< \internal The Last Valid Interrupt ID. */
 } top_peppermint_plic_irq_id_t;
 
 /**
@@ -662,7 +642,7 @@ typedef enum top_peppermint_plic_irq_id {
  * `top_peppermint_plic_peripheral_t`.
  */
 extern const top_peppermint_plic_peripheral_t
-    top_peppermint_plic_interrupt_for_peripheral[43];
+    top_peppermint_plic_interrupt_for_peripheral[42];
 
 /**
  * PLIC Interrupt Target.
@@ -687,29 +667,28 @@ typedef enum top_peppermint_alert_peripheral {
   kTopPeppermintAlertPeripheralPwrmgr = 1, /**< pwrmgr */
   kTopPeppermintAlertPeripheralRstmgr = 2, /**< rstmgr */
   kTopPeppermintAlertPeripheralClkmgr = 3, /**< clkmgr */
-  kTopPeppermintAlertPeripheralRvTimerAon = 4, /**< rv_timer_aon */
-  kTopPeppermintAlertPeripheralSramCtrlRetAon = 5, /**< sram_ctrl_ret_aon */
-  kTopPeppermintAlertPeripheralOtpCtrl = 6, /**< otp_ctrl */
-  kTopPeppermintAlertPeripheralLcCtrl = 7, /**< lc_ctrl */
-  kTopPeppermintAlertPeripheralRvDm = 8, /**< rv_dm */
-  kTopPeppermintAlertPeripheralRvPlic = 9, /**< rv_plic */
-  kTopPeppermintAlertPeripheralRvTimer = 10, /**< rv_timer */
-  kTopPeppermintAlertPeripheralAes = 11, /**< aes */
-  kTopPeppermintAlertPeripheralHmac = 12, /**< hmac */
-  kTopPeppermintAlertPeripheralKmac = 13, /**< kmac */
-  kTopPeppermintAlertPeripheralOtbn = 14, /**< otbn */
-  kTopPeppermintAlertPeripheralKeymgrDpe = 15, /**< keymgr_dpe */
-  kTopPeppermintAlertPeripheralCsrng = 16, /**< csrng */
-  kTopPeppermintAlertPeripheralEntropySrc = 17, /**< entropy_src */
-  kTopPeppermintAlertPeripheralEdn0 = 18, /**< edn0 */
-  kTopPeppermintAlertPeripheralEdn1 = 19, /**< edn1 */
-  kTopPeppermintAlertPeripheralSramCtrlMain = 20, /**< sram_ctrl_main */
-  kTopPeppermintAlertPeripheralRomCtrl = 21, /**< rom_ctrl */
-  kTopPeppermintAlertPeripheralDma = 22, /**< dma */
-  kTopPeppermintAlertPeripheralMbx0 = 23, /**< mbx0 */
-  kTopPeppermintAlertPeripheralMbx1 = 24, /**< mbx1 */
-  kTopPeppermintAlertPeripheralRvCoreIbex = 25, /**< rv_core_ibex */
-  kTopPeppermintAlertPeripheralLast = 25, /**< \internal Final Alert peripheral */
+  kTopPeppermintAlertPeripheralSramCtrlRetAon = 4, /**< sram_ctrl_ret_aon */
+  kTopPeppermintAlertPeripheralOtpCtrl = 5, /**< otp_ctrl */
+  kTopPeppermintAlertPeripheralLcCtrl = 6, /**< lc_ctrl */
+  kTopPeppermintAlertPeripheralRvDm = 7, /**< rv_dm */
+  kTopPeppermintAlertPeripheralRvPlic = 8, /**< rv_plic */
+  kTopPeppermintAlertPeripheralRvTimer = 9, /**< rv_timer */
+  kTopPeppermintAlertPeripheralAes = 10, /**< aes */
+  kTopPeppermintAlertPeripheralHmac = 11, /**< hmac */
+  kTopPeppermintAlertPeripheralKmac = 12, /**< kmac */
+  kTopPeppermintAlertPeripheralOtbn = 13, /**< otbn */
+  kTopPeppermintAlertPeripheralKeymgrDpe = 14, /**< keymgr_dpe */
+  kTopPeppermintAlertPeripheralCsrng = 15, /**< csrng */
+  kTopPeppermintAlertPeripheralEntropySrc = 16, /**< entropy_src */
+  kTopPeppermintAlertPeripheralEdn0 = 17, /**< edn0 */
+  kTopPeppermintAlertPeripheralEdn1 = 18, /**< edn1 */
+  kTopPeppermintAlertPeripheralSramCtrlMain = 19, /**< sram_ctrl_main */
+  kTopPeppermintAlertPeripheralRomCtrl = 20, /**< rom_ctrl */
+  kTopPeppermintAlertPeripheralDma = 21, /**< dma */
+  kTopPeppermintAlertPeripheralMbx0 = 22, /**< mbx0 */
+  kTopPeppermintAlertPeripheralMbx1 = 23, /**< mbx1 */
+  kTopPeppermintAlertPeripheralRvCoreIbex = 24, /**< rv_core_ibex */
+  kTopPeppermintAlertPeripheralLast = 24, /**< \internal Final Alert peripheral */
 } top_peppermint_alert_peripheral_t;
 
 /**
@@ -724,52 +703,51 @@ typedef enum top_peppermint_alert_id {
   kTopPeppermintAlertIdRstmgrFatalCnstyFault = 2, /**< rstmgr_fatal_cnsty_fault */
   kTopPeppermintAlertIdClkmgrRecovFault = 3, /**< clkmgr_recov_fault */
   kTopPeppermintAlertIdClkmgrFatalFault = 4, /**< clkmgr_fatal_fault */
-  kTopPeppermintAlertIdRvTimerAonFatalFault = 5, /**< rv_timer_aon_fatal_fault */
-  kTopPeppermintAlertIdSramCtrlRetAonFatalError = 6, /**< sram_ctrl_ret_aon_fatal_error */
-  kTopPeppermintAlertIdOtpCtrlFatalMacroError = 7, /**< otp_ctrl_fatal_macro_error */
-  kTopPeppermintAlertIdOtpCtrlFatalCheckError = 8, /**< otp_ctrl_fatal_check_error */
-  kTopPeppermintAlertIdOtpCtrlFatalBusIntegError = 9, /**< otp_ctrl_fatal_bus_integ_error */
-  kTopPeppermintAlertIdOtpCtrlFatalPrimOtpAlert = 10, /**< otp_ctrl_fatal_prim_otp_alert */
-  kTopPeppermintAlertIdOtpCtrlRecovPrimOtpAlert = 11, /**< otp_ctrl_recov_prim_otp_alert */
-  kTopPeppermintAlertIdLcCtrlFatalProgError = 12, /**< lc_ctrl_fatal_prog_error */
-  kTopPeppermintAlertIdLcCtrlFatalStateError = 13, /**< lc_ctrl_fatal_state_error */
-  kTopPeppermintAlertIdLcCtrlFatalBusIntegError = 14, /**< lc_ctrl_fatal_bus_integ_error */
-  kTopPeppermintAlertIdRvDmFatalFault = 15, /**< rv_dm_fatal_fault */
-  kTopPeppermintAlertIdRvPlicFatalFault = 16, /**< rv_plic_fatal_fault */
-  kTopPeppermintAlertIdRvTimerFatalFault = 17, /**< rv_timer_fatal_fault */
-  kTopPeppermintAlertIdAesRecovCtrlUpdateErr = 18, /**< aes_recov_ctrl_update_err */
-  kTopPeppermintAlertIdAesFatalFault = 19, /**< aes_fatal_fault */
-  kTopPeppermintAlertIdHmacFatalFault = 20, /**< hmac_fatal_fault */
-  kTopPeppermintAlertIdKmacRecovOperationErr = 21, /**< kmac_recov_operation_err */
-  kTopPeppermintAlertIdKmacFatalFaultErr = 22, /**< kmac_fatal_fault_err */
-  kTopPeppermintAlertIdOtbnFatal = 23, /**< otbn_fatal */
-  kTopPeppermintAlertIdOtbnRecov = 24, /**< otbn_recov */
-  kTopPeppermintAlertIdKeymgrDpeRecovOperationErr = 25, /**< keymgr_dpe_recov_operation_err */
-  kTopPeppermintAlertIdKeymgrDpeFatalFaultErr = 26, /**< keymgr_dpe_fatal_fault_err */
-  kTopPeppermintAlertIdCsrngRecovAlert = 27, /**< csrng_recov_alert */
-  kTopPeppermintAlertIdCsrngFatalAlert = 28, /**< csrng_fatal_alert */
-  kTopPeppermintAlertIdEntropySrcRecovAlert = 29, /**< entropy_src_recov_alert */
-  kTopPeppermintAlertIdEntropySrcFatalAlert = 30, /**< entropy_src_fatal_alert */
-  kTopPeppermintAlertIdEdn0RecovAlert = 31, /**< edn0_recov_alert */
-  kTopPeppermintAlertIdEdn0FatalAlert = 32, /**< edn0_fatal_alert */
-  kTopPeppermintAlertIdEdn1RecovAlert = 33, /**< edn1_recov_alert */
-  kTopPeppermintAlertIdEdn1FatalAlert = 34, /**< edn1_fatal_alert */
-  kTopPeppermintAlertIdSramCtrlMainFatalError = 35, /**< sram_ctrl_main_fatal_error */
-  kTopPeppermintAlertIdRomCtrlFatal = 36, /**< rom_ctrl_fatal */
-  kTopPeppermintAlertIdDmaFatalFault = 37, /**< dma_fatal_fault */
-  kTopPeppermintAlertIdMbx0FatalFault = 38, /**< mbx0_fatal_fault */
-  kTopPeppermintAlertIdMbx0RecovFault = 39, /**< mbx0_recov_fault */
-  kTopPeppermintAlertIdMbx1FatalFault = 40, /**< mbx1_fatal_fault */
-  kTopPeppermintAlertIdMbx1RecovFault = 41, /**< mbx1_recov_fault */
-  kTopPeppermintAlertIdRvCoreIbexFatalSwErr = 42, /**< rv_core_ibex_fatal_sw_err */
-  kTopPeppermintAlertIdRvCoreIbexRecovSwErr = 43, /**< rv_core_ibex_recov_sw_err */
-  kTopPeppermintAlertIdRvCoreIbexFatalHwErr = 44, /**< rv_core_ibex_fatal_hw_err */
-  kTopPeppermintAlertIdRvCoreIbexRecovHwErr = 45, /**< rv_core_ibex_recov_hw_err */
-  kTopPeppermintAlertIdIncomingSocSocFatalAlert0 = 46, /**< incoming_soc_soc_fatal_alert_0 */
-  kTopPeppermintAlertIdIncomingSocSocFatalAlert1 = 47, /**< incoming_soc_soc_fatal_alert_1 */
-  kTopPeppermintAlertIdIncomingSocSocFatalAlert2 = 48, /**< incoming_soc_soc_fatal_alert_2 */
-  kTopPeppermintAlertIdIncomingSocSocFatalAlert3 = 49, /**< incoming_soc_soc_fatal_alert_3 */
-  kTopPeppermintAlertIdLast = 49, /**< \internal The Last Valid Alert ID. */
+  kTopPeppermintAlertIdSramCtrlRetAonFatalError = 5, /**< sram_ctrl_ret_aon_fatal_error */
+  kTopPeppermintAlertIdOtpCtrlFatalMacroError = 6, /**< otp_ctrl_fatal_macro_error */
+  kTopPeppermintAlertIdOtpCtrlFatalCheckError = 7, /**< otp_ctrl_fatal_check_error */
+  kTopPeppermintAlertIdOtpCtrlFatalBusIntegError = 8, /**< otp_ctrl_fatal_bus_integ_error */
+  kTopPeppermintAlertIdOtpCtrlFatalPrimOtpAlert = 9, /**< otp_ctrl_fatal_prim_otp_alert */
+  kTopPeppermintAlertIdOtpCtrlRecovPrimOtpAlert = 10, /**< otp_ctrl_recov_prim_otp_alert */
+  kTopPeppermintAlertIdLcCtrlFatalProgError = 11, /**< lc_ctrl_fatal_prog_error */
+  kTopPeppermintAlertIdLcCtrlFatalStateError = 12, /**< lc_ctrl_fatal_state_error */
+  kTopPeppermintAlertIdLcCtrlFatalBusIntegError = 13, /**< lc_ctrl_fatal_bus_integ_error */
+  kTopPeppermintAlertIdRvDmFatalFault = 14, /**< rv_dm_fatal_fault */
+  kTopPeppermintAlertIdRvPlicFatalFault = 15, /**< rv_plic_fatal_fault */
+  kTopPeppermintAlertIdRvTimerFatalFault = 16, /**< rv_timer_fatal_fault */
+  kTopPeppermintAlertIdAesRecovCtrlUpdateErr = 17, /**< aes_recov_ctrl_update_err */
+  kTopPeppermintAlertIdAesFatalFault = 18, /**< aes_fatal_fault */
+  kTopPeppermintAlertIdHmacFatalFault = 19, /**< hmac_fatal_fault */
+  kTopPeppermintAlertIdKmacRecovOperationErr = 20, /**< kmac_recov_operation_err */
+  kTopPeppermintAlertIdKmacFatalFaultErr = 21, /**< kmac_fatal_fault_err */
+  kTopPeppermintAlertIdOtbnFatal = 22, /**< otbn_fatal */
+  kTopPeppermintAlertIdOtbnRecov = 23, /**< otbn_recov */
+  kTopPeppermintAlertIdKeymgrDpeRecovOperationErr = 24, /**< keymgr_dpe_recov_operation_err */
+  kTopPeppermintAlertIdKeymgrDpeFatalFaultErr = 25, /**< keymgr_dpe_fatal_fault_err */
+  kTopPeppermintAlertIdCsrngRecovAlert = 26, /**< csrng_recov_alert */
+  kTopPeppermintAlertIdCsrngFatalAlert = 27, /**< csrng_fatal_alert */
+  kTopPeppermintAlertIdEntropySrcRecovAlert = 28, /**< entropy_src_recov_alert */
+  kTopPeppermintAlertIdEntropySrcFatalAlert = 29, /**< entropy_src_fatal_alert */
+  kTopPeppermintAlertIdEdn0RecovAlert = 30, /**< edn0_recov_alert */
+  kTopPeppermintAlertIdEdn0FatalAlert = 31, /**< edn0_fatal_alert */
+  kTopPeppermintAlertIdEdn1RecovAlert = 32, /**< edn1_recov_alert */
+  kTopPeppermintAlertIdEdn1FatalAlert = 33, /**< edn1_fatal_alert */
+  kTopPeppermintAlertIdSramCtrlMainFatalError = 34, /**< sram_ctrl_main_fatal_error */
+  kTopPeppermintAlertIdRomCtrlFatal = 35, /**< rom_ctrl_fatal */
+  kTopPeppermintAlertIdDmaFatalFault = 36, /**< dma_fatal_fault */
+  kTopPeppermintAlertIdMbx0FatalFault = 37, /**< mbx0_fatal_fault */
+  kTopPeppermintAlertIdMbx0RecovFault = 38, /**< mbx0_recov_fault */
+  kTopPeppermintAlertIdMbx1FatalFault = 39, /**< mbx1_fatal_fault */
+  kTopPeppermintAlertIdMbx1RecovFault = 40, /**< mbx1_recov_fault */
+  kTopPeppermintAlertIdRvCoreIbexFatalSwErr = 41, /**< rv_core_ibex_fatal_sw_err */
+  kTopPeppermintAlertIdRvCoreIbexRecovSwErr = 42, /**< rv_core_ibex_recov_sw_err */
+  kTopPeppermintAlertIdRvCoreIbexFatalHwErr = 43, /**< rv_core_ibex_fatal_hw_err */
+  kTopPeppermintAlertIdRvCoreIbexRecovHwErr = 44, /**< rv_core_ibex_recov_hw_err */
+  kTopPeppermintAlertIdIncomingSocSocFatalAlert0 = 45, /**< incoming_soc_soc_fatal_alert_0 */
+  kTopPeppermintAlertIdIncomingSocSocFatalAlert1 = 46, /**< incoming_soc_soc_fatal_alert_1 */
+  kTopPeppermintAlertIdIncomingSocSocFatalAlert2 = 47, /**< incoming_soc_soc_fatal_alert_2 */
+  kTopPeppermintAlertIdIncomingSocSocFatalAlert3 = 48, /**< incoming_soc_soc_fatal_alert_3 */
+  kTopPeppermintAlertIdLast = 48, /**< \internal The Last Valid Alert ID. */
 } top_peppermint_alert_id_t;
 
 /**
@@ -779,7 +757,7 @@ typedef enum top_peppermint_alert_id {
  * `top_peppermint_alert_peripheral_t`.
  */
 extern const top_peppermint_alert_peripheral_t
-    top_peppermint_alert_for_peripheral[50];
+    top_peppermint_alert_for_peripheral[49];
 
 /**
  * Power Manager Wakeup Signals

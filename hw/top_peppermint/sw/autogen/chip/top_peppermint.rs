@@ -76,20 +76,6 @@ pub const ALERT_HANDLER_BASE_ADDR: usize = 0x40450000;
 /// `ALERT_HANDLER_BASE_ADDR + ALERT_HANDLER_SIZE_BYTES`.
 pub const ALERT_HANDLER_SIZE_BYTES: usize = 0x800;
 
-/// Peripheral base address for rv_timer_aon in top peppermint.
-///
-/// This should be used with #mmio_region_from_addr to access the memory-mapped
-/// registers associated with the peripheral (usually via a DIF).
-pub const RV_TIMER_AON_BASE_ADDR: usize = 0x40430000;
-
-/// Peripheral size for rv_timer_aon in top peppermint.
-///
-/// This is the size (in bytes) of the peripheral's reserved memory area. All
-/// memory-mapped registers associated with this peripheral should have an
-/// address between #RV_TIMER_AON_BASE_ADDR and
-/// `RV_TIMER_AON_BASE_ADDR + RV_TIMER_AON_SIZE_BYTES`.
-pub const RV_TIMER_AON_SIZE_BYTES: usize = 0x200;
-
 /// Peripheral base address for regs device on sram_ctrl_ret_aon in top peppermint.
 ///
 /// This should be used with #mmio_region_from_addr to access the memory-mapped
@@ -449,34 +435,32 @@ pub enum PlicPeripheral {
     Pwrmgr = 1,
     /// alert_handler
     AlertHandler = 2,
-    /// rv_timer_aon
-    RvTimerAon = 3,
     /// otp_ctrl
-    OtpCtrl = 4,
+    OtpCtrl = 3,
     /// rv_timer
-    RvTimer = 5,
+    RvTimer = 4,
     /// hmac
-    Hmac = 6,
+    Hmac = 5,
     /// kmac
-    Kmac = 7,
+    Kmac = 6,
     /// otbn
-    Otbn = 8,
+    Otbn = 7,
     /// keymgr_dpe
-    KeymgrDpe = 9,
+    KeymgrDpe = 8,
     /// csrng
-    Csrng = 10,
+    Csrng = 9,
     /// entropy_src
-    EntropySrc = 11,
+    EntropySrc = 10,
     /// edn0
-    Edn0 = 12,
+    Edn0 = 11,
     /// edn1
-    Edn1 = 13,
+    Edn1 = 12,
     /// dma
-    Dma = 14,
+    Dma = 13,
     /// mbx0
-    Mbx0 = 15,
+    Mbx0 = 14,
     /// mbx1
-    Mbx1 = 16,
+    Mbx1 = 15,
 }
 
 impl TryFrom<u32> for PlicPeripheral {
@@ -486,20 +470,19 @@ impl TryFrom<u32> for PlicPeripheral {
             0 => Ok(Self::Unknown),
             1 => Ok(Self::Pwrmgr),
             2 => Ok(Self::AlertHandler),
-            3 => Ok(Self::RvTimerAon),
-            4 => Ok(Self::OtpCtrl),
-            5 => Ok(Self::RvTimer),
-            6 => Ok(Self::Hmac),
-            7 => Ok(Self::Kmac),
-            8 => Ok(Self::Otbn),
-            9 => Ok(Self::KeymgrDpe),
-            10 => Ok(Self::Csrng),
-            11 => Ok(Self::EntropySrc),
-            12 => Ok(Self::Edn0),
-            13 => Ok(Self::Edn1),
-            14 => Ok(Self::Dma),
-            15 => Ok(Self::Mbx0),
-            16 => Ok(Self::Mbx1),
+            3 => Ok(Self::OtpCtrl),
+            4 => Ok(Self::RvTimer),
+            5 => Ok(Self::Hmac),
+            6 => Ok(Self::Kmac),
+            7 => Ok(Self::Otbn),
+            8 => Ok(Self::KeymgrDpe),
+            9 => Ok(Self::Csrng),
+            10 => Ok(Self::EntropySrc),
+            11 => Ok(Self::Edn0),
+            12 => Ok(Self::Edn1),
+            13 => Ok(Self::Dma),
+            14 => Ok(Self::Mbx0),
+            15 => Ok(Self::Mbx1),
             _ => Err(val),
         }
     }
@@ -524,80 +507,78 @@ pub enum PlicIrqId {
     AlertHandlerClassc = 4,
     /// alert_handler_classd
     AlertHandlerClassd = 5,
-    /// rv_timer_aon_timer_expired_hart0_timer0
-    RvTimerAonTimerExpiredHart0Timer0 = 6,
     /// otp_ctrl_otp_operation_done
-    OtpCtrlOtpOperationDone = 7,
+    OtpCtrlOtpOperationDone = 6,
     /// otp_ctrl_otp_error
-    OtpCtrlOtpError = 8,
+    OtpCtrlOtpError = 7,
     /// rv_timer_timer_expired_hart0_timer0
-    RvTimerTimerExpiredHart0Timer0 = 9,
+    RvTimerTimerExpiredHart0Timer0 = 8,
     /// hmac_hmac_done
-    HmacHmacDone = 10,
+    HmacHmacDone = 9,
     /// hmac_fifo_empty
-    HmacFifoEmpty = 11,
+    HmacFifoEmpty = 10,
     /// hmac_hmac_err
-    HmacHmacErr = 12,
+    HmacHmacErr = 11,
     /// kmac_kmac_done
-    KmacKmacDone = 13,
+    KmacKmacDone = 12,
     /// kmac_fifo_empty
-    KmacFifoEmpty = 14,
+    KmacFifoEmpty = 13,
     /// kmac_kmac_err
-    KmacKmacErr = 15,
+    KmacKmacErr = 14,
     /// otbn_done
-    OtbnDone = 16,
+    OtbnDone = 15,
     /// keymgr_dpe_op_done
-    KeymgrDpeOpDone = 17,
+    KeymgrDpeOpDone = 16,
     /// csrng_cs_cmd_req_done
-    CsrngCsCmdReqDone = 18,
+    CsrngCsCmdReqDone = 17,
     /// csrng_cs_entropy_req
-    CsrngCsEntropyReq = 19,
+    CsrngCsEntropyReq = 18,
     /// csrng_cs_hw_inst_exc
-    CsrngCsHwInstExc = 20,
+    CsrngCsHwInstExc = 19,
     /// csrng_cs_fatal_err
-    CsrngCsFatalErr = 21,
+    CsrngCsFatalErr = 20,
     /// entropy_src_es_entropy_valid
-    EntropySrcEsEntropyValid = 22,
+    EntropySrcEsEntropyValid = 21,
     /// entropy_src_es_health_test_failed
-    EntropySrcEsHealthTestFailed = 23,
+    EntropySrcEsHealthTestFailed = 22,
     /// entropy_src_es_observe_fifo_ready
-    EntropySrcEsObserveFifoReady = 24,
+    EntropySrcEsObserveFifoReady = 23,
     /// entropy_src_es_fatal_err
-    EntropySrcEsFatalErr = 25,
+    EntropySrcEsFatalErr = 24,
     /// edn0_edn_cmd_req_done
-    Edn0EdnCmdReqDone = 26,
+    Edn0EdnCmdReqDone = 25,
     /// edn0_edn_fatal_err
-    Edn0EdnFatalErr = 27,
+    Edn0EdnFatalErr = 26,
     /// edn1_edn_cmd_req_done
-    Edn1EdnCmdReqDone = 28,
+    Edn1EdnCmdReqDone = 27,
     /// edn1_edn_fatal_err
-    Edn1EdnFatalErr = 29,
+    Edn1EdnFatalErr = 28,
     /// dma_dma_done
-    DmaDmaDone = 30,
+    DmaDmaDone = 29,
     /// dma_dma_chunk_done
-    DmaDmaChunkDone = 31,
+    DmaDmaChunkDone = 30,
     /// dma_dma_error
-    DmaDmaError = 32,
+    DmaDmaError = 31,
     /// mbx0_mbx_ready
-    Mbx0MbxReady = 33,
+    Mbx0MbxReady = 32,
     /// mbx0_mbx_abort
-    Mbx0MbxAbort = 34,
+    Mbx0MbxAbort = 33,
     /// mbx0_mbx_error
-    Mbx0MbxError = 35,
+    Mbx0MbxError = 34,
     /// mbx1_mbx_ready
-    Mbx1MbxReady = 36,
+    Mbx1MbxReady = 35,
     /// mbx1_mbx_abort
-    Mbx1MbxAbort = 37,
+    Mbx1MbxAbort = 36,
     /// mbx1_mbx_error
-    Mbx1MbxError = 38,
+    Mbx1MbxError = 37,
     /// soc_irq_0
-    SocIrq0 = 39,
+    SocIrq0 = 38,
     /// soc_irq_1
-    SocIrq1 = 40,
+    SocIrq1 = 39,
     /// soc_irq_2
-    SocIrq2 = 41,
+    SocIrq2 = 40,
     /// soc_irq_3
-    SocIrq3 = 42,
+    SocIrq3 = 41,
 }
 
 impl TryFrom<u32> for PlicIrqId {
@@ -610,43 +591,42 @@ impl TryFrom<u32> for PlicIrqId {
             3 => Ok(Self::AlertHandlerClassb),
             4 => Ok(Self::AlertHandlerClassc),
             5 => Ok(Self::AlertHandlerClassd),
-            6 => Ok(Self::RvTimerAonTimerExpiredHart0Timer0),
-            7 => Ok(Self::OtpCtrlOtpOperationDone),
-            8 => Ok(Self::OtpCtrlOtpError),
-            9 => Ok(Self::RvTimerTimerExpiredHart0Timer0),
-            10 => Ok(Self::HmacHmacDone),
-            11 => Ok(Self::HmacFifoEmpty),
-            12 => Ok(Self::HmacHmacErr),
-            13 => Ok(Self::KmacKmacDone),
-            14 => Ok(Self::KmacFifoEmpty),
-            15 => Ok(Self::KmacKmacErr),
-            16 => Ok(Self::OtbnDone),
-            17 => Ok(Self::KeymgrDpeOpDone),
-            18 => Ok(Self::CsrngCsCmdReqDone),
-            19 => Ok(Self::CsrngCsEntropyReq),
-            20 => Ok(Self::CsrngCsHwInstExc),
-            21 => Ok(Self::CsrngCsFatalErr),
-            22 => Ok(Self::EntropySrcEsEntropyValid),
-            23 => Ok(Self::EntropySrcEsHealthTestFailed),
-            24 => Ok(Self::EntropySrcEsObserveFifoReady),
-            25 => Ok(Self::EntropySrcEsFatalErr),
-            26 => Ok(Self::Edn0EdnCmdReqDone),
-            27 => Ok(Self::Edn0EdnFatalErr),
-            28 => Ok(Self::Edn1EdnCmdReqDone),
-            29 => Ok(Self::Edn1EdnFatalErr),
-            30 => Ok(Self::DmaDmaDone),
-            31 => Ok(Self::DmaDmaChunkDone),
-            32 => Ok(Self::DmaDmaError),
-            33 => Ok(Self::Mbx0MbxReady),
-            34 => Ok(Self::Mbx0MbxAbort),
-            35 => Ok(Self::Mbx0MbxError),
-            36 => Ok(Self::Mbx1MbxReady),
-            37 => Ok(Self::Mbx1MbxAbort),
-            38 => Ok(Self::Mbx1MbxError),
-            39 => Ok(Self::SocIrq0),
-            40 => Ok(Self::SocIrq1),
-            41 => Ok(Self::SocIrq2),
-            42 => Ok(Self::SocIrq3),
+            6 => Ok(Self::OtpCtrlOtpOperationDone),
+            7 => Ok(Self::OtpCtrlOtpError),
+            8 => Ok(Self::RvTimerTimerExpiredHart0Timer0),
+            9 => Ok(Self::HmacHmacDone),
+            10 => Ok(Self::HmacFifoEmpty),
+            11 => Ok(Self::HmacHmacErr),
+            12 => Ok(Self::KmacKmacDone),
+            13 => Ok(Self::KmacFifoEmpty),
+            14 => Ok(Self::KmacKmacErr),
+            15 => Ok(Self::OtbnDone),
+            16 => Ok(Self::KeymgrDpeOpDone),
+            17 => Ok(Self::CsrngCsCmdReqDone),
+            18 => Ok(Self::CsrngCsEntropyReq),
+            19 => Ok(Self::CsrngCsHwInstExc),
+            20 => Ok(Self::CsrngCsFatalErr),
+            21 => Ok(Self::EntropySrcEsEntropyValid),
+            22 => Ok(Self::EntropySrcEsHealthTestFailed),
+            23 => Ok(Self::EntropySrcEsObserveFifoReady),
+            24 => Ok(Self::EntropySrcEsFatalErr),
+            25 => Ok(Self::Edn0EdnCmdReqDone),
+            26 => Ok(Self::Edn0EdnFatalErr),
+            27 => Ok(Self::Edn1EdnCmdReqDone),
+            28 => Ok(Self::Edn1EdnFatalErr),
+            29 => Ok(Self::DmaDmaDone),
+            30 => Ok(Self::DmaDmaChunkDone),
+            31 => Ok(Self::DmaDmaError),
+            32 => Ok(Self::Mbx0MbxReady),
+            33 => Ok(Self::Mbx0MbxAbort),
+            34 => Ok(Self::Mbx0MbxError),
+            35 => Ok(Self::Mbx1MbxReady),
+            36 => Ok(Self::Mbx1MbxAbort),
+            37 => Ok(Self::Mbx1MbxError),
+            38 => Ok(Self::SocIrq0),
+            39 => Ok(Self::SocIrq1),
+            40 => Ok(Self::SocIrq2),
+            41 => Ok(Self::SocIrq3),
             _ => Err(val),
         }
     }
@@ -667,7 +647,7 @@ pub enum PlicTarget {
 ///
 /// This array is a mapping from `PlicIrqId` to
 /// `PlicPeripheral`.
-pub const PLIC_INTERRUPT_FOR_PERIPHERAL: [PlicPeripheral; 43] = [
+pub const PLIC_INTERRUPT_FOR_PERIPHERAL: [PlicPeripheral; 42] = [
     // None -> PlicPeripheral::Unknown
     PlicPeripheral::Unknown,
     // PwrmgrWakeup -> PlicPeripheral::Pwrmgr
@@ -680,8 +660,6 @@ pub const PLIC_INTERRUPT_FOR_PERIPHERAL: [PlicPeripheral; 43] = [
     PlicPeripheral::AlertHandler,
     // AlertHandlerClassd -> PlicPeripheral::AlertHandler
     PlicPeripheral::AlertHandler,
-    // RvTimerAonTimerExpiredHart0Timer0 -> PlicPeripheral::RvTimerAon
-    PlicPeripheral::RvTimerAon,
     // OtpCtrlOtpOperationDone -> PlicPeripheral::OtpCtrl
     PlicPeripheral::OtpCtrl,
     // OtpCtrlOtpError -> PlicPeripheral::OtpCtrl
@@ -771,50 +749,48 @@ pub enum AlertPeripheral {
     Rstmgr = 2,
     /// clkmgr
     Clkmgr = 3,
-    /// rv_timer_aon
-    RvTimerAon = 4,
     /// sram_ctrl_ret_aon
-    SramCtrlRetAon = 5,
+    SramCtrlRetAon = 4,
     /// otp_ctrl
-    OtpCtrl = 6,
+    OtpCtrl = 5,
     /// lc_ctrl
-    LcCtrl = 7,
+    LcCtrl = 6,
     /// rv_dm
-    RvDm = 8,
+    RvDm = 7,
     /// rv_plic
-    RvPlic = 9,
+    RvPlic = 8,
     /// rv_timer
-    RvTimer = 10,
+    RvTimer = 9,
     /// aes
-    Aes = 11,
+    Aes = 10,
     /// hmac
-    Hmac = 12,
+    Hmac = 11,
     /// kmac
-    Kmac = 13,
+    Kmac = 12,
     /// otbn
-    Otbn = 14,
+    Otbn = 13,
     /// keymgr_dpe
-    KeymgrDpe = 15,
+    KeymgrDpe = 14,
     /// csrng
-    Csrng = 16,
+    Csrng = 15,
     /// entropy_src
-    EntropySrc = 17,
+    EntropySrc = 16,
     /// edn0
-    Edn0 = 18,
+    Edn0 = 17,
     /// edn1
-    Edn1 = 19,
+    Edn1 = 18,
     /// sram_ctrl_main
-    SramCtrlMain = 20,
+    SramCtrlMain = 19,
     /// rom_ctrl
-    RomCtrl = 21,
+    RomCtrl = 20,
     /// dma
-    Dma = 22,
+    Dma = 21,
     /// mbx0
-    Mbx0 = 23,
+    Mbx0 = 22,
     /// mbx1
-    Mbx1 = 24,
+    Mbx1 = 23,
     /// rv_core_ibex
-    RvCoreIbex = 25,
+    RvCoreIbex = 24,
 }
 
 /// Alert Handler Alert Source.
@@ -834,96 +810,94 @@ pub enum AlertId {
     ClkmgrRecovFault = 3,
     /// clkmgr_fatal_fault
     ClkmgrFatalFault = 4,
-    /// rv_timer_aon_fatal_fault
-    RvTimerAonFatalFault = 5,
     /// sram_ctrl_ret_aon_fatal_error
-    SramCtrlRetAonFatalError = 6,
+    SramCtrlRetAonFatalError = 5,
     /// otp_ctrl_fatal_macro_error
-    OtpCtrlFatalMacroError = 7,
+    OtpCtrlFatalMacroError = 6,
     /// otp_ctrl_fatal_check_error
-    OtpCtrlFatalCheckError = 8,
+    OtpCtrlFatalCheckError = 7,
     /// otp_ctrl_fatal_bus_integ_error
-    OtpCtrlFatalBusIntegError = 9,
+    OtpCtrlFatalBusIntegError = 8,
     /// otp_ctrl_fatal_prim_otp_alert
-    OtpCtrlFatalPrimOtpAlert = 10,
+    OtpCtrlFatalPrimOtpAlert = 9,
     /// otp_ctrl_recov_prim_otp_alert
-    OtpCtrlRecovPrimOtpAlert = 11,
+    OtpCtrlRecovPrimOtpAlert = 10,
     /// lc_ctrl_fatal_prog_error
-    LcCtrlFatalProgError = 12,
+    LcCtrlFatalProgError = 11,
     /// lc_ctrl_fatal_state_error
-    LcCtrlFatalStateError = 13,
+    LcCtrlFatalStateError = 12,
     /// lc_ctrl_fatal_bus_integ_error
-    LcCtrlFatalBusIntegError = 14,
+    LcCtrlFatalBusIntegError = 13,
     /// rv_dm_fatal_fault
-    RvDmFatalFault = 15,
+    RvDmFatalFault = 14,
     /// rv_plic_fatal_fault
-    RvPlicFatalFault = 16,
+    RvPlicFatalFault = 15,
     /// rv_timer_fatal_fault
-    RvTimerFatalFault = 17,
+    RvTimerFatalFault = 16,
     /// aes_recov_ctrl_update_err
-    AesRecovCtrlUpdateErr = 18,
+    AesRecovCtrlUpdateErr = 17,
     /// aes_fatal_fault
-    AesFatalFault = 19,
+    AesFatalFault = 18,
     /// hmac_fatal_fault
-    HmacFatalFault = 20,
+    HmacFatalFault = 19,
     /// kmac_recov_operation_err
-    KmacRecovOperationErr = 21,
+    KmacRecovOperationErr = 20,
     /// kmac_fatal_fault_err
-    KmacFatalFaultErr = 22,
+    KmacFatalFaultErr = 21,
     /// otbn_fatal
-    OtbnFatal = 23,
+    OtbnFatal = 22,
     /// otbn_recov
-    OtbnRecov = 24,
+    OtbnRecov = 23,
     /// keymgr_dpe_recov_operation_err
-    KeymgrDpeRecovOperationErr = 25,
+    KeymgrDpeRecovOperationErr = 24,
     /// keymgr_dpe_fatal_fault_err
-    KeymgrDpeFatalFaultErr = 26,
+    KeymgrDpeFatalFaultErr = 25,
     /// csrng_recov_alert
-    CsrngRecovAlert = 27,
+    CsrngRecovAlert = 26,
     /// csrng_fatal_alert
-    CsrngFatalAlert = 28,
+    CsrngFatalAlert = 27,
     /// entropy_src_recov_alert
-    EntropySrcRecovAlert = 29,
+    EntropySrcRecovAlert = 28,
     /// entropy_src_fatal_alert
-    EntropySrcFatalAlert = 30,
+    EntropySrcFatalAlert = 29,
     /// edn0_recov_alert
-    Edn0RecovAlert = 31,
+    Edn0RecovAlert = 30,
     /// edn0_fatal_alert
-    Edn0FatalAlert = 32,
+    Edn0FatalAlert = 31,
     /// edn1_recov_alert
-    Edn1RecovAlert = 33,
+    Edn1RecovAlert = 32,
     /// edn1_fatal_alert
-    Edn1FatalAlert = 34,
+    Edn1FatalAlert = 33,
     /// sram_ctrl_main_fatal_error
-    SramCtrlMainFatalError = 35,
+    SramCtrlMainFatalError = 34,
     /// rom_ctrl_fatal
-    RomCtrlFatal = 36,
+    RomCtrlFatal = 35,
     /// dma_fatal_fault
-    DmaFatalFault = 37,
+    DmaFatalFault = 36,
     /// mbx0_fatal_fault
-    Mbx0FatalFault = 38,
+    Mbx0FatalFault = 37,
     /// mbx0_recov_fault
-    Mbx0RecovFault = 39,
+    Mbx0RecovFault = 38,
     /// mbx1_fatal_fault
-    Mbx1FatalFault = 40,
+    Mbx1FatalFault = 39,
     /// mbx1_recov_fault
-    Mbx1RecovFault = 41,
+    Mbx1RecovFault = 40,
     /// rv_core_ibex_fatal_sw_err
-    RvCoreIbexFatalSwErr = 42,
+    RvCoreIbexFatalSwErr = 41,
     /// rv_core_ibex_recov_sw_err
-    RvCoreIbexRecovSwErr = 43,
+    RvCoreIbexRecovSwErr = 42,
     /// rv_core_ibex_fatal_hw_err
-    RvCoreIbexFatalHwErr = 44,
+    RvCoreIbexFatalHwErr = 43,
     /// rv_core_ibex_recov_hw_err
-    RvCoreIbexRecovHwErr = 45,
+    RvCoreIbexRecovHwErr = 44,
     /// incoming_soc_soc_fatal_alert_0
-    IncomingSocSocFatalAlert0 = 46,
+    IncomingSocSocFatalAlert0 = 45,
     /// incoming_soc_soc_fatal_alert_1
-    IncomingSocSocFatalAlert1 = 47,
+    IncomingSocSocFatalAlert1 = 46,
     /// incoming_soc_soc_fatal_alert_2
-    IncomingSocSocFatalAlert2 = 48,
+    IncomingSocSocFatalAlert2 = 47,
     /// incoming_soc_soc_fatal_alert_3
-    IncomingSocSocFatalAlert3 = 49,
+    IncomingSocSocFatalAlert3 = 48,
 }
 
 impl TryFrom<u32> for AlertId {
@@ -935,51 +909,50 @@ impl TryFrom<u32> for AlertId {
             2 => Ok(Self::RstmgrFatalCnstyFault),
             3 => Ok(Self::ClkmgrRecovFault),
             4 => Ok(Self::ClkmgrFatalFault),
-            5 => Ok(Self::RvTimerAonFatalFault),
-            6 => Ok(Self::SramCtrlRetAonFatalError),
-            7 => Ok(Self::OtpCtrlFatalMacroError),
-            8 => Ok(Self::OtpCtrlFatalCheckError),
-            9 => Ok(Self::OtpCtrlFatalBusIntegError),
-            10 => Ok(Self::OtpCtrlFatalPrimOtpAlert),
-            11 => Ok(Self::OtpCtrlRecovPrimOtpAlert),
-            12 => Ok(Self::LcCtrlFatalProgError),
-            13 => Ok(Self::LcCtrlFatalStateError),
-            14 => Ok(Self::LcCtrlFatalBusIntegError),
-            15 => Ok(Self::RvDmFatalFault),
-            16 => Ok(Self::RvPlicFatalFault),
-            17 => Ok(Self::RvTimerFatalFault),
-            18 => Ok(Self::AesRecovCtrlUpdateErr),
-            19 => Ok(Self::AesFatalFault),
-            20 => Ok(Self::HmacFatalFault),
-            21 => Ok(Self::KmacRecovOperationErr),
-            22 => Ok(Self::KmacFatalFaultErr),
-            23 => Ok(Self::OtbnFatal),
-            24 => Ok(Self::OtbnRecov),
-            25 => Ok(Self::KeymgrDpeRecovOperationErr),
-            26 => Ok(Self::KeymgrDpeFatalFaultErr),
-            27 => Ok(Self::CsrngRecovAlert),
-            28 => Ok(Self::CsrngFatalAlert),
-            29 => Ok(Self::EntropySrcRecovAlert),
-            30 => Ok(Self::EntropySrcFatalAlert),
-            31 => Ok(Self::Edn0RecovAlert),
-            32 => Ok(Self::Edn0FatalAlert),
-            33 => Ok(Self::Edn1RecovAlert),
-            34 => Ok(Self::Edn1FatalAlert),
-            35 => Ok(Self::SramCtrlMainFatalError),
-            36 => Ok(Self::RomCtrlFatal),
-            37 => Ok(Self::DmaFatalFault),
-            38 => Ok(Self::Mbx0FatalFault),
-            39 => Ok(Self::Mbx0RecovFault),
-            40 => Ok(Self::Mbx1FatalFault),
-            41 => Ok(Self::Mbx1RecovFault),
-            42 => Ok(Self::RvCoreIbexFatalSwErr),
-            43 => Ok(Self::RvCoreIbexRecovSwErr),
-            44 => Ok(Self::RvCoreIbexFatalHwErr),
-            45 => Ok(Self::RvCoreIbexRecovHwErr),
-            46 => Ok(Self::IncomingSocSocFatalAlert0),
-            47 => Ok(Self::IncomingSocSocFatalAlert1),
-            48 => Ok(Self::IncomingSocSocFatalAlert2),
-            49 => Ok(Self::IncomingSocSocFatalAlert3),
+            5 => Ok(Self::SramCtrlRetAonFatalError),
+            6 => Ok(Self::OtpCtrlFatalMacroError),
+            7 => Ok(Self::OtpCtrlFatalCheckError),
+            8 => Ok(Self::OtpCtrlFatalBusIntegError),
+            9 => Ok(Self::OtpCtrlFatalPrimOtpAlert),
+            10 => Ok(Self::OtpCtrlRecovPrimOtpAlert),
+            11 => Ok(Self::LcCtrlFatalProgError),
+            12 => Ok(Self::LcCtrlFatalStateError),
+            13 => Ok(Self::LcCtrlFatalBusIntegError),
+            14 => Ok(Self::RvDmFatalFault),
+            15 => Ok(Self::RvPlicFatalFault),
+            16 => Ok(Self::RvTimerFatalFault),
+            17 => Ok(Self::AesRecovCtrlUpdateErr),
+            18 => Ok(Self::AesFatalFault),
+            19 => Ok(Self::HmacFatalFault),
+            20 => Ok(Self::KmacRecovOperationErr),
+            21 => Ok(Self::KmacFatalFaultErr),
+            22 => Ok(Self::OtbnFatal),
+            23 => Ok(Self::OtbnRecov),
+            24 => Ok(Self::KeymgrDpeRecovOperationErr),
+            25 => Ok(Self::KeymgrDpeFatalFaultErr),
+            26 => Ok(Self::CsrngRecovAlert),
+            27 => Ok(Self::CsrngFatalAlert),
+            28 => Ok(Self::EntropySrcRecovAlert),
+            29 => Ok(Self::EntropySrcFatalAlert),
+            30 => Ok(Self::Edn0RecovAlert),
+            31 => Ok(Self::Edn0FatalAlert),
+            32 => Ok(Self::Edn1RecovAlert),
+            33 => Ok(Self::Edn1FatalAlert),
+            34 => Ok(Self::SramCtrlMainFatalError),
+            35 => Ok(Self::RomCtrlFatal),
+            36 => Ok(Self::DmaFatalFault),
+            37 => Ok(Self::Mbx0FatalFault),
+            38 => Ok(Self::Mbx0RecovFault),
+            39 => Ok(Self::Mbx1FatalFault),
+            40 => Ok(Self::Mbx1RecovFault),
+            41 => Ok(Self::RvCoreIbexFatalSwErr),
+            42 => Ok(Self::RvCoreIbexRecovSwErr),
+            43 => Ok(Self::RvCoreIbexFatalHwErr),
+            44 => Ok(Self::RvCoreIbexRecovHwErr),
+            45 => Ok(Self::IncomingSocSocFatalAlert0),
+            46 => Ok(Self::IncomingSocSocFatalAlert1),
+            47 => Ok(Self::IncomingSocSocFatalAlert2),
+            48 => Ok(Self::IncomingSocSocFatalAlert3),
             _ => Err(val),
         }
     }
@@ -989,7 +962,7 @@ impl TryFrom<u32> for AlertId {
 ///
 /// This array is a mapping from `AlertId` to
 /// `AlertPeripheral`.
-pub const ALERT_FOR_PERIPHERAL: [AlertPeripheral; 50] = [
+pub const ALERT_FOR_PERIPHERAL: [AlertPeripheral; 49] = [
     // PwrmgrFatalFault -> AlertPeripheral::Pwrmgr
     AlertPeripheral::Pwrmgr,
     // RstmgrFatalFault -> AlertPeripheral::Rstmgr
@@ -1000,8 +973,6 @@ pub const ALERT_FOR_PERIPHERAL: [AlertPeripheral; 50] = [
     AlertPeripheral::Clkmgr,
     // ClkmgrFatalFault -> AlertPeripheral::Clkmgr
     AlertPeripheral::Clkmgr,
-    // RvTimerAonFatalFault -> AlertPeripheral::RvTimerAon
-    AlertPeripheral::RvTimerAon,
     // SramCtrlRetAonFatalError -> AlertPeripheral::SramCtrlRetAon
     AlertPeripheral::SramCtrlRetAon,
     // OtpCtrlFatalMacroError -> AlertPeripheral::OtpCtrl

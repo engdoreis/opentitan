@@ -69,7 +69,6 @@ tl_if pwrmgr_tl_if(clk_aon, rst_n);
 tl_if rstmgr_tl_if(clk_aon, rst_n);
 tl_if clkmgr_tl_if(clk_aon, rst_n);
 tl_if alert_handler_tl_if(clk_aon, rst_n);
-tl_if rv_timer_aon_tl_if(clk_aon, rst_n);
 tl_if sram_ctrl_ret_aon__regs_tl_if(clk_aon, rst_n);
 tl_if sram_ctrl_ret_aon__ram_tl_if(clk_aon, rst_n);
 tl_if mbx0__soc_tl_if(clk_main, rst_n);
@@ -140,7 +139,6 @@ initial begin
     `DRIVE_CHIP_TL_DEVICE_IF(rstmgr, rstmgr, tl, aon)
     `DRIVE_CHIP_TL_DEVICE_IF(clkmgr, clkmgr, tl, aon)
     `DRIVE_CHIP_TL_DEVICE_IF(alert_handler, alert_handler, tl, aon)
-    `DRIVE_CHIP_TL_DEVICE_IF(rv_timer_aon, rv_timer_aon, tl, aon)
     `DRIVE_CHIP_TL_DEVICE_IF(sram_ctrl_ret_aon__regs, sram_ctrl_ret_aon, regs_tl, aon)
     `DRIVE_CHIP_TL_DEVICE_IF(sram_ctrl_ret_aon__ram, sram_ctrl_ret_aon, ram_tl, aon)
     `DRIVE_CHIP_TL_HOST_IF(ahb_bridge__socmbx, ahb_bridge, socmbx_tl_h, main)

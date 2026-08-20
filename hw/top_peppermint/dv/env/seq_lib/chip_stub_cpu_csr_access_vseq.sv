@@ -146,7 +146,6 @@ function void chip_stub_cpu_csr_access_vseq::build_ping_targets();
   add_ping(ral.rv_core_ibex_cfg,       ral.rv_core_ibex_cfg.mcounteren_writable);
   add_ping(ral.rv_plic,                ral.rv_plic.prio[0]                   );
   add_ping(ral.rv_timer,               ral.rv_timer.cfg0                     );
-  add_ping(ral.rv_timer_aon,           ral.rv_timer_aon.cfg0                 );
   add_ping(ral.sram_ctrl_main_regs,    ral.sram_ctrl_main_regs.exec          );
   add_ping(ral.sram_ctrl_ret_aon_regs, ral.sram_ctrl_ret_aon_regs.exec       );
   add_ping(ral.lc_ctrl_regs,           ral.lc_ctrl_regs.claim_transition_if  );

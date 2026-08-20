@@ -16,13 +16,12 @@
  * `top_peppermint_alert_peripheral_t`.
  */
 const top_peppermint_alert_peripheral_t
-    top_peppermint_alert_for_peripheral[50] = {
+    top_peppermint_alert_for_peripheral[49] = {
   [kTopPeppermintAlertIdPwrmgrFatalFault] = kTopPeppermintAlertPeripheralPwrmgr,
   [kTopPeppermintAlertIdRstmgrFatalFault] = kTopPeppermintAlertPeripheralRstmgr,
   [kTopPeppermintAlertIdRstmgrFatalCnstyFault] = kTopPeppermintAlertPeripheralRstmgr,
   [kTopPeppermintAlertIdClkmgrRecovFault] = kTopPeppermintAlertPeripheralClkmgr,
   [kTopPeppermintAlertIdClkmgrFatalFault] = kTopPeppermintAlertPeripheralClkmgr,
-  [kTopPeppermintAlertIdRvTimerAonFatalFault] = kTopPeppermintAlertPeripheralRvTimerAon,
   [kTopPeppermintAlertIdSramCtrlRetAonFatalError] = kTopPeppermintAlertPeripheralSramCtrlRetAon,
   [kTopPeppermintAlertIdOtpCtrlFatalMacroError] = kTopPeppermintAlertPeripheralOtpCtrl,
   [kTopPeppermintAlertIdOtpCtrlFatalCheckError] = kTopPeppermintAlertPeripheralOtpCtrl,
@@ -76,14 +75,13 @@ const top_peppermint_alert_peripheral_t
  * `top_peppermint_plic_peripheral_t`.
  */
 const top_peppermint_plic_peripheral_t
-    top_peppermint_plic_interrupt_for_peripheral[43] = {
+    top_peppermint_plic_interrupt_for_peripheral[42] = {
   [kTopPeppermintPlicIrqIdNone] = kTopPeppermintPlicPeripheralUnknown,
   [kTopPeppermintPlicIrqIdPwrmgrWakeup] = kTopPeppermintPlicPeripheralPwrmgr,
   [kTopPeppermintPlicIrqIdAlertHandlerClassa] = kTopPeppermintPlicPeripheralAlertHandler,
   [kTopPeppermintPlicIrqIdAlertHandlerClassb] = kTopPeppermintPlicPeripheralAlertHandler,
   [kTopPeppermintPlicIrqIdAlertHandlerClassc] = kTopPeppermintPlicPeripheralAlertHandler,
   [kTopPeppermintPlicIrqIdAlertHandlerClassd] = kTopPeppermintPlicPeripheralAlertHandler,
-  [kTopPeppermintPlicIrqIdRvTimerAonTimerExpiredHart0Timer0] = kTopPeppermintPlicPeripheralRvTimerAon,
   [kTopPeppermintPlicIrqIdOtpCtrlOtpOperationDone] = kTopPeppermintPlicPeripheralOtpCtrl,
   [kTopPeppermintPlicIrqIdOtpCtrlOtpError] = kTopPeppermintPlicPeripheralOtpCtrl,
   [kTopPeppermintPlicIrqIdRvTimerTimerExpiredHart0Timer0] = kTopPeppermintPlicPeripheralRvTimer,

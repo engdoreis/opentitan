@@ -63,7 +63,6 @@ static dif_rstmgr_t rstmgr;
 static dif_rv_core_ibex_t rv_core_ibex;
 static dif_rv_plic_t rv_plic;
 static dif_rv_timer_t rv_timer;
-static dif_rv_timer_t rv_timer_aon;
 static dif_sram_ctrl_t sram_ctrl_main;
 static dif_sram_ctrl_t sram_ctrl_ret_aon;
 
@@ -137,9 +136,6 @@ static void init_peripherals(void) {
 
   base_addr = mmio_region_from_addr(TOP_PEPPERMINT_RV_TIMER_BASE_ADDR);
   CHECK_DIF_OK(dif_rv_timer_init(base_addr, &rv_timer));
-
-  base_addr = mmio_region_from_addr(TOP_PEPPERMINT_RV_TIMER_AON_BASE_ADDR);
-  CHECK_DIF_OK(dif_rv_timer_init(base_addr, &rv_timer_aon));
 
   base_addr = mmio_region_from_addr(TOP_PEPPERMINT_SRAM_CTRL_MAIN_REGS_BASE_ADDR);
   CHECK_DIF_OK(dif_sram_ctrl_init(base_addr, &sram_ctrl_main));
@@ -514,21 +510,6 @@ static void trigger_alert_test(void) {
 
     // Verify that alert handler received it.
     exp_alert = (int)kTopPeppermintAlertIdRvTimerFatalFault + i;
-    CHECK_DIF_OK(dif_alert_handler_alert_is_cause(
-        &alert_handler, exp_alert, &is_cause));
-    CHECK(is_cause, "Expect alert %d!", exp_alert);
-
-    // Clear alert cause register
-    CHECK_DIF_OK(dif_alert_handler_alert_acknowledge(
-        &alert_handler, exp_alert));
-  }
-
-  // Write rv_timer's alert_test reg and check alert_cause.
-  for (dif_rv_timer_alert_t i = 0; i < 1; ++i) {
-    CHECK_DIF_OK(dif_rv_timer_alert_force(&rv_timer_aon, kDifRvTimerAlertFatalFault + i));
-
-    // Verify that alert handler received it.
-    exp_alert = (int)kTopPeppermintAlertIdRvTimerAonFatalFault + i;
     CHECK_DIF_OK(dif_alert_handler_alert_is_cause(
         &alert_handler, exp_alert, &is_cause));
     CHECK(is_cause, "Expect alert %d!", exp_alert);

@@ -18,7 +18,6 @@ The main address space, shared between the CPU and DM
 | rstmgr            | default     | `0x40410000`   | `0x40`         | `0x10`         | rstmgr                           |
 | clkmgr            | default     | `0x40420000`   | `0x40`         | `0x10`         | clkmgr                           |
 | alert_handler     | default     | `0x40450000`   | `0x800`        | `0x200`        | alert_handler                    |
-| rv_timer_aon      | default     | `0x40430000`   | `0x200`        | `0x80`         | rv_timer_aon                     |
 | sram_ctrl_ret_aon | regs        | `0x40460000`   | `0x40`         | `0x10`         | regs device on sram_ctrl_ret_aon |
 | otp_ctrl          | core        | `0x30130000`   | `0x4000`       | `0x1000`       | core device on otp_ctrl          |
 | otp_macro         | prim        | `0x30140000`   | `0x20`         | `0x8`          | prim device on otp_macro         |

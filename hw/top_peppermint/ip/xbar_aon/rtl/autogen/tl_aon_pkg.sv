@@ -10,7 +10,6 @@ package tl_aon_pkg;
   localparam logic [31:0] ADDR_SPACE_RSTMGR                  = 32'h 40410000;
   localparam logic [31:0] ADDR_SPACE_CLKMGR                  = 32'h 40420000;
   localparam logic [31:0] ADDR_SPACE_ALERT_HANDLER           = 32'h 40450000;
-  localparam logic [31:0] ADDR_SPACE_RV_TIMER_AON            = 32'h 40430000;
   localparam logic [31:0] ADDR_SPACE_SRAM_CTRL_RET_AON__REGS = 32'h 40460000;
   localparam logic [31:0] ADDR_SPACE_SRAM_CTRL_RET_AON__RAM  = 32'h 40470000;
 
@@ -18,21 +17,19 @@ package tl_aon_pkg;
   localparam logic [31:0] ADDR_MASK_RSTMGR                  = 32'h 0000003f;
   localparam logic [31:0] ADDR_MASK_CLKMGR                  = 32'h 0000003f;
   localparam logic [31:0] ADDR_MASK_ALERT_HANDLER           = 32'h 000007ff;
-  localparam logic [31:0] ADDR_MASK_RV_TIMER_AON            = 32'h 000001ff;
   localparam logic [31:0] ADDR_MASK_SRAM_CTRL_RET_AON__REGS = 32'h 0000003f;
   localparam logic [31:0] ADDR_MASK_SRAM_CTRL_RET_AON__RAM  = 32'h 00001fff;
 
   localparam int N_HOST   = 1;
-  localparam int N_DEVICE = 7;
+  localparam int N_DEVICE = 6;
 
   typedef enum int {
     TlPwrmgr = 0,
     TlRstmgr = 1,
     TlClkmgr = 2,
     TlAlertHandler = 3,
-    TlRvTimerAon = 4,
-    TlSramCtrlRetAonRegs = 5,
-    TlSramCtrlRetAonRam = 6
+    TlSramCtrlRetAonRegs = 4,
+    TlSramCtrlRetAonRam = 5
   } tl_device_e;
 
   typedef enum int {

@@ -328,7 +328,6 @@
             rstmgr
             clkmgr
             alert_handler
-            rv_timer_aon
             sram_ctrl_ret_aon
             otp_ctrl.core
             otp_macro.prim
@@ -1242,82 +1241,6 @@
         null:
         {
           hart: 0x40450000
-        }
-      }
-      generate_dif: true
-    }
-    {
-      name: rv_timer_aon
-      type: rv_timer
-      clock_srcs:
-      {
-        clk_i: aon
-      }
-      clock_group: ext
-      reset_connections:
-      {
-        rst_ni:
-        {
-          name: lc_aon
-          domain: Aon
-        }
-      }
-      domain: Aon
-      clock_connections:
-      {
-        clk_i: clk_aon_i
-      }
-      param_decl: {}
-      memory: {}
-      param_list: []
-      inter_signal_list:
-      [
-        {
-          name: racl_policies
-          desc:
-            '''
-            Incoming RACL policy vector from a racl_ctrl instance.
-            The policy selection vector (parameter) selects the policy for each register.
-            '''
-          struct: racl_policy_vec
-          package: top_racl_pkg
-          type: uni
-          act: rcv
-          width: 1
-          inst_name: rv_timer_aon
-          index: -1
-        }
-        {
-          name: racl_error
-          desc: RACL error log information of this module.
-          struct: racl_error_log
-          package: top_racl_pkg
-          type: uni
-          act: req
-          width: 1
-          inst_name: rv_timer_aon
-          index: -1
-        }
-        {
-          name: tl
-          struct: tl
-          package: tlul_pkg
-          type: req_rsp
-          act: rsp
-          width: 1
-          inst_name: rv_timer_aon
-          default: ""
-          end_idx: -1
-          top_type: one-to-one
-          top_signame: rv_timer_aon_tl
-          index: -1
-        }
-      ]
-      base_addrs:
-      {
-        null:
-        {
-          hart: 0x40430000
         }
       }
       generate_dif: true
@@ -7400,10 +7323,6 @@
       [
         aon.tl_alert_handler
       ]
-      rv_timer_aon.tl:
-      [
-        aon.tl_rv_timer_aon
-      ]
       sram_ctrl_ret_aon.regs_tl:
       [
         aon.tl_sram_ctrl_ret_aon__regs
@@ -8676,7 +8595,6 @@
           rstmgr
           clkmgr
           alert_handler
-          rv_timer_aon
           sram_ctrl_ret_aon.regs
           sram_ctrl_ret_aon.ram
         ]
@@ -8774,27 +8692,6 @@
                 hart: 0x40450000
               }
               size_byte: 0x800
-            }
-          ]
-          xbar: false
-          stub: false
-          req_fifo_pass: true
-        }
-        {
-          name: rv_timer_aon
-          type: device
-          clock: clk_aon_i
-          reset: rst_aon_ni
-          pipeline: false
-          inst_type: rv_timer
-          addr_range:
-          [
-            {
-              base_addrs:
-              {
-                hart: 0x40430000
-              }
-              size_byte: 0x200
             }
           ]
           xbar: false
@@ -8917,19 +8814,6 @@
           default: ""
           domain: Aon
           top_signame: alert_handler_tl
-          index: -1
-        }
-        {
-          name: tl_rv_timer_aon
-          struct: tl
-          package: tlul_pkg
-          type: req_rsp
-          act: req
-          inst_name: aon
-          width: 1
-          default: ""
-          domain: Aon
-          top_signame: rv_timer_aon_tl
           index: -1
         }
         {
@@ -9438,17 +9322,6 @@
       handler: alert_handler
       module_name: clkmgr
       desc: clkmgr fatal_fault alert
-      lpg_name: ext_lc_aon_Aon
-      lpg_idx: 1
-    }
-    {
-      name: rv_timer_aon_fatal_fault
-      width: 1
-      type: alert
-      async: "1"
-      handler: alert_handler
-      module_name: rv_timer_aon
-      desc: rv_timer_aon fatal_fault alert
       lpg_name: ext_lc_aon_Aon
       lpg_idx: 1
     }
@@ -9962,19 +9835,6 @@
       outgoing: false
     }
     {
-      name: rv_timer_aon_timer_expired_hart0_timer0
-      width: 1
-      type: interrupt
-      module_name: rv_timer_aon
-      desc: rv_timer_aon timer_expired_hart0_timer0 interrupt
-      intr_type: IntrType.Event
-      default_val: false
-      incoming: false
-      domain: Aon
-      plic: rv_plic
-      outgoing: false
-    }
-    {
       name: otp_ctrl_otp_operation_done
       width: 1
       type: interrupt
@@ -10445,10 +10305,10 @@
     rv_plic:
     {
       domain: Main
-      count_tot: 43
+      count_tot: 42
       count_pd:
       {
-        Aon: 6
+        Aon: 5
         Main: 36
       }
     }
@@ -10462,7 +10322,7 @@
         struct: logic
         domain: chip
         signame: intr_vector_pd_aon
-        width: 6
+        width: 5
         type: uni
         special: interrupt
         end_idx: -1
@@ -10815,7 +10675,6 @@
     pwrmgr
     rstmgr
     clkmgr
-    rv_timer_aon
     sram_ctrl_ret_aon
     otp_ctrl
     lc_ctrl
@@ -10872,256 +10731,246 @@
         alert_handler[4]: fatal_fault
       ]
     }
-    module_rv_timer_aon:
+    module_sram_ctrl_ret_aon:
     {
       tx_expr: alert_tx[5]
       rx_expr: alert_rx[5]
       async_expr: alert_handler_reg_pkg::AsyncOn[5]
       comments:
       [
-        alert_handler[5]: fatal_fault
-      ]
-    }
-    module_sram_ctrl_ret_aon:
-    {
-      tx_expr: alert_tx[6]
-      rx_expr: alert_rx[6]
-      async_expr: alert_handler_reg_pkg::AsyncOn[6]
-      comments:
-      [
-        alert_handler[6]: fatal_error
+        alert_handler[5]: fatal_error
       ]
     }
     module_otp_ctrl:
     {
       tx_expr: alert_tx_o[4:0]
       rx_expr: alert_rx_i[4:0]
-      async_expr: alert_handler_reg_pkg::AsyncOn[11:7]
+      async_expr: alert_handler_reg_pkg::AsyncOn[10:6]
       comments:
       [
-        alert_handler[7]: fatal_macro_error
-        alert_handler[8]: fatal_check_error
-        alert_handler[9]: fatal_bus_integ_error
-        alert_handler[10]: fatal_prim_otp_alert
-        alert_handler[11]: recov_prim_otp_alert
+        alert_handler[6]: fatal_macro_error
+        alert_handler[7]: fatal_check_error
+        alert_handler[8]: fatal_bus_integ_error
+        alert_handler[9]: fatal_prim_otp_alert
+        alert_handler[10]: recov_prim_otp_alert
       ]
     }
     module_lc_ctrl:
     {
       tx_expr: alert_tx_o[7:5]
       rx_expr: alert_rx_i[7:5]
-      async_expr: alert_handler_reg_pkg::AsyncOn[14:12]
+      async_expr: alert_handler_reg_pkg::AsyncOn[13:11]
       comments:
       [
-        alert_handler[12]: fatal_prog_error
-        alert_handler[13]: fatal_state_error
-        alert_handler[14]: fatal_bus_integ_error
+        alert_handler[11]: fatal_prog_error
+        alert_handler[12]: fatal_state_error
+        alert_handler[13]: fatal_bus_integ_error
       ]
     }
     module_rv_dm:
     {
       tx_expr: alert_tx_o[8]
       rx_expr: alert_rx_i[8]
-      async_expr: alert_handler_reg_pkg::AsyncOn[15]
+      async_expr: alert_handler_reg_pkg::AsyncOn[14]
       comments:
       [
-        alert_handler[15]: fatal_fault
+        alert_handler[14]: fatal_fault
       ]
     }
     module_rv_plic:
     {
       tx_expr: alert_tx_o[9]
       rx_expr: alert_rx_i[9]
-      async_expr: alert_handler_reg_pkg::AsyncOn[16]
+      async_expr: alert_handler_reg_pkg::AsyncOn[15]
       comments:
       [
-        alert_handler[16]: fatal_fault
+        alert_handler[15]: fatal_fault
       ]
     }
     module_rv_timer:
     {
       tx_expr: alert_tx_o[10]
       rx_expr: alert_rx_i[10]
-      async_expr: alert_handler_reg_pkg::AsyncOn[17]
+      async_expr: alert_handler_reg_pkg::AsyncOn[16]
       comments:
       [
-        alert_handler[17]: fatal_fault
+        alert_handler[16]: fatal_fault
       ]
     }
     module_aes:
     {
       tx_expr: alert_tx_o[12:11]
       rx_expr: alert_rx_i[12:11]
-      async_expr: alert_handler_reg_pkg::AsyncOn[19:18]
+      async_expr: alert_handler_reg_pkg::AsyncOn[18:17]
       comments:
       [
-        alert_handler[18]: recov_ctrl_update_err
-        alert_handler[19]: fatal_fault
+        alert_handler[17]: recov_ctrl_update_err
+        alert_handler[18]: fatal_fault
       ]
     }
     module_hmac:
     {
       tx_expr: alert_tx_o[13]
       rx_expr: alert_rx_i[13]
-      async_expr: alert_handler_reg_pkg::AsyncOn[20]
+      async_expr: alert_handler_reg_pkg::AsyncOn[19]
       comments:
       [
-        alert_handler[20]: fatal_fault
+        alert_handler[19]: fatal_fault
       ]
     }
     module_kmac:
     {
       tx_expr: alert_tx_o[15:14]
       rx_expr: alert_rx_i[15:14]
-      async_expr: alert_handler_reg_pkg::AsyncOn[22:21]
+      async_expr: alert_handler_reg_pkg::AsyncOn[21:20]
       comments:
       [
-        alert_handler[21]: recov_operation_err
-        alert_handler[22]: fatal_fault_err
+        alert_handler[20]: recov_operation_err
+        alert_handler[21]: fatal_fault_err
       ]
     }
     module_otbn:
     {
       tx_expr: alert_tx_o[17:16]
       rx_expr: alert_rx_i[17:16]
-      async_expr: alert_handler_reg_pkg::AsyncOn[24:23]
+      async_expr: alert_handler_reg_pkg::AsyncOn[23:22]
       comments:
       [
-        alert_handler[23]: fatal
-        alert_handler[24]: recov
+        alert_handler[22]: fatal
+        alert_handler[23]: recov
       ]
     }
     module_keymgr_dpe:
     {
       tx_expr: alert_tx_o[19:18]
       rx_expr: alert_rx_i[19:18]
-      async_expr: alert_handler_reg_pkg::AsyncOn[26:25]
+      async_expr: alert_handler_reg_pkg::AsyncOn[25:24]
       comments:
       [
-        alert_handler[25]: recov_operation_err
-        alert_handler[26]: fatal_fault_err
+        alert_handler[24]: recov_operation_err
+        alert_handler[25]: fatal_fault_err
       ]
     }
     module_csrng:
     {
       tx_expr: alert_tx_o[21:20]
       rx_expr: alert_rx_i[21:20]
-      async_expr: alert_handler_reg_pkg::AsyncOn[28:27]
+      async_expr: alert_handler_reg_pkg::AsyncOn[27:26]
       comments:
       [
-        alert_handler[27]: recov_alert
-        alert_handler[28]: fatal_alert
+        alert_handler[26]: recov_alert
+        alert_handler[27]: fatal_alert
       ]
     }
     module_entropy_src:
     {
       tx_expr: alert_tx_o[23:22]
       rx_expr: alert_rx_i[23:22]
-      async_expr: alert_handler_reg_pkg::AsyncOn[30:29]
+      async_expr: alert_handler_reg_pkg::AsyncOn[29:28]
       comments:
       [
-        alert_handler[29]: recov_alert
-        alert_handler[30]: fatal_alert
+        alert_handler[28]: recov_alert
+        alert_handler[29]: fatal_alert
       ]
     }
     module_edn0:
     {
       tx_expr: alert_tx_o[25:24]
       rx_expr: alert_rx_i[25:24]
-      async_expr: alert_handler_reg_pkg::AsyncOn[32:31]
+      async_expr: alert_handler_reg_pkg::AsyncOn[31:30]
       comments:
       [
-        alert_handler[31]: recov_alert
-        alert_handler[32]: fatal_alert
+        alert_handler[30]: recov_alert
+        alert_handler[31]: fatal_alert
       ]
     }
     module_edn1:
     {
       tx_expr: alert_tx_o[27:26]
       rx_expr: alert_rx_i[27:26]
-      async_expr: alert_handler_reg_pkg::AsyncOn[34:33]
+      async_expr: alert_handler_reg_pkg::AsyncOn[33:32]
       comments:
       [
-        alert_handler[33]: recov_alert
-        alert_handler[34]: fatal_alert
+        alert_handler[32]: recov_alert
+        alert_handler[33]: fatal_alert
       ]
     }
     module_sram_ctrl_main:
     {
       tx_expr: alert_tx_o[28]
       rx_expr: alert_rx_i[28]
-      async_expr: alert_handler_reg_pkg::AsyncOn[35]
+      async_expr: alert_handler_reg_pkg::AsyncOn[34]
       comments:
       [
-        alert_handler[35]: fatal_error
+        alert_handler[34]: fatal_error
       ]
     }
     module_rom_ctrl:
     {
       tx_expr: alert_tx_o[29]
       rx_expr: alert_rx_i[29]
-      async_expr: alert_handler_reg_pkg::AsyncOn[36]
+      async_expr: alert_handler_reg_pkg::AsyncOn[35]
       comments:
       [
-        alert_handler[36]: fatal
+        alert_handler[35]: fatal
       ]
     }
     module_dma:
     {
       tx_expr: alert_tx_o[30]
       rx_expr: alert_rx_i[30]
-      async_expr: alert_handler_reg_pkg::AsyncOn[37]
+      async_expr: alert_handler_reg_pkg::AsyncOn[36]
       comments:
       [
-        alert_handler[37]: fatal_fault
+        alert_handler[36]: fatal_fault
       ]
     }
     module_mbx0:
     {
       tx_expr: alert_tx_o[32:31]
       rx_expr: alert_rx_i[32:31]
-      async_expr: alert_handler_reg_pkg::AsyncOn[39:38]
+      async_expr: alert_handler_reg_pkg::AsyncOn[38:37]
       comments:
       [
-        alert_handler[38]: fatal_fault
-        alert_handler[39]: recov_fault
+        alert_handler[37]: fatal_fault
+        alert_handler[38]: recov_fault
       ]
     }
     module_mbx1:
     {
       tx_expr: alert_tx_o[34:33]
       rx_expr: alert_rx_i[34:33]
-      async_expr: alert_handler_reg_pkg::AsyncOn[41:40]
+      async_expr: alert_handler_reg_pkg::AsyncOn[40:39]
       comments:
       [
-        alert_handler[40]: fatal_fault
-        alert_handler[41]: recov_fault
+        alert_handler[39]: fatal_fault
+        alert_handler[40]: recov_fault
       ]
     }
     module_rv_core_ibex:
     {
       tx_expr: alert_tx_o[38:35]
       rx_expr: alert_rx_i[38:35]
-      async_expr: alert_handler_reg_pkg::AsyncOn[45:42]
+      async_expr: alert_handler_reg_pkg::AsyncOn[44:41]
       comments:
       [
-        alert_handler[42]: fatal_sw_err
-        alert_handler[43]: recov_sw_err
-        alert_handler[44]: fatal_hw_err
-        alert_handler[45]: recov_hw_err
+        alert_handler[41]: fatal_sw_err
+        alert_handler[42]: recov_sw_err
+        alert_handler[43]: fatal_hw_err
+        alert_handler[44]: recov_hw_err
       ]
     }
     incoming_soc:
     {
-      tx_expr: alert_tx[49:46]
-      rx_expr: alert_rx[49:46]
+      tx_expr: alert_tx[48:45]
+      rx_expr: alert_rx[48:45]
       async_expr: null
       comments:
       [
-        alert_handler[46]: soc_fatal_alert_0
-        alert_handler[47]: soc_fatal_alert_1
-        alert_handler[48]: soc_fatal_alert_2
-        alert_handler[49]: soc_fatal_alert_3
+        alert_handler[45]: soc_fatal_alert_0
+        alert_handler[46]: soc_fatal_alert_1
+        alert_handler[47]: soc_fatal_alert_2
+        alert_handler[48]: soc_fatal_alert_3
       ]
     }
   }
@@ -11130,205 +10979,205 @@
     alert_handler:
     {
       domain: Aon
-      count_tot: 46
+      count_tot: 45
       count_pd:
       {
-        Aon: 7
+        Aon: 6
         Main: 39
       }
       connect_pd:
       {
-        7:
+        6:
         {
           src_pd: Main
           idx: 0
         }
-        8:
+        7:
         {
           src_pd: Main
           idx: 1
         }
-        9:
+        8:
         {
           src_pd: Main
           idx: 2
         }
-        10:
+        9:
         {
           src_pd: Main
           idx: 3
         }
-        11:
+        10:
         {
           src_pd: Main
           idx: 4
         }
-        12:
+        11:
         {
           src_pd: Main
           idx: 5
         }
-        13:
+        12:
         {
           src_pd: Main
           idx: 6
         }
-        14:
+        13:
         {
           src_pd: Main
           idx: 7
         }
-        15:
+        14:
         {
           src_pd: Main
           idx: 8
         }
-        16:
+        15:
         {
           src_pd: Main
           idx: 9
         }
-        17:
+        16:
         {
           src_pd: Main
           idx: 10
         }
-        18:
+        17:
         {
           src_pd: Main
           idx: 11
         }
-        19:
+        18:
         {
           src_pd: Main
           idx: 12
         }
-        20:
+        19:
         {
           src_pd: Main
           idx: 13
         }
-        21:
+        20:
         {
           src_pd: Main
           idx: 14
         }
-        22:
+        21:
         {
           src_pd: Main
           idx: 15
         }
-        23:
+        22:
         {
           src_pd: Main
           idx: 16
         }
-        24:
+        23:
         {
           src_pd: Main
           idx: 17
         }
-        25:
+        24:
         {
           src_pd: Main
           idx: 18
         }
-        26:
+        25:
         {
           src_pd: Main
           idx: 19
         }
-        27:
+        26:
         {
           src_pd: Main
           idx: 20
         }
-        28:
+        27:
         {
           src_pd: Main
           idx: 21
         }
-        29:
+        28:
         {
           src_pd: Main
           idx: 22
         }
-        30:
+        29:
         {
           src_pd: Main
           idx: 23
         }
-        31:
+        30:
         {
           src_pd: Main
           idx: 24
         }
-        32:
+        31:
         {
           src_pd: Main
           idx: 25
         }
-        33:
+        32:
         {
           src_pd: Main
           idx: 26
         }
-        34:
+        33:
         {
           src_pd: Main
           idx: 27
         }
-        35:
+        34:
         {
           src_pd: Main
           idx: 28
         }
-        36:
+        35:
         {
           src_pd: Main
           idx: 29
         }
-        37:
+        36:
         {
           src_pd: Main
           idx: 30
         }
-        38:
+        37:
         {
           src_pd: Main
           idx: 31
         }
-        39:
+        38:
         {
           src_pd: Main
           idx: 32
         }
-        40:
+        39:
         {
           src_pd: Main
           idx: 33
         }
-        41:
+        40:
         {
           src_pd: Main
           idx: 34
         }
-        42:
+        41:
         {
           src_pd: Main
           idx: 35
         }
-        43:
+        42:
         {
           src_pd: Main
           idx: 36
         }
-        44:
+        43:
         {
           src_pd: Main
           idx: 37
         }
-        45:
+        44:
         {
           src_pd: Main
           idx: 38
@@ -11340,7 +11189,6 @@
   [
     pwrmgr
     alert_handler
-    rv_timer_aon
     otp_ctrl
     rv_timer
     hmac
@@ -12017,46 +11865,6 @@
         end_idx: -1
         top_type: one-to-one
         top_signame: alert_handler_tl
-        index: -1
-      }
-      {
-        name: racl_policies
-        desc:
-          '''
-          Incoming RACL policy vector from a racl_ctrl instance.
-          The policy selection vector (parameter) selects the policy for each register.
-          '''
-        struct: racl_policy_vec
-        package: top_racl_pkg
-        type: uni
-        act: rcv
-        width: 1
-        inst_name: rv_timer_aon
-        index: -1
-      }
-      {
-        name: racl_error
-        desc: RACL error log information of this module.
-        struct: racl_error_log
-        package: top_racl_pkg
-        type: uni
-        act: req
-        width: 1
-        inst_name: rv_timer_aon
-        index: -1
-      }
-      {
-        name: tl
-        struct: tl
-        package: tlul_pkg
-        type: req_rsp
-        act: rsp
-        width: 1
-        inst_name: rv_timer_aon
-        default: ""
-        end_idx: -1
-        top_type: one-to-one
-        top_signame: rv_timer_aon_tl
         index: -1
       }
       {
@@ -16028,19 +15836,6 @@
         index: -1
       }
       {
-        name: tl_rv_timer_aon
-        struct: tl
-        package: tlul_pkg
-        type: req_rsp
-        act: req
-        inst_name: aon
-        width: 1
-        default: ""
-        domain: Aon
-        top_signame: rv_timer_aon_tl
-        index: -1
-      }
-      {
         name: tl_sram_ctrl_ret_aon__regs
         struct: tl
         package: tlul_pkg
@@ -18872,30 +18667,6 @@
         struct: tl_d2h
         domain: Aon
         signame: alert_handler_tl_rsp
-        width: 1
-        type: req_rsp
-        end_idx: -1
-        act: rsp
-        suffix: rsp
-        default: ""
-      }
-      {
-        package: tlul_pkg
-        struct: tl_h2d
-        domain: Aon
-        signame: rv_timer_aon_tl_req
-        width: 1
-        type: req_rsp
-        end_idx: -1
-        act: rsp
-        suffix: req
-        default: tlul_pkg::TL_H2D_DEFAULT
-      }
-      {
-        package: tlul_pkg
-        struct: tl_d2h
-        domain: Aon
-        signame: rv_timer_aon_tl_rsp
         width: 1
         type: req_rsp
         end_idx: -1

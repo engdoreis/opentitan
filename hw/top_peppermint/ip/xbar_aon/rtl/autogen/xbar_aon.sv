@@ -7,12 +7,11 @@
 //
 // Interconnect
 // main
-//   -> s1n_8
+//   -> s1n_7
 //     -> pwrmgr
 //     -> rstmgr
 //     -> clkmgr
 //     -> alert_handler
-//     -> rv_timer_aon
 //     -> sram_ctrl_ret_aon.regs
 //     -> sram_ctrl_ret_aon.ram
 
@@ -33,8 +32,6 @@ module xbar_aon (
   input  tlul_pkg::tl_d2h_t tl_clkmgr_i,
   output tlul_pkg::tl_h2d_t tl_alert_handler_o,
   input  tlul_pkg::tl_d2h_t tl_alert_handler_i,
-  output tlul_pkg::tl_h2d_t tl_rv_timer_aon_o,
-  input  tlul_pkg::tl_d2h_t tl_rv_timer_aon_i,
   output tlul_pkg::tl_h2d_t tl_sram_ctrl_ret_aon__regs_o,
   input  tlul_pkg::tl_d2h_t tl_sram_ctrl_ret_aon__regs_i,
   output tlul_pkg::tl_h2d_t tl_sram_ctrl_ret_aon__ram_o,
@@ -51,72 +48,65 @@ module xbar_aon (
   logic unused_scanmode;
   assign unused_scanmode = ^scanmode_i;
 
-  tl_h2d_t tl_s1n_8_us_h2d ;
-  tl_d2h_t tl_s1n_8_us_d2h ;
+  tl_h2d_t tl_s1n_7_us_h2d ;
+  tl_d2h_t tl_s1n_7_us_d2h ;
 
 
-  tl_h2d_t tl_s1n_8_ds_h2d [7];
-  tl_d2h_t tl_s1n_8_ds_d2h [7];
+  tl_h2d_t tl_s1n_7_ds_h2d [6];
+  tl_d2h_t tl_s1n_7_ds_d2h [6];
 
   // Create steering signal
-  logic [2:0] dev_sel_s1n_8;
+  logic [2:0] dev_sel_s1n_7;
 
 
 
-  assign tl_pwrmgr_o = tl_s1n_8_ds_h2d[0];
-  assign tl_s1n_8_ds_d2h[0] = tl_pwrmgr_i;
+  assign tl_pwrmgr_o = tl_s1n_7_ds_h2d[0];
+  assign tl_s1n_7_ds_d2h[0] = tl_pwrmgr_i;
 
-  assign tl_rstmgr_o = tl_s1n_8_ds_h2d[1];
-  assign tl_s1n_8_ds_d2h[1] = tl_rstmgr_i;
+  assign tl_rstmgr_o = tl_s1n_7_ds_h2d[1];
+  assign tl_s1n_7_ds_d2h[1] = tl_rstmgr_i;
 
-  assign tl_clkmgr_o = tl_s1n_8_ds_h2d[2];
-  assign tl_s1n_8_ds_d2h[2] = tl_clkmgr_i;
+  assign tl_clkmgr_o = tl_s1n_7_ds_h2d[2];
+  assign tl_s1n_7_ds_d2h[2] = tl_clkmgr_i;
 
-  assign tl_alert_handler_o = tl_s1n_8_ds_h2d[3];
-  assign tl_s1n_8_ds_d2h[3] = tl_alert_handler_i;
+  assign tl_alert_handler_o = tl_s1n_7_ds_h2d[3];
+  assign tl_s1n_7_ds_d2h[3] = tl_alert_handler_i;
 
-  assign tl_rv_timer_aon_o = tl_s1n_8_ds_h2d[4];
-  assign tl_s1n_8_ds_d2h[4] = tl_rv_timer_aon_i;
+  assign tl_sram_ctrl_ret_aon__regs_o = tl_s1n_7_ds_h2d[4];
+  assign tl_s1n_7_ds_d2h[4] = tl_sram_ctrl_ret_aon__regs_i;
 
-  assign tl_sram_ctrl_ret_aon__regs_o = tl_s1n_8_ds_h2d[5];
-  assign tl_s1n_8_ds_d2h[5] = tl_sram_ctrl_ret_aon__regs_i;
+  assign tl_sram_ctrl_ret_aon__ram_o = tl_s1n_7_ds_h2d[5];
+  assign tl_s1n_7_ds_d2h[5] = tl_sram_ctrl_ret_aon__ram_i;
 
-  assign tl_sram_ctrl_ret_aon__ram_o = tl_s1n_8_ds_h2d[6];
-  assign tl_s1n_8_ds_d2h[6] = tl_sram_ctrl_ret_aon__ram_i;
-
-  assign tl_s1n_8_us_h2d = tl_main_i;
-  assign tl_main_o = tl_s1n_8_us_d2h;
+  assign tl_s1n_7_us_h2d = tl_main_i;
+  assign tl_main_o = tl_s1n_7_us_d2h;
 
   always_comb begin
     // default steering to generate error response if address is not within the range
-    dev_sel_s1n_8 = 3'd7;
-    if ((tl_s1n_8_us_h2d.a_address &
+    dev_sel_s1n_7 = 3'd6;
+    if ((tl_s1n_7_us_h2d.a_address &
          ~(ADDR_MASK_PWRMGR)) == ADDR_SPACE_PWRMGR) begin
-      dev_sel_s1n_8 = 3'd0;
+      dev_sel_s1n_7 = 3'd0;
 
-    end else if ((tl_s1n_8_us_h2d.a_address &
+    end else if ((tl_s1n_7_us_h2d.a_address &
                   ~(ADDR_MASK_RSTMGR)) == ADDR_SPACE_RSTMGR) begin
-      dev_sel_s1n_8 = 3'd1;
+      dev_sel_s1n_7 = 3'd1;
 
-    end else if ((tl_s1n_8_us_h2d.a_address &
+    end else if ((tl_s1n_7_us_h2d.a_address &
                   ~(ADDR_MASK_CLKMGR)) == ADDR_SPACE_CLKMGR) begin
-      dev_sel_s1n_8 = 3'd2;
+      dev_sel_s1n_7 = 3'd2;
 
-    end else if ((tl_s1n_8_us_h2d.a_address &
+    end else if ((tl_s1n_7_us_h2d.a_address &
                   ~(ADDR_MASK_ALERT_HANDLER)) == ADDR_SPACE_ALERT_HANDLER) begin
-      dev_sel_s1n_8 = 3'd3;
+      dev_sel_s1n_7 = 3'd3;
 
-    end else if ((tl_s1n_8_us_h2d.a_address &
-                  ~(ADDR_MASK_RV_TIMER_AON)) == ADDR_SPACE_RV_TIMER_AON) begin
-      dev_sel_s1n_8 = 3'd4;
-
-    end else if ((tl_s1n_8_us_h2d.a_address &
+    end else if ((tl_s1n_7_us_h2d.a_address &
                   ~(ADDR_MASK_SRAM_CTRL_RET_AON__REGS)) == ADDR_SPACE_SRAM_CTRL_RET_AON__REGS) begin
-      dev_sel_s1n_8 = 3'd5;
+      dev_sel_s1n_7 = 3'd4;
 
-    end else if ((tl_s1n_8_us_h2d.a_address &
+    end else if ((tl_s1n_7_us_h2d.a_address &
                   ~(ADDR_MASK_SRAM_CTRL_RET_AON__RAM)) == ADDR_SPACE_SRAM_CTRL_RET_AON__RAM) begin
-      dev_sel_s1n_8 = 3'd6;
+      dev_sel_s1n_7 = 3'd5;
 end
   end
 
@@ -125,17 +115,17 @@ end
   tlul_socket_1n #(
     .HReqDepth (4'h0),
     .HRspDepth (4'h0),
-    .DReqDepth (28'h0),
-    .DRspDepth (28'h0),
-    .N         (7)
-  ) u_s1n_8 (
+    .DReqDepth (24'h0),
+    .DRspDepth (24'h0),
+    .N         (6)
+  ) u_s1n_7 (
     .clk_i        (clk_aon_i),
     .rst_ni       (rst_aon_ni),
-    .tl_h_i       (tl_s1n_8_us_h2d),
-    .tl_h_o       (tl_s1n_8_us_d2h),
-    .tl_d_o       (tl_s1n_8_ds_h2d),
-    .tl_d_i       (tl_s1n_8_ds_d2h),
-    .dev_select_i (dev_sel_s1n_8)
+    .tl_h_i       (tl_s1n_7_us_h2d),
+    .tl_h_o       (tl_s1n_7_us_d2h),
+    .tl_d_o       (tl_s1n_7_ds_h2d),
+    .tl_d_i       (tl_s1n_7_ds_d2h),
+    .dev_select_i (dev_sel_s1n_7)
   );
 
 endmodule

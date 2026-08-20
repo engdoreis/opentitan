@@ -94,9 +94,6 @@ tl_device_t xbar_devices[$] = '{
     '{"alert_handler", '{
         '{32'h40450000, 32'h404507ff}
     }},
-    '{"rv_timer_aon", '{
-        '{32'h40430000, 32'h404301ff}
-    }},
     '{"sram_ctrl_ret_aon__regs", '{
         '{32'h40460000, 32'h4046003f}
     }},
@@ -154,7 +151,6 @@ tl_host_t xbar_hosts[$] = '{
         "rstmgr",
         "clkmgr",
         "alert_handler",
-        "rv_timer_aon",
         "sram_ctrl_ret_aon__regs",
         "sram_ctrl_ret_aon__ram"}}
     ,
@@ -186,7 +182,6 @@ tl_host_t xbar_hosts[$] = '{
         "rstmgr",
         "clkmgr",
         "alert_handler",
-        "rv_timer_aon",
         "sram_ctrl_ret_aon__regs",
         "sram_ctrl_ret_aon__ram"}}
     ,

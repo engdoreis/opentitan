@@ -112,10 +112,6 @@ static dif_pwrmgr_t pwrmgr;
 static dif_rv_timer_t rv_timer;
 #endif
 
-#if TEST_MIN_IRQ_PERIPHERAL <= 12 && 12 < TEST_MAX_IRQ_PERIPHERAL
-static dif_rv_timer_t rv_timer_aon;
-#endif
-
 static dif_rv_plic_t plic;
 static const top_peppermint_plic_target_t kHart = kTopPeppermintPlicTargetIbex0;
 
@@ -608,29 +604,6 @@ void ottf_external_isr(uint32_t *exc_info) {
     }
 #endif
 
-#if TEST_MIN_IRQ_PERIPHERAL <= 12 && 12 < TEST_MAX_IRQ_PERIPHERAL
-    case kTopPeppermintPlicPeripheralRvTimerAon: {
-      dif_rv_timer_irq_t irq =
-          (dif_rv_timer_irq_t)(plic_irq_id -
-                               (dif_rv_plic_irq_id_t)
-                                   kTopPeppermintPlicIrqIdRvTimerAonTimerExpiredHart0Timer0);
-      CHECK(irq == rv_timer_irq_expected,
-            "Incorrect rv_timer_aon IRQ triggered: exp = %d, obs = %d",
-            rv_timer_irq_expected, irq);
-      rv_timer_irq_serviced = irq;
-
-      dif_rv_timer_irq_state_snapshot_t snapshot;
-      CHECK_DIF_OK(dif_rv_timer_irq_get_state(&rv_timer_aon, kHart, &snapshot));
-      CHECK(snapshot == (dif_rv_timer_irq_state_snapshot_t)(1 << irq),
-            "Only rv_timer_aon IRQ %d expected to fire. Actual interrupt "
-            "status = %x",
-            irq, snapshot);
-
-      CHECK_DIF_OK(dif_rv_timer_irq_acknowledge(&rv_timer_aon, irq));
-      break;
-    }
-#endif
-
     default:
       LOG_FATAL("ISR is not implemented!");
       test_status_set(kTestStatusFailed);
@@ -720,11 +693,6 @@ static void peripherals_init(void) {
   CHECK_DIF_OK(dif_rv_timer_init(base_addr, &rv_timer));
 #endif
 
-#if TEST_MIN_IRQ_PERIPHERAL <= 12 && 12 < TEST_MAX_IRQ_PERIPHERAL
-  base_addr = mmio_region_from_addr(TOP_PEPPERMINT_RV_TIMER_AON_BASE_ADDR);
-  CHECK_DIF_OK(dif_rv_timer_init(base_addr, &rv_timer_aon));
-#endif
-
   base_addr = mmio_region_from_addr(TOP_PEPPERMINT_RV_PLIC_BASE_ADDR);
   CHECK_DIF_OK(dif_rv_plic_init(base_addr, &plic));
 }
@@ -793,10 +761,6 @@ static void peripheral_irqs_clear(void) {
 
 #if TEST_MIN_IRQ_PERIPHERAL <= 12 && 12 < TEST_MAX_IRQ_PERIPHERAL
   CHECK_DIF_OK(dif_rv_timer_irq_acknowledge_all(&rv_timer, kHart));
-#endif
-
-#if TEST_MIN_IRQ_PERIPHERAL <= 12 && 12 < TEST_MAX_IRQ_PERIPHERAL
-  CHECK_DIF_OK(dif_rv_timer_irq_acknowledge_all(&rv_timer_aon, kHart));
 #endif
 }
 
@@ -929,10 +893,6 @@ static void peripheral_irqs_enable(void) {
 
 #if TEST_MIN_IRQ_PERIPHERAL <= 12 && 12 < TEST_MAX_IRQ_PERIPHERAL
   CHECK_DIF_OK(dif_rv_timer_irq_restore_all(&rv_timer, kHart, &rv_timer_irqs));
-#endif
-
-#if TEST_MIN_IRQ_PERIPHERAL <= 12 && 12 < TEST_MAX_IRQ_PERIPHERAL
-  CHECK_DIF_OK(dif_rv_timer_irq_restore_all(&rv_timer_aon, kHart, &rv_timer_irqs));
 #endif
 }
 
@@ -1204,21 +1164,6 @@ static void peripheral_irqs_trigger(void) {
     // entering the ISR.
     IBEX_SPIN_FOR(rv_timer_irq_serviced == irq, 1);
     LOG_INFO("IRQ %d from rv_timer is serviced.", irq);
-  }
-#endif
-
-#if TEST_MIN_IRQ_PERIPHERAL <= 12 && 12 < TEST_MAX_IRQ_PERIPHERAL
-  peripheral_expected = kTopPeppermintPlicPeripheralRvTimerAon;
-  for (dif_rv_timer_irq_t irq = kDifRvTimerIrqTimerExpiredHart0Timer0; irq <= kDifRvTimerIrqTimerExpiredHart0Timer0;
-       ++irq) {
-    rv_timer_irq_expected = irq;
-    LOG_INFO("Triggering rv_timer_aon IRQ %d.", irq);
-    CHECK_DIF_OK(dif_rv_timer_irq_force(&rv_timer_aon, irq, true));
-
-    // This avoids a race where *irq_serviced is read before
-    // entering the ISR.
-    IBEX_SPIN_FOR(rv_timer_irq_serviced == irq, 1);
-    LOG_INFO("IRQ %d from rv_timer_aon is serviced.", irq);
   }
 #endif
 }

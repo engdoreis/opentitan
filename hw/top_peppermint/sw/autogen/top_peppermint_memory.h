@@ -135,23 +135,6 @@
  */
 #define TOP_PEPPERMINT_ALERT_HANDLER_SIZE_BYTES 0x800
 /**
- * Peripheral base address for rv_timer_aon in top peppermint.
- *
- * This should be used with #mmio_region_from_addr to access the memory-mapped
- * registers associated with the peripheral (usually via a DIF).
- */
-#define TOP_PEPPERMINT_RV_TIMER_AON_BASE_ADDR 0x40430000
-
-/**
- * Peripheral size for rv_timer_aon in top peppermint.
- *
- * This is the size (in bytes) of the peripheral's reserved memory area. All
- * memory-mapped registers associated with this peripheral should have an
- * address between #TOP_PEPPERMINT_RV_TIMER_AON_BASE_ADDR and
- * `TOP_PEPPERMINT_RV_TIMER_AON_BASE_ADDR + TOP_PEPPERMINT_RV_TIMER_AON_SIZE_BYTES`.
- */
-#define TOP_PEPPERMINT_RV_TIMER_AON_SIZE_BYTES 0x200
-/**
  * Peripheral base address for regs device on sram_ctrl_ret_aon in top peppermint.
  *
  * This should be used with #mmio_region_from_addr to access the memory-mapped

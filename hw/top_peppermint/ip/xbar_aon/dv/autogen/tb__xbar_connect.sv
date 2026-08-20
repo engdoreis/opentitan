@@ -21,6 +21,5 @@ initial force dut.rst_aon_ni = rst_n;
 `CONNECT_TL_DEVICE_IF(rstmgr, dut, clk_aon_i, rst_n)
 `CONNECT_TL_DEVICE_IF(clkmgr, dut, clk_aon_i, rst_n)
 `CONNECT_TL_DEVICE_IF(alert_handler, dut, clk_aon_i, rst_n)
-`CONNECT_TL_DEVICE_IF(rv_timer_aon, dut, clk_aon_i, rst_n)
 `CONNECT_TL_DEVICE_IF(sram_ctrl_ret_aon__regs, dut, clk_aon_i, rst_n)
 `CONNECT_TL_DEVICE_IF(sram_ctrl_ret_aon__ram, dut, clk_aon_i, rst_n)

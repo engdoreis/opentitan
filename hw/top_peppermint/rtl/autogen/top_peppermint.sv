@@ -200,7 +200,7 @@ module top_peppermint #(
   import prim_pad_wrapper_pkg::*;
 
   // Inter-Power Domain signals
-  logic [5:0] intr_vector_pd_aon;
+  logic [4:0] intr_vector_pd_aon;
   prim_alert_pkg::alert_tx_t [38:0] alert_tx_pd_main;
   prim_alert_pkg::alert_rx_t [38:0] alert_rx_pd_main;
   logic       clk_aon;

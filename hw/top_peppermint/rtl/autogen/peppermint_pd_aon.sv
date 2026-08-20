@@ -79,7 +79,7 @@ module peppermint_pd_aon #(
   input lc_ctrl_pkg::lc_tx_t lc_ctrl_lc_nvm_debug_en_i,
   input lc_ctrl_pkg::lc_tx_t lc_ctrl_lc_cpu_en_i,
   // Interrupts to PLIC rv_plic in power domain Main
-  output logic [5:0] intr_vector_o,
+  output logic [4:0] intr_vector_o,
 
   // Alerts from power domain Main
   output prim_alert_pkg::alert_rx_t [38:0] alert_rx_pd_main_o,
@@ -126,98 +126,97 @@ module peppermint_pd_aon #(
   logic intr_alert_handler_classb;
   logic intr_alert_handler_classc;
   logic intr_alert_handler_classd;
-  logic intr_rv_timer_aon_timer_expired_hart0_timer0;
 
   // Alert list
   prim_alert_pkg::alert_tx_t [alert_handler_pkg::NAlerts-1:0] alert_tx;
   prim_alert_pkg::alert_rx_t [alert_handler_pkg::NAlerts-1:0] alert_rx;
 
   // External connections for alert_handler
-  assign alert_tx[7] = alert_tx_pd_main_i[0];
-  assign alert_tx[8] = alert_tx_pd_main_i[1];
-  assign alert_tx[9] = alert_tx_pd_main_i[2];
-  assign alert_tx[10] = alert_tx_pd_main_i[3];
-  assign alert_tx[11] = alert_tx_pd_main_i[4];
-  assign alert_tx[12] = alert_tx_pd_main_i[5];
-  assign alert_tx[13] = alert_tx_pd_main_i[6];
-  assign alert_tx[14] = alert_tx_pd_main_i[7];
-  assign alert_tx[15] = alert_tx_pd_main_i[8];
-  assign alert_tx[16] = alert_tx_pd_main_i[9];
-  assign alert_tx[17] = alert_tx_pd_main_i[10];
-  assign alert_tx[18] = alert_tx_pd_main_i[11];
-  assign alert_tx[19] = alert_tx_pd_main_i[12];
-  assign alert_tx[20] = alert_tx_pd_main_i[13];
-  assign alert_tx[21] = alert_tx_pd_main_i[14];
-  assign alert_tx[22] = alert_tx_pd_main_i[15];
-  assign alert_tx[23] = alert_tx_pd_main_i[16];
-  assign alert_tx[24] = alert_tx_pd_main_i[17];
-  assign alert_tx[25] = alert_tx_pd_main_i[18];
-  assign alert_tx[26] = alert_tx_pd_main_i[19];
-  assign alert_tx[27] = alert_tx_pd_main_i[20];
-  assign alert_tx[28] = alert_tx_pd_main_i[21];
-  assign alert_tx[29] = alert_tx_pd_main_i[22];
-  assign alert_tx[30] = alert_tx_pd_main_i[23];
-  assign alert_tx[31] = alert_tx_pd_main_i[24];
-  assign alert_tx[32] = alert_tx_pd_main_i[25];
-  assign alert_tx[33] = alert_tx_pd_main_i[26];
-  assign alert_tx[34] = alert_tx_pd_main_i[27];
-  assign alert_tx[35] = alert_tx_pd_main_i[28];
-  assign alert_tx[36] = alert_tx_pd_main_i[29];
-  assign alert_tx[37] = alert_tx_pd_main_i[30];
-  assign alert_tx[38] = alert_tx_pd_main_i[31];
-  assign alert_tx[39] = alert_tx_pd_main_i[32];
-  assign alert_tx[40] = alert_tx_pd_main_i[33];
-  assign alert_tx[41] = alert_tx_pd_main_i[34];
-  assign alert_tx[42] = alert_tx_pd_main_i[35];
-  assign alert_tx[43] = alert_tx_pd_main_i[36];
-  assign alert_tx[44] = alert_tx_pd_main_i[37];
-  assign alert_tx[45] = alert_tx_pd_main_i[38];
-  assign alert_rx_pd_main_o[0] = alert_rx[7];
-  assign alert_rx_pd_main_o[1] = alert_rx[8];
-  assign alert_rx_pd_main_o[2] = alert_rx[9];
-  assign alert_rx_pd_main_o[3] = alert_rx[10];
-  assign alert_rx_pd_main_o[4] = alert_rx[11];
-  assign alert_rx_pd_main_o[5] = alert_rx[12];
-  assign alert_rx_pd_main_o[6] = alert_rx[13];
-  assign alert_rx_pd_main_o[7] = alert_rx[14];
-  assign alert_rx_pd_main_o[8] = alert_rx[15];
-  assign alert_rx_pd_main_o[9] = alert_rx[16];
-  assign alert_rx_pd_main_o[10] = alert_rx[17];
-  assign alert_rx_pd_main_o[11] = alert_rx[18];
-  assign alert_rx_pd_main_o[12] = alert_rx[19];
-  assign alert_rx_pd_main_o[13] = alert_rx[20];
-  assign alert_rx_pd_main_o[14] = alert_rx[21];
-  assign alert_rx_pd_main_o[15] = alert_rx[22];
-  assign alert_rx_pd_main_o[16] = alert_rx[23];
-  assign alert_rx_pd_main_o[17] = alert_rx[24];
-  assign alert_rx_pd_main_o[18] = alert_rx[25];
-  assign alert_rx_pd_main_o[19] = alert_rx[26];
-  assign alert_rx_pd_main_o[20] = alert_rx[27];
-  assign alert_rx_pd_main_o[21] = alert_rx[28];
-  assign alert_rx_pd_main_o[22] = alert_rx[29];
-  assign alert_rx_pd_main_o[23] = alert_rx[30];
-  assign alert_rx_pd_main_o[24] = alert_rx[31];
-  assign alert_rx_pd_main_o[25] = alert_rx[32];
-  assign alert_rx_pd_main_o[26] = alert_rx[33];
-  assign alert_rx_pd_main_o[27] = alert_rx[34];
-  assign alert_rx_pd_main_o[28] = alert_rx[35];
-  assign alert_rx_pd_main_o[29] = alert_rx[36];
-  assign alert_rx_pd_main_o[30] = alert_rx[37];
-  assign alert_rx_pd_main_o[31] = alert_rx[38];
-  assign alert_rx_pd_main_o[32] = alert_rx[39];
-  assign alert_rx_pd_main_o[33] = alert_rx[40];
-  assign alert_rx_pd_main_o[34] = alert_rx[41];
-  assign alert_rx_pd_main_o[35] = alert_rx[42];
-  assign alert_rx_pd_main_o[36] = alert_rx[43];
-  assign alert_rx_pd_main_o[37] = alert_rx[44];
-  assign alert_rx_pd_main_o[38] = alert_rx[45];
+  assign alert_tx[6] = alert_tx_pd_main_i[0];
+  assign alert_tx[7] = alert_tx_pd_main_i[1];
+  assign alert_tx[8] = alert_tx_pd_main_i[2];
+  assign alert_tx[9] = alert_tx_pd_main_i[3];
+  assign alert_tx[10] = alert_tx_pd_main_i[4];
+  assign alert_tx[11] = alert_tx_pd_main_i[5];
+  assign alert_tx[12] = alert_tx_pd_main_i[6];
+  assign alert_tx[13] = alert_tx_pd_main_i[7];
+  assign alert_tx[14] = alert_tx_pd_main_i[8];
+  assign alert_tx[15] = alert_tx_pd_main_i[9];
+  assign alert_tx[16] = alert_tx_pd_main_i[10];
+  assign alert_tx[17] = alert_tx_pd_main_i[11];
+  assign alert_tx[18] = alert_tx_pd_main_i[12];
+  assign alert_tx[19] = alert_tx_pd_main_i[13];
+  assign alert_tx[20] = alert_tx_pd_main_i[14];
+  assign alert_tx[21] = alert_tx_pd_main_i[15];
+  assign alert_tx[22] = alert_tx_pd_main_i[16];
+  assign alert_tx[23] = alert_tx_pd_main_i[17];
+  assign alert_tx[24] = alert_tx_pd_main_i[18];
+  assign alert_tx[25] = alert_tx_pd_main_i[19];
+  assign alert_tx[26] = alert_tx_pd_main_i[20];
+  assign alert_tx[27] = alert_tx_pd_main_i[21];
+  assign alert_tx[28] = alert_tx_pd_main_i[22];
+  assign alert_tx[29] = alert_tx_pd_main_i[23];
+  assign alert_tx[30] = alert_tx_pd_main_i[24];
+  assign alert_tx[31] = alert_tx_pd_main_i[25];
+  assign alert_tx[32] = alert_tx_pd_main_i[26];
+  assign alert_tx[33] = alert_tx_pd_main_i[27];
+  assign alert_tx[34] = alert_tx_pd_main_i[28];
+  assign alert_tx[35] = alert_tx_pd_main_i[29];
+  assign alert_tx[36] = alert_tx_pd_main_i[30];
+  assign alert_tx[37] = alert_tx_pd_main_i[31];
+  assign alert_tx[38] = alert_tx_pd_main_i[32];
+  assign alert_tx[39] = alert_tx_pd_main_i[33];
+  assign alert_tx[40] = alert_tx_pd_main_i[34];
+  assign alert_tx[41] = alert_tx_pd_main_i[35];
+  assign alert_tx[42] = alert_tx_pd_main_i[36];
+  assign alert_tx[43] = alert_tx_pd_main_i[37];
+  assign alert_tx[44] = alert_tx_pd_main_i[38];
+  assign alert_rx_pd_main_o[0] = alert_rx[6];
+  assign alert_rx_pd_main_o[1] = alert_rx[7];
+  assign alert_rx_pd_main_o[2] = alert_rx[8];
+  assign alert_rx_pd_main_o[3] = alert_rx[9];
+  assign alert_rx_pd_main_o[4] = alert_rx[10];
+  assign alert_rx_pd_main_o[5] = alert_rx[11];
+  assign alert_rx_pd_main_o[6] = alert_rx[12];
+  assign alert_rx_pd_main_o[7] = alert_rx[13];
+  assign alert_rx_pd_main_o[8] = alert_rx[14];
+  assign alert_rx_pd_main_o[9] = alert_rx[15];
+  assign alert_rx_pd_main_o[10] = alert_rx[16];
+  assign alert_rx_pd_main_o[11] = alert_rx[17];
+  assign alert_rx_pd_main_o[12] = alert_rx[18];
+  assign alert_rx_pd_main_o[13] = alert_rx[19];
+  assign alert_rx_pd_main_o[14] = alert_rx[20];
+  assign alert_rx_pd_main_o[15] = alert_rx[21];
+  assign alert_rx_pd_main_o[16] = alert_rx[22];
+  assign alert_rx_pd_main_o[17] = alert_rx[23];
+  assign alert_rx_pd_main_o[18] = alert_rx[24];
+  assign alert_rx_pd_main_o[19] = alert_rx[25];
+  assign alert_rx_pd_main_o[20] = alert_rx[26];
+  assign alert_rx_pd_main_o[21] = alert_rx[27];
+  assign alert_rx_pd_main_o[22] = alert_rx[28];
+  assign alert_rx_pd_main_o[23] = alert_rx[29];
+  assign alert_rx_pd_main_o[24] = alert_rx[30];
+  assign alert_rx_pd_main_o[25] = alert_rx[31];
+  assign alert_rx_pd_main_o[26] = alert_rx[32];
+  assign alert_rx_pd_main_o[27] = alert_rx[33];
+  assign alert_rx_pd_main_o[28] = alert_rx[34];
+  assign alert_rx_pd_main_o[29] = alert_rx[35];
+  assign alert_rx_pd_main_o[30] = alert_rx[36];
+  assign alert_rx_pd_main_o[31] = alert_rx[37];
+  assign alert_rx_pd_main_o[32] = alert_rx[38];
+  assign alert_rx_pd_main_o[33] = alert_rx[39];
+  assign alert_rx_pd_main_o[34] = alert_rx[40];
+  assign alert_rx_pd_main_o[35] = alert_rx[41];
+  assign alert_rx_pd_main_o[36] = alert_rx[42];
+  assign alert_rx_pd_main_o[37] = alert_rx[43];
+  assign alert_rx_pd_main_o[38] = alert_rx[44];
   // Alert mapping to the alert handler for alert group soc
-  // alert_handler[46]: soc_fatal_alert_0
-  // alert_handler[47]: soc_fatal_alert_1
-  // alert_handler[48]: soc_fatal_alert_2
-  // alert_handler[49]: soc_fatal_alert_3
-  assign alert_tx[49:46] = incoming_alert_soc_tx_i;
-  assign incoming_alert_soc_rx_o = alert_rx[49:46];
+  // alert_handler[45]: soc_fatal_alert_0
+  // alert_handler[46]: soc_fatal_alert_1
+  // alert_handler[47]: soc_fatal_alert_2
+  // alert_handler[48]: soc_fatal_alert_3
+  assign alert_tx[48:45] = incoming_alert_soc_tx_i;
+  assign incoming_alert_soc_rx_o = alert_rx[48:45];
 
   // Define inter-module signals
   pwrmgr_pkg::pwr_rst_req_t       pwrmgr_pwr_rst_req;
@@ -236,8 +235,6 @@ module peppermint_pd_aon #(
   tlul_pkg::tl_d2h_t       clkmgr_tl_rsp;
   tlul_pkg::tl_h2d_t       alert_handler_tl_req;
   tlul_pkg::tl_d2h_t       alert_handler_tl_rsp;
-  tlul_pkg::tl_h2d_t       rv_timer_aon_tl_req;
-  tlul_pkg::tl_d2h_t       rv_timer_aon_tl_rsp;
   tlul_pkg::tl_h2d_t       sram_ctrl_ret_aon_regs_tl_req;
   tlul_pkg::tl_d2h_t       sram_ctrl_ret_aon_regs_tl_rsp;
   tlul_pkg::tl_h2d_t       sram_ctrl_ret_aon_ram_tl_req;
@@ -565,30 +562,8 @@ module peppermint_pd_aon #(
     .lpg_rst_en_i(lpg_rst_en)
   );
 
-  rv_timer #(
-    .AlertAsyncOn(alert_handler_reg_pkg::AsyncOn[5]),
-    .AlertSkewCycles(top_pkg::AlertSkewCycles)
-  ) u_rv_timer_aon (
-    // Clock and reset connections
-    .clk_i(clk_aon_i),
-    .rst_ni(rstmgr_resets.rst_lc_aon_n[rstmgr_pkg::DomainAonSel]),
-
-    // Interrupts
-    .intr_timer_expired_hart0_timer0_o(intr_rv_timer_aon_timer_expired_hart0_timer0),
-
-    // alert_handler[5]: fatal_fault
-    .alert_tx_o(alert_tx[5]),
-    .alert_rx_i(alert_rx[5]),
-
-    // Inter-module signals
-    .racl_policies_i(top_racl_pkg::RACL_POLICY_VEC_DEFAULT),
-    .racl_error_o(),
-    .tl_i(rv_timer_aon_tl_req),
-    .tl_o(rv_timer_aon_tl_rsp)
-  );
-
   sram_ctrl #(
-    .AlertAsyncOn(alert_handler_reg_pkg::AsyncOn[6]),
+    .AlertAsyncOn(alert_handler_reg_pkg::AsyncOn[5]),
     .AlertSkewCycles(top_pkg::AlertSkewCycles),
     .RndCnstSramKey(RndCnstSramCtrlRetAonSramKey),
     .RndCnstSramNonce(RndCnstSramCtrlRetAonSramNonce),
@@ -608,9 +583,9 @@ module peppermint_pd_aon #(
     .rst_ni(rstmgr_resets.rst_lc_aon_n[rstmgr_pkg::DomainAonSel]),
     .rst_otp_ni(rstmgr_resets.rst_lc_main_n[rstmgr_pkg::DomainMainSel]),
 
-    // alert_handler[6]: fatal_error
-    .alert_tx_o(alert_tx[6]),
-    .alert_rx_i(alert_rx[6]),
+    // alert_handler[5]: fatal_error
+    .alert_tx_o(alert_tx[5]),
+    .alert_rx_i(alert_rx[5]),
 
     // RACL policies
     .racl_policy_sel_ranges_ram_i('{top_racl_pkg::RACL_RANGE_T_DEFAULT}),
@@ -635,7 +610,6 @@ module peppermint_pd_aon #(
 
   // Interrupt vector to PLIC rv_plic in power domain Main
   assign intr_vector_o = {
-    intr_rv_timer_aon_timer_expired_hart0_timer0,
     intr_alert_handler_classd,
     intr_alert_handler_classc,
     intr_alert_handler_classb,
@@ -667,10 +641,6 @@ module peppermint_pd_aon #(
     // port: tl_alert_handler
     .tl_alert_handler_o(alert_handler_tl_req),
     .tl_alert_handler_i(alert_handler_tl_rsp),
-
-    // port: tl_rv_timer_aon
-    .tl_rv_timer_aon_o(rv_timer_aon_tl_req),
-    .tl_rv_timer_aon_i(rv_timer_aon_tl_rsp),
 
     // port: tl_sram_ctrl_ret_aon__regs
     .tl_sram_ctrl_ret_aon__regs_o(sram_ctrl_ret_aon_regs_tl_req),

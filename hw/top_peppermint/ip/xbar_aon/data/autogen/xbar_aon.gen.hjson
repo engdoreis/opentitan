@@ -35,7 +35,6 @@
       rstmgr
       clkmgr
       alert_handler
-      rv_timer_aon
       sram_ctrl_ret_aon.regs
       sram_ctrl_ret_aon.ram
     ]
@@ -133,27 +132,6 @@
             hart: 0x40450000
           }
           size_byte: 0x800
-        }
-      ]
-      xbar: false
-      stub: false
-      req_fifo_pass: true
-    }
-    {
-      name: rv_timer_aon
-      type: device
-      clock: clk_aon_i
-      reset: rst_aon_ni
-      pipeline: false
-      inst_type: rv_timer
-      addr_range:
-      [
-        {
-          base_addrs:
-          {
-            hart: 0x40430000
-          }
-          size_byte: 0x200
         }
       ]
       xbar: false
@@ -276,19 +254,6 @@
       default: ""
       domain: Aon
       top_signame: alert_handler_tl
-      index: -1
-    }
-    {
-      name: tl_rv_timer_aon
-      struct: tl
-      package: tlul_pkg
-      type: req_rsp
-      act: req
-      inst_name: aon
-      width: 1
-      default: ""
-      domain: Aon
-      top_signame: rv_timer_aon_tl
       index: -1
     }
     {

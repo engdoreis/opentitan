@@ -45,12 +45,6 @@
     }
     { struct: "tl"
       type:   "req_rsp"
-      name:   "tl_rv_timer_aon"
-      act:    "req"
-      package: "tlul_pkg"
-    }
-    { struct: "tl"
-      type:   "req_rsp"
       name:   "tl_sram_ctrl_ret_aon__regs"
       act:    "req"
       package: "tlul_pkg"
