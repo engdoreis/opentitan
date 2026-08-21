@@ -199,6 +199,17 @@ cc_library(
 )
 
 cc_library(
+    name = "rom_try_boot",
+    srcs = ["rom_try_boot.c"],
+    hdrs = ["rom_try_boot.h"],
+    target_compatible_with = [OPENTITAN_CPU],
+    deps = [
+        ":rom_common",
+    ],
+    alwayslink = True,
+)
+
+cc_library(
     name = "rom_epmp",
     srcs = [
         "rom_epmp.c",

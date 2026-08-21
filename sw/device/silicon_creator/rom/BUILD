@@ -63,6 +63,7 @@ opentitan_binary(
     deps = [
         "//sw/device/silicon_creator/rom/lib:rom_lib",
         "//sw/device/silicon_creator/rom/lib:rom_init",
+        "//sw/device/silicon_creator/rom/lib:rom_try_boot",
         # We depend on rom_isrs here rather than in mask_rom_lib so that the
         # `rom_exception_handler` symbol remains unresolved and can be supplied
         # by tests such as `rom_epmp_test`.
