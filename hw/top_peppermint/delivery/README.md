@@ -18,7 +18,7 @@ new milestone, and one version can span several milestones.
 Deliverable names follow from the tag mechanically: lowercase it, replace `-`
 with `_`, and replace `.` with `p`, which gives
 `lowrisc_top_peppermint_1p0_m1_rc0`.  The `p` keeps the version clear of suffix
-extraction.  With a literal dot, the usual way to strip a `.tar.zst` suffix,
+extraction.  With a literal dot, the usual way to strip a `.tar.gz` suffix,
 cutting everything from the first dot, would truncate the name to
 `lowrisc_top_peppermint_1`.
 
@@ -93,6 +93,8 @@ cp ../doc/memories.toml out
 
 ### Tool Versions
 * `bender 0.32.1`
+* `tar (GNU tar) 1.35`
+* `gzip 1.14`
 
 
 ## Release
@@ -120,6 +122,23 @@ own.
 python3 scripts/create_release.py --version 1.0 --milestone 1 --release-candidate 0 \
     --from-step verify-merge
 ```
+
+`--until-step` stops the sequence early, so a run can end before the steps that
+reach GitHub. Naming the same step in both options runs that step on its own,
+which is how a single step is redone -- repacking an archive that was deleted
+locally, for instance, or re-running an upload that failed.
+```sh
+python3 scripts/create_release.py --version 1.0 --milestone 1 --release-candidate 0 \
+    --from-step archive --until-step archive
+```
+
+Redoing `archive` assumes `out/` still matches the tag, because that is where the
+archive takes its dates from. Deliverables that have changed need their own
+release candidate and tag rather than a repack under the old one.
+
+The archive is reproducible: it takes its file dates from the release tag and
+fixes the permissions and ownership, so the same tag packs the same bytes with
+the same `tar` and `gzip` (see Tool Versions above).
 
 `--dry-run` prints rather than runs every command that reaches the remote,
 GitHub or the archive, which leaves a release commit to inspect and throw away.

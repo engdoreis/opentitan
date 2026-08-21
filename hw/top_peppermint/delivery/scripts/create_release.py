@@ -12,7 +12,9 @@ are drafted by Claude from the commits since the previous release.
 Every step is idempotent and the sequence pauses at each point that needs a
 human decision, so an interrupted run can be resumed with `--from-step`.  Since
 waiting for the pull request to be merged usually takes longer than one sitting,
-the second half is normally run as `--from-step verify-merge`.
+the second half is normally run as `--from-step verify-merge`. `--until-step`
+stops the sequence early; naming one step in both options redoes that step on
+its own, as in `--from-step archive --until-step archive` to repack the archive.
 """
 import argparse
 import functools
@@ -79,7 +81,7 @@ class Release:
                             f" (`{self.tag}`)")
         # The archive name follows from the tag: lowercase, `-` to `_`, `.` to `p`.
         name = f"lowrisc_top_peppermint_{version.replace('.', 'p')}_m{milestone}{rc_name}"
-        self.archive = DELIVERY_DIR / f"{name}.tar.zst"
+        self.archive = DELIVERY_DIR / f"{name}.tar.gz"
         self.archive_dir = name
 
     def previous(self):
@@ -351,15 +353,41 @@ def step_push_tag(release, args):
 
 def step_archive(release, args):
     """Pack the deliverables into the release archive."""
-    # --transform renames out/ to the deliverable name inside the archive, so it
-    # unpacks into a directory named after the release.  The remaining flags keep
-    # the archive reproducible and free of local uid/gid.
-    run("tar", "-I", "zstd -19 -T0",
+    # Everything the archive records has to come from the tag rather than from
+    # this working copy, so that any checkout of the tag packs the same bytes:
+    # --mtime replaces the local file times with the tag's own date, --mode the
+    # local umask with a fixed 644/755, --owner/--group/--numeric-owner the
+    # local uid/gid, and --sort=name the directory order. gzip needs -n to keep
+    # its own header free of the time and the file name. --transform renames
+    # out/ to the deliverable name, so the archive unpacks into a directory
+    # named after the release.
+    # Both forms of the tag date in one call: the epoch is what `tar` takes, the
+    # ISO form is what makes the line below checkable by eye.
+    stamp = git_out("for-each-ref", "--format=%(creatordate:unix) %(creatordate:iso)",
+                    f"refs/tags/{release.tag}")
+    if not stamp:
+        sys.exit(f"error: tag {release.tag} does not exist, so the archive has no "
+                 "date to pin; run the tag step first")
+    mtime, date = stamp.split(" ", 1)
+    # The tag fixes the archive's metadata, so its contents have to come from the
+    # tag as well. `git diff` catches tracked drift whether it is committed or
+    # not, and `git status --ignored` the untracked and ignored strays that tar
+    # would otherwise pack alongside the deliverables. Empty directories escape
+    # both, being invisible to git.
+    drift = git_out("diff", "--name-only", release.tag, "--", "out")
+    strays = git_out("status", "--porcelain", "--ignored", "--", "out")
+    if drift or strays:
+        detail = "\n".join(x for x in (drift, strays) if x)
+        sys.exit(f"error: out/ does not match {release.tag}:\n{detail}\n"
+                 "check out the tag, and clean out/, before packing the archive")
+    run("tar", "-I", "gzip -9 -n",
         "-cf", release.archive.name,
         "--transform", f"s,^out,{release.archive_dir},",
+        "--mtime", f"@{mtime}", "--mode", "u=rw,go=r,a+X",
         "--owner=0", "--group=0", "--numeric-owner", "--sort=name",
         "out", skip_dry=True)
-    print(f"==> {release.archive}")
+    print(f"==> {release.archive} (contents dated {date}, @{mtime}, "
+          f"from tag {release.tag})")
 
 
 def step_draft_release(release, args):
@@ -458,6 +486,10 @@ def main():
                              "release candidate or milestone")
     parser.add_argument("--from-step", choices=[name for name, _ in STEPS],
                         default=STEPS[0][0], help="step to resume from")
+    parser.add_argument("--until-step", choices=[name for name, _ in STEPS],
+                        help="last step to run; by default the sequence runs to "
+                             "the end. Naming the same step in both options runs "
+                             "that step alone, which is how a single step is redone")
     parser.add_argument("--dry-run", action="store_true",
                         help="print rather than run every command that reaches the "
                              "remote, GitHub or the archive")
@@ -470,8 +502,13 @@ def main():
     DRY_RUN = args.dry_run
 
     release = Release(args.version, args.milestone, args.release_candidate)
-    first = [name for name, _ in STEPS].index(args.from_step)
-    for name, step in STEPS[first:]:
+    names = [name for name, _ in STEPS]
+    first = names.index(args.from_step)
+    last = names.index(args.until_step) + 1 if args.until_step else len(STEPS)
+    if last <= first:
+        sys.exit(f"error: --until-step {args.until_step} runs before "
+                 f"--from-step {args.from_step}")
+    for name, step in STEPS[first:last]:
         print(f"\n### {name}: {step.__doc__.splitlines()[0]}")
         step(release, args)
 
