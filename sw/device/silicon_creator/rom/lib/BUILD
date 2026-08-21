@@ -125,6 +125,21 @@ cc_library(
 )
 
 cc_library(
+    name = "rom_init",
+    srcs = ["rom_init.c"],
+    hdrs = ["rom_init.h"],
+    target_compatible_with = [OPENTITAN_CPU],
+    deps = [
+        "//hw/top:top_lib",
+        "//sw/device/lib/base:hardened",
+        "//sw/device/lib/base:multibits",
+        "//sw/device/silicon_creator/lib/base:chip",
+        "//sw/device/silicon_creator/rom/lib:rom_lib",
+    ],
+    alwayslink = True,
+)
+
+cc_library(
     name = "rom_common",
     hdrs = [
         "rom.h",

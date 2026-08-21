@@ -20,6 +20,37 @@
 extern "C" {
 #endif  // __cplusplus
 
+/* Table of forward branch Control Flow Integrity (CFI) counters.
+*
+* Columns: Name, Initital Value.
+*
+* Each counter is indexed by Name. The Initial Value is used to initialize the
+* counters with unique values with a good hamming distance. The values are
+* restricted to 11-bit to be able use immediate load instructions.
+
+* Encoding generated with
+* $ ./util/design/sparse-fsm-encode.py -d 6 -m 7 -n 11 \
+*     --avoid-zero -s 1630646358
+*
+* Minimum Hamming distance: 6
+* Maximum Hamming distance: 8
+* Minimum Hamming weight: 6
+* Maximum Hamming weight: 8
+*/
+// clang-format off
+#define ROM_CFI_FUNC_COUNTERS_TABLE(X) \
+  X(kCfiRomMain,         0x4ab) \
+  X(kCfiRomInit,         0x1df) \
+  X(kCfiRomVerify,       0x2ec) \
+  X(kCfiRomVerifyImm,    0x565) \
+  X(kCfiRomTryBoot,      0x7b6) \
+  X(kCfiRomPreBootCheck, 0x339) \
+  X(kCfiRomBoot,         0x65a)
+// clang-format on
+
+// Define counters and constant values required by the CFI counter macros.
+CFI_DEFINE_COUNTERS(ROM_CFI_FUNC_COUNTERS_TABLE);
+
 // A context struct with data shared accross ROM states.
 typedef struct rom_ctx {
   // Life cycle state of the chip.
@@ -32,6 +63,8 @@ typedef struct rom_ctx {
   sigverify_otp_key_ctx_t sigverify_ctx;
   // A check value for the reset reason.
   uint32_t reset_reason_check;
+
+  uint32_t *rom_counters;
 } rom_ctx_t;
 
 /**

@@ -48,7 +48,7 @@
 #include "sw/device/silicon_creator/rom/lib/boot_policy_ptrs.h"
 #include "sw/device/silicon_creator/rom/lib/bootstrap.h"
 #include "sw/device/silicon_creator/rom/lib/rom.h"
-#include "sw/device/silicon_creator/rom/lib/rom_epmp.h"
+#include "sw/device/silicon_creator/rom/lib/rom_init.h"
 #include "sw/device/silicon_creator/rom/lib/rom_state.h"
 #include "sw/device/silicon_creator/rom/lib/sigverify_keys_ecdsa_p256.h"
 #include "sw/device/silicon_creator/rom/lib/sigverify_keys_spx.h"
@@ -59,109 +59,12 @@
 #include "hw/top/rstmgr_regs.h"
 #include "hw/top_earlgrey/sw/autogen/top_earlgrey.h"
 
-/**
- * Table of forward branch Control Flow Integrity (CFI) counters.
- *
- * Columns: Name, Initital Value.
- *
- * Each counter is indexed by Name. The Initial Value is used to initialize the
- * counters with unique values with a good hamming distance. The values are
- * restricted to 11-bit to be able use immediate load instructions.
+CFI_DEFINE_COUNTERS_TABLE(rom_counters, ROM_CFI_FUNC_COUNTERS_TABLE);
 
- * Encoding generated with
- * $ ./util/design/sparse-fsm-encode.py -d 6 -m 7 -n 11 \
- *     --avoid-zero -s 1630646358
- *
- * Minimum Hamming distance: 6
- * Maximum Hamming distance: 8
- * Minimum Hamming weight: 6
- * Maximum Hamming weight: 8
- */
-// clang-format off
-#define ROM_CFI_FUNC_COUNTERS_TABLE(X) \
-  X(kCfiRomMain,         0x4ab) \
-  X(kCfiRomInit,         0x1df) \
-  X(kCfiRomVerify,       0x2ec) \
-  X(kCfiRomVerifyImm,    0x565) \
-  X(kCfiRomTryBoot,      0x7b6) \
-  X(kCfiRomPreBootCheck, 0x339) \
-  X(kCfiRomBoot,         0x65a)
-// clang-format on
-
-// Define counters and constant values required by the CFI counter macros.
-CFI_DEFINE_COUNTERS(rom_counters, ROM_CFI_FUNC_COUNTERS_TABLE);
-
-// A ram copy of the OTP word controlling how to handle flash ECC errors.
-// This is a global shared with flash_exception handler.
-uint32_t flash_ecc_exc_handler_en = 0;
-
-static rom_ctx_t earlgrey_rom_ctx = {
-    .lc_state = (lifecycle_state_t)0,
-    // Boot data from flash.
-    .boot_data = {0},
-    // Whether we are "simply" waking from low power mode.
-    .waking_from_low_power = 0,
-    // First stage (ROM-->ROM_EXT) secure boot keys loaded from OTP.
-    .sigverify_ctx = {0},
-    // A check value for the reset reason.
-    .reset_reason_check = 0,
-};
-
-/**
- * Keymgr dpe constant
- */
-// TODO(#30777): Replace the hard-coded slot number
-// Slot Number must match with the ones defined in dice_chain.c!
-// Pre-defined slot id for the attestation / sealing key chain
-enum {
-  /**
-   * Keymgr DPE default slot for sealing context
-   */
-  kKeymgrDPESealSlot = 0,
-  /**
-   * Keymgr DPE default slot for attestation context
-   */
-  kKeymgrDPEAttestSlot = 1,
-};
-// Default policy for newly derived DPE context
-static const sc_keymgr_dpe_policies_t kKeymgrDPEDefaultPolicy = {
-    .child = kScKeymgrDPESlotPolAllowChild,
-    .expo = kScKeymgrDPESlotPolNoExport,
-    .parent = kScKeymgrDPESlotPolEraseParent,
-};
-
-static inline bool rom_console_enabled(void) {
-  return otp_read32(OTP_CTRL_PARAM_OWNER_SW_CFG_ROM_BANNER_EN_OFFSET) !=
-         kHardenedBoolFalse;
-}
-
-/**
- * Prints a banner during bootup.
- *
- * OpenTitan:ssss-pppp-rr
- *
- * Where:
- * - ssss: Silicon Creator ID.
- * - pppp: Product ID.
- * - rr: Revision ID.
- */
-static void rom_banner(void) {
-  if (!rom_console_enabled()) {
-    return;
-  }
-  //                          a t i T n e p O
-  const uint64_t kTitle1 = 0x617469546e65704f;
-  //                          : n
-  const uint32_t kTitle2 = 0x3a6e;
-  const uint32_t kNewline = 0x0a0d;
-  lifecycle_hw_rev_t hw;
-  lifecycle_hw_rev_get(&hw);
-  uart_write_imm(kTitle1);
-  uart_write_imm(kTitle2);
-  uart_write_hex(hw.silicon_creator_id, sizeof(hw.silicon_creator_id), '-');
-  uart_write_hex(hw.product_id, sizeof(hw.product_id), '-');
-  uart_write_hex(hw.revision_id, sizeof(hw.revision_id), kNewline);
-}
+// Place this in the .bss. to be zero initialized, rom_counters pointer set at
+// the top of rom_main() before first use — a non-null pointer initializer would
+// place this struct in .data.
+static rom_ctx_t earlgrey_rom_ctx;
 
 /**
  * Prints a status message indicating that the ROM is entering bootstrap mode.
@@ -173,160 +76,6 @@ static void rom_bootstrap_message(void) {
   const uint64_t kBootstrap2 = 0x0a0d313a70;
   uart_write_imm(kBootstrap1);
   uart_write_imm(kBootstrap2);
-}
-
-/**
- * Performs once-per-boot initialization of ROM modules and peripherals.
- */
-OT_WARN_UNUSED_RESULT
-static rom_error_t rom_init(void) {
-  CFI_FUNC_COUNTER_INCREMENT(rom_counters, kCfiRomInit, 1);
-  sec_mmio_init();
-  uint32_t reset_reasons = rstmgr_reason_get();
-  earlgrey_rom_ctx.reset_reason_check =
-      reset_reasons ^
-      (otp_read32(
-           OTP_CTRL_PARAM_OWNER_SW_CFG_ROM_RESET_REASON_CHECK_VALUE_OFFSET) &
-       0xFFFF);
-  if (reset_reasons != (1U << RSTMGR_RESET_INFO_LOW_POWER_EXIT_BIT)) {
-    // The above compares all bits, rather than just the one indication "low
-    // power exit", because if there is any other reset reason, besides
-    // LOW_POWER_EXIT, it means that the chip did full reset while coming out of
-    // low power.  In that case, the state of AON IP blocks would have been
-    // reset, and the ROM should not treat this as "waking from low power".
-    earlgrey_rom_ctx.waking_from_low_power = kHardenedBoolFalse;
-
-    // Initialize pinmux configuration so we can use the UART, (except if waking
-    // up from low power, as the pinmux will in such case have retained its
-    // previous configuration.)
-    pinmux_init();
-  } else {
-    earlgrey_rom_ctx.waking_from_low_power = kHardenedBoolTrue;
-  }
-
-  // Configure UART0 as stdout.
-  uart_init(kUartNCOValue);
-
-  // Set static_critical region format version.
-  static_critical_version = kStaticCriticalVersion2;
-
-  // There are no conditional checks before writing to this CSR because it is
-  // expected that if relevant Ibex countermeasures are disabled, this will
-  // result in a nop.
-  CSR_WRITE(CSR_REG_SECURESEED, rnd_uint32());
-
-  // Write the OTP value to bits 0 to 5 of the cpuctrl CSR.
-  uint32_t cpuctrl_csr;
-  CSR_READ(CSR_REG_CPUCTRL, &cpuctrl_csr);
-  cpuctrl_csr = bitfield_field32_write(
-      cpuctrl_csr, (bitfield_field32_t){.mask = 0x3f, .index = 0},
-      otp_read32(OTP_CTRL_PARAM_CREATOR_SW_CFG_CPUCTRL_OFFSET));
-  CSR_WRITE(CSR_REG_CPUCTRL, cpuctrl_csr);
-
-  earlgrey_rom_ctx.lc_state = lifecycle_state_get();
-
-  // Update epmp config for debug rom according to lifecycle state.
-  rom_epmp_config_debug_rom(earlgrey_rom_ctx.lc_state);
-
-  if (launder32(earlgrey_rom_ctx.waking_from_low_power) != kHardenedBoolTrue) {
-    HARDENED_CHECK_EQ(earlgrey_rom_ctx.waking_from_low_power,
-                      kHardenedBoolFalse);
-    // Re-initialize the watchdog timer, if the RESET was caused by anything
-    // besides waking from low power (which would have left the watchdog in its
-    // previous configuration).
-    watchdog_init(earlgrey_rom_ctx.lc_state);
-    SEC_MMIO_WRITE_INCREMENT(kWatchdogSecMmioInit);
-
-    // Re-initialize sensor_ctrl.
-    HARDENED_RETURN_IF_ERROR(sensor_ctrl_configure(earlgrey_rom_ctx.lc_state));
-    pwrmgr_cdc_sync(kSensorCtrlSyncCycles);
-  } else {
-    HARDENED_CHECK_EQ(earlgrey_rom_ctx.waking_from_low_power,
-                      kHardenedBoolTrue);
-  }
-
-  // Initialize the shutdown policy.
-  HARDENED_RETURN_IF_ERROR(shutdown_init(earlgrey_rom_ctx.lc_state));
-
-  nvm_ctrl_init();
-  SEC_MMIO_WRITE_INCREMENT(kNvmCtrlSecMmioInit);
-  nvm_ecc_exc_handler_en =
-      otp_read32(OTP_CTRL_PARAM_OWNER_SW_CFG_ROM_NVM_ECC_EXC_HANDLER_EN_OFFSET);
-
-  // Initialize in-memory copy of the ePMP register configuration.
-  rom_epmp_state_init(earlgrey_rom_ctx.lc_state);
-
-  // Check that AST is in the expected state.
-  HARDENED_RETURN_IF_ERROR(ast_check(earlgrey_rom_ctx.lc_state));
-
-  // Initialize the retention RAM based on the reset reason and the OTP value.
-  // Note: Retention RAM is always reset on PoR regardless of the OTP value.
-  uint32_t reset_mask =
-      (1 << kRstmgrReasonPowerOn) |
-      otp_read32(OTP_CTRL_PARAM_CREATOR_SW_CFG_RET_RAM_RESET_MASK_OFFSET);
-  if ((reset_reasons & reset_mask) != 0) {
-    retention_sram_init();
-    // The high nybble controls the retram readback enable.
-    retention_sram_readback_enable(
-        otp_read32(OTP_CTRL_PARAM_OWNER_SW_CFG_ROM_SRAM_READBACK_EN_OFFSET) >>
-        4);
-    retention_sram_get()->creator.last_shutdown_reason = kErrorOk;
-  }
-
-  // Initialize boot_log
-  boot_log_t *boot_log = &retention_sram_get()->creator.boot_log;
-  memset(boot_log, 0, sizeof(*boot_log));
-  boot_log->identifier = kBootLogIdentifier;
-  boot_log->chip_version = kBuildInfo.scm_revision;
-  boot_log->retention_ram_initialized =
-      reset_reasons & reset_mask ? kHardenedBoolTrue : kHardenedBoolFalse;
-
-  // Always store the retention RAM version so the ROM_EXT can depend on its
-  // accuracy even after scrambling.
-  retention_sram_get()->version = kRetentionSramVersion4;
-
-  // Store the reset reason in retention RAM.
-  retention_sram_get()->creator.reset_reasons = reset_reasons;
-
-  // Print a nice message.
-  if (earlgrey_rom_ctx.waking_from_low_power != kHardenedBoolTrue) {
-    rom_banner();
-  }
-  // This function is a NOP unless ROM is built for an fpga.
-  device_fpga_version_print();
-
-  // Double check the reset reason value against the OTP-defined value.
-  earlgrey_rom_ctx.reset_reason_check =
-      launder32(earlgrey_rom_ctx.reset_reason_check) ^ rstmgr_reason_get();
-  uint32_t check_val =
-      otp_read32(
-          OTP_CTRL_PARAM_OWNER_SW_CFG_ROM_RESET_REASON_CHECK_VALUE_OFFSET) >>
-      16;
-  if (launder32(check_val) != kHardenedBoolFalse) {
-    // Double-check the reset reason.
-    if (launder32(check_val) == earlgrey_rom_ctx.reset_reason_check) {
-      HARDENED_CHECK_EQ(check_val, earlgrey_rom_ctx.reset_reason_check);
-      // Reset reasons equal, do nothing.
-    } else {
-      return kErrorRomResetReasonFault;
-    }
-  } else {
-    // Configured to not double-check the reset reason.
-    HARDENED_CHECK_EQ(check_val, kHardenedBoolFalse);
-  }
-
-  // Clear the register if configured to do so.
-  if (otp_read32(
-          OTP_CTRL_PARAM_OWNER_SW_CFG_ROM_PRESERVE_RESET_REASON_EN_OFFSET) !=
-      kHardenedBoolTrue) {
-    rstmgr_reason_clear(reset_reasons);
-  }
-
-  sec_mmio_check_values(rnd_uint32());
-  sec_mmio_check_counters(/*expected_check_count=*/1);
-
-  CFI_FUNC_COUNTER_INCREMENT(rom_counters, kCfiRomInit, 2);
-  return kErrorOk;
 }
 
 /**
@@ -1024,7 +773,7 @@ static OT_WARN_UNUSED_RESULT rom_error_t rom_state_init(void *arg,
   CFI_FUNC_COUNTER_INIT(rom_counters, kCfiRomMain);
 
   CFI_FUNC_COUNTER_PREPCALL(rom_counters, kCfiRomMain, 1, kCfiRomInit);
-  HARDENED_RETURN_IF_ERROR(rom_init());
+  HARDENED_RETURN_IF_ERROR(rom_init(&earlgrey_rom_ctx));
   CFI_FUNC_COUNTER_INCREMENT(rom_counters, kCfiRomMain, 3);
 
   *next_state = kRomStateBootstrapCheck;
@@ -1083,6 +832,7 @@ rom_state_boot_rom_ext(void *arg, uint32_t *next_state) {
 }
 
 void rom_main(void) {
+  earlgrey_rom_ctx.rom_counters = rom_counters;
   CFI_FUNC_COUNTER_INIT(rom_counters, kCfiRomMain);
   shutdown_finalize(rom_state_fsm_walk(rom_states, kRomStateCnt, kRomStateInit,
                                        rom_states_cfi));
