@@ -91,6 +91,12 @@ module tb;
       .clk_main_ok_i    (chip_if.clk_main_ok   ),
       .wakeup_main_i    (chip_if.wakeup_main   ),
 
+      // Power gating control of the main power domain by the power controller of
+      // the wider SoC.
+      .power_main_iso_en_i    (chip_if.power_main_iso_en   ),
+      .power_main_sw_en_i     (chip_if.power_main_sw_en    ),
+      .power_main_sw_en_phy_i (chip_if.power_main_sw_en_phy),
+
       // Noise source feeding entropy_src
       .es_rng_enable_o (chip_if.es_rng_enable),
       .es_rng_valid_i  (chip_if.es_rng_valid ),

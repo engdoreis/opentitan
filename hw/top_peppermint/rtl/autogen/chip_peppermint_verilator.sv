@@ -147,6 +147,14 @@ module chip_peppermint_verilator (
   assign clk_aon_ok    = 1'b1;
   assign clk_main_ok   = 1'b1;
 
+  // Tie-off.
+  logic power_main_iso_en;
+  logic power_main_sw_en;
+  logic power_main_sw_en_phy;
+  assign power_main_iso_en    = 1'b0;
+  assign power_main_sw_en     = 1'b1;
+  assign power_main_sw_en_phy = 1'b1;
+
   // clkmgr signals that would normally be wired to AST. Outputs are simply
   // unconsumed; inputs are tied to their inactive/default value.
   prim_mubi_pkg::mubi4_t clk_main_jitter_en;
@@ -180,6 +188,9 @@ module chip_peppermint_verilator (
     .power_main_ok_i(power_main_ok),
     .clk_aon_ok_i   (clk_aon_ok   ),
     .clk_main_ok_i  (clk_main_ok  ),
+    .power_main_iso_en_i   (power_main_iso_en   ),
+    .power_main_sw_en_i    (power_main_sw_en    ),
+    .power_main_sw_en_phy_i(power_main_sw_en_phy),
     .soc_lc_dft_en_o      (soc_lc_dft_en      ),
     .soc_lc_nvm_debug_en_o(soc_lc_nvm_debug_en),
     .soc_lc_hw_debug_en_o (soc_lc_hw_debug_en ),

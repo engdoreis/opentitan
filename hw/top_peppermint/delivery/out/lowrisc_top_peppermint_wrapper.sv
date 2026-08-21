@@ -58,6 +58,12 @@ module lowrisc_top_peppermint_wrapper
   input  logic clk_aon_ok_i,
   input  logic clk_main_ok_i,
 
+  // Power gating control of the main power domain by the power controller of
+  // the wider SoC.
+  input logic power_main_iso_en_i,
+  input logic power_main_sw_en_i,
+  input logic power_main_sw_en_phy_i,
+
   // Reset of the SoC CPU
   output logic rst_soc_cpu_no,
 
@@ -112,6 +118,9 @@ module lowrisc_top_peppermint_wrapper
     .power_main_ok_i              (power_main_ok_i),
     .clk_aon_ok_i                 (clk_aon_ok_i),
     .clk_main_ok_i                (clk_main_ok_i),
+    .power_main_iso_en_i          (power_main_iso_en_i),
+    .power_main_sw_en_i           (power_main_sw_en_i),
+    .power_main_sw_en_phy_i       (power_main_sw_en_phy_i),
     .rst_soc_cpu_no               (rst_soc_cpu_no),
     .soc_cpu_boot_addr_o          (soc_cpu_boot_addr_o),
     .soc_lc_dft_en_o              (soc_lc_dft_en_o),

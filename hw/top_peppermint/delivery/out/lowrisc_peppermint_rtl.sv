@@ -283090,6 +283090,12 @@ module lowrisc_top_peppermint #(
   input  logic clk_aon_ok_i,
   input  logic clk_main_ok_i,
 
+  // Power gating control of the main power domain by the power controller of
+  // the wider SoC.
+  input logic power_main_iso_en_i,
+  input logic power_main_sw_en_i,
+  input logic power_main_sw_en_phy_i,
+
   // Reset of the SoC CPU
   output logic rst_soc_cpu_no,
 
@@ -283235,6 +283241,9 @@ module lowrisc_top_peppermint #(
   ) peppermint_pd_main (
     .lc_ctrl_lc_nvm_debug_en_o(lc_ctrl_lc_nvm_debug_en),
     .lc_ctrl_lc_cpu_en_o      (lc_ctrl_lc_cpu_en      ),
+    .power_main_iso_en_i,
+    .power_main_sw_en_i,
+    .power_main_sw_en_phy_i,
     // Clocks and clock gating control from clkmgr
     .clk_aon_i(clk_aon),
     .clk_main_i(clk_main),
@@ -283838,6 +283847,13 @@ module lowrisc_peppermint_pd_main #(
 
   output lowrisc_lc_ctrl_pkg::lc_tx_t lc_ctrl_lc_nvm_debug_en_o,
   output lowrisc_lc_ctrl_pkg::lc_tx_t lc_ctrl_lc_cpu_en_o,
+
+  // Power gating control of the main power domain by the power controller of
+  // the wider SoC.
+  input logic power_main_iso_en_i,
+  input logic power_main_sw_en_i,
+  input logic power_main_sw_en_phy_i,
+
   // Incoming interrupt of group soc
   input logic [lowrisc_top_peppermint_pkg::NIncomingInterruptsSoc-1:0] incoming_interrupt_soc_i,
   // Interrupts from power domain Aon
@@ -284113,6 +284129,14 @@ module lowrisc_peppermint_pd_main #(
   // Life cycle function control to the Aon power domain.
   assign lc_ctrl_lc_nvm_debug_en_o = lc_ctrl_lc_nvm_debug_en;
   assign lc_ctrl_lc_cpu_en_o       = lc_ctrl_lc_cpu_en;
+
+  // These signals drive physical cells only.
+  logic unused_power_gating_ctrl;
+  assign unused_power_gating_ctrl = ^{
+    power_main_iso_en_i,
+    power_main_sw_en_i,
+    power_main_sw_en_phy_i
+  };
 
   // Chip IO tie-off.
   lowrisc_otp_macro_pkg::otp_test_vect_t cio_otp_macro_test_d2p_o;

@@ -72,6 +72,11 @@ interface chip_if;
   assign clk_aon_ok    = 1'b1;
   assign clk_main_ok   = 1'b1;
 
+  // Tie-off as these signals do not drive any RTL.
+  logic power_main_iso_en    = 1'b0;  // DUT input
+  logic power_main_sw_en     = 1'b1;  // DUT input
+  logic power_main_sw_en_phy = 1'b1;  // DUT input
+
   // AHB egress: Peppermint is the manager, the SoC is the subordinate. Held at the idle default
   // until the AHB subordinate agent and its memory models take the response side over. hreadyout
   // must stay asserted in the default, otherwise the bridge stalls on the first access.

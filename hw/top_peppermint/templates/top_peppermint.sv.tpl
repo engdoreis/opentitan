@@ -31,6 +31,12 @@ module top_${top["name"]} #(
   input  logic clk_aon_ok_i,
   input  logic clk_main_ok_i,
 
+  // Power gating control of the main power domain by the power controller of
+  // the wider SoC.
+  input logic power_main_iso_en_i,
+  input logic power_main_sw_en_i,
+  input logic power_main_sw_en_phy_i,
+
   // Reset of the SoC CPU
   output logic rst_soc_cpu_no,
 
@@ -72,6 +78,9 @@ module top_${top["name"]} #(
   ) ${top["name"]}_pd_main (
     .lc_ctrl_lc_nvm_debug_en_o(lc_ctrl_lc_nvm_debug_en),
     .lc_ctrl_lc_cpu_en_o      (lc_ctrl_lc_cpu_en      ),
+    .power_main_iso_en_i,
+    .power_main_sw_en_i,
+    .power_main_sw_en_phy_i,
 <%include file="/toplevel_snippets/special_signals_portmap.tpl" args="top=top, feature_info=feature_info, cio_info=cio_info, domain='Main'" />\
 
 <%include file="/chiplevel_snippets/intermodule_portmap.tpl" args="top=top, target='', domain='Main', inter_pd=True, feedthrough=False, last_snippet=False" />\

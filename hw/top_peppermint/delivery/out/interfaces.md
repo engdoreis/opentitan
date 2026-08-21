@@ -191,6 +191,17 @@ A proposal of the power handshaking protocol is presented in the shared *Power H
 ***Note***: In `Peppermint-1.0-M1`, the power handshake signals will not behave according to the proposal document above.
 
 
+## Power gating control
+
+| Port | Type | Description |
+|---|---|---|
+| `power_main_iso_en_i` | `logic` | Isolation cell enable for the main power domain |
+| `power_main_sw_en_i` | `logic` | Power switch cell enable for the main power domain |
+| `power_main_sw_en_phy_i` | `logic` | Power switch cell enable for the main power domain |
+
+These signals have no function in the delivered RTL; they drive the isolation cells and power switch cells inserted during physical implementation.
+
+
 ## DFT
 
 | Port | Type |
