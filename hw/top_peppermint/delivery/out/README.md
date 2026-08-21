@@ -1,4 +1,4 @@
-# Peppermint 1.0 M1 Deliverable - Release Candidate 3 (`Peppermint-1.0-M1-RC3`)
+# Peppermint 1.0 M1 Deliverable - Release Candidate 4 (`Peppermint-1.0-M1-RC4`)
 
 This deliverable consists of four files, with the following intent:
 
