@@ -53,7 +53,7 @@ class chip_base_vseq extends cip_base_vseq #(
   // Fill the ROM with random data correctly scrambled and ECC encoded, and append a valid digest.
   // Called by pre_start, before the first reset.
   extern protected virtual function void random_rom_init_with_digest();
-  // Wait for rom_ctrl to finish its KMAC pass, which is when lc_ctrl has also initialised
+  // Wait for rom_ctrl to finish its KMAC pass and for lc_ctrl to report itself initialised
   extern protected virtual task wait_rom_check_done();
 endclass: chip_base_vseq
 
@@ -170,11 +170,21 @@ function void chip_base_vseq::random_rom_init_with_digest();
 endfunction: random_rom_init_with_digest
 
 // Sequences that touch CSRs must not start before this, or they can write a KMAC register
-// mid-operation or hit a register still gated by life cycle. Treat it as part of reset. The read is
-// a backdoor one so this works with or without the CPU stubbed.
+// mid-operation or hit a register still gated by life cycle. Treat it as part of reset. Both reads
+// are backdoor ones so this works with or without the CPU stubbed.
+//
+// The ROM check and the life-cycle initialisation run concurrently out of reset, so the digest
+// appearing says nothing about lc_ctrl. It only looks that way because digesting the whole ROM
+// through KMAC takes far longer than the initialisation it races. The second wait covers otp_ctrl
+// as well, since pwrmgr does not start the life-cycle initialisation until the OTP one has
+// finished.
 task chip_base_vseq::wait_rom_check_done();
   `uvm_info(`gfn, "Waiting for the rom_ctrl check after reset...", UVM_MEDIUM)
   csr_spinwait(.ptr(ral.rom_ctrl_regs.digest[0]), .exp_data(0), .compare_op(CompareOpNe),
                .backdoor(1), .spinwait_delay_ns(1000), .timeout_ns(RomCheckTimeoutNs));
   `uvm_info(`gfn, "The rom_ctrl check is done", UVM_HIGH)
+
+  csr_spinwait(.ptr(ral.lc_ctrl_regs.status.ready), .exp_data(1), .backdoor(1),
+               .spinwait_delay_ns(1000));
+  `uvm_info(`gfn, "lc_ctrl reports itself initialised", UVM_HIGH)
 endtask: wait_rom_check_done
