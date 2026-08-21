@@ -71,7 +71,7 @@ rom_e2e_keymgr_init_configs = [
         srcs = [":rom_e2e_keymgr_init_test.c"],
         dv = dv_params(
             otp = ":otp_img_keymgr_{}".format(config["name"]),
-            # Overriding the default rom for this exec_env 
+            # Overriding the default rom for this exec_env
             rom = "//hw/top:rom",
         ),
         ecdsa_key = {"//sw/device/silicon_creator/rom/keys/fake/ecdsa:ecdsa_keyset": "prod_key_0"},

@@ -2714,12 +2714,12 @@ _KMAC_APP_ROM_LIST = [
         ["//hw/top_earlgrey"],
     ),
     (
-        "//sw/device/silicon_creator/rom:mask_rom_fpga_cw340_hashfile",
+        "//sw/device/silicon_creator/rom:earlgrey_rom_fpga_cw340_hashfile",
         "fpga_cw340_rom_with_fake_keys",
         ["//hw/top_earlgrey"],
     ),
     (
-        "//sw/device/silicon_creator/rom:mask_rom_fpga_cw340_hashfile",
+        "//sw/device/silicon_creator/rom:earlgrey_rom_fpga_cw340_hashfile",
         "fpga_cw340_sival",
         ["//hw/top_earlgrey"],
     ),
