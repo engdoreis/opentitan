@@ -77,7 +77,8 @@
 #define CFI_FUNC_COUNTER_INIT_CONSTANTS_(name_, value_) name_##Val0 = value_,
 
 /**
- * Initializes all counter values to zero. Used inside `CFI_DEFINE_COUNTERS()`.
+ * Initializes all counter values to zero. Used inside
+ * `CFI_DEFINE_COUNTERS_TABLE()`.
  */
 #define CFI_FUNC_COUNTERS_TABLE_INIT_(name_, value_) 0,
 
@@ -87,16 +88,23 @@
 #define CFI_FUNC_COUNTER_INDEXES_(name_, value_) name_,
 
 /**
- * Defines the counters table as well as constants required by other CFI counter
- * macros.
+ * Defines the constants required by other CFI counter macros.
+ *
+ * @param table_ Macro enumerating all the function identifiers and their
+ * respective initial values.
+ */
+#define CFI_DEFINE_COUNTERS(table_)                  \
+  enum { table_(CFI_FUNC_COUNTER_INIT_CONSTANTS_) }; \
+  enum { table_(CFI_FUNC_COUNTER_INDEXES_) };
+
+/**
+ * Defines the counters table
  *
  * @param table_name_ Name of the array variable used to store all the counters.
  * @param table_ Macro enumerating all the function identifiers and their
  * respective initial values.
  */
-#define CFI_DEFINE_COUNTERS(table_name_, table_)     \
-  enum { table_(CFI_FUNC_COUNTER_INIT_CONSTANTS_) }; \
-  enum { table_(CFI_FUNC_COUNTER_INDEXES_) };        \
+#define CFI_DEFINE_COUNTERS_TABLE(table_name_, table_) \
   uint32_t table_name_[] = {table_(CFI_FUNC_COUNTERS_TABLE_INIT_)}
 
 enum {
