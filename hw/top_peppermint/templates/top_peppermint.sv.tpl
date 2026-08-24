@@ -67,6 +67,7 @@ module top_${top["name"]} #(
 
   lc_ctrl_pkg::lc_tx_t lc_ctrl_lc_nvm_debug_en;
   lc_ctrl_pkg::lc_tx_t lc_ctrl_lc_cpu_en;
+  lc_ctrl_pkg::lc_tx_t lc_ctrl_lc_init_done;
 
   assign rst_main_no = rst_main_n;
 
@@ -78,6 +79,7 @@ module top_${top["name"]} #(
   ) ${top["name"]}_pd_main (
     .lc_ctrl_lc_nvm_debug_en_o(lc_ctrl_lc_nvm_debug_en),
     .lc_ctrl_lc_cpu_en_o      (lc_ctrl_lc_cpu_en      ),
+    .lc_ctrl_lc_init_done_o   (lc_ctrl_lc_init_done   ),
     .power_main_iso_en_i,
     .power_main_sw_en_i,
     .power_main_sw_en_phy_i,
@@ -110,6 +112,7 @@ module top_${top["name"]} #(
     .soc_lc_cpu_en_o,
     .lc_ctrl_lc_nvm_debug_en_i(lc_ctrl_lc_nvm_debug_en),
     .lc_ctrl_lc_cpu_en_i      (lc_ctrl_lc_cpu_en      ),
+    .lc_ctrl_lc_init_done_i   (lc_ctrl_lc_init_done   ),
 <%include file="/toplevel_snippets/special_signals_portmap.tpl" args="top=top, feature_info=feature_info, cio_info=cio_info, domain='Aon'" />\
 
 <%include file="/chiplevel_snippets/intermodule_portmap.tpl" args="top=top, target='', domain='Aon', inter_pd=True, feedthrough=False, last_snippet=False" />\

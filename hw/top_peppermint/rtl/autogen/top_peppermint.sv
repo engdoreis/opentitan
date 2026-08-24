@@ -243,6 +243,7 @@ module top_peppermint #(
 
   lc_ctrl_pkg::lc_tx_t lc_ctrl_lc_nvm_debug_en;
   lc_ctrl_pkg::lc_tx_t lc_ctrl_lc_cpu_en;
+  lc_ctrl_pkg::lc_tx_t lc_ctrl_lc_init_done;
 
   assign rst_main_no = rst_main_n;
 
@@ -335,6 +336,7 @@ module top_peppermint #(
   ) peppermint_pd_main (
     .lc_ctrl_lc_nvm_debug_en_o(lc_ctrl_lc_nvm_debug_en),
     .lc_ctrl_lc_cpu_en_o      (lc_ctrl_lc_cpu_en      ),
+    .lc_ctrl_lc_init_done_o   (lc_ctrl_lc_init_done   ),
     .power_main_iso_en_i,
     .power_main_sw_en_i,
     .power_main_sw_en_phy_i,
@@ -446,6 +448,7 @@ module top_peppermint #(
     .soc_lc_cpu_en_o,
     .lc_ctrl_lc_nvm_debug_en_i(lc_ctrl_lc_nvm_debug_en),
     .lc_ctrl_lc_cpu_en_i      (lc_ctrl_lc_cpu_en      ),
+    .lc_ctrl_lc_init_done_i   (lc_ctrl_lc_init_done   ),
     // All externally supplied clocks
     .clk_aon_i(clk_aon_i),
     .clk_main_i(clk_main_i),

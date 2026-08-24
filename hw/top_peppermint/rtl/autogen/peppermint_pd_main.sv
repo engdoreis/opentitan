@@ -166,6 +166,7 @@ module peppermint_pd_main #(
 
   output lc_ctrl_pkg::lc_tx_t lc_ctrl_lc_nvm_debug_en_o,
   output lc_ctrl_pkg::lc_tx_t lc_ctrl_lc_cpu_en_o,
+  output lc_ctrl_pkg::lc_tx_t lc_ctrl_lc_init_done_o,
 
   // Power gating control of the main power domain by the power controller of
   // the wider SoC.
@@ -448,6 +449,7 @@ module peppermint_pd_main #(
   // Life cycle function control to the Aon power domain.
   assign lc_ctrl_lc_nvm_debug_en_o = lc_ctrl_lc_nvm_debug_en;
   assign lc_ctrl_lc_cpu_en_o       = lc_ctrl_lc_cpu_en;
+  assign lc_ctrl_lc_init_done_o    = lc_ctrl_lc_init_done;
 
   // These signals drive physical cells only.
   logic unused_power_gating_ctrl;

@@ -46,6 +46,8 @@ module ${top["name"]}_pd_${domain.lower()} #(
   // Life cycle function control from lc_ctrl in the Main power domain.
   input lc_ctrl_pkg::lc_tx_t lc_ctrl_lc_nvm_debug_en_i,
   input lc_ctrl_pkg::lc_tx_t lc_ctrl_lc_cpu_en_i,
+  input lc_ctrl_pkg::lc_tx_t lc_ctrl_lc_init_done_i,
+
 <%include file="/toplevel_snippets/port_special_signals.tpl" args="top=top, feature_info=feature_info, cio_info=cio_info, domain=domain" />\
 );
 
@@ -95,8 +97,23 @@ module ${top["name"]}_pd_${domain.lower()} #(
   // Boot address of the SoC CPU, driven by a register in rstmgr
   assign soc_cpu_boot_addr_o = rstmgr_soc_cpu_boot_addr[SocCpuBootAddrWidth-1:0];
 
-  // Life cycle function control forwarded registered in AON domain so that the states survive a
-  // power down.
+  // Life cycle function control forwarded to the wider SoC, synchronized into
+  // the Aon clock domain and registered there so that the states survive a
+  // power down of the Main domain.
+  lc_ctrl_pkg::lc_tx_t soc_lc_init_done;
+  prim_lc_sync #(
+    .NumCopies(1),
+    .AsyncOn(1),
+    .ResetValueIsOn(0)
+  ) u_soc_lc_init_done_sync (
+    .clk_i  (clk_aon_i),
+    .rst_ni (rstmgr_resets.rst_lc_aon_n[rstmgr_pkg::DomainAonSel]),
+    .lc_en_i(lc_ctrl_lc_init_done_i),
+    .lc_en_o({soc_lc_init_done})
+  );
+
+  logic soc_lc_capture_en;
+  assign soc_lc_capture_en = lc_ctrl_pkg::lc_tx_test_true_strict(soc_lc_init_done);
 <%
   soc_lc_ctrl = [
       ("dft_en", "lc_ctrl_lc_dft_en_i"),
@@ -106,6 +123,8 @@ module ${top["name"]}_pd_${domain.lower()} #(
   ]
 %>\
 % for name, src in soc_lc_ctrl:
+
+  lc_ctrl_pkg::lc_tx_t soc_lc_${name}_synced;
   prim_lc_sync #(
     .NumCopies(1),
     .AsyncOn(1),
@@ -114,8 +133,22 @@ module ${top["name"]}_pd_${domain.lower()} #(
     .clk_i  (clk_aon_i),
     .rst_ni (rstmgr_resets.rst_lc_aon_n[rstmgr_pkg::DomainAonSel]),
     .lc_en_i(${src}),
-    .lc_en_o({soc_lc_${name}_o})
+    .lc_en_o({soc_lc_${name}_synced})
   );
+
+  logic [lc_ctrl_pkg::TxWidth-1:0] soc_lc_${name}_held;
+  prim_flop_en #(
+    .Width(lc_ctrl_pkg::TxWidth),
+    .EnSecBuf(1),
+    .ResetValue(lc_ctrl_pkg::TxWidth'(lc_ctrl_pkg::Off))
+  ) u_soc_lc_${name}_hold (
+    .clk_i (clk_aon_i),
+    .rst_ni(rstmgr_resets.rst_lc_aon_n[rstmgr_pkg::DomainAonSel]),
+    .en_i  (soc_lc_capture_en),
+    .d_i   (lc_ctrl_pkg::TxWidth'(soc_lc_${name}_synced)),
+    .q_o   (soc_lc_${name}_held)
+  );
+  assign soc_lc_${name}_o = lc_ctrl_pkg::lc_tx_t'(soc_lc_${name}_held);
 % endfor
 
   // Currently tied-off
