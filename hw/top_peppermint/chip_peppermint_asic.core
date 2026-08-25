@@ -1,0 +1,31 @@
+CAPI=2:
+# Copyright lowRISC contributors (OpenTitan project).
+# Licensed under the Apache License, Version 2.0, see LICENSE for details.
+# SPDX-License-Identifier: Apache-2.0
+name: "lowrisc:systems:chip_peppermint_asic:0.1"
+description: "Peppermint chip-level wrapper around top_peppermint"
+filesets:
+  files_rtl:
+    depend:
+      - lowrisc:systems:top_peppermint:0.1
+      - lowrisc:systems:top_peppermint_pkg
+      - lowrisc:systems:top_peppermint_ast_pkg
+      - lowrisc:prim_generic:all
+
+    files:
+      - rtl/autogen/chip_peppermint_asic.sv: { file_type: systemVerilogSource }
+
+targets:
+  default: &default_target
+    filesets:
+      - files_rtl
+    toplevel: chip_peppermint_asic
+
+  lint:
+    <<: *default_target
+    default_tool: verilator
+    tools:
+      verilator:
+        mode: lint-only
+        verilator_options:
+          - "-Wall"

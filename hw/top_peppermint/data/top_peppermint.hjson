@@ -1042,6 +1042,33 @@
   // to override the JTAG and strap locations indices, since the testing and DFT
   // setups may differ among the targets.
   targets: [
+    { name: 'asic',
+
+      // Peppermint has no on-chip AST and no physical I/O pads, so this
+      // chip-level is a thin wrapper that feeds every SoC-facing signal
+      // straight through to a plain port and holds top_peppermint as a named
+      // instance.
+      chiplevel: {
+        port_overrides: {
+          'ahb_bridge.ahb_mgr_m2s' : { feedthrough: true },
+          'ahb_bridge.ahb_mgr_s2m' : { feedthrough: true },
+          'ahb_bridge.ahb_sub_m2s' : { feedthrough: true },
+          'ahb_bridge.ahb_sub_s2m' : { feedthrough: true },
+        }
+      }
+
+      // No physical pads to remove or add.
+      pinout: {
+        remove_ports: [],
+        remove_pads: [],
+        add_pads: [],
+      }
+
+      pinmux: {
+        special_signals: [],
+      }
+    }
+
     { name: 'verilator',
 
       // The verilator chip-level has no physical pads: the flat per-peripheral

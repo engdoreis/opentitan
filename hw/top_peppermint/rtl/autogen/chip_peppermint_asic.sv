@@ -2,18 +2,10 @@
 // Licensed under the Apache License, Version 2.0, see LICENSE for details.
 // SPDX-License-Identifier: Apache-2.0
 //
-% if target["name"] == "verilator":
-// Chip level for ${top["name"]}, Verilator target. This top has no AST: the
-// base clocks are plain inputs on top_${top["name"]}, and the handful of signals
-// an AST would drive (aon clock, power-on reset, power/clock handshake
-// responses) are synthesized here from clk_i/rst_ni, with the remaining
-// AST-style status/bypass signals tied off.
-% else:
-// Chip level for ${top["name"]}, ${target["name"]} target. This top has no AST:
-// the base clocks, POR reset and DFT signals are plain top_${top["name"]}
+// Chip level for peppermint, asic target. This top has no AST:
+// the base clocks, POR reset and DFT signals are plain top_peppermint
 // inputs exposed as chip-level ports, matching how the wider SoC drives
 // Peppermint directly.
-% endif
 //
 // All SoC-facing interfaces are exposed as plain chip-level ports: the
 // ahb_bridge's AHB egress (manager) and ingress (subordinate) ports to the
@@ -25,22 +17,15 @@
 // have no target in this integration and are tied off internally (see
 // top_peppermint.hjson's inter_module.connect), so none of them is exposed
 // here.
-${gencmd}
-<%
-import topgen.lib as lib
+//
+// ------------------- W A R N I N G: A U T O - G E N E R A T E D   C O D E !! -------------------//
+// PLEASE DO NOT HAND-EDIT THIS FILE. IT HAS BEEN AUTO-GENERATED WITH THE FOLLOWING COMMAND:
+//
+// util/topgen.py -t hw/top_peppermint/data/top_peppermint.hjson
+//                -o hw/top_peppermint/
 
-feature_info = {}
-cio_info = {}
-%>\
-<%include file="/toplevel_snippets/info_dicts.tpl" args="top=top, feature_info=feature_info, cio_info=cio_info" />\
 
-% if target["name"] == "verilator":
-module chip_${top["name"]}_${target["name"]} (
-  // Clock and Reset
-  input clk_i,
-  input rst_ni,
-% else:
-module chip_${top["name"]}_${target["name"]} #(
+module chip_peppermint_asic #(
   parameter bit SecRomCtrlDisableScrambling = 1'b0
 ) (
   // Externally supplied base clocks
@@ -54,7 +39,6 @@ module chip_${top["name"]}_${target["name"]} #(
   input                        scan_rst_ni,
   input                        scan_en_i,
   input prim_mubi_pkg::mubi4_t scanmode_i,
-% endif
 
   // Reset of the SoC CPU, controlled by a reset manager register.
   output logic rst_soc_cpu_no,
@@ -104,17 +88,16 @@ module chip_${top["name"]}_${target["name"]} #(
 
   // Alerts from the wider SoC (driven by prim_alert_sender instances with
   // AsyncOn = 1) and the sender-side low power group indications.
-  input  prim_alert_pkg::alert_tx_t [top_${top["name"]}_pkg::NIncomingAlertsSoc-1:0] incoming_alert_soc_tx,
-  output prim_alert_pkg::alert_rx_t [top_${top["name"]}_pkg::NIncomingAlertsSoc-1:0] incoming_alert_soc_rx,
-  input  prim_mubi_pkg::mubi4_t     [top_${top["name"]}_pkg::NIncomingLpgsSoc-1:0]   incoming_lpg_cg_en_soc,
-  input  prim_mubi_pkg::mubi4_t     [top_${top["name"]}_pkg::NIncomingLpgsSoc-1:0]   incoming_lpg_rst_en_soc,
+  input  prim_alert_pkg::alert_tx_t [top_peppermint_pkg::NIncomingAlertsSoc-1:0] incoming_alert_soc_tx,
+  output prim_alert_pkg::alert_rx_t [top_peppermint_pkg::NIncomingAlertsSoc-1:0] incoming_alert_soc_rx,
+  input  prim_mubi_pkg::mubi4_t     [top_peppermint_pkg::NIncomingLpgsSoc-1:0]   incoming_lpg_cg_en_soc,
+  input  prim_mubi_pkg::mubi4_t     [top_peppermint_pkg::NIncomingLpgsSoc-1:0]   incoming_lpg_rst_en_soc,
 
   // Interrupts from the wider SoC.
-  input  logic [top_${top["name"]}_pkg::NIncomingInterruptsSoc-1:0] incoming_interrupt_soc,
+  input  logic [top_peppermint_pkg::NIncomingInterruptsSoc-1:0] incoming_interrupt_soc,
 
   // Main power domain request to the SoC's power manager.
   output logic power_main_req_o,
-% if target["name"] != "verilator":
 
   // Power handshake response from the SoC: acknowledges power_main_req_o and
   // reports the two base clocks valid.
@@ -127,95 +110,14 @@ module chip_${top["name"]}_${target["name"]} #(
   input logic power_main_iso_en_i,
   input logic power_main_sw_en_i,
   input logic power_main_sw_en_phy_i,
-% endif
 
   // SoC power-handshake wakeup request: wakes the main power domain from
   // low power (pwrmgr wakeup source 0, enabled via WAKEUP_EN).
   input  logic wakeup_main
 );
 
-  import top_${top["name"]}_pkg::*;
+  import top_peppermint_pkg::*;
 
-% if target["name"] == "verilator":
-  //////////////////////////////////////////
-  // No AST: synthesize what it would feed //
-  //////////////////////////////////////////
-
-  // AON clock divider. Reset is not used because Verilator uses only sync
-  // resets (and does not model 'x'); if the divider below were reset,
-  // clk_aon would be silenced and the clk_aon logic inside top_${top["name"]}
-  // would not get reset.
-  logic clk_aon;
-  prim_clock_div #(
-    .Divisor(4)
-  ) u_aon_div (
-    .clk_i,
-    .rst_ni(1'b1),
-    .step_down_req_i('0),
-    .step_down_ack_o(),
-    .test_en_i('0),
-    .clk_o(clk_aon)
-  );
-
-  // Base clock inputs of top_${top["name"]} (named after its ports, which
-  // the generic portmap snippet connects by identical net name).
-  logic clk_main_i;
-  logic clk_aon_i;
-  assign clk_main_i = clk_i;
-  assign clk_aon_i  = clk_aon;
-
-  logic rst_aon_n;
-  assign rst_aon_n = rst_ni;
-
-  // No DFT: scan is disabled.
-  logic scan_rst_n;
-  logic scan_en;
-  prim_mubi_pkg::mubi4_t scanmode;
-  assign scan_rst_n = 1'b1;
-  assign scan_en    = 1'b0;
-  assign scanmode   = prim_mubi_pkg::MuBi4False;
-
-  // Power handshake normally answered by the SoC: model an ideal,
-  // always-responsive supply by granting the power request immediately. Both
-  // base clocks are driven unconditionally above, so they are always reported
-  // valid; pd_aon gates the main clock validity with pwrmgr's own clock
-  // request, which is what carries the low power sequencing.
-  logic power_main_ok;
-  logic clk_aon_ok;
-  logic clk_main_ok;
-  assign power_main_ok = power_main_req_o;
-  assign clk_aon_ok    = 1'b1;
-  assign clk_main_ok   = 1'b1;
-
-  // Tie-off.
-  logic power_main_iso_en;
-  logic power_main_sw_en;
-  logic power_main_sw_en_phy;
-  assign power_main_iso_en    = 1'b0;
-  assign power_main_sw_en     = 1'b1;
-  assign power_main_sw_en_phy = 1'b1;
-
-  // clkmgr signals that would normally be wired to AST. Outputs are simply
-  // unconsumed; inputs are tied to their inactive/default value.
-  prim_mubi_pkg::mubi4_t clk_main_jitter_en;
-  prim_mubi_pkg::mubi4_t hi_speed_sel;
-  prim_mubi_pkg::mubi4_t div_step_down_req;
-  prim_mubi_pkg::mubi4_t all_clk_byp_req;
-  prim_mubi_pkg::mubi4_t all_clk_byp_ack;
-  prim_mubi_pkg::mubi4_t io_clk_byp_req;
-  prim_mubi_pkg::mubi4_t io_clk_byp_ack;
-  assign div_step_down_req = prim_mubi_pkg::MuBi4False;
-  assign all_clk_byp_ack   = prim_mubi_pkg::MuBi4False;
-  assign io_clk_byp_ack    = prim_mubi_pkg::MuBi4False;
-
-  logic unused_ast_facing_outputs;
-  assign unused_ast_facing_outputs = ^{
-    clk_main_jitter_en,
-    hi_speed_sel,
-    all_clk_byp_req,
-    io_clk_byp_req
-  };
-% else:
   ////////////////////////////////////////////////////////
   // No AST: every signal it would feed is a plain port //
   ////////////////////////////////////////////////////////
@@ -243,18 +145,13 @@ module chip_${top["name"]}_${target["name"]} #(
   assign power_main_iso_en    = power_main_iso_en_i;
   assign power_main_sw_en     = power_main_sw_en_i;
   assign power_main_sw_en_phy = power_main_sw_en_phy_i;
-% endif
 
   /////////////////////////////////////////////
-  // top_${top["name"]}: power domains        //
+  // top_peppermint: power domains        //
   /////////////////////////////////////////////
-% if target["name"] == "verilator":
-  top_${top["name"]} top_${top["name"]} (
-% else:
-  top_${top["name"]} #(
+  top_peppermint #(
     .SecRomCtrlDisableScrambling(SecRomCtrlDisableScrambling)
-  ) top_${top["name"]} (
-% endif
+  ) top_peppermint (
     .rst_aon_ni(rst_aon_n),
     .rst_soc_cpu_no,
     .soc_cpu_boot_addr_o,
@@ -270,8 +167,44 @@ module chip_${top["name"]}_${target["name"]} #(
     .soc_lc_nvm_debug_en_o(soc_lc_nvm_debug_en),
     .soc_lc_hw_debug_en_o (soc_lc_hw_debug_en ),
     .soc_lc_cpu_en_o      (soc_lc_cpu_en      ),
-<%include file="/chiplevel_snippets/special_signals_portmap.tpl" args="top=top, feature_info=feature_info, cio_info=cio_info, gen_bkdr_loader=False" />\
-<%include file="/chiplevel_snippets/intermodule_portmap.tpl" args="top=top, target=target, domain='', inter_pd=False, feedthrough=False, last_snippet=True" />\
+    // Externally supplied base clocks
+    .clk_aon_i(clk_aon_i),
+    .clk_main_i(clk_main_i),
+
+    // Manual DFT signals
+    .scan_rst_ni(scan_rst_n),
+    .scan_en_i  (scan_en   ),
+    .scanmode_i (scanmode  ),
+
+    // Incoming alerts for group soc
+    .incoming_alert_soc_tx_i(incoming_alert_soc_tx),
+    .incoming_alert_soc_rx_o(incoming_alert_soc_rx),
+    .incoming_lpg_cg_en_soc_i(incoming_lpg_cg_en_soc),
+    .incoming_lpg_rst_en_soc_i(incoming_lpg_rst_en_soc),
+
+    // Incoming interrupts for group soc
+    .incoming_interrupt_soc_i(incoming_interrupt_soc),
+
+    // Regular ports (auto-generated)
+    .wakeup_main_i               (wakeup_main          ),
+    .es_rng_enable_o             (es_rng_enable        ),
+    .es_rng_valid_i              (es_rng_valid         ),
+    .es_rng_bit_i                (es_rng_bit           ),
+    .es_rng_fips_o               (es_rng_fips          ),
+    .mbx0_doe_intr_o             (mbx0_doe_intr        ),
+    .mbx0_doe_intr_en_o          (mbx0_doe_intr_en     ),
+    .mbx0_doe_intr_support_o     (mbx0_doe_intr_support),
+    .mbx0_doe_async_msg_support_o(mbx0_doe_async_msg_support),
+    .mbx1_doe_intr_o             (mbx1_doe_intr        ),
+    .mbx1_doe_intr_en_o          (mbx1_doe_intr_en     ),
+    .mbx1_doe_intr_support_o     (mbx1_doe_intr_support),
+    .mbx1_doe_async_msg_support_o(mbx1_doe_async_msg_support),
+    .soc_mgr_ahb_req_o           (soc_mgr_ahb_req_o    ),
+    .soc_mgr_ahb_rsp_i           (soc_mgr_ahb_rsp_i    ),
+    .soc_mbx_ahb_req_i           (soc_mbx_ahb_req_i    ),
+    .soc_mbx_ahb_rsp_o           (soc_mbx_ahb_rsp_o    ),
+    .soc_dbg_tl_req_i            (soc_dbg_tl_req       ),
+    .soc_dbg_tl_rsp_o            (soc_dbg_tl_rsp       )
   );
 
 endmodule
