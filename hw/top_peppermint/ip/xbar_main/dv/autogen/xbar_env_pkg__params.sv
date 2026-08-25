@@ -82,8 +82,23 @@ tl_device_t xbar_devices[$] = '{
     '{"mbx1__core", '{
         '{32'h22000100, 32'h2200017f}
     }},
-    '{"aon", '{
-        '{32'h40400000, 32'h4047ffff}
+    '{"pwrmgr", '{
+        '{32'h40400000, 32'h4040007f}
+    }},
+    '{"rstmgr", '{
+        '{32'h40410000, 32'h4041003f}
+    }},
+    '{"clkmgr", '{
+        '{32'h40420000, 32'h4042003f}
+    }},
+    '{"alert_handler", '{
+        '{32'h40450000, 32'h404507ff}
+    }},
+    '{"sram_ctrl_ret__regs", '{
+        '{32'h40460000, 32'h4046003f}
+    }},
+    '{"sram_ctrl_ret__ram", '{
+        '{32'h40470000, 32'h40471fff}
 }}};
 
   // List of Xbar hosts
@@ -120,7 +135,12 @@ tl_host_t xbar_hosts[$] = '{
         "ahb_bridge__ctn",
         "mbx0__core",
         "mbx1__core",
-        "aon"}}
+        "pwrmgr",
+        "rstmgr",
+        "clkmgr",
+        "alert_handler",
+        "sram_ctrl_ret__regs",
+        "sram_ctrl_ret__ram"}}
     ,
     '{"rv_dm__sba", 2, '{
         "rv_dm__regs",
@@ -146,7 +166,12 @@ tl_host_t xbar_hosts[$] = '{
         "dma",
         "mbx0__core",
         "mbx1__core",
-        "aon"}}
+        "pwrmgr",
+        "rstmgr",
+        "clkmgr",
+        "alert_handler",
+        "sram_ctrl_ret__regs",
+        "sram_ctrl_ret__ram"}}
     ,
     '{"dma__host", 3, '{
         "sram_ctrl_main__ram",

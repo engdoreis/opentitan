@@ -932,15 +932,6 @@
         rst_aon_ni: {name: "lc_aon", domain: "Main"}
       }
     },
-    { name: "aon",
-      domain: "Aon",
-      clock_srcs: {clk_aon_i: "aon"},
-      clock_group: "ext",
-      reset: "lc_aon",
-      reset_connections: {
-        rst_aon_ni: {name: "lc_aon", domain: "Aon"}
-      }
-    },
     { name: "socmbx",
       clock_srcs: {clk_main_i: "main"},
       clock_group: "secure",

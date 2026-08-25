@@ -48,8 +48,18 @@ module peppermint_pd_aon #(
   input  rv_core_ibex_pkg::cpu_crash_dump_t       rv_core_ibex_crash_dump_i,
   input  rv_core_ibex_pkg::cpu_pwrmgr_t       rv_core_ibex_pwrmgr_i,
   input  logic       rv_dm_ndmreset_req_i,
-  input  tlul_pkg::tl_h2d_t       main_tl_aon_req_i,
-  output tlul_pkg::tl_d2h_t       main_tl_aon_rsp_o,
+  input  tlul_pkg::tl_h2d_t       pwrmgr_tl_req_i,
+  output tlul_pkg::tl_d2h_t       pwrmgr_tl_rsp_o,
+  input  tlul_pkg::tl_h2d_t       rstmgr_tl_req_i,
+  output tlul_pkg::tl_d2h_t       rstmgr_tl_rsp_o,
+  input  tlul_pkg::tl_h2d_t       clkmgr_tl_req_i,
+  output tlul_pkg::tl_d2h_t       clkmgr_tl_rsp_o,
+  input  tlul_pkg::tl_h2d_t       alert_handler_tl_req_i,
+  output tlul_pkg::tl_d2h_t       alert_handler_tl_rsp_o,
+  input  tlul_pkg::tl_h2d_t       sram_ctrl_ret_regs_tl_req_i,
+  output tlul_pkg::tl_d2h_t       sram_ctrl_ret_regs_tl_rsp_o,
+  input  tlul_pkg::tl_h2d_t       sram_ctrl_ret_ram_tl_req_i,
+  output tlul_pkg::tl_d2h_t       sram_ctrl_ret_ram_tl_rsp_o,
   input  logic       wakeup_main_i,
 
   // Power-on reset from the SoC.
@@ -263,18 +273,6 @@ module peppermint_pd_aon #(
   prim_esc_pkg::esc_tx_t [3:0] alert_handler_esc_tx;
   alert_handler_pkg::alert_crashdump_t       alert_handler_crashdump;
   prim_mubi_pkg::mubi4_t       rstmgr_sw_rst_req;
-  tlul_pkg::tl_h2d_t       pwrmgr_tl_req;
-  tlul_pkg::tl_d2h_t       pwrmgr_tl_rsp;
-  tlul_pkg::tl_h2d_t       rstmgr_tl_req;
-  tlul_pkg::tl_d2h_t       rstmgr_tl_rsp;
-  tlul_pkg::tl_h2d_t       clkmgr_tl_req;
-  tlul_pkg::tl_d2h_t       clkmgr_tl_rsp;
-  tlul_pkg::tl_h2d_t       alert_handler_tl_req;
-  tlul_pkg::tl_d2h_t       alert_handler_tl_rsp;
-  tlul_pkg::tl_h2d_t       sram_ctrl_ret_regs_tl_req;
-  tlul_pkg::tl_d2h_t       sram_ctrl_ret_regs_tl_rsp;
-  tlul_pkg::tl_h2d_t       sram_ctrl_ret_ram_tl_req;
-  tlul_pkg::tl_d2h_t       sram_ctrl_ret_ram_tl_rsp;
   clkmgr_pkg::clkmgr_out_t       clkmgr_clocks;
   clkmgr_pkg::clkmgr_cg_en_t       clkmgr_cg_en;
   rstmgr_pkg::rstmgr_out_t       rstmgr_resets;
@@ -500,8 +498,8 @@ module peppermint_pd_aon #(
     .lc_dft_en_i(lc_ctrl_lc_dft_en_i),
     .lc_hw_debug_en_i(lc_ctrl_lc_hw_debug_en_i),
     .sw_rst_req_i(rstmgr_sw_rst_req),
-    .tl_i(pwrmgr_tl_req),
-    .tl_o(pwrmgr_tl_rsp)
+    .tl_i(pwrmgr_tl_req_i),
+    .tl_o(pwrmgr_tl_rsp_o)
   );
 
   rstmgr #(
@@ -537,8 +535,8 @@ module peppermint_pd_aon #(
     .cpu_dump_i(rv_core_ibex_crash_dump_i),
     .sw_rst_req_o(rstmgr_sw_rst_req),
     .soc_cpu_boot_addr_o(rstmgr_soc_cpu_boot_addr),
-    .tl_i(rstmgr_tl_req),
-    .tl_o(rstmgr_tl_rsp)
+    .tl_i(rstmgr_tl_req_i),
+    .tl_o(rstmgr_tl_rsp_o)
   );
 
   clkmgr #(
@@ -571,8 +569,8 @@ module peppermint_pd_aon #(
     .pwr_i(pwrmgr_pwr_clk_req),
     .pwr_o(pwrmgr_pwr_clk_rsp),
     .idle_i(prim_mubi_pkg::MuBi4False),
-    .tl_i(clkmgr_tl_req),
-    .tl_o(clkmgr_tl_rsp)
+    .tl_i(clkmgr_tl_req_i),
+    .tl_o(clkmgr_tl_rsp_o)
   );
 
   alert_handler #(
@@ -602,8 +600,8 @@ module peppermint_pd_aon #(
     .edn_i(edn0_edn_rsp_i),
     .esc_rx_i(alert_handler_esc_rx),
     .esc_tx_o(alert_handler_esc_tx),
-    .tl_i(alert_handler_tl_req),
-    .tl_o(alert_handler_tl_rsp),
+    .tl_i(alert_handler_tl_req_i),
+    .tl_o(alert_handler_tl_rsp_o),
 
     // Alert signals
     .alert_rx_o(alert_rx),
@@ -653,10 +651,10 @@ module peppermint_pd_aon #(
     .racl_policies_i(top_racl_pkg::RACL_POLICY_VEC_DEFAULT),
     .racl_error_o(),
     .sram_rerror_o(),
-    .regs_tl_i(sram_ctrl_ret_regs_tl_req),
-    .regs_tl_o(sram_ctrl_ret_regs_tl_rsp),
-    .ram_tl_i(sram_ctrl_ret_ram_tl_req),
-    .ram_tl_o(sram_ctrl_ret_ram_tl_rsp)
+    .regs_tl_i(sram_ctrl_ret_regs_tl_req_i),
+    .regs_tl_o(sram_ctrl_ret_regs_tl_rsp_o),
+    .ram_tl_i(sram_ctrl_ret_ram_tl_req_i),
+    .ram_tl_o(sram_ctrl_ret_ram_tl_rsp_o)
   );
 
 
@@ -668,42 +666,6 @@ module peppermint_pd_aon #(
     intr_alert_handler_classa,
     intr_pwrmgr_wakeup
   };
-
-  // Instantiation of TL-UL crossbars
-  xbar_aon u_xbar_aon (
-    .clk_aon_i(clk_aon_i),
-    .rst_aon_ni(rstmgr_resets.rst_lc_aon_n[rstmgr_pkg::DomainAonSel]),
-
-    // port: tl_main
-    .tl_main_i(main_tl_aon_req_i),
-    .tl_main_o(main_tl_aon_rsp_o),
-
-    // port: tl_pwrmgr
-    .tl_pwrmgr_o(pwrmgr_tl_req),
-    .tl_pwrmgr_i(pwrmgr_tl_rsp),
-
-    // port: tl_rstmgr
-    .tl_rstmgr_o(rstmgr_tl_req),
-    .tl_rstmgr_i(rstmgr_tl_rsp),
-
-    // port: tl_clkmgr
-    .tl_clkmgr_o(clkmgr_tl_req),
-    .tl_clkmgr_i(clkmgr_tl_rsp),
-
-    // port: tl_alert_handler
-    .tl_alert_handler_o(alert_handler_tl_req),
-    .tl_alert_handler_i(alert_handler_tl_rsp),
-
-    // port: tl_sram_ctrl_ret__regs
-    .tl_sram_ctrl_ret__regs_o(sram_ctrl_ret_regs_tl_req),
-    .tl_sram_ctrl_ret__regs_i(sram_ctrl_ret_regs_tl_rsp),
-
-    // port: tl_sram_ctrl_ret__ram
-    .tl_sram_ctrl_ret__ram_o(sram_ctrl_ret_ram_tl_req),
-    .tl_sram_ctrl_ret__ram_i(sram_ctrl_ret_ram_tl_rsp),
-
-    .scanmode_i
-  );
 
 
 

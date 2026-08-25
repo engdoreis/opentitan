@@ -32,7 +32,6 @@ filesets:
       - lowrisc:constants:top_peppermint_ibex_pmp_reset_pkg
       - lowrisc:ip:lc_ctrl
       - lowrisc:ip:mbx
-      - lowrisc:top_peppermint:xbar_aon
       - lowrisc:top_peppermint:xbar_main
       - lowrisc:top_peppermint:xbar_socdbg
       - lowrisc:top_peppermint:xbar_socmbx

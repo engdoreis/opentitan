@@ -71,7 +71,6 @@
              // Peppermint-specific IP written by topgen. These carry the two-domain
              // parametrisation, so clkmgr, pwrmgr and rstmgr are ours to close, and
              // alert_handler, otp_ctrl and the crossbars must be re-run for this instance.
-             "{proj_root}/hw/top_peppermint/ip/xbar_aon/dv/autogen/xbar_aon_sim_cfg.hjson",
              "{proj_root}/hw/top_peppermint/ip/xbar_main/dv/autogen/xbar_main_sim_cfg.hjson",
              "{proj_root}/hw/top_peppermint/ip/xbar_socdbg/dv/autogen/xbar_socdbg_sim_cfg.hjson",
              "{proj_root}/hw/top_peppermint/ip/xbar_socmbx/dv/autogen/xbar_socmbx_sim_cfg.hjson",

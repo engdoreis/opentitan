@@ -47,7 +47,6 @@ keep_hierarchy rv_plic$*
 keep_hierarchy rv_timer$*
 keep_hierarchy soc_dbg_ctrl$*
 keep_hierarchy sram_ctrl$*
-keep_hierarchy xbar_aon$*
 keep_hierarchy xbar_main$*
 keep_hierarchy xbar_socdbg$*
 keep_hierarchy xbar_socmbx$*

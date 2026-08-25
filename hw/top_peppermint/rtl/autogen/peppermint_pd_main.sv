@@ -133,8 +133,18 @@ module peppermint_pd_main #(
   output rv_core_ibex_pkg::cpu_crash_dump_t       rv_core_ibex_crash_dump_o,
   output rv_core_ibex_pkg::cpu_pwrmgr_t       rv_core_ibex_pwrmgr_o,
   output logic       rv_dm_ndmreset_req_o,
-  output tlul_pkg::tl_h2d_t       main_tl_aon_req_o,
-  input  tlul_pkg::tl_d2h_t       main_tl_aon_rsp_i,
+  output tlul_pkg::tl_h2d_t       pwrmgr_tl_req_o,
+  input  tlul_pkg::tl_d2h_t       pwrmgr_tl_rsp_i,
+  output tlul_pkg::tl_h2d_t       rstmgr_tl_req_o,
+  input  tlul_pkg::tl_d2h_t       rstmgr_tl_rsp_i,
+  output tlul_pkg::tl_h2d_t       clkmgr_tl_req_o,
+  input  tlul_pkg::tl_d2h_t       clkmgr_tl_rsp_i,
+  output tlul_pkg::tl_h2d_t       alert_handler_tl_req_o,
+  input  tlul_pkg::tl_d2h_t       alert_handler_tl_rsp_i,
+  output tlul_pkg::tl_h2d_t       sram_ctrl_ret_regs_tl_req_o,
+  input  tlul_pkg::tl_d2h_t       sram_ctrl_ret_regs_tl_rsp_i,
+  output tlul_pkg::tl_h2d_t       sram_ctrl_ret_ram_tl_req_o,
+  input  tlul_pkg::tl_d2h_t       sram_ctrl_ret_ram_tl_rsp_i,
   output logic       es_rng_enable_o,
   input  logic       es_rng_valid_i,
   input  logic [EntropySrcRngBusWidth-1:0] es_rng_bit_i,
@@ -1552,9 +1562,29 @@ module peppermint_pd_main #(
     .tl_mbx1__core_o(mbx1_core_tl_d_req),
     .tl_mbx1__core_i(mbx1_core_tl_d_rsp),
 
-    // port: tl_aon
-    .tl_aon_o(main_tl_aon_req_o),
-    .tl_aon_i(main_tl_aon_rsp_i),
+    // port: tl_pwrmgr
+    .tl_pwrmgr_o(pwrmgr_tl_req_o),
+    .tl_pwrmgr_i(pwrmgr_tl_rsp_i),
+
+    // port: tl_rstmgr
+    .tl_rstmgr_o(rstmgr_tl_req_o),
+    .tl_rstmgr_i(rstmgr_tl_rsp_i),
+
+    // port: tl_clkmgr
+    .tl_clkmgr_o(clkmgr_tl_req_o),
+    .tl_clkmgr_i(clkmgr_tl_rsp_i),
+
+    // port: tl_alert_handler
+    .tl_alert_handler_o(alert_handler_tl_req_o),
+    .tl_alert_handler_i(alert_handler_tl_rsp_i),
+
+    // port: tl_sram_ctrl_ret__regs
+    .tl_sram_ctrl_ret__regs_o(sram_ctrl_ret_regs_tl_req_o),
+    .tl_sram_ctrl_ret__regs_i(sram_ctrl_ret_regs_tl_rsp_i),
+
+    // port: tl_sram_ctrl_ret__ram
+    .tl_sram_ctrl_ret__ram_o(sram_ctrl_ret_ram_tl_req_o),
+    .tl_sram_ctrl_ret__ram_i(sram_ctrl_ret_ram_tl_rsp_i),
 
     .scanmode_i
   );

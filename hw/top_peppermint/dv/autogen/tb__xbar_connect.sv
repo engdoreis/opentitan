@@ -82,7 +82,6 @@ initial begin
     // only enable assertions in xbar as many pins are unconnected
     $assertoff(0, tb);
     $asserton(0, tb.dut.top_peppermint.peppermint_pd_main.u_xbar_main);
-    $asserton(0, tb.dut.top_peppermint.peppermint_pd_aon.u_xbar_aon);
     $asserton(0, tb.dut.top_peppermint.peppermint_pd_main.u_xbar_socmbx);
     $asserton(0, tb.dut.top_peppermint.peppermint_pd_main.u_xbar_socdbg);
 
@@ -92,14 +91,12 @@ initial begin
     // bypass clkmgr, force clocks directly
     force tb.dut.top_peppermint.peppermint_pd_main.u_xbar_main.clk_main_i = clk_main;
     force tb.dut.top_peppermint.peppermint_pd_main.u_xbar_main.clk_aon_i = clk_aon;
-    force tb.dut.top_peppermint.peppermint_pd_aon.u_xbar_aon.clk_aon_i = clk_aon;
     force tb.dut.top_peppermint.peppermint_pd_main.u_xbar_socmbx.clk_main_i = clk_main;
     force tb.dut.top_peppermint.peppermint_pd_main.u_xbar_socdbg.clk_main_i = clk_main;
 
     // bypass rstmgr, force resets directly
     force tb.dut.top_peppermint.peppermint_pd_main.u_xbar_main.rst_main_ni = rst_n;
     force tb.dut.top_peppermint.peppermint_pd_main.u_xbar_main.rst_aon_ni = rst_n;
-    force tb.dut.top_peppermint.peppermint_pd_aon.u_xbar_aon.rst_aon_ni = rst_n;
     force tb.dut.top_peppermint.peppermint_pd_main.u_xbar_socmbx.rst_main_ni = rst_n;
     force tb.dut.top_peppermint.peppermint_pd_main.u_xbar_socdbg.rst_main_ni = rst_n;
 

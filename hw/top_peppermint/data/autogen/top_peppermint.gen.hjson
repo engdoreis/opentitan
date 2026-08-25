@@ -728,6 +728,8 @@
           top_type: one-to-one
           top_signame: pwrmgr_tl
           index: -1
+          external: true
+          conn_type: false
         }
       ]
       base_addrs:
@@ -941,6 +943,8 @@
           top_type: one-to-one
           top_signame: rstmgr_tl
           index: -1
+          external: true
+          conn_type: false
         }
       ]
       base_addrs:
@@ -1089,6 +1093,8 @@
           top_type: one-to-one
           top_signame: clkmgr_tl
           index: -1
+          external: true
+          conn_type: false
         }
       ]
       base_addrs:
@@ -1251,6 +1257,8 @@
           top_type: one-to-one
           top_signame: alert_handler_tl
           index: -1
+          external: true
+          conn_type: false
         }
       ]
       base_addrs:
@@ -1510,6 +1518,8 @@
           top_type: one-to-one
           top_signame: sram_ctrl_ret_regs_tl
           index: -1
+          external: true
+          conn_type: false
         }
         {
           name: ram_tl
@@ -1524,6 +1534,8 @@
           top_type: one-to-one
           top_signame: sram_ctrl_ret_ram_tl
           index: -1
+          external: true
+          conn_type: false
         }
       ]
       generate_dif: true
@@ -7320,33 +7332,29 @@
       [
         main.tl_mbx1__core
       ]
-      main.tl_aon:
-      [
-        aon.tl_main
-      ]
       pwrmgr.tl:
       [
-        aon.tl_pwrmgr
+        main.tl_pwrmgr
       ]
       rstmgr.tl:
       [
-        aon.tl_rstmgr
+        main.tl_rstmgr
       ]
       clkmgr.tl:
       [
-        aon.tl_clkmgr
+        main.tl_clkmgr
       ]
       alert_handler.tl:
       [
-        aon.tl_alert_handler
+        main.tl_alert_handler
       ]
       sram_ctrl_ret.regs_tl:
       [
-        aon.tl_sram_ctrl_ret__regs
+        main.tl_sram_ctrl_ret__regs
       ]
       sram_ctrl_ret.ram_tl:
       [
-        aon.tl_sram_ctrl_ret__ram
+        main.tl_sram_ctrl_ret__ram
       ]
       socmbx.tl_ahb_bridge__socmbx:
       [
@@ -7478,7 +7486,12 @@
           ahb_bridge.ctn
           mbx0.core
           mbx1.core
-          aon
+          pwrmgr
+          rstmgr
+          clkmgr
+          alert_handler
+          sram_ctrl_ret.regs
+          sram_ctrl_ret.ram
         ]
         rv_dm.sba:
         [
@@ -7505,7 +7518,12 @@
           dma
           mbx0.core
           mbx1.core
-          aon
+          pwrmgr
+          rstmgr
+          clkmgr
+          alert_handler
+          sram_ctrl_ret.regs
+          sram_ctrl_ret.ram
         ]
         dma.host:
         [
@@ -8128,15 +8146,12 @@
           req_fifo_pass: true
         }
         {
-          name: aon
+          name: pwrmgr
           type: device
           clock: clk_aon_i
           reset: rst_aon_ni
           pipeline: false
-          xbar: true
-          stub: false
-          req_fifo_pass: true
-          addr_space: hart
+          inst_type: pwrmgr
           addr_range:
           [
             {
@@ -8144,9 +8159,117 @@
               {
                 hart: 0x40400000
               }
-              size_byte: 0x80000
+              size_byte: 0x80
             }
           ]
+          xbar: false
+          stub: false
+          req_fifo_pass: true
+        }
+        {
+          name: rstmgr
+          type: device
+          clock: clk_aon_i
+          reset: rst_aon_ni
+          pipeline: false
+          inst_type: rstmgr
+          addr_range:
+          [
+            {
+              base_addrs:
+              {
+                hart: 0x40410000
+              }
+              size_byte: 0x40
+            }
+          ]
+          xbar: false
+          stub: false
+          req_fifo_pass: true
+        }
+        {
+          name: clkmgr
+          type: device
+          clock: clk_aon_i
+          reset: rst_aon_ni
+          pipeline: false
+          inst_type: clkmgr
+          addr_range:
+          [
+            {
+              base_addrs:
+              {
+                hart: 0x40420000
+              }
+              size_byte: 0x40
+            }
+          ]
+          xbar: false
+          stub: false
+          req_fifo_pass: true
+        }
+        {
+          name: alert_handler
+          type: device
+          clock: clk_aon_i
+          reset: rst_aon_ni
+          pipeline: false
+          inst_type: alert_handler
+          addr_range:
+          [
+            {
+              base_addrs:
+              {
+                hart: 0x40450000
+              }
+              size_byte: 0x800
+            }
+          ]
+          xbar: false
+          stub: false
+          req_fifo_pass: true
+        }
+        {
+          name: sram_ctrl_ret.regs
+          type: device
+          clock: clk_aon_i
+          reset: rst_aon_ni
+          pipeline: false
+          inst_type: sram_ctrl
+          addr_range:
+          [
+            {
+              base_addrs:
+              {
+                hart: 0x40460000
+              }
+              size_byte: 0x40
+            }
+          ]
+          xbar: false
+          stub: false
+          req_fifo_pass: true
+        }
+        {
+          name: sram_ctrl_ret.ram
+          type: device
+          clock: clk_aon_i
+          reset: rst_aon_ni
+          pipeline: false
+          inst_type: sram_ctrl
+          addr_range:
+          [
+            {
+              base_addrs:
+              {
+                hart: 0x40470000
+              }
+              size_byte: 0x2000
+            }
+          ]
+          xbar: false
+          stub: false
+          req_fifo_pass: true
         }
       ]
       addr_spaces:
@@ -8567,7 +8690,7 @@
           index: -1
         }
         {
-          name: tl_aon
+          name: tl_pwrmgr
           struct: tl
           package: tlul_pkg
           type: req_rsp
@@ -8575,225 +8698,11 @@
           inst_name: main
           width: 1
           default: ""
-          end_idx: -1
-          top_type: one-to-one
-          top_signame: main_tl_aon
-          index: -1
-          external: true
-          conn_type: false
-        }
-      ]
-    }
-    {
-      name: aon
-      domain: Aon
-      clock_srcs:
-      {
-        clk_aon_i: aon
-      }
-      clock_group: ext
-      reset: rst_aon_ni
-      reset_connections:
-      {
-        rst_aon_ni:
-        {
-          name: lc_aon
-          domain: Aon
-        }
-      }
-      clock_connections:
-      {
-        clk_aon_i: clk_aon_i
-      }
-      connections:
-      {
-        main:
-        [
-          pwrmgr
-          rstmgr
-          clkmgr
-          alert_handler
-          sram_ctrl_ret.regs
-          sram_ctrl_ret.ram
-        ]
-      }
-      nodes:
-      [
-        {
-          name: main
-          type: host
-          addr_space: hart
-          clock: clk_aon_i
-          reset: rst_aon_ni
-          pipeline: false
-          xbar: true
-          stub: false
-          inst_type: ""
-          req_fifo_pass: true
-          rsp_fifo_pass: true
-        }
-        {
-          name: pwrmgr
-          type: device
-          clock: clk_aon_i
-          reset: rst_aon_ni
-          pipeline: false
-          inst_type: pwrmgr
-          addr_range:
-          [
-            {
-              base_addrs:
-              {
-                hart: 0x40400000
-              }
-              size_byte: 0x80
-            }
-          ]
-          xbar: false
-          stub: false
-          req_fifo_pass: true
-        }
-        {
-          name: rstmgr
-          type: device
-          clock: clk_aon_i
-          reset: rst_aon_ni
-          pipeline: false
-          inst_type: rstmgr
-          addr_range:
-          [
-            {
-              base_addrs:
-              {
-                hart: 0x40410000
-              }
-              size_byte: 0x40
-            }
-          ]
-          xbar: false
-          stub: false
-          req_fifo_pass: true
-        }
-        {
-          name: clkmgr
-          type: device
-          clock: clk_aon_i
-          reset: rst_aon_ni
-          pipeline: false
-          inst_type: clkmgr
-          addr_range:
-          [
-            {
-              base_addrs:
-              {
-                hart: 0x40420000
-              }
-              size_byte: 0x40
-            }
-          ]
-          xbar: false
-          stub: false
-          req_fifo_pass: true
-        }
-        {
-          name: alert_handler
-          type: device
-          clock: clk_aon_i
-          reset: rst_aon_ni
-          pipeline: false
-          inst_type: alert_handler
-          addr_range:
-          [
-            {
-              base_addrs:
-              {
-                hart: 0x40450000
-              }
-              size_byte: 0x800
-            }
-          ]
-          xbar: false
-          stub: false
-          req_fifo_pass: true
-        }
-        {
-          name: sram_ctrl_ret.regs
-          type: device
-          clock: clk_aon_i
-          reset: rst_aon_ni
-          pipeline: false
-          inst_type: sram_ctrl
-          addr_range:
-          [
-            {
-              base_addrs:
-              {
-                hart: 0x40460000
-              }
-              size_byte: 0x40
-            }
-          ]
-          xbar: false
-          stub: false
-          req_fifo_pass: true
-        }
-        {
-          name: sram_ctrl_ret.ram
-          type: device
-          clock: clk_aon_i
-          reset: rst_aon_ni
-          pipeline: false
-          inst_type: sram_ctrl
-          addr_range:
-          [
-            {
-              base_addrs:
-              {
-                hart: 0x40470000
-              }
-              size_byte: 0x2000
-            }
-          ]
-          xbar: false
-          stub: false
-          req_fifo_pass: true
-        }
-      ]
-      addr_spaces:
-      [
-        hart
-      ]
-      clock: clk_aon_i
-      type: xbar
-      inter_signal_list:
-      [
-        {
-          name: tl_main
-          struct: tl
-          package: tlul_pkg
-          type: req_rsp
-          act: rsp
-          inst_name: aon
-          width: 1
-          default: ""
-          domain: Aon
-          top_signame: main_tl_aon
-          index: -1
-          external: true
-          conn_type: false
-        }
-        {
-          name: tl_pwrmgr
-          struct: tl
-          package: tlul_pkg
-          type: req_rsp
-          act: req
-          inst_name: aon
-          width: 1
-          default: ""
-          domain: Aon
+          domain: Main
           top_signame: pwrmgr_tl
           index: -1
+          external: true
+          conn_type: false
         }
         {
           name: tl_rstmgr
@@ -8801,12 +8710,14 @@
           package: tlul_pkg
           type: req_rsp
           act: req
-          inst_name: aon
+          inst_name: main
           width: 1
           default: ""
-          domain: Aon
+          domain: Main
           top_signame: rstmgr_tl
           index: -1
+          external: true
+          conn_type: false
         }
         {
           name: tl_clkmgr
@@ -8814,12 +8725,14 @@
           package: tlul_pkg
           type: req_rsp
           act: req
-          inst_name: aon
+          inst_name: main
           width: 1
           default: ""
-          domain: Aon
+          domain: Main
           top_signame: clkmgr_tl
           index: -1
+          external: true
+          conn_type: false
         }
         {
           name: tl_alert_handler
@@ -8827,12 +8740,14 @@
           package: tlul_pkg
           type: req_rsp
           act: req
-          inst_name: aon
+          inst_name: main
           width: 1
           default: ""
-          domain: Aon
+          domain: Main
           top_signame: alert_handler_tl
           index: -1
+          external: true
+          conn_type: false
         }
         {
           name: tl_sram_ctrl_ret__regs
@@ -8840,12 +8755,14 @@
           package: tlul_pkg
           type: req_rsp
           act: req
-          inst_name: aon
+          inst_name: main
           width: 1
           default: ""
-          domain: Aon
+          domain: Main
           top_signame: sram_ctrl_ret_regs_tl
           index: -1
+          external: true
+          conn_type: false
         }
         {
           name: tl_sram_ctrl_ret__ram
@@ -8853,12 +8770,14 @@
           package: tlul_pkg
           type: req_rsp
           act: req
-          inst_name: aon
+          inst_name: main
           width: 1
           default: ""
-          domain: Aon
+          domain: Main
           top_signame: sram_ctrl_ret_ram_tl
           index: -1
+          external: true
+          conn_type: false
         }
       ]
     }
@@ -11025,11 +10944,11 @@
         package: tlul_pkg
         struct: tl_h2d
         domain: chip
-        signame: main_tl_aon_req
+        signame: pwrmgr_tl_req
         width: 1
         type: req_rsp
         end_idx: -1
-        act: req
+        act: rsp
         suffix: req
         default: tlul_pkg::TL_H2D_DEFAULT
       }
@@ -11037,11 +10956,131 @@
         package: tlul_pkg
         struct: tl_d2h
         domain: chip
-        signame: main_tl_aon_rsp
+        signame: pwrmgr_tl_rsp
         width: 1
         type: req_rsp
         end_idx: -1
-        act: req
+        act: rsp
+        suffix: rsp
+        default: tlul_pkg::TL_D2H_DEFAULT
+      }
+      {
+        package: tlul_pkg
+        struct: tl_h2d
+        domain: chip
+        signame: rstmgr_tl_req
+        width: 1
+        type: req_rsp
+        end_idx: -1
+        act: rsp
+        suffix: req
+        default: tlul_pkg::TL_H2D_DEFAULT
+      }
+      {
+        package: tlul_pkg
+        struct: tl_d2h
+        domain: chip
+        signame: rstmgr_tl_rsp
+        width: 1
+        type: req_rsp
+        end_idx: -1
+        act: rsp
+        suffix: rsp
+        default: tlul_pkg::TL_D2H_DEFAULT
+      }
+      {
+        package: tlul_pkg
+        struct: tl_h2d
+        domain: chip
+        signame: clkmgr_tl_req
+        width: 1
+        type: req_rsp
+        end_idx: -1
+        act: rsp
+        suffix: req
+        default: tlul_pkg::TL_H2D_DEFAULT
+      }
+      {
+        package: tlul_pkg
+        struct: tl_d2h
+        domain: chip
+        signame: clkmgr_tl_rsp
+        width: 1
+        type: req_rsp
+        end_idx: -1
+        act: rsp
+        suffix: rsp
+        default: tlul_pkg::TL_D2H_DEFAULT
+      }
+      {
+        package: tlul_pkg
+        struct: tl_h2d
+        domain: chip
+        signame: alert_handler_tl_req
+        width: 1
+        type: req_rsp
+        end_idx: -1
+        act: rsp
+        suffix: req
+        default: tlul_pkg::TL_H2D_DEFAULT
+      }
+      {
+        package: tlul_pkg
+        struct: tl_d2h
+        domain: chip
+        signame: alert_handler_tl_rsp
+        width: 1
+        type: req_rsp
+        end_idx: -1
+        act: rsp
+        suffix: rsp
+        default: tlul_pkg::TL_D2H_DEFAULT
+      }
+      {
+        package: tlul_pkg
+        struct: tl_h2d
+        domain: chip
+        signame: sram_ctrl_ret_regs_tl_req
+        width: 1
+        type: req_rsp
+        end_idx: -1
+        act: rsp
+        suffix: req
+        default: tlul_pkg::TL_H2D_DEFAULT
+      }
+      {
+        package: tlul_pkg
+        struct: tl_d2h
+        domain: chip
+        signame: sram_ctrl_ret_regs_tl_rsp
+        width: 1
+        type: req_rsp
+        end_idx: -1
+        act: rsp
+        suffix: rsp
+        default: tlul_pkg::TL_D2H_DEFAULT
+      }
+      {
+        package: tlul_pkg
+        struct: tl_h2d
+        domain: chip
+        signame: sram_ctrl_ret_ram_tl_req
+        width: 1
+        type: req_rsp
+        end_idx: -1
+        act: rsp
+        suffix: req
+        default: tlul_pkg::TL_H2D_DEFAULT
+      }
+      {
+        package: tlul_pkg
+        struct: tl_d2h
+        domain: chip
+        signame: sram_ctrl_ret_ram_tl_rsp
+        width: 1
+        type: req_rsp
+        end_idx: -1
+        act: rsp
         suffix: rsp
         default: tlul_pkg::TL_D2H_DEFAULT
       }
@@ -12000,6 +12039,8 @@
         top_type: one-to-one
         top_signame: pwrmgr_tl
         index: -1
+        external: true
+        conn_type: false
       }
       {
         name: por_n
@@ -12137,6 +12178,8 @@
         top_type: one-to-one
         top_signame: rstmgr_tl
         index: -1
+        external: true
+        conn_type: false
       }
       {
         name: clocks
@@ -12211,6 +12254,8 @@
         top_type: one-to-one
         top_signame: clkmgr_tl
         index: -1
+        external: true
+        conn_type: false
       }
       {
         name: crashdump
@@ -12296,6 +12341,8 @@
         top_type: one-to-one
         top_signame: alert_handler_tl
         index: -1
+        external: true
+        conn_type: false
       }
       {
         name: sram_otp_key
@@ -12423,6 +12470,8 @@
         top_type: one-to-one
         top_signame: sram_ctrl_ret_regs_tl
         index: -1
+        external: true
+        conn_type: false
       }
       {
         name: ram_tl
@@ -12437,6 +12486,8 @@
         top_type: one-to-one
         top_signame: sram_ctrl_ret_ram_tl
         index: -1
+        external: true
+        conn_type: false
       }
       {
         name: edn
@@ -16183,7 +16234,7 @@
         index: -1
       }
       {
-        name: tl_aon
+        name: tl_pwrmgr
         struct: tl
         package: tlul_pkg
         type: req_rsp
@@ -16191,40 +16242,11 @@
         inst_name: main
         width: 1
         default: ""
-        end_idx: -1
-        top_type: one-to-one
-        top_signame: main_tl_aon
-        index: -1
-        external: true
-        conn_type: false
-      }
-      {
-        name: tl_main
-        struct: tl
-        package: tlul_pkg
-        type: req_rsp
-        act: rsp
-        inst_name: aon
-        width: 1
-        default: ""
-        domain: Aon
-        top_signame: main_tl_aon
-        index: -1
-        external: true
-        conn_type: false
-      }
-      {
-        name: tl_pwrmgr
-        struct: tl
-        package: tlul_pkg
-        type: req_rsp
-        act: req
-        inst_name: aon
-        width: 1
-        default: ""
-        domain: Aon
+        domain: Main
         top_signame: pwrmgr_tl
         index: -1
+        external: true
+        conn_type: false
       }
       {
         name: tl_rstmgr
@@ -16232,12 +16254,14 @@
         package: tlul_pkg
         type: req_rsp
         act: req
-        inst_name: aon
+        inst_name: main
         width: 1
         default: ""
-        domain: Aon
+        domain: Main
         top_signame: rstmgr_tl
         index: -1
+        external: true
+        conn_type: false
       }
       {
         name: tl_clkmgr
@@ -16245,12 +16269,14 @@
         package: tlul_pkg
         type: req_rsp
         act: req
-        inst_name: aon
+        inst_name: main
         width: 1
         default: ""
-        domain: Aon
+        domain: Main
         top_signame: clkmgr_tl
         index: -1
+        external: true
+        conn_type: false
       }
       {
         name: tl_alert_handler
@@ -16258,12 +16284,14 @@
         package: tlul_pkg
         type: req_rsp
         act: req
-        inst_name: aon
+        inst_name: main
         width: 1
         default: ""
-        domain: Aon
+        domain: Main
         top_signame: alert_handler_tl
         index: -1
+        external: true
+        conn_type: false
       }
       {
         name: tl_sram_ctrl_ret__regs
@@ -16271,12 +16299,14 @@
         package: tlul_pkg
         type: req_rsp
         act: req
-        inst_name: aon
+        inst_name: main
         width: 1
         default: ""
-        domain: Aon
+        domain: Main
         top_signame: sram_ctrl_ret_regs_tl
         index: -1
+        external: true
+        conn_type: false
       }
       {
         name: tl_sram_ctrl_ret__ram
@@ -16284,12 +16314,14 @@
         package: tlul_pkg
         type: req_rsp
         act: req
-        inst_name: aon
+        inst_name: main
         width: 1
         default: ""
-        domain: Aon
+        domain: Main
         top_signame: sram_ctrl_ret_ram_tl
         index: -1
+        external: true
+        conn_type: false
       }
       {
         name: tl_ahb_bridge__socmbx
@@ -17119,32 +17151,13 @@
       {
         package: tlul_pkg
         struct: tl_h2d
-        domain: Main
+        domain: Aon
         inter_pd: true
-        signame: main_tl_aon_req_o
+        signame: pwrmgr_tl_req_i
         signame_chip:
         {
-          asic: main_tl_aon_req
-          verilator: main_tl_aon_req
-        }
-        width: 1
-        type: req_rsp
-        default: ""
-        direction: out
-        conn_type: false
-        index: -1
-        netname: main_tl_aon_h2d
-      }
-      {
-        package: tlul_pkg
-        struct: tl_d2h
-        domain: Main
-        inter_pd: true
-        signame: main_tl_aon_rsp_i
-        signame_chip:
-        {
-          asic: main_tl_aon_rsp
-          verilator: main_tl_aon_rsp
+          asic: pwrmgr_tl_req
+          verilator: pwrmgr_tl_req
         }
         width: 1
         type: req_rsp
@@ -17152,18 +17165,75 @@
         direction: in
         conn_type: false
         index: -1
-        netname: main_tl_aon_d2h
+        netname: pwrmgr_tl_h2d
+      }
+      {
+        package: tlul_pkg
+        struct: tl_d2h
+        domain: Aon
+        inter_pd: true
+        signame: pwrmgr_tl_rsp_o
+        signame_chip:
+        {
+          asic: pwrmgr_tl_rsp
+          verilator: pwrmgr_tl_rsp
+        }
+        width: 1
+        type: req_rsp
+        default: ""
+        direction: out
+        conn_type: false
+        index: -1
+        netname: pwrmgr_tl_d2h
+      }
+      {
+        package: tlul_pkg
+        struct: tl_h2d
+        domain: Main
+        inter_pd: true
+        signame: pwrmgr_tl_req_o
+        signame_chip:
+        {
+          asic: pwrmgr_tl_req
+          verilator: pwrmgr_tl_req
+        }
+        width: 1
+        type: req_rsp
+        default: ""
+        direction: out
+        conn_type: false
+        index: -1
+        netname: pwrmgr_tl_h2d
+      }
+      {
+        package: tlul_pkg
+        struct: tl_d2h
+        domain: Main
+        inter_pd: true
+        signame: pwrmgr_tl_rsp_i
+        signame_chip:
+        {
+          asic: pwrmgr_tl_rsp
+          verilator: pwrmgr_tl_rsp
+        }
+        width: 1
+        type: req_rsp
+        default: ""
+        direction: in
+        conn_type: false
+        index: -1
+        netname: pwrmgr_tl_d2h
       }
       {
         package: tlul_pkg
         struct: tl_h2d
         domain: Aon
         inter_pd: true
-        signame: main_tl_aon_req_i
+        signame: rstmgr_tl_req_i
         signame_chip:
         {
-          asic: main_tl_aon_req
-          verilator: main_tl_aon_req
+          asic: rstmgr_tl_req
+          verilator: rstmgr_tl_req
         }
         width: 1
         type: req_rsp
@@ -17171,18 +17241,18 @@
         direction: in
         conn_type: false
         index: -1
-        netname: main_tl_aon_h2d
+        netname: rstmgr_tl_h2d
       }
       {
         package: tlul_pkg
         struct: tl_d2h
         domain: Aon
         inter_pd: true
-        signame: main_tl_aon_rsp_o
+        signame: rstmgr_tl_rsp_o
         signame_chip:
         {
-          asic: main_tl_aon_rsp
-          verilator: main_tl_aon_rsp
+          asic: rstmgr_tl_rsp
+          verilator: rstmgr_tl_rsp
         }
         width: 1
         type: req_rsp
@@ -17190,7 +17260,349 @@
         direction: out
         conn_type: false
         index: -1
-        netname: main_tl_aon_d2h
+        netname: rstmgr_tl_d2h
+      }
+      {
+        package: tlul_pkg
+        struct: tl_h2d
+        domain: Main
+        inter_pd: true
+        signame: rstmgr_tl_req_o
+        signame_chip:
+        {
+          asic: rstmgr_tl_req
+          verilator: rstmgr_tl_req
+        }
+        width: 1
+        type: req_rsp
+        default: ""
+        direction: out
+        conn_type: false
+        index: -1
+        netname: rstmgr_tl_h2d
+      }
+      {
+        package: tlul_pkg
+        struct: tl_d2h
+        domain: Main
+        inter_pd: true
+        signame: rstmgr_tl_rsp_i
+        signame_chip:
+        {
+          asic: rstmgr_tl_rsp
+          verilator: rstmgr_tl_rsp
+        }
+        width: 1
+        type: req_rsp
+        default: ""
+        direction: in
+        conn_type: false
+        index: -1
+        netname: rstmgr_tl_d2h
+      }
+      {
+        package: tlul_pkg
+        struct: tl_h2d
+        domain: Aon
+        inter_pd: true
+        signame: clkmgr_tl_req_i
+        signame_chip:
+        {
+          asic: clkmgr_tl_req
+          verilator: clkmgr_tl_req
+        }
+        width: 1
+        type: req_rsp
+        default: ""
+        direction: in
+        conn_type: false
+        index: -1
+        netname: clkmgr_tl_h2d
+      }
+      {
+        package: tlul_pkg
+        struct: tl_d2h
+        domain: Aon
+        inter_pd: true
+        signame: clkmgr_tl_rsp_o
+        signame_chip:
+        {
+          asic: clkmgr_tl_rsp
+          verilator: clkmgr_tl_rsp
+        }
+        width: 1
+        type: req_rsp
+        default: ""
+        direction: out
+        conn_type: false
+        index: -1
+        netname: clkmgr_tl_d2h
+      }
+      {
+        package: tlul_pkg
+        struct: tl_h2d
+        domain: Main
+        inter_pd: true
+        signame: clkmgr_tl_req_o
+        signame_chip:
+        {
+          asic: clkmgr_tl_req
+          verilator: clkmgr_tl_req
+        }
+        width: 1
+        type: req_rsp
+        default: ""
+        direction: out
+        conn_type: false
+        index: -1
+        netname: clkmgr_tl_h2d
+      }
+      {
+        package: tlul_pkg
+        struct: tl_d2h
+        domain: Main
+        inter_pd: true
+        signame: clkmgr_tl_rsp_i
+        signame_chip:
+        {
+          asic: clkmgr_tl_rsp
+          verilator: clkmgr_tl_rsp
+        }
+        width: 1
+        type: req_rsp
+        default: ""
+        direction: in
+        conn_type: false
+        index: -1
+        netname: clkmgr_tl_d2h
+      }
+      {
+        package: tlul_pkg
+        struct: tl_h2d
+        domain: Aon
+        inter_pd: true
+        signame: alert_handler_tl_req_i
+        signame_chip:
+        {
+          asic: alert_handler_tl_req
+          verilator: alert_handler_tl_req
+        }
+        width: 1
+        type: req_rsp
+        default: ""
+        direction: in
+        conn_type: false
+        index: -1
+        netname: alert_handler_tl_h2d
+      }
+      {
+        package: tlul_pkg
+        struct: tl_d2h
+        domain: Aon
+        inter_pd: true
+        signame: alert_handler_tl_rsp_o
+        signame_chip:
+        {
+          asic: alert_handler_tl_rsp
+          verilator: alert_handler_tl_rsp
+        }
+        width: 1
+        type: req_rsp
+        default: ""
+        direction: out
+        conn_type: false
+        index: -1
+        netname: alert_handler_tl_d2h
+      }
+      {
+        package: tlul_pkg
+        struct: tl_h2d
+        domain: Main
+        inter_pd: true
+        signame: alert_handler_tl_req_o
+        signame_chip:
+        {
+          asic: alert_handler_tl_req
+          verilator: alert_handler_tl_req
+        }
+        width: 1
+        type: req_rsp
+        default: ""
+        direction: out
+        conn_type: false
+        index: -1
+        netname: alert_handler_tl_h2d
+      }
+      {
+        package: tlul_pkg
+        struct: tl_d2h
+        domain: Main
+        inter_pd: true
+        signame: alert_handler_tl_rsp_i
+        signame_chip:
+        {
+          asic: alert_handler_tl_rsp
+          verilator: alert_handler_tl_rsp
+        }
+        width: 1
+        type: req_rsp
+        default: ""
+        direction: in
+        conn_type: false
+        index: -1
+        netname: alert_handler_tl_d2h
+      }
+      {
+        package: tlul_pkg
+        struct: tl_h2d
+        domain: Aon
+        inter_pd: true
+        signame: sram_ctrl_ret_regs_tl_req_i
+        signame_chip:
+        {
+          asic: sram_ctrl_ret_regs_tl_req
+          verilator: sram_ctrl_ret_regs_tl_req
+        }
+        width: 1
+        type: req_rsp
+        default: ""
+        direction: in
+        conn_type: false
+        index: -1
+        netname: sram_ctrl_ret_regs_tl_h2d
+      }
+      {
+        package: tlul_pkg
+        struct: tl_d2h
+        domain: Aon
+        inter_pd: true
+        signame: sram_ctrl_ret_regs_tl_rsp_o
+        signame_chip:
+        {
+          asic: sram_ctrl_ret_regs_tl_rsp
+          verilator: sram_ctrl_ret_regs_tl_rsp
+        }
+        width: 1
+        type: req_rsp
+        default: ""
+        direction: out
+        conn_type: false
+        index: -1
+        netname: sram_ctrl_ret_regs_tl_d2h
+      }
+      {
+        package: tlul_pkg
+        struct: tl_h2d
+        domain: Main
+        inter_pd: true
+        signame: sram_ctrl_ret_regs_tl_req_o
+        signame_chip:
+        {
+          asic: sram_ctrl_ret_regs_tl_req
+          verilator: sram_ctrl_ret_regs_tl_req
+        }
+        width: 1
+        type: req_rsp
+        default: ""
+        direction: out
+        conn_type: false
+        index: -1
+        netname: sram_ctrl_ret_regs_tl_h2d
+      }
+      {
+        package: tlul_pkg
+        struct: tl_d2h
+        domain: Main
+        inter_pd: true
+        signame: sram_ctrl_ret_regs_tl_rsp_i
+        signame_chip:
+        {
+          asic: sram_ctrl_ret_regs_tl_rsp
+          verilator: sram_ctrl_ret_regs_tl_rsp
+        }
+        width: 1
+        type: req_rsp
+        default: ""
+        direction: in
+        conn_type: false
+        index: -1
+        netname: sram_ctrl_ret_regs_tl_d2h
+      }
+      {
+        package: tlul_pkg
+        struct: tl_h2d
+        domain: Aon
+        inter_pd: true
+        signame: sram_ctrl_ret_ram_tl_req_i
+        signame_chip:
+        {
+          asic: sram_ctrl_ret_ram_tl_req
+          verilator: sram_ctrl_ret_ram_tl_req
+        }
+        width: 1
+        type: req_rsp
+        default: ""
+        direction: in
+        conn_type: false
+        index: -1
+        netname: sram_ctrl_ret_ram_tl_h2d
+      }
+      {
+        package: tlul_pkg
+        struct: tl_d2h
+        domain: Aon
+        inter_pd: true
+        signame: sram_ctrl_ret_ram_tl_rsp_o
+        signame_chip:
+        {
+          asic: sram_ctrl_ret_ram_tl_rsp
+          verilator: sram_ctrl_ret_ram_tl_rsp
+        }
+        width: 1
+        type: req_rsp
+        default: ""
+        direction: out
+        conn_type: false
+        index: -1
+        netname: sram_ctrl_ret_ram_tl_d2h
+      }
+      {
+        package: tlul_pkg
+        struct: tl_h2d
+        domain: Main
+        inter_pd: true
+        signame: sram_ctrl_ret_ram_tl_req_o
+        signame_chip:
+        {
+          asic: sram_ctrl_ret_ram_tl_req
+          verilator: sram_ctrl_ret_ram_tl_req
+        }
+        width: 1
+        type: req_rsp
+        default: ""
+        direction: out
+        conn_type: false
+        index: -1
+        netname: sram_ctrl_ret_ram_tl_h2d
+      }
+      {
+        package: tlul_pkg
+        struct: tl_d2h
+        domain: Main
+        inter_pd: true
+        signame: sram_ctrl_ret_ram_tl_rsp_i
+        signame_chip:
+        {
+          asic: sram_ctrl_ret_ram_tl_rsp
+          verilator: sram_ctrl_ret_ram_tl_rsp
+        }
+        width: 1
+        type: req_rsp
+        default: ""
+        direction: in
+        conn_type: false
+        index: -1
+        netname: sram_ctrl_ret_ram_tl_d2h
       }
       {
         package: ""
@@ -19062,150 +19474,6 @@
         struct: tl_d2h
         domain: Main
         signame: mbx1_core_tl_d_rsp
-        width: 1
-        type: req_rsp
-        end_idx: -1
-        act: rsp
-        suffix: rsp
-        default: ""
-      }
-      {
-        package: tlul_pkg
-        struct: tl_h2d
-        domain: Aon
-        signame: pwrmgr_tl_req
-        width: 1
-        type: req_rsp
-        end_idx: -1
-        act: rsp
-        suffix: req
-        default: tlul_pkg::TL_H2D_DEFAULT
-      }
-      {
-        package: tlul_pkg
-        struct: tl_d2h
-        domain: Aon
-        signame: pwrmgr_tl_rsp
-        width: 1
-        type: req_rsp
-        end_idx: -1
-        act: rsp
-        suffix: rsp
-        default: ""
-      }
-      {
-        package: tlul_pkg
-        struct: tl_h2d
-        domain: Aon
-        signame: rstmgr_tl_req
-        width: 1
-        type: req_rsp
-        end_idx: -1
-        act: rsp
-        suffix: req
-        default: tlul_pkg::TL_H2D_DEFAULT
-      }
-      {
-        package: tlul_pkg
-        struct: tl_d2h
-        domain: Aon
-        signame: rstmgr_tl_rsp
-        width: 1
-        type: req_rsp
-        end_idx: -1
-        act: rsp
-        suffix: rsp
-        default: ""
-      }
-      {
-        package: tlul_pkg
-        struct: tl_h2d
-        domain: Aon
-        signame: clkmgr_tl_req
-        width: 1
-        type: req_rsp
-        end_idx: -1
-        act: rsp
-        suffix: req
-        default: tlul_pkg::TL_H2D_DEFAULT
-      }
-      {
-        package: tlul_pkg
-        struct: tl_d2h
-        domain: Aon
-        signame: clkmgr_tl_rsp
-        width: 1
-        type: req_rsp
-        end_idx: -1
-        act: rsp
-        suffix: rsp
-        default: ""
-      }
-      {
-        package: tlul_pkg
-        struct: tl_h2d
-        domain: Aon
-        signame: alert_handler_tl_req
-        width: 1
-        type: req_rsp
-        end_idx: -1
-        act: rsp
-        suffix: req
-        default: tlul_pkg::TL_H2D_DEFAULT
-      }
-      {
-        package: tlul_pkg
-        struct: tl_d2h
-        domain: Aon
-        signame: alert_handler_tl_rsp
-        width: 1
-        type: req_rsp
-        end_idx: -1
-        act: rsp
-        suffix: rsp
-        default: ""
-      }
-      {
-        package: tlul_pkg
-        struct: tl_h2d
-        domain: Aon
-        signame: sram_ctrl_ret_regs_tl_req
-        width: 1
-        type: req_rsp
-        end_idx: -1
-        act: rsp
-        suffix: req
-        default: tlul_pkg::TL_H2D_DEFAULT
-      }
-      {
-        package: tlul_pkg
-        struct: tl_d2h
-        domain: Aon
-        signame: sram_ctrl_ret_regs_tl_rsp
-        width: 1
-        type: req_rsp
-        end_idx: -1
-        act: rsp
-        suffix: rsp
-        default: ""
-      }
-      {
-        package: tlul_pkg
-        struct: tl_h2d
-        domain: Aon
-        signame: sram_ctrl_ret_ram_tl_req
-        width: 1
-        type: req_rsp
-        end_idx: -1
-        act: rsp
-        suffix: req
-        default: tlul_pkg::TL_H2D_DEFAULT
-      }
-      {
-        package: tlul_pkg
-        struct: tl_d2h
-        domain: Aon
-        signame: sram_ctrl_ret_ram_tl_rsp
         width: 1
         type: req_rsp
         end_idx: -1

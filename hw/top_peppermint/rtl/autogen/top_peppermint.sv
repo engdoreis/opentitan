@@ -228,8 +228,18 @@ module top_peppermint #(
   rv_core_ibex_pkg::cpu_crash_dump_t       rv_core_ibex_crash_dump;
   rv_core_ibex_pkg::cpu_pwrmgr_t       rv_core_ibex_pwrmgr;
   logic       rv_dm_ndmreset_req;
-  tlul_pkg::tl_h2d_t       main_tl_aon_req;
-  tlul_pkg::tl_d2h_t       main_tl_aon_rsp;
+  tlul_pkg::tl_h2d_t       pwrmgr_tl_req;
+  tlul_pkg::tl_d2h_t       pwrmgr_tl_rsp;
+  tlul_pkg::tl_h2d_t       rstmgr_tl_req;
+  tlul_pkg::tl_d2h_t       rstmgr_tl_rsp;
+  tlul_pkg::tl_h2d_t       clkmgr_tl_req;
+  tlul_pkg::tl_d2h_t       clkmgr_tl_rsp;
+  tlul_pkg::tl_h2d_t       alert_handler_tl_req;
+  tlul_pkg::tl_d2h_t       alert_handler_tl_rsp;
+  tlul_pkg::tl_h2d_t       sram_ctrl_ret_regs_tl_req;
+  tlul_pkg::tl_d2h_t       sram_ctrl_ret_regs_tl_rsp;
+  tlul_pkg::tl_h2d_t       sram_ctrl_ret_ram_tl_req;
+  tlul_pkg::tl_d2h_t       sram_ctrl_ret_ram_tl_rsp;
 
   lc_ctrl_pkg::lc_tx_t lc_ctrl_lc_nvm_debug_en;
   lc_ctrl_pkg::lc_tx_t lc_ctrl_lc_cpu_en;
@@ -371,8 +381,18 @@ module top_peppermint #(
     .rv_core_ibex_crash_dump_o  (rv_core_ibex_crash_dump  ),
     .rv_core_ibex_pwrmgr_o      (rv_core_ibex_pwrmgr      ),
     .rv_dm_ndmreset_req_o       (rv_dm_ndmreset_req       ),
-    .main_tl_aon_req_o          (main_tl_aon_req          ),
-    .main_tl_aon_rsp_i          (main_tl_aon_rsp          ),
+    .pwrmgr_tl_req_o            (pwrmgr_tl_req            ),
+    .pwrmgr_tl_rsp_i            (pwrmgr_tl_rsp            ),
+    .rstmgr_tl_req_o            (rstmgr_tl_req            ),
+    .rstmgr_tl_rsp_i            (rstmgr_tl_rsp            ),
+    .clkmgr_tl_req_o            (clkmgr_tl_req            ),
+    .clkmgr_tl_rsp_i            (clkmgr_tl_rsp            ),
+    .alert_handler_tl_req_o     (alert_handler_tl_req     ),
+    .alert_handler_tl_rsp_i     (alert_handler_tl_rsp     ),
+    .sram_ctrl_ret_regs_tl_req_o(sram_ctrl_ret_regs_tl_req),
+    .sram_ctrl_ret_regs_tl_rsp_i(sram_ctrl_ret_regs_tl_rsp),
+    .sram_ctrl_ret_ram_tl_req_o (sram_ctrl_ret_ram_tl_req ),
+    .sram_ctrl_ret_ram_tl_rsp_i (sram_ctrl_ret_ram_tl_rsp ),
 
     // Regular ports (auto-generated)
     .es_rng_enable_o,
@@ -474,8 +494,18 @@ module top_peppermint #(
     .rv_core_ibex_crash_dump_i  (rv_core_ibex_crash_dump  ),
     .rv_core_ibex_pwrmgr_i      (rv_core_ibex_pwrmgr      ),
     .rv_dm_ndmreset_req_i       (rv_dm_ndmreset_req       ),
-    .main_tl_aon_req_i          (main_tl_aon_req          ),
-    .main_tl_aon_rsp_o          (main_tl_aon_rsp          ),
+    .pwrmgr_tl_req_i            (pwrmgr_tl_req            ),
+    .pwrmgr_tl_rsp_o            (pwrmgr_tl_rsp            ),
+    .rstmgr_tl_req_i            (rstmgr_tl_req            ),
+    .rstmgr_tl_rsp_o            (rstmgr_tl_rsp            ),
+    .clkmgr_tl_req_i            (clkmgr_tl_req            ),
+    .clkmgr_tl_rsp_o            (clkmgr_tl_rsp            ),
+    .alert_handler_tl_req_i     (alert_handler_tl_req     ),
+    .alert_handler_tl_rsp_o     (alert_handler_tl_rsp     ),
+    .sram_ctrl_ret_regs_tl_req_i(sram_ctrl_ret_regs_tl_req),
+    .sram_ctrl_ret_regs_tl_rsp_o(sram_ctrl_ret_regs_tl_rsp),
+    .sram_ctrl_ret_ram_tl_req_i (sram_ctrl_ret_ram_tl_req ),
+    .sram_ctrl_ret_ram_tl_rsp_o (sram_ctrl_ret_ram_tl_rsp ),
 
     // Regular ports (auto-generated)
     .wakeup_main_i

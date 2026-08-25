@@ -58,12 +58,17 @@
     { name: "rv_core_ibex.cfg",   type: "device", clock: "clk_main_i", reset: "rst_main_ni", pipeline: false },
     { name: "dma",                type: "device", clock: "clk_main_i", reset: "rst_main_ni", pipeline: false },
     // Shared, address-mapped egress window to the wider SoC.
-    { name: "ahb_bridge.ctn",      type: "device", clock: "clk_main_i", reset: "rst_main_ni", pipeline: false },
+    { name: "ahb_bridge.ctn",     type: "device", clock: "clk_main_i", reset: "rst_main_ni", pipeline: false },
     { name: "mbx0.core",          type: "device", clock: "clk_main_i", reset: "rst_main_ni", pipeline: false },
     { name: "mbx1.core",          type: "device", clock: "clk_main_i", reset: "rst_main_ni", pipeline: false },
-    // Link to the Aon-domain register crossbar (xbar_aon); the async
-    // crossing FIFO is generated here, inside the main power domain.
-    { name: "aon",                type: "device", clock: "clk_aon_i",  reset: "rst_aon_ni",  pipeline: false },
+    // Aon-resident modules. Each keeps its own clk_aon_i/rst_aon_ni, so the
+    // async crossing FIFO is generated per node, here in the main power domain.
+    { name: "pwrmgr",             type: "device", clock: "clk_aon_i", reset: "rst_aon_ni", pipeline: false },
+    { name: "rstmgr",             type: "device", clock: "clk_aon_i", reset: "rst_aon_ni", pipeline: false },
+    { name: "clkmgr",             type: "device", clock: "clk_aon_i", reset: "rst_aon_ni", pipeline: false },
+    { name: "alert_handler",      type: "device", clock: "clk_aon_i", reset: "rst_aon_ni", pipeline: false },
+    { name: "sram_ctrl_ret.regs", type: "device", clock: "clk_aon_i", reset: "rst_aon_ni", pipeline: false },
+    { name: "sram_ctrl_ret.ram",  type: "device", clock: "clk_aon_i", reset: "rst_aon_ni", pipeline: false },
   ],
   connections: {
     "rv_core_ibex.corei": [
@@ -77,7 +82,8 @@
       "rv_plic", "rv_timer", "aes", "hmac", "kmac", "otbn", "keymgr_dpe",
       "csrng", "entropy_src", "edn0", "edn1",
       "rv_core_ibex.cfg", "dma", "ahb_bridge.ctn", "mbx0.core", "mbx1.core",
-      "aon",
+      "pwrmgr", "rstmgr", "clkmgr", "alert_handler",
+      "sram_ctrl_ret.regs", "sram_ctrl_ret.ram",
     ],
     "rv_dm.sba": [
       "rv_dm.regs", "rom_ctrl.rom", "rom_ctrl.regs",
@@ -86,7 +92,8 @@
       "rv_plic", "rv_timer", "aes", "hmac", "kmac", "otbn", "keymgr_dpe",
       "csrng", "entropy_src", "edn0", "edn1",
       "rv_core_ibex.cfg", "dma", "mbx0.core", "mbx1.core",
-      "aon",
+      "pwrmgr", "rstmgr", "clkmgr", "alert_handler",
+      "sram_ctrl_ret.regs", "sram_ctrl_ret.ram",
     ],
     "dma.host": [
       "sram_ctrl_main.ram", "rom_ctrl.rom", "ahb_bridge.ctn",

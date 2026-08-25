@@ -31,9 +31,12 @@ package tl_main_pkg;
   localparam logic [31:0] ADDR_SPACE_AHB_BRIDGE__CTN      = 32'h 80000000;
   localparam logic [31:0] ADDR_SPACE_MBX0__CORE           = 32'h 22000000;
   localparam logic [31:0] ADDR_SPACE_MBX1__CORE           = 32'h 22000100;
-  localparam logic [0:0][31:0] ADDR_SPACE_AON                  = {
-    32'h 40400000
-  };
+  localparam logic [31:0] ADDR_SPACE_PWRMGR               = 32'h 40400000;
+  localparam logic [31:0] ADDR_SPACE_RSTMGR               = 32'h 40410000;
+  localparam logic [31:0] ADDR_SPACE_CLKMGR               = 32'h 40420000;
+  localparam logic [31:0] ADDR_SPACE_ALERT_HANDLER        = 32'h 40450000;
+  localparam logic [31:0] ADDR_SPACE_SRAM_CTRL_RET__REGS  = 32'h 40460000;
+  localparam logic [31:0] ADDR_SPACE_SRAM_CTRL_RET__RAM   = 32'h 40470000;
 
   localparam logic [31:0] ADDR_MASK_RV_DM__REGS          = 32'h 0000000f;
   localparam logic [31:0] ADDR_MASK_RV_DM__MEM           = 32'h 00000fff;
@@ -60,12 +63,15 @@ package tl_main_pkg;
   localparam logic [31:0] ADDR_MASK_AHB_BRIDGE__CTN      = 32'h 0fffffff;
   localparam logic [31:0] ADDR_MASK_MBX0__CORE           = 32'h 0000007f;
   localparam logic [31:0] ADDR_MASK_MBX1__CORE           = 32'h 0000007f;
-  localparam logic [0:0][31:0] ADDR_MASK_AON                  = {
-    32'h 0007ffff
-  };
+  localparam logic [31:0] ADDR_MASK_PWRMGR               = 32'h 0000007f;
+  localparam logic [31:0] ADDR_MASK_RSTMGR               = 32'h 0000003f;
+  localparam logic [31:0] ADDR_MASK_CLKMGR               = 32'h 0000003f;
+  localparam logic [31:0] ADDR_MASK_ALERT_HANDLER        = 32'h 000007ff;
+  localparam logic [31:0] ADDR_MASK_SRAM_CTRL_RET__REGS  = 32'h 0000003f;
+  localparam logic [31:0] ADDR_MASK_SRAM_CTRL_RET__RAM   = 32'h 00001fff;
 
   localparam int N_HOST   = 6;
-  localparam int N_DEVICE = 26;
+  localparam int N_DEVICE = 31;
 
   typedef enum int {
     TlRvDmRegs = 0,
@@ -93,7 +99,12 @@ package tl_main_pkg;
     TlAhbBridgeCtn = 22,
     TlMbx0Core = 23,
     TlMbx1Core = 24,
-    TlAon = 25
+    TlPwrmgr = 25,
+    TlRstmgr = 26,
+    TlClkmgr = 27,
+    TlAlertHandler = 28,
+    TlSramCtrlRetRegs = 29,
+    TlSramCtrlRetRam = 30
   } tl_device_e;
 
   typedef enum int {
