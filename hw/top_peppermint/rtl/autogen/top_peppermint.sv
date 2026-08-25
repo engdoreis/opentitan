@@ -21,12 +21,12 @@ module top_peppermint #(
   // parameters for alert_handler
   parameter int AlertHandlerEscNumSeverities = 4,
   parameter int AlertHandlerEscPingCountWidth = 16,
-  // parameters for sram_ctrl_ret_aon
-  parameter int SramCtrlRetAonInstSize = 8192,
-  parameter int SramCtrlRetAonNumRamInst = 1,
-  parameter bit SramCtrlRetAonInstrExec = 0,
-  parameter int SramCtrlRetAonNumPrinceRoundsHalf = 3,
-  parameter bit SramCtrlRetAonEccCorrection = 0,
+  // parameters for sram_ctrl_ret
+  parameter int SramCtrlRetInstSize = 8192,
+  parameter int SramCtrlRetNumRamInst = 1,
+  parameter bit SramCtrlRetInstrExec = 0,
+  parameter int SramCtrlRetNumPrinceRoundsHalf = 3,
+  parameter bit SramCtrlRetEccCorrection = 0,
   // parameters for otp_macro
   parameter OtpMacroMemInitFile = "",
   // parameters for lc_ctrl
@@ -407,11 +407,11 @@ module top_peppermint #(
   .SecRstmgrMaxSyncDelay(SecRstmgrMaxSyncDelay),
   .AlertHandlerEscNumSeverities(AlertHandlerEscNumSeverities),
   .AlertHandlerEscPingCountWidth(AlertHandlerEscPingCountWidth),
-  .SramCtrlRetAonInstSize(SramCtrlRetAonInstSize),
-  .SramCtrlRetAonNumRamInst(SramCtrlRetAonNumRamInst),
-  .SramCtrlRetAonInstrExec(SramCtrlRetAonInstrExec),
-  .SramCtrlRetAonNumPrinceRoundsHalf(SramCtrlRetAonNumPrinceRoundsHalf),
-  .SramCtrlRetAonEccCorrection(SramCtrlRetAonEccCorrection)
+  .SramCtrlRetInstSize(SramCtrlRetInstSize),
+  .SramCtrlRetNumRamInst(SramCtrlRetNumRamInst),
+  .SramCtrlRetInstrExec(SramCtrlRetInstrExec),
+  .SramCtrlRetNumPrinceRoundsHalf(SramCtrlRetNumPrinceRoundsHalf),
+  .SramCtrlRetEccCorrection(SramCtrlRetEccCorrection)
   ) peppermint_pd_aon (
     .rst_aon_ni,
     .power_main_req_o,

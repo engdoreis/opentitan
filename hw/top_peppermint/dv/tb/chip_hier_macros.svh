@@ -24,7 +24,7 @@
 // Always-on domain blocks
 `define ALERT_HANDLER_HIER      `PD_AON_HIER.u_alert_handler
 `define PWRMGR_HIER             `PD_AON_HIER.u_pwrmgr
-`define SRAM_CTRL_RET_AON_HIER  `PD_AON_HIER.u_sram_ctrl_ret_aon
+`define SRAM_CTRL_RET_HIER      `PD_AON_HIER.u_sram_ctrl_ret
 
 // Main domain blocks
 `define CPU_HIER                `PD_MAIN_HIER.u_rv_core_ibex
@@ -44,7 +44,7 @@
 `endif
 
 `define RAM_MAIN_HIER     `SRAM_CTRL_MAIN_HIER.u_prim_ram_1p_scr
-`define RAM_RET_HIER      `SRAM_CTRL_RET_AON_HIER.u_prim_ram_1p_scr
+`define RAM_RET_HIER      `SRAM_CTRL_RET_HIER.u_prim_ram_1p_scr
 
 `define RAM_MAIN_MEM_HIER `RAM_MAIN_HIER.u_prim_ram_1p_adv.gen_ram_inst[0].u_mem.`MEM_ARRAY_SUB
 `define RAM_RET_MEM_HIER  `RAM_RET_HIER.u_prim_ram_1p_adv.gen_ram_inst[0].u_mem.`MEM_ARRAY_SUB

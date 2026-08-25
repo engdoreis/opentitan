@@ -21,12 +21,12 @@ module peppermint_pd_aon #(
   // parameters for alert_handler
   parameter int AlertHandlerEscNumSeverities = 4,
   parameter int AlertHandlerEscPingCountWidth = 16,
-  // parameters for sram_ctrl_ret_aon
-  parameter int SramCtrlRetAonInstSize = 8192,
-  parameter int SramCtrlRetAonNumRamInst = 1,
-  parameter bit SramCtrlRetAonInstrExec = 0,
-  parameter int SramCtrlRetAonNumPrinceRoundsHalf = 3,
-  parameter bit SramCtrlRetAonEccCorrection = 0
+  // parameters for sram_ctrl_ret
+  parameter int SramCtrlRetInstSize = 8192,
+  parameter int SramCtrlRetNumRamInst = 1,
+  parameter bit SramCtrlRetInstrExec = 0,
+  parameter int SramCtrlRetNumPrinceRoundsHalf = 3,
+  parameter bit SramCtrlRetEccCorrection = 0
 ) (
   // Inter-module Signal External type
   output pwrmgr_pkg::pwr_otp_req_t       pwrmgr_pwr_otp_req_o,
@@ -114,8 +114,8 @@ module peppermint_pd_aon #(
   import top_peppermint_rnd_cnst_pkg::*;
 
   // Local Parameters
-  // local parameters for sram_ctrl_ret_aon
-  localparam int SramCtrlRetAonOutstanding = 2;
+  // local parameters for sram_ctrl_ret
+  localparam int SramCtrlRetOutstanding = 2;
 
   // Signals
 
@@ -271,10 +271,10 @@ module peppermint_pd_aon #(
   tlul_pkg::tl_d2h_t       clkmgr_tl_rsp;
   tlul_pkg::tl_h2d_t       alert_handler_tl_req;
   tlul_pkg::tl_d2h_t       alert_handler_tl_rsp;
-  tlul_pkg::tl_h2d_t       sram_ctrl_ret_aon_regs_tl_req;
-  tlul_pkg::tl_d2h_t       sram_ctrl_ret_aon_regs_tl_rsp;
-  tlul_pkg::tl_h2d_t       sram_ctrl_ret_aon_ram_tl_req;
-  tlul_pkg::tl_d2h_t       sram_ctrl_ret_aon_ram_tl_rsp;
+  tlul_pkg::tl_h2d_t       sram_ctrl_ret_regs_tl_req;
+  tlul_pkg::tl_d2h_t       sram_ctrl_ret_regs_tl_rsp;
+  tlul_pkg::tl_h2d_t       sram_ctrl_ret_ram_tl_req;
+  tlul_pkg::tl_d2h_t       sram_ctrl_ret_ram_tl_rsp;
   clkmgr_pkg::clkmgr_out_t       clkmgr_clocks;
   clkmgr_pkg::clkmgr_cg_en_t       clkmgr_cg_en;
   rstmgr_pkg::rstmgr_out_t       rstmgr_resets;
@@ -615,18 +615,18 @@ module peppermint_pd_aon #(
   sram_ctrl #(
     .AlertAsyncOn(alert_handler_reg_pkg::AsyncOn[5]),
     .AlertSkewCycles(top_pkg::AlertSkewCycles),
-    .RndCnstSramKey(RndCnstSramCtrlRetAonSramKey),
-    .RndCnstSramNonce(RndCnstSramCtrlRetAonSramNonce),
-    .RndCnstLfsrSeed(RndCnstSramCtrlRetAonLfsrSeed),
-    .RndCnstLfsrPerm(RndCnstSramCtrlRetAonLfsrPerm),
+    .RndCnstSramKey(RndCnstSramCtrlRetSramKey),
+    .RndCnstSramNonce(RndCnstSramCtrlRetSramNonce),
+    .RndCnstLfsrSeed(RndCnstSramCtrlRetLfsrSeed),
+    .RndCnstLfsrPerm(RndCnstSramCtrlRetLfsrPerm),
     .MemSizeRam(8192),
-    .InstSize(SramCtrlRetAonInstSize),
-    .NumRamInst(SramCtrlRetAonNumRamInst),
-    .InstrExec(SramCtrlRetAonInstrExec),
-    .NumPrinceRoundsHalf(SramCtrlRetAonNumPrinceRoundsHalf),
-    .Outstanding(SramCtrlRetAonOutstanding),
-    .EccCorrection(SramCtrlRetAonEccCorrection)
-  ) u_sram_ctrl_ret_aon (
+    .InstSize(SramCtrlRetInstSize),
+    .NumRamInst(SramCtrlRetNumRamInst),
+    .InstrExec(SramCtrlRetInstrExec),
+    .NumPrinceRoundsHalf(SramCtrlRetNumPrinceRoundsHalf),
+    .Outstanding(SramCtrlRetOutstanding),
+    .EccCorrection(SramCtrlRetEccCorrection)
+  ) u_sram_ctrl_ret (
     // Clock and reset connections
     .clk_i(clk_aon_i),
     .clk_otp_i(clk_main_i),
@@ -651,10 +651,10 @@ module peppermint_pd_aon #(
     .racl_policies_i(top_racl_pkg::RACL_POLICY_VEC_DEFAULT),
     .racl_error_o(),
     .sram_rerror_o(),
-    .regs_tl_i(sram_ctrl_ret_aon_regs_tl_req),
-    .regs_tl_o(sram_ctrl_ret_aon_regs_tl_rsp),
-    .ram_tl_i(sram_ctrl_ret_aon_ram_tl_req),
-    .ram_tl_o(sram_ctrl_ret_aon_ram_tl_rsp)
+    .regs_tl_i(sram_ctrl_ret_regs_tl_req),
+    .regs_tl_o(sram_ctrl_ret_regs_tl_rsp),
+    .ram_tl_i(sram_ctrl_ret_ram_tl_req),
+    .ram_tl_o(sram_ctrl_ret_ram_tl_rsp)
   );
 
 
@@ -692,13 +692,13 @@ module peppermint_pd_aon #(
     .tl_alert_handler_o(alert_handler_tl_req),
     .tl_alert_handler_i(alert_handler_tl_rsp),
 
-    // port: tl_sram_ctrl_ret_aon__regs
-    .tl_sram_ctrl_ret_aon__regs_o(sram_ctrl_ret_aon_regs_tl_req),
-    .tl_sram_ctrl_ret_aon__regs_i(sram_ctrl_ret_aon_regs_tl_rsp),
+    // port: tl_sram_ctrl_ret__regs
+    .tl_sram_ctrl_ret__regs_o(sram_ctrl_ret_regs_tl_req),
+    .tl_sram_ctrl_ret__regs_i(sram_ctrl_ret_regs_tl_rsp),
 
-    // port: tl_sram_ctrl_ret_aon__ram
-    .tl_sram_ctrl_ret_aon__ram_o(sram_ctrl_ret_aon_ram_tl_req),
-    .tl_sram_ctrl_ret_aon__ram_i(sram_ctrl_ret_aon_ram_tl_rsp),
+    // port: tl_sram_ctrl_ret__ram
+    .tl_sram_ctrl_ret__ram_o(sram_ctrl_ret_ram_tl_req),
+    .tl_sram_ctrl_ret__ram_i(sram_ctrl_ret_ram_tl_rsp),
 
     .scanmode_i
   );

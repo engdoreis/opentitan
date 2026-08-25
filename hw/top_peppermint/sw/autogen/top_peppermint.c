@@ -22,7 +22,7 @@ const top_peppermint_alert_peripheral_t
   [kTopPeppermintAlertIdRstmgrFatalCnstyFault] = kTopPeppermintAlertPeripheralRstmgr,
   [kTopPeppermintAlertIdClkmgrRecovFault] = kTopPeppermintAlertPeripheralClkmgr,
   [kTopPeppermintAlertIdClkmgrFatalFault] = kTopPeppermintAlertPeripheralClkmgr,
-  [kTopPeppermintAlertIdSramCtrlRetAonFatalError] = kTopPeppermintAlertPeripheralSramCtrlRetAon,
+  [kTopPeppermintAlertIdSramCtrlRetFatalError] = kTopPeppermintAlertPeripheralSramCtrlRet,
   [kTopPeppermintAlertIdOtpCtrlFatalMacroError] = kTopPeppermintAlertPeripheralOtpCtrl,
   [kTopPeppermintAlertIdOtpCtrlFatalCheckError] = kTopPeppermintAlertPeripheralOtpCtrl,
   [kTopPeppermintAlertIdOtpCtrlFatalBusIntegError] = kTopPeppermintAlertPeripheralOtpCtrl,

@@ -76,19 +76,19 @@ pub const ALERT_HANDLER_BASE_ADDR: usize = 0x40450000;
 /// `ALERT_HANDLER_BASE_ADDR + ALERT_HANDLER_SIZE_BYTES`.
 pub const ALERT_HANDLER_SIZE_BYTES: usize = 0x800;
 
-/// Peripheral base address for regs device on sram_ctrl_ret_aon in top peppermint.
+/// Peripheral base address for regs device on sram_ctrl_ret in top peppermint.
 ///
 /// This should be used with #mmio_region_from_addr to access the memory-mapped
 /// registers associated with the peripheral (usually via a DIF).
-pub const SRAM_CTRL_RET_AON_REGS_BASE_ADDR: usize = 0x40460000;
+pub const SRAM_CTRL_RET_REGS_BASE_ADDR: usize = 0x40460000;
 
-/// Peripheral size for regs device on sram_ctrl_ret_aon in top peppermint.
+/// Peripheral size for regs device on sram_ctrl_ret in top peppermint.
 ///
 /// This is the size (in bytes) of the peripheral's reserved memory area. All
 /// memory-mapped registers associated with this peripheral should have an
-/// address between #SRAM_CTRL_RET_AON_REGS_BASE_ADDR and
-/// `SRAM_CTRL_RET_AON_REGS_BASE_ADDR + SRAM_CTRL_RET_AON_REGS_SIZE_BYTES`.
-pub const SRAM_CTRL_RET_AON_REGS_SIZE_BYTES: usize = 0x40;
+/// address between #SRAM_CTRL_RET_REGS_BASE_ADDR and
+/// `SRAM_CTRL_RET_REGS_BASE_ADDR + SRAM_CTRL_RET_REGS_SIZE_BYTES`.
+pub const SRAM_CTRL_RET_REGS_SIZE_BYTES: usize = 0x40;
 
 /// Peripheral base address for core device on otp_ctrl in top peppermint.
 ///
@@ -398,11 +398,11 @@ pub const RV_CORE_IBEX_CFG_BASE_ADDR: usize = 0x211F0000;
 /// `RV_CORE_IBEX_CFG_BASE_ADDR + RV_CORE_IBEX_CFG_SIZE_BYTES`.
 pub const RV_CORE_IBEX_CFG_SIZE_BYTES: usize = 0x800;
 
-/// Memory base address for ram memory on sram_ctrl_ret_aon in top peppermint.
-pub const SRAM_CTRL_RET_AON_RAM_BASE_ADDR: usize = 0x40470000;
+/// Memory base address for ram memory on sram_ctrl_ret in top peppermint.
+pub const SRAM_CTRL_RET_RAM_BASE_ADDR: usize = 0x40470000;
 
-/// Memory size for ram memory on sram_ctrl_ret_aon in top peppermint.
-pub const SRAM_CTRL_RET_AON_RAM_SIZE_BYTES: usize = 0x2000;
+/// Memory size for ram memory on sram_ctrl_ret in top peppermint.
+pub const SRAM_CTRL_RET_RAM_SIZE_BYTES: usize = 0x2000;
 
 /// Memory base address for ram memory on sram_ctrl_main in top peppermint.
 pub const SRAM_CTRL_MAIN_RAM_BASE_ADDR: usize = 0x10000000;
@@ -749,8 +749,8 @@ pub enum AlertPeripheral {
     Rstmgr = 2,
     /// clkmgr
     Clkmgr = 3,
-    /// sram_ctrl_ret_aon
-    SramCtrlRetAon = 4,
+    /// sram_ctrl_ret
+    SramCtrlRet = 4,
     /// otp_ctrl
     OtpCtrl = 5,
     /// lc_ctrl
@@ -810,8 +810,8 @@ pub enum AlertId {
     ClkmgrRecovFault = 3,
     /// clkmgr_fatal_fault
     ClkmgrFatalFault = 4,
-    /// sram_ctrl_ret_aon_fatal_error
-    SramCtrlRetAonFatalError = 5,
+    /// sram_ctrl_ret_fatal_error
+    SramCtrlRetFatalError = 5,
     /// otp_ctrl_fatal_macro_error
     OtpCtrlFatalMacroError = 6,
     /// otp_ctrl_fatal_check_error
@@ -981,7 +981,7 @@ impl TryFrom<u32> for AlertId {
             2 => Ok(Self::RstmgrFatalCnstyFault),
             3 => Ok(Self::ClkmgrRecovFault),
             4 => Ok(Self::ClkmgrFatalFault),
-            5 => Ok(Self::SramCtrlRetAonFatalError),
+            5 => Ok(Self::SramCtrlRetFatalError),
             6 => Ok(Self::OtpCtrlFatalMacroError),
             7 => Ok(Self::OtpCtrlFatalCheckError),
             8 => Ok(Self::OtpCtrlFatalBusIntegError),
@@ -1081,8 +1081,8 @@ pub const ALERT_FOR_PERIPHERAL: [AlertPeripheral; 85] = [
     AlertPeripheral::Clkmgr,
     // ClkmgrFatalFault -> AlertPeripheral::Clkmgr
     AlertPeripheral::Clkmgr,
-    // SramCtrlRetAonFatalError -> AlertPeripheral::SramCtrlRetAon
-    AlertPeripheral::SramCtrlRetAon,
+    // SramCtrlRetFatalError -> AlertPeripheral::SramCtrlRet
+    AlertPeripheral::SramCtrlRet,
     // OtpCtrlFatalMacroError -> AlertPeripheral::OtpCtrl
     AlertPeripheral::OtpCtrl,
     // OtpCtrlFatalCheckError -> AlertPeripheral::OtpCtrl

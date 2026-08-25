@@ -12,44 +12,44 @@ The main address space, shared between the CPU and DM
 
 ### IP Memory Regions
 
-| Module            | Interface   | Base Address   | Size (bytes)   | Size (words)   | Description                      |
-|-------------------|-------------|----------------|----------------|----------------|----------------------------------|
-| pwrmgr            | default     | `0x40400000`   | `0x80`         | `0x20`         | pwrmgr                           |
-| rstmgr            | default     | `0x40410000`   | `0x40`         | `0x10`         | rstmgr                           |
-| clkmgr            | default     | `0x40420000`   | `0x40`         | `0x10`         | clkmgr                           |
-| alert_handler     | default     | `0x40450000`   | `0x800`        | `0x200`        | alert_handler                    |
-| sram_ctrl_ret_aon | regs        | `0x40460000`   | `0x40`         | `0x10`         | regs device on sram_ctrl_ret_aon |
-| otp_ctrl          | core        | `0x30130000`   | `0x4000`       | `0x1000`       | core device on otp_ctrl          |
-| otp_macro         | prim        | `0x30140000`   | `0x20`         | `0x8`          | prim device on otp_macro         |
-| lc_ctrl           | regs        | `0x30150000`   | `0x100`        | `0x40`         | regs device on lc_ctrl           |
-| rv_dm             | regs        | `0x21200000`   | `0x10`         | `0x4`          | regs device on rv_dm             |
-| rv_dm             | mem         | `0x50000`      | `0x1000`       | `0x400`        | mem device on rv_dm              |
-| rv_plic           | default     | `0x28000000`   | `0x8000000`    | `0x2000000`    | rv_plic                          |
-| rv_timer          | default     | `0x21190000`   | `0x200`        | `0x80`         | rv_timer                         |
-| aes               | default     | `0x21100000`   | `0x100`        | `0x40`         | aes                              |
-| hmac              | default     | `0x21110000`   | `0x2000`       | `0x800`        | hmac                             |
-| kmac              | default     | `0x21120000`   | `0x1000`       | `0x400`        | kmac                             |
-| otbn              | default     | `0x21130000`   | `0x10000`      | `0x4000`       | otbn                             |
-| keymgr_dpe        | default     | `0x21140000`   | `0x100`        | `0x40`         | keymgr_dpe                       |
-| csrng             | default     | `0x21150000`   | `0x80`         | `0x20`         | csrng                            |
-| entropy_src       | default     | `0x21160000`   | `0x100`        | `0x40`         | entropy_src                      |
-| edn0              | default     | `0x21170000`   | `0x80`         | `0x20`         | edn0                             |
-| edn1              | default     | `0x21180000`   | `0x80`         | `0x20`         | edn1                             |
-| sram_ctrl_main    | regs        | `0x211C0000`   | `0x40`         | `0x10`         | regs device on sram_ctrl_main    |
-| rom_ctrl          | regs        | `0x211E0000`   | `0x80`         | `0x20`         | regs device on rom_ctrl          |
-| dma               | default     | `0x22010000`   | `0x200`        | `0x80`         | dma                              |
-| mbx0              | core        | `0x22000000`   | `0x80`         | `0x20`         | core device on mbx0              |
-| mbx1              | core        | `0x22000100`   | `0x80`         | `0x20`         | core device on mbx1              |
-| rv_core_ibex      | cfg         | `0x211F0000`   | `0x800`        | `0x200`        | cfg device on rv_core_ibex       |
+| Module         | Interface   | Base Address   | Size (bytes)   | Size (words)   | Description                   |
+|----------------|-------------|----------------|----------------|----------------|-------------------------------|
+| pwrmgr         | default     | `0x40400000`   | `0x80`         | `0x20`         | pwrmgr                        |
+| rstmgr         | default     | `0x40410000`   | `0x40`         | `0x10`         | rstmgr                        |
+| clkmgr         | default     | `0x40420000`   | `0x40`         | `0x10`         | clkmgr                        |
+| alert_handler  | default     | `0x40450000`   | `0x800`        | `0x200`        | alert_handler                 |
+| sram_ctrl_ret  | regs        | `0x40460000`   | `0x40`         | `0x10`         | regs device on sram_ctrl_ret  |
+| otp_ctrl       | core        | `0x30130000`   | `0x4000`       | `0x1000`       | core device on otp_ctrl       |
+| otp_macro      | prim        | `0x30140000`   | `0x20`         | `0x8`          | prim device on otp_macro      |
+| lc_ctrl        | regs        | `0x30150000`   | `0x100`        | `0x40`         | regs device on lc_ctrl        |
+| rv_dm          | regs        | `0x21200000`   | `0x10`         | `0x4`          | regs device on rv_dm          |
+| rv_dm          | mem         | `0x50000`      | `0x1000`       | `0x400`        | mem device on rv_dm           |
+| rv_plic        | default     | `0x28000000`   | `0x8000000`    | `0x2000000`    | rv_plic                       |
+| rv_timer       | default     | `0x21190000`   | `0x200`        | `0x80`         | rv_timer                      |
+| aes            | default     | `0x21100000`   | `0x100`        | `0x40`         | aes                           |
+| hmac           | default     | `0x21110000`   | `0x2000`       | `0x800`        | hmac                          |
+| kmac           | default     | `0x21120000`   | `0x1000`       | `0x400`        | kmac                          |
+| otbn           | default     | `0x21130000`   | `0x10000`      | `0x4000`       | otbn                          |
+| keymgr_dpe     | default     | `0x21140000`   | `0x100`        | `0x40`         | keymgr_dpe                    |
+| csrng          | default     | `0x21150000`   | `0x80`         | `0x20`         | csrng                         |
+| entropy_src    | default     | `0x21160000`   | `0x100`        | `0x40`         | entropy_src                   |
+| edn0           | default     | `0x21170000`   | `0x80`         | `0x20`         | edn0                          |
+| edn1           | default     | `0x21180000`   | `0x80`         | `0x20`         | edn1                          |
+| sram_ctrl_main | regs        | `0x211C0000`   | `0x40`         | `0x10`         | regs device on sram_ctrl_main |
+| rom_ctrl       | regs        | `0x211E0000`   | `0x80`         | `0x20`         | regs device on rom_ctrl       |
+| dma            | default     | `0x22010000`   | `0x200`        | `0x80`         | dma                           |
+| mbx0           | core        | `0x22000000`   | `0x80`         | `0x20`         | core device on mbx0           |
+| mbx1           | core        | `0x22000100`   | `0x80`         | `0x20`         | core device on mbx1           |
+| rv_core_ibex   | cfg         | `0x211F0000`   | `0x800`        | `0x200`        | cfg device on rv_core_ibex    |
 
 ### Memory Blocks
 
-| Memory            | Interface   | Base Address   | Size (bytes)   | Size (words)   |
-|-------------------|-------------|----------------|----------------|----------------|
-| sram_ctrl_ret_aon | ram         | `0x40470000`   | `0x2000`       | `0x800`        |
-| sram_ctrl_main    | ram         | `0x10000000`   | `0x30000`      | `0xC000`       |
-| rom_ctrl          | rom         | `0x20000`      | `0x20000`      | `0x8000`       |
-| ahb_bridge        | ctn         | `0x80000000`   | `0x10000000`   | `0x4000000`    |
+| Memory         | Interface   | Base Address   | Size (bytes)   | Size (words)   |
+|----------------|-------------|----------------|----------------|----------------|
+| sram_ctrl_ret  | ram         | `0x40470000`   | `0x2000`       | `0x800`        |
+| sram_ctrl_main | ram         | `0x10000000`   | `0x30000`      | `0xC000`       |
+| rom_ctrl       | rom         | `0x20000`      | `0x20000`      | `0x8000`       |
+| ahb_bridge     | ctn         | `0x80000000`   | `0x10000000`   | `0x4000000`    |
 
 ## Soc_mbx Address Space
 

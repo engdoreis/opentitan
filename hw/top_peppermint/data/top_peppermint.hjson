@@ -223,7 +223,7 @@
             "rstmgr",
             "clkmgr",
             "alert_handler",
-            "sram_ctrl_ret_aon",
+            "sram_ctrl_ret",
             "otp_ctrl.core",
             "otp_macro.prim",
             "lc_ctrl.regs",
@@ -365,7 +365,7 @@
       incoming_alert: ["incoming_alerts_soc.hjson"],
       attr: "ipgen",
     },
-    { name: "sram_ctrl_ret_aon",
+    { name: "sram_ctrl_ret",
       type: "sram_ctrl",
       clock_srcs: {clk_i: "aon", clk_otp_i: "main"},
       clock_group: "ext",
@@ -764,7 +764,7 @@
       'edn1.edn'                : ['otbn.edn_rnd'],
 
       // OTP-derived keys.
-      'otp_ctrl.sram_otp_key'            : ['sram_ctrl_main.sram_otp_key', 'sram_ctrl_ret_aon.sram_otp_key', 'rv_core_ibex.icache_otp_key'],
+      'otp_ctrl.sram_otp_key'            : ['sram_ctrl_main.sram_otp_key', 'sram_ctrl_ret.sram_otp_key', 'rv_core_ibex.icache_otp_key'],
       'otp_ctrl.otbn_otp_key'            : ['otbn.otbn_otp_key'],
       'otp_ctrl.keymgr_creator_root_key' : ['keymgr_dpe.creator_root_key'],
       'otp_ctrl.keymgr_creator_seed'     : ['keymgr_dpe.creator_seed'],
@@ -810,10 +810,10 @@
       'lc_ctrl.lc_dft_en'       : ['otp_macro.lc_dft_en', 'pwrmgr.lc_dft_en', 'rv_dm.lc_dft_en'],
       'lc_ctrl.lc_hw_debug_clr' : ['rv_dm.lc_hw_debug_clr'],
       'lc_ctrl.lc_init_done'    : ['rv_dm.lc_init_done'],
-      'lc_ctrl.lc_hw_debug_en'  : ['sram_ctrl_main.lc_hw_debug_en', 'sram_ctrl_ret_aon.lc_hw_debug_en', 'csrng.lc_hw_debug_en', 'rv_dm.lc_hw_debug_en', 'pwrmgr.lc_hw_debug_en'],
+      'lc_ctrl.lc_hw_debug_en'  : ['sram_ctrl_main.lc_hw_debug_en', 'sram_ctrl_ret.lc_hw_debug_en', 'csrng.lc_hw_debug_en', 'rv_dm.lc_hw_debug_en', 'pwrmgr.lc_hw_debug_en'],
       'lc_ctrl.lc_cpu_en'       : ['rv_core_ibex.lc_cpu_en'],
       'lc_ctrl.lc_keymgr_en'    : ['keymgr_dpe.lc_keymgr_en'],
-      'lc_ctrl.lc_escalate_en'  : ['aes.lc_escalate_en', 'kmac.lc_escalate_en', 'otbn.lc_escalate_en', 'otp_ctrl.lc_escalate_en', 'sram_ctrl_main.lc_escalate_en', 'sram_ctrl_ret_aon.lc_escalate_en', 'rv_dm.lc_escalate_en'],
+      'lc_ctrl.lc_escalate_en'  : ['aes.lc_escalate_en', 'kmac.lc_escalate_en', 'otbn.lc_escalate_en', 'otp_ctrl.lc_escalate_en', 'sram_ctrl_main.lc_escalate_en', 'sram_ctrl_ret.lc_escalate_en', 'rv_dm.lc_escalate_en'],
       'lc_ctrl.lc_check_byp_en' : ['otp_ctrl.lc_check_byp_en', 'rv_dm.lc_check_byp_en'],
 
       // LC access control signal broadcast

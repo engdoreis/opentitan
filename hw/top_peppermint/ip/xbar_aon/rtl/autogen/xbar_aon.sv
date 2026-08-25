@@ -12,8 +12,8 @@
 //     -> rstmgr
 //     -> clkmgr
 //     -> alert_handler
-//     -> sram_ctrl_ret_aon.regs
-//     -> sram_ctrl_ret_aon.ram
+//     -> sram_ctrl_ret.regs
+//     -> sram_ctrl_ret.ram
 
 module xbar_aon (
   input clk_aon_i,
@@ -32,10 +32,10 @@ module xbar_aon (
   input  tlul_pkg::tl_d2h_t tl_clkmgr_i,
   output tlul_pkg::tl_h2d_t tl_alert_handler_o,
   input  tlul_pkg::tl_d2h_t tl_alert_handler_i,
-  output tlul_pkg::tl_h2d_t tl_sram_ctrl_ret_aon__regs_o,
-  input  tlul_pkg::tl_d2h_t tl_sram_ctrl_ret_aon__regs_i,
-  output tlul_pkg::tl_h2d_t tl_sram_ctrl_ret_aon__ram_o,
-  input  tlul_pkg::tl_d2h_t tl_sram_ctrl_ret_aon__ram_i,
+  output tlul_pkg::tl_h2d_t tl_sram_ctrl_ret__regs_o,
+  input  tlul_pkg::tl_d2h_t tl_sram_ctrl_ret__regs_i,
+  output tlul_pkg::tl_h2d_t tl_sram_ctrl_ret__ram_o,
+  input  tlul_pkg::tl_d2h_t tl_sram_ctrl_ret__ram_i,
 
   input prim_mubi_pkg::mubi4_t scanmode_i
 );
@@ -72,11 +72,11 @@ module xbar_aon (
   assign tl_alert_handler_o = tl_s1n_7_ds_h2d[3];
   assign tl_s1n_7_ds_d2h[3] = tl_alert_handler_i;
 
-  assign tl_sram_ctrl_ret_aon__regs_o = tl_s1n_7_ds_h2d[4];
-  assign tl_s1n_7_ds_d2h[4] = tl_sram_ctrl_ret_aon__regs_i;
+  assign tl_sram_ctrl_ret__regs_o = tl_s1n_7_ds_h2d[4];
+  assign tl_s1n_7_ds_d2h[4] = tl_sram_ctrl_ret__regs_i;
 
-  assign tl_sram_ctrl_ret_aon__ram_o = tl_s1n_7_ds_h2d[5];
-  assign tl_s1n_7_ds_d2h[5] = tl_sram_ctrl_ret_aon__ram_i;
+  assign tl_sram_ctrl_ret__ram_o = tl_s1n_7_ds_h2d[5];
+  assign tl_s1n_7_ds_d2h[5] = tl_sram_ctrl_ret__ram_i;
 
   assign tl_s1n_7_us_h2d = tl_main_i;
   assign tl_main_o = tl_s1n_7_us_d2h;
@@ -101,11 +101,11 @@ module xbar_aon (
       dev_sel_s1n_7 = 3'd3;
 
     end else if ((tl_s1n_7_us_h2d.a_address &
-                  ~(ADDR_MASK_SRAM_CTRL_RET_AON__REGS)) == ADDR_SPACE_SRAM_CTRL_RET_AON__REGS) begin
+                  ~(ADDR_MASK_SRAM_CTRL_RET__REGS)) == ADDR_SPACE_SRAM_CTRL_RET__REGS) begin
       dev_sel_s1n_7 = 3'd4;
 
     end else if ((tl_s1n_7_us_h2d.a_address &
-                  ~(ADDR_MASK_SRAM_CTRL_RET_AON__RAM)) == ADDR_SPACE_SRAM_CTRL_RET_AON__RAM) begin
+                  ~(ADDR_MASK_SRAM_CTRL_RET__RAM)) == ADDR_SPACE_SRAM_CTRL_RET__RAM) begin
       dev_sel_s1n_7 = 3'd5;
 end
   end

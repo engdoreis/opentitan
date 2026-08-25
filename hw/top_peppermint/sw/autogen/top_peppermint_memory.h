@@ -26,14 +26,14 @@
 #ifdef __ASSEMBLER__
 
 /**
- * Memory base for ram memory on sram_ctrl_ret_aon in top peppermint.
+ * Memory base for ram memory on sram_ctrl_ret in top peppermint.
  */
-#define TOP_PEPPERMINT_SRAM_CTRL_RET_AON_RAM_BASE_ADDR 0x40470000
+#define TOP_PEPPERMINT_SRAM_CTRL_RET_RAM_BASE_ADDR 0x40470000
 
 /**
- * Memory size for ram memory on sram_ctrl_ret_aon in top peppermint.
+ * Memory size for ram memory on sram_ctrl_ret in top peppermint.
  */
-#define TOP_PEPPERMINT_SRAM_CTRL_RET_AON_RAM_SIZE_BYTES 0x2000
+#define TOP_PEPPERMINT_SRAM_CTRL_RET_RAM_SIZE_BYTES 0x2000
 
 /**
  * Memory base for ram memory on sram_ctrl_main in top peppermint.
@@ -135,22 +135,22 @@
  */
 #define TOP_PEPPERMINT_ALERT_HANDLER_SIZE_BYTES 0x800
 /**
- * Peripheral base address for regs device on sram_ctrl_ret_aon in top peppermint.
+ * Peripheral base address for regs device on sram_ctrl_ret in top peppermint.
  *
  * This should be used with #mmio_region_from_addr to access the memory-mapped
  * registers associated with the peripheral (usually via a DIF).
  */
-#define TOP_PEPPERMINT_SRAM_CTRL_RET_AON_REGS_BASE_ADDR 0x40460000
+#define TOP_PEPPERMINT_SRAM_CTRL_RET_REGS_BASE_ADDR 0x40460000
 
 /**
- * Peripheral size for regs device on sram_ctrl_ret_aon in top peppermint.
+ * Peripheral size for regs device on sram_ctrl_ret in top peppermint.
  *
  * This is the size (in bytes) of the peripheral's reserved memory area. All
  * memory-mapped registers associated with this peripheral should have an
- * address between #TOP_PEPPERMINT_SRAM_CTRL_RET_AON_REGS_BASE_ADDR and
- * `TOP_PEPPERMINT_SRAM_CTRL_RET_AON_REGS_BASE_ADDR + TOP_PEPPERMINT_SRAM_CTRL_RET_AON_REGS_SIZE_BYTES`.
+ * address between #TOP_PEPPERMINT_SRAM_CTRL_RET_REGS_BASE_ADDR and
+ * `TOP_PEPPERMINT_SRAM_CTRL_RET_REGS_BASE_ADDR + TOP_PEPPERMINT_SRAM_CTRL_RET_REGS_SIZE_BYTES`.
  */
-#define TOP_PEPPERMINT_SRAM_CTRL_RET_AON_REGS_SIZE_BYTES 0x40
+#define TOP_PEPPERMINT_SRAM_CTRL_RET_REGS_SIZE_BYTES 0x40
 /**
  * Peripheral base address for core device on otp_ctrl in top peppermint.
  *

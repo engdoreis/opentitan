@@ -6,19 +6,19 @@
 
 package tl_aon_pkg;
 
-  localparam logic [31:0] ADDR_SPACE_PWRMGR                  = 32'h 40400000;
-  localparam logic [31:0] ADDR_SPACE_RSTMGR                  = 32'h 40410000;
-  localparam logic [31:0] ADDR_SPACE_CLKMGR                  = 32'h 40420000;
-  localparam logic [31:0] ADDR_SPACE_ALERT_HANDLER           = 32'h 40450000;
-  localparam logic [31:0] ADDR_SPACE_SRAM_CTRL_RET_AON__REGS = 32'h 40460000;
-  localparam logic [31:0] ADDR_SPACE_SRAM_CTRL_RET_AON__RAM  = 32'h 40470000;
+  localparam logic [31:0] ADDR_SPACE_PWRMGR              = 32'h 40400000;
+  localparam logic [31:0] ADDR_SPACE_RSTMGR              = 32'h 40410000;
+  localparam logic [31:0] ADDR_SPACE_CLKMGR              = 32'h 40420000;
+  localparam logic [31:0] ADDR_SPACE_ALERT_HANDLER       = 32'h 40450000;
+  localparam logic [31:0] ADDR_SPACE_SRAM_CTRL_RET__REGS = 32'h 40460000;
+  localparam logic [31:0] ADDR_SPACE_SRAM_CTRL_RET__RAM  = 32'h 40470000;
 
-  localparam logic [31:0] ADDR_MASK_PWRMGR                  = 32'h 0000007f;
-  localparam logic [31:0] ADDR_MASK_RSTMGR                  = 32'h 0000003f;
-  localparam logic [31:0] ADDR_MASK_CLKMGR                  = 32'h 0000003f;
-  localparam logic [31:0] ADDR_MASK_ALERT_HANDLER           = 32'h 000007ff;
-  localparam logic [31:0] ADDR_MASK_SRAM_CTRL_RET_AON__REGS = 32'h 0000003f;
-  localparam logic [31:0] ADDR_MASK_SRAM_CTRL_RET_AON__RAM  = 32'h 00001fff;
+  localparam logic [31:0] ADDR_MASK_PWRMGR              = 32'h 0000007f;
+  localparam logic [31:0] ADDR_MASK_RSTMGR              = 32'h 0000003f;
+  localparam logic [31:0] ADDR_MASK_CLKMGR              = 32'h 0000003f;
+  localparam logic [31:0] ADDR_MASK_ALERT_HANDLER       = 32'h 000007ff;
+  localparam logic [31:0] ADDR_MASK_SRAM_CTRL_RET__REGS = 32'h 0000003f;
+  localparam logic [31:0] ADDR_MASK_SRAM_CTRL_RET__RAM  = 32'h 00001fff;
 
   localparam int N_HOST   = 1;
   localparam int N_DEVICE = 6;
@@ -28,8 +28,8 @@ package tl_aon_pkg;
     TlRstmgr = 1,
     TlClkmgr = 2,
     TlAlertHandler = 3,
-    TlSramCtrlRetAonRegs = 4,
-    TlSramCtrlRetAonRam = 5
+    TlSramCtrlRetRegs = 4,
+    TlSramCtrlRetRam = 5
   } tl_device_e;
 
   typedef enum int {

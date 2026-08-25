@@ -265,7 +265,7 @@ module tb;
         .depth                ($size(`RAM_RET_MEM_HIER)                                          ),
         .n_bits               ($bits(`RAM_RET_MEM_HIER)                                          ),
         .err_detection_scheme (mem_bkdr_util_pkg::EccInv_39_32                                   ),
-        .system_base_addr     (top_peppermint_pkg::TOP_PEPPERMINT_SRAM_CTRL_RET_AON_RAM_BASE_ADDR));
+        .system_base_addr     (top_peppermint_pkg::TOP_PEPPERMINT_SRAM_CTRL_RET_RAM_BASE_ADDR    ));
     m_mem_bkdr_util[RamRet0] = ram_ret;
     `MEM_BKDR_UTIL_FILE_OP(m_mem_bkdr_util[RamRet0], `RAM_RET_MEM_HIER)
 

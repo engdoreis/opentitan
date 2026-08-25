@@ -18,10 +18,10 @@
     { name: "rstmgr",                 type: "device", clock: "clk_aon_i", reset: "rst_aon_ni", pipeline: false },
     { name: "clkmgr",                 type: "device", clock: "clk_aon_i", reset: "rst_aon_ni", pipeline: false },
     { name: "alert_handler",          type: "device", clock: "clk_aon_i", reset: "rst_aon_ni", pipeline: false },
-    { name: "sram_ctrl_ret_aon.regs", type: "device", clock: "clk_aon_i", reset: "rst_aon_ni", pipeline: false },
-    { name: "sram_ctrl_ret_aon.ram",  type: "device", clock: "clk_aon_i", reset: "rst_aon_ni", pipeline: false },
+    { name: "sram_ctrl_ret.regs", type: "device", clock: "clk_aon_i", reset: "rst_aon_ni", pipeline: false },
+    { name: "sram_ctrl_ret.ram",  type: "device", clock: "clk_aon_i", reset: "rst_aon_ni", pipeline: false },
   ],
   connections: {
-    main: [ "pwrmgr", "rstmgr", "clkmgr", "alert_handler", "sram_ctrl_ret_aon.regs", "sram_ctrl_ret_aon.ram" ],
+    main: [ "pwrmgr", "rstmgr", "clkmgr", "alert_handler", "sram_ctrl_ret.regs", "sram_ctrl_ret.ram" ],
   },
 }

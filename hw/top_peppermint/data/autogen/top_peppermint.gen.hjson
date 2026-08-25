@@ -328,7 +328,7 @@
             rstmgr
             clkmgr
             alert_handler
-            sram_ctrl_ret_aon
+            sram_ctrl_ret
             otp_ctrl.core
             otp_macro.prim
             lc_ctrl.regs
@@ -1246,7 +1246,7 @@
       generate_dif: true
     }
     {
-      name: sram_ctrl_ret_aon
+      name: sram_ctrl_ret
       type: sram_ctrl
       clock_srcs:
       {
@@ -1307,7 +1307,7 @@
           name: MemSizeRam
           desc: Memory size of the RAM (in bytes).
           type: int
-          name_top: MemSizeSramCtrlRetAonRam
+          name_top: MemSizeSramCtrlRetRam
           default: 8192
         }
         {
@@ -1317,7 +1317,7 @@
           default: 8192
           local: "false"
           expose: "true"
-          name_top: SramCtrlRetAonInstSize
+          name_top: SramCtrlRetInstSize
         }
         {
           name: NumRamInst
@@ -1326,7 +1326,7 @@
           default: 1
           local: "false"
           expose: "true"
-          name_top: SramCtrlRetAonNumRamInst
+          name_top: SramCtrlRetNumRamInst
         }
         {
           name: InstrExec
@@ -1335,7 +1335,7 @@
           default: "0"
           local: "false"
           expose: "true"
-          name_top: SramCtrlRetAonInstrExec
+          name_top: SramCtrlRetInstrExec
         }
         {
           name: NumPrinceRoundsHalf
@@ -1344,7 +1344,7 @@
           default: "3"
           local: "false"
           expose: "true"
-          name_top: SramCtrlRetAonNumPrinceRoundsHalf
+          name_top: SramCtrlRetNumPrinceRoundsHalf
         }
         {
           name: Outstanding
@@ -1353,7 +1353,7 @@
           default: "2"
           local: "true"
           expose: "true"
-          name_top: SramCtrlRetAonOutstanding
+          name_top: SramCtrlRetOutstanding
         }
         {
           name: EccCorrection
@@ -1362,7 +1362,7 @@
           default: "0"
           local: "false"
           expose: "true"
-          name_top: SramCtrlRetAonEccCorrection
+          name_top: SramCtrlRetEccCorrection
         }
       ]
       inter_signal_list:
@@ -1374,7 +1374,7 @@
           type: req_rsp
           act: req
           width: 1
-          inst_name: sram_ctrl_ret_aon
+          inst_name: sram_ctrl_ret
           default: ""
           domain: Aon
           top_signame: otp_ctrl_sram_otp_key
@@ -1397,9 +1397,9 @@
             default: 1
             local: false
             expose: true
-            name_top: SramCtrlRetAonNumRamInst
+            name_top: SramCtrlRetNumRamInst
           }
-          inst_name: sram_ctrl_ret_aon
+          inst_name: sram_ctrl_ret
           index: -1
         }
         {
@@ -1410,7 +1410,7 @@
           act: rcv
           width: 1
           default: lc_ctrl_pkg::Off
-          inst_name: sram_ctrl_ret_aon
+          inst_name: sram_ctrl_ret
           domain: Aon
           top_signame: lc_ctrl_lc_escalate_en
           index: -1
@@ -1425,7 +1425,7 @@
           act: rcv
           width: 1
           default: lc_ctrl_pkg::Off
-          inst_name: sram_ctrl_ret_aon
+          inst_name: sram_ctrl_ret
           domain: Aon
           top_signame: lc_ctrl_lc_hw_debug_en
           index: -1
@@ -1440,7 +1440,7 @@
           act: rcv
           width: 1
           default: prim_mubi_pkg::MuBi8False
-          inst_name: sram_ctrl_ret_aon
+          inst_name: sram_ctrl_ret
           index: -1
         }
         {
@@ -1455,7 +1455,7 @@
           type: uni
           act: rcv
           width: 1
-          inst_name: sram_ctrl_ret_aon
+          inst_name: sram_ctrl_ret
           index: -1
         }
         {
@@ -1466,7 +1466,7 @@
           type: uni
           act: req
           width: 1
-          inst_name: sram_ctrl_ret_aon
+          inst_name: sram_ctrl_ret
           index: -1
         }
         {
@@ -1477,7 +1477,7 @@
           type: uni
           act: req
           width: 1
-          inst_name: sram_ctrl_ret_aon
+          inst_name: sram_ctrl_ret
           index: -1
         }
         {
@@ -1487,11 +1487,11 @@
           type: req_rsp
           act: rsp
           width: 1
-          inst_name: sram_ctrl_ret_aon
+          inst_name: sram_ctrl_ret
           default: ""
           end_idx: -1
           top_type: one-to-one
-          top_signame: sram_ctrl_ret_aon_regs_tl
+          top_signame: sram_ctrl_ret_regs_tl
           index: -1
         }
         {
@@ -1501,11 +1501,11 @@
           type: req_rsp
           act: rsp
           width: 1
-          inst_name: sram_ctrl_ret_aon
+          inst_name: sram_ctrl_ret
           default: ""
           end_idx: -1
           top_type: one-to-one
-          top_signame: sram_ctrl_ret_aon_ram_tl
+          top_signame: sram_ctrl_ret_ram_tl
           index: -1
         }
       ]
@@ -7008,7 +7008,7 @@
       otp_ctrl.sram_otp_key:
       [
         sram_ctrl_main.sram_otp_key
-        sram_ctrl_ret_aon.sram_otp_key
+        sram_ctrl_ret.sram_otp_key
         rv_core_ibex.icache_otp_key
       ]
       otp_ctrl.otbn_otp_key:
@@ -7106,7 +7106,7 @@
       lc_ctrl.lc_hw_debug_en:
       [
         sram_ctrl_main.lc_hw_debug_en
-        sram_ctrl_ret_aon.lc_hw_debug_en
+        sram_ctrl_ret.lc_hw_debug_en
         csrng.lc_hw_debug_en
         rv_dm.lc_hw_debug_en
         pwrmgr.lc_hw_debug_en
@@ -7126,7 +7126,7 @@
         otbn.lc_escalate_en
         otp_ctrl.lc_escalate_en
         sram_ctrl_main.lc_escalate_en
-        sram_ctrl_ret_aon.lc_escalate_en
+        sram_ctrl_ret.lc_escalate_en
         rv_dm.lc_escalate_en
       ]
       lc_ctrl.lc_check_byp_en:
@@ -7323,13 +7323,13 @@
       [
         aon.tl_alert_handler
       ]
-      sram_ctrl_ret_aon.regs_tl:
+      sram_ctrl_ret.regs_tl:
       [
-        aon.tl_sram_ctrl_ret_aon__regs
+        aon.tl_sram_ctrl_ret__regs
       ]
-      sram_ctrl_ret_aon.ram_tl:
+      sram_ctrl_ret.ram_tl:
       [
-        aon.tl_sram_ctrl_ret_aon__ram
+        aon.tl_sram_ctrl_ret__ram
       ]
       socmbx.tl_ahb_bridge__socmbx:
       [
@@ -8595,8 +8595,8 @@
           rstmgr
           clkmgr
           alert_handler
-          sram_ctrl_ret_aon.regs
-          sram_ctrl_ret_aon.ram
+          sram_ctrl_ret.regs
+          sram_ctrl_ret.ram
         ]
       }
       nodes:
@@ -8699,7 +8699,7 @@
           req_fifo_pass: true
         }
         {
-          name: sram_ctrl_ret_aon.regs
+          name: sram_ctrl_ret.regs
           type: device
           clock: clk_aon_i
           reset: rst_aon_ni
@@ -8720,7 +8720,7 @@
           req_fifo_pass: true
         }
         {
-          name: sram_ctrl_ret_aon.ram
+          name: sram_ctrl_ret.ram
           type: device
           clock: clk_aon_i
           reset: rst_aon_ni
@@ -8817,7 +8817,7 @@
           index: -1
         }
         {
-          name: tl_sram_ctrl_ret_aon__regs
+          name: tl_sram_ctrl_ret__regs
           struct: tl
           package: tlul_pkg
           type: req_rsp
@@ -8826,11 +8826,11 @@
           width: 1
           default: ""
           domain: Aon
-          top_signame: sram_ctrl_ret_aon_regs_tl
+          top_signame: sram_ctrl_ret_regs_tl
           index: -1
         }
         {
-          name: tl_sram_ctrl_ret_aon__ram
+          name: tl_sram_ctrl_ret__ram
           struct: tl
           package: tlul_pkg
           type: req_rsp
@@ -8839,7 +8839,7 @@
           width: 1
           default: ""
           domain: Aon
-          top_signame: sram_ctrl_ret_aon_ram_tl
+          top_signame: sram_ctrl_ret_ram_tl
           index: -1
         }
       ]
@@ -9685,13 +9685,13 @@
       lpg_idx: 1
     }
     {
-      name: sram_ctrl_ret_aon_fatal_error
+      name: sram_ctrl_ret_fatal_error
       width: 1
       type: alert
       async: "1"
       handler: alert_handler
-      module_name: sram_ctrl_ret_aon
-      desc: sram_ctrl_ret_aon fatal_error alert
+      module_name: sram_ctrl_ret
+      desc: sram_ctrl_ret fatal_error alert
       lpg_name: ext_lc_aon_Aon
       lpg_idx: 1
     }
@@ -11034,7 +11034,7 @@
     pwrmgr
     rstmgr
     clkmgr
-    sram_ctrl_ret_aon
+    sram_ctrl_ret
     otp_ctrl
     lc_ctrl
     rv_dm
@@ -11090,7 +11090,7 @@
         alert_handler[4]: fatal_fault
       ]
     }
-    module_sram_ctrl_ret_aon:
+    module_sram_ctrl_ret:
     {
       tx_expr: alert_tx[5]
       rx_expr: alert_rx[5]
@@ -12269,7 +12269,7 @@
         type: req_rsp
         act: req
         width: 1
-        inst_name: sram_ctrl_ret_aon
+        inst_name: sram_ctrl_ret
         default: ""
         domain: Aon
         top_signame: otp_ctrl_sram_otp_key
@@ -12292,9 +12292,9 @@
           default: 1
           local: false
           expose: true
-          name_top: SramCtrlRetAonNumRamInst
+          name_top: SramCtrlRetNumRamInst
         }
-        inst_name: sram_ctrl_ret_aon
+        inst_name: sram_ctrl_ret
         index: -1
       }
       {
@@ -12305,7 +12305,7 @@
         act: rcv
         width: 1
         default: lc_ctrl_pkg::Off
-        inst_name: sram_ctrl_ret_aon
+        inst_name: sram_ctrl_ret
         domain: Aon
         top_signame: lc_ctrl_lc_escalate_en
         index: -1
@@ -12320,7 +12320,7 @@
         act: rcv
         width: 1
         default: lc_ctrl_pkg::Off
-        inst_name: sram_ctrl_ret_aon
+        inst_name: sram_ctrl_ret
         domain: Aon
         top_signame: lc_ctrl_lc_hw_debug_en
         index: -1
@@ -12335,7 +12335,7 @@
         act: rcv
         width: 1
         default: prim_mubi_pkg::MuBi8False
-        inst_name: sram_ctrl_ret_aon
+        inst_name: sram_ctrl_ret
         index: -1
       }
       {
@@ -12350,7 +12350,7 @@
         type: uni
         act: rcv
         width: 1
-        inst_name: sram_ctrl_ret_aon
+        inst_name: sram_ctrl_ret
         index: -1
       }
       {
@@ -12361,7 +12361,7 @@
         type: uni
         act: req
         width: 1
-        inst_name: sram_ctrl_ret_aon
+        inst_name: sram_ctrl_ret
         index: -1
       }
       {
@@ -12372,7 +12372,7 @@
         type: uni
         act: req
         width: 1
-        inst_name: sram_ctrl_ret_aon
+        inst_name: sram_ctrl_ret
         index: -1
       }
       {
@@ -12382,11 +12382,11 @@
         type: req_rsp
         act: rsp
         width: 1
-        inst_name: sram_ctrl_ret_aon
+        inst_name: sram_ctrl_ret
         default: ""
         end_idx: -1
         top_type: one-to-one
-        top_signame: sram_ctrl_ret_aon_regs_tl
+        top_signame: sram_ctrl_ret_regs_tl
         index: -1
       }
       {
@@ -12396,11 +12396,11 @@
         type: req_rsp
         act: rsp
         width: 1
-        inst_name: sram_ctrl_ret_aon
+        inst_name: sram_ctrl_ret
         default: ""
         end_idx: -1
         top_type: one-to-one
-        top_signame: sram_ctrl_ret_aon_ram_tl
+        top_signame: sram_ctrl_ret_ram_tl
         index: -1
       }
       {
@@ -16231,7 +16231,7 @@
         index: -1
       }
       {
-        name: tl_sram_ctrl_ret_aon__regs
+        name: tl_sram_ctrl_ret__regs
         struct: tl
         package: tlul_pkg
         type: req_rsp
@@ -16240,11 +16240,11 @@
         width: 1
         default: ""
         domain: Aon
-        top_signame: sram_ctrl_ret_aon_regs_tl
+        top_signame: sram_ctrl_ret_regs_tl
         index: -1
       }
       {
-        name: tl_sram_ctrl_ret_aon__ram
+        name: tl_sram_ctrl_ret__ram
         struct: tl
         package: tlul_pkg
         type: req_rsp
@@ -16253,7 +16253,7 @@
         width: 1
         default: ""
         domain: Aon
-        top_signame: sram_ctrl_ret_aon_ram_tl
+        top_signame: sram_ctrl_ret_ram_tl
         index: -1
       }
       {
@@ -19134,7 +19134,7 @@
         package: tlul_pkg
         struct: tl_h2d
         domain: Aon
-        signame: sram_ctrl_ret_aon_regs_tl_req
+        signame: sram_ctrl_ret_regs_tl_req
         width: 1
         type: req_rsp
         end_idx: -1
@@ -19146,7 +19146,7 @@
         package: tlul_pkg
         struct: tl_d2h
         domain: Aon
-        signame: sram_ctrl_ret_aon_regs_tl_rsp
+        signame: sram_ctrl_ret_regs_tl_rsp
         width: 1
         type: req_rsp
         end_idx: -1
@@ -19158,7 +19158,7 @@
         package: tlul_pkg
         struct: tl_h2d
         domain: Aon
-        signame: sram_ctrl_ret_aon_ram_tl_req
+        signame: sram_ctrl_ret_ram_tl_req
         width: 1
         type: req_rsp
         end_idx: -1
@@ -19170,7 +19170,7 @@
         package: tlul_pkg
         struct: tl_d2h
         domain: Aon
-        signame: sram_ctrl_ret_aon_ram_tl_rsp
+        signame: sram_ctrl_ret_ram_tl_rsp
         width: 1
         type: req_rsp
         end_idx: -1

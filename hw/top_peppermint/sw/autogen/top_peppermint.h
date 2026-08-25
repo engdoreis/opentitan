@@ -102,22 +102,22 @@ extern "C" {
 #define TOP_PEPPERMINT_ALERT_HANDLER_SIZE_BYTES 0x800u
 
 /**
- * Peripheral base address for regs device on sram_ctrl_ret_aon in top peppermint.
+ * Peripheral base address for regs device on sram_ctrl_ret in top peppermint.
  *
  * This should be used with #mmio_region_from_addr to access the memory-mapped
  * registers associated with the peripheral (usually via a DIF).
  */
-#define TOP_PEPPERMINT_SRAM_CTRL_RET_AON_REGS_BASE_ADDR 0x40460000u
+#define TOP_PEPPERMINT_SRAM_CTRL_RET_REGS_BASE_ADDR 0x40460000u
 
 /**
- * Peripheral size for regs device on sram_ctrl_ret_aon in top peppermint.
+ * Peripheral size for regs device on sram_ctrl_ret in top peppermint.
  *
  * This is the size (in bytes) of the peripheral's reserved memory area. All
  * memory-mapped registers associated with this peripheral should have an
- * address between #TOP_PEPPERMINT_SRAM_CTRL_RET_AON_REGS_BASE_ADDR and
- * `TOP_PEPPERMINT_SRAM_CTRL_RET_AON_REGS_BASE_ADDR + TOP_PEPPERMINT_SRAM_CTRL_RET_AON_REGS_SIZE_BYTES`.
+ * address between #TOP_PEPPERMINT_SRAM_CTRL_RET_REGS_BASE_ADDR and
+ * `TOP_PEPPERMINT_SRAM_CTRL_RET_REGS_BASE_ADDR + TOP_PEPPERMINT_SRAM_CTRL_RET_REGS_SIZE_BYTES`.
  */
-#define TOP_PEPPERMINT_SRAM_CTRL_RET_AON_REGS_SIZE_BYTES 0x40u
+#define TOP_PEPPERMINT_SRAM_CTRL_RET_REGS_SIZE_BYTES 0x40u
 
 /**
  * Peripheral base address for core device on otp_ctrl in top peppermint.
@@ -517,14 +517,14 @@ extern "C" {
 
 
 /**
- * Memory base address for ram memory on sram_ctrl_ret_aon in top peppermint.
+ * Memory base address for ram memory on sram_ctrl_ret in top peppermint.
  */
-#define TOP_PEPPERMINT_SRAM_CTRL_RET_AON_RAM_BASE_ADDR 0x40470000u
+#define TOP_PEPPERMINT_SRAM_CTRL_RET_RAM_BASE_ADDR 0x40470000u
 
 /**
- * Memory size for ram memory on sram_ctrl_ret_aon in top peppermint.
+ * Memory size for ram memory on sram_ctrl_ret in top peppermint.
  */
-#define TOP_PEPPERMINT_SRAM_CTRL_RET_AON_RAM_SIZE_BYTES 0x2000u
+#define TOP_PEPPERMINT_SRAM_CTRL_RET_RAM_SIZE_BYTES 0x2000u
 
 /**
  * Memory base address for ram memory on sram_ctrl_main in top peppermint.
@@ -667,7 +667,7 @@ typedef enum top_peppermint_alert_peripheral {
   kTopPeppermintAlertPeripheralPwrmgr = 1, /**< pwrmgr */
   kTopPeppermintAlertPeripheralRstmgr = 2, /**< rstmgr */
   kTopPeppermintAlertPeripheralClkmgr = 3, /**< clkmgr */
-  kTopPeppermintAlertPeripheralSramCtrlRetAon = 4, /**< sram_ctrl_ret_aon */
+  kTopPeppermintAlertPeripheralSramCtrlRet = 4, /**< sram_ctrl_ret */
   kTopPeppermintAlertPeripheralOtpCtrl = 5, /**< otp_ctrl */
   kTopPeppermintAlertPeripheralLcCtrl = 6, /**< lc_ctrl */
   kTopPeppermintAlertPeripheralRvDm = 7, /**< rv_dm */
@@ -703,7 +703,7 @@ typedef enum top_peppermint_alert_id {
   kTopPeppermintAlertIdRstmgrFatalCnstyFault = 2, /**< rstmgr_fatal_cnsty_fault */
   kTopPeppermintAlertIdClkmgrRecovFault = 3, /**< clkmgr_recov_fault */
   kTopPeppermintAlertIdClkmgrFatalFault = 4, /**< clkmgr_fatal_fault */
-  kTopPeppermintAlertIdSramCtrlRetAonFatalError = 5, /**< sram_ctrl_ret_aon_fatal_error */
+  kTopPeppermintAlertIdSramCtrlRetFatalError = 5, /**< sram_ctrl_ret_fatal_error */
   kTopPeppermintAlertIdOtpCtrlFatalMacroError = 6, /**< otp_ctrl_fatal_macro_error */
   kTopPeppermintAlertIdOtpCtrlFatalCheckError = 7, /**< otp_ctrl_fatal_check_error */
   kTopPeppermintAlertIdOtpCtrlFatalBusIntegError = 8, /**< otp_ctrl_fatal_bus_integ_error */

@@ -147,7 +147,7 @@ function void chip_stub_cpu_csr_access_vseq::build_ping_targets();
   add_ping(ral.rv_plic,                ral.rv_plic.prio[0]                   );
   add_ping(ral.rv_timer,               ral.rv_timer.cfg0                     );
   add_ping(ral.sram_ctrl_main_regs,    ral.sram_ctrl_main_regs.exec          );
-  add_ping(ral.sram_ctrl_ret_aon_regs, ral.sram_ctrl_ret_aon_regs.exec       );
+  add_ping(ral.sram_ctrl_ret_regs,     ral.sram_ctrl_ret_regs.exec           );
   add_ping(ral.lc_ctrl_regs,           ral.lc_ctrl_regs.claim_transition_if  );
   add_ping(ral.rv_dm_regs,             ral.rv_dm_regs.late_debug_enable      );
   add_ping(ral.rstmgr,                 ral.rstmgr.alert_info_ctrl            );
@@ -159,7 +159,7 @@ function void chip_stub_cpu_csr_access_vseq::build_ping_targets();
   add_skip(ral.ahb_bridge_ctn,        "memory window, no registers");
   add_skip(ral.rom_ctrl_rom,          "memory window, no registers");
   add_skip(ral.sram_ctrl_main_ram,    "memory window, no registers");
-  add_skip(ral.sram_ctrl_ret_aon_ram, "memory window, no registers");
+  add_skip(ral.sram_ctrl_ret_ram,     "memory window, no registers");
   add_skip(ral.rv_dm_mem,
            "debug module window, writes are ignored until dmactive is set over the DMI");
 endfunction: build_ping_targets
