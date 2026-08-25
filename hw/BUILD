@@ -27,6 +27,7 @@ filegroup(
         "//hw/top:doc_files",
         "//hw/top_darjeeling:doc_files",
         "//hw/top_earlgrey:doc_files",
+        "//hw/top_peppermint:doc_files",
     ],
 )
 
