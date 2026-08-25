@@ -43,97 +43,89 @@ module tb;
   //////////
   //  DUT //
   //////////
-  // The DUT sits inside a generate block named "dut", which is ugly and deliberate. topgen bakes
-  // the hierarchy tb.dut.top_peppermint.* into the register model backdoor roots, into
-  // autogen/tb__xbar_connect.sv and into autogen/xbar_tgl_excl.cfg.
-  // The block supplies the DUT scope without restating all 40 ports in a wrapper.
-  // TODO: drop this once Peppermint has a chip-level wrapper, which satisfies the same contract
-  //   naturally and is where the SoC-side glue belongs (peppermint-embargoed#38).
-  //
-  // The label cannot take the gen_ prefix the style guide asks for, so the rule is waived for this
-  // file in lint/chip_sim.vbw.
-  if (1) begin : dut
+  // chip_peppermint_asic is the chip-level wrapper, and it holds one top_peppermint instance named
+  // top_peppermint. Naming this instance dut therefore gives the tb.dut.top_peppermint.* hierarchy
+  // that topgen bakes into the register model backdoor roots, into autogen/tb__xbar_connect.sv and
+  // into autogen/xbar_tgl_excl.cfg.
 `ifdef DISABLE_ROM_INTEGRITY_CHECK
-    top_peppermint #(
-      // To be used carefully, and never for synthesis. It disables ROM scrambling and with it the
-      // very slow integrity check, which full-chip simulations otherwise pay for on every reset.
-      // TODO: replace this when issue opentitan#30389 solves it
-      .SecRomCtrlDisableScrambling(1'b1)
-    ) top_peppermint (
+  chip_peppermint_asic #(
+    // To be used carefully, and never for synthesis. It disables ROM scrambling and with it the
+    // very slow integrity check, which full-chip simulations otherwise pay for on every reset.
+    .SecRomCtrlDisableScrambling(1'b1)
+  ) dut (
 `else
-    top_peppermint top_peppermint (
+  chip_peppermint_asic dut (
 `endif
-      // Externally supplied base clocks
-      .clk_aon_i  (clk_aon            ),
-      .clk_main_i (clk_main           ),
+    // Externally supplied base clocks
+    .clk_aon_i   (clk_aon           ),
+    .clk_main_i  (clk_main          ),
 
-      // Power-on reset from the SoC
-      .rst_aon_ni (chip_if.por_n      ),
+    // Power-on reset from the SoC
+    .rst_aon_ni  (chip_if.por_n     ),
 
-      // Manual DFT signals, held inactive for functional tests
-      .scan_rst_ni (chip_if.scan_rst_n),
-      .scan_en_i   (chip_if.scan_en   ),
-      .scanmode_i  (chip_if.scanmode  ),
+    // Manual DFT signals, held inactive for functional tests
+    .scan_rst_ni (chip_if.scan_rst_n),
+    .scan_en_i   (chip_if.scan_en   ),
+    .scanmode_i  (chip_if.scanmode  ),
 
-      // Incoming alerts for group SoC
-      .incoming_alert_soc_tx_i   (chip_if.incoming_alert_soc_tx  ),
-      .incoming_alert_soc_rx_o   (chip_if.incoming_alert_soc_rx  ),
-      .incoming_lpg_cg_en_soc_i  (chip_if.incoming_lpg_cg_en_soc ),
-      .incoming_lpg_rst_en_soc_i (chip_if.incoming_lpg_rst_en_soc),
+    // Incoming alerts for group SoC
+    .incoming_alert_soc_tx   (chip_if.incoming_alert_soc_tx  ),
+    .incoming_alert_soc_rx   (chip_if.incoming_alert_soc_rx  ),
+    .incoming_lpg_cg_en_soc  (chip_if.incoming_lpg_cg_en_soc ),
+    .incoming_lpg_rst_en_soc (chip_if.incoming_lpg_rst_en_soc),
 
-      // Incoming interrupts for group SoC
-      .incoming_interrupt_soc_i  (chip_if.incoming_interrupt_soc ),
+    // Incoming interrupts for group SoC
+    .incoming_interrupt_soc  (chip_if.incoming_interrupt_soc ),
 
-      // Power handshake with the SoC
-      .power_main_req_o (chip_if.power_main_req),
-      .power_main_ok_i  (chip_if.power_main_ok ),
-      .clk_aon_ok_i     (chip_if.clk_aon_ok    ),
-      .clk_main_ok_i    (chip_if.clk_main_ok   ),
-      .wakeup_main_i    (chip_if.wakeup_main   ),
+    // Power handshake with the SoC
+    .power_main_req_o (chip_if.power_main_req),
+    .power_main_ok_i  (chip_if.power_main_ok ),
+    .clk_aon_ok_i     (chip_if.clk_aon_ok    ),
+    .clk_main_ok_i    (chip_if.clk_main_ok   ),
+    .wakeup_main      (chip_if.wakeup_main   ),
 
-      // Power gating control of the main power domain by the power controller of
-      // the wider SoC.
-      .power_main_iso_en_i    (chip_if.power_main_iso_en   ),
-      .power_main_sw_en_i     (chip_if.power_main_sw_en    ),
-      .power_main_sw_en_phy_i (chip_if.power_main_sw_en_phy),
+    // Power gating control of the main power domain by the power controller of
+    // the wider SoC.
+    .power_main_iso_en_i    (chip_if.power_main_iso_en   ),
+    .power_main_sw_en_i     (chip_if.power_main_sw_en    ),
+    .power_main_sw_en_phy_i (chip_if.power_main_sw_en_phy),
 
-      // Noise source feeding entropy_src
-      .es_rng_enable_o (chip_if.es_rng_enable),
-      .es_rng_valid_i  (chip_if.es_rng_valid ),
-      .es_rng_bit_i    (chip_if.es_rng_bit   ),
-      .es_rng_fips_o   (chip_if.es_rng_fips  ),
+    // Noise source feeding entropy_src
+    .es_rng_enable (chip_if.es_rng_enable),
+    .es_rng_valid  (chip_if.es_rng_valid ),
+    .es_rng_bit    (chip_if.es_rng_bit   ),
+    .es_rng_fips   (chip_if.es_rng_fips  ),
 
-      // Mailbox interrupts to the SoC
-      .mbx0_doe_intr_o              (chip_if.mbx0_doe_intr             ),
-      .mbx0_doe_intr_en_o           (chip_if.mbx0_doe_intr_en          ),
-      .mbx0_doe_intr_support_o      (chip_if.mbx0_doe_intr_support     ),
-      .mbx0_doe_async_msg_support_o (chip_if.mbx0_doe_async_msg_support),
-      .mbx1_doe_intr_o              (chip_if.mbx1_doe_intr             ),
-      .mbx1_doe_intr_en_o           (chip_if.mbx1_doe_intr_en          ),
-      .mbx1_doe_intr_support_o      (chip_if.mbx1_doe_intr_support     ),
-      .mbx1_doe_async_msg_support_o (chip_if.mbx1_doe_async_msg_support),
+    // Mailbox interrupts to the SoC
+    .mbx0_doe_intr              (chip_if.mbx0_doe_intr             ),
+    .mbx0_doe_intr_en           (chip_if.mbx0_doe_intr_en          ),
+    .mbx0_doe_intr_support      (chip_if.mbx0_doe_intr_support     ),
+    .mbx0_doe_async_msg_support (chip_if.mbx0_doe_async_msg_support),
+    .mbx1_doe_intr              (chip_if.mbx1_doe_intr             ),
+    .mbx1_doe_intr_en           (chip_if.mbx1_doe_intr_en          ),
+    .mbx1_doe_intr_support      (chip_if.mbx1_doe_intr_support     ),
+    .mbx1_doe_async_msg_support (chip_if.mbx1_doe_async_msg_support),
 
-      // SoC bus boundary: AHB egress (Peppermint as manager), AHB ingress into the mailboxes
-      // (Peppermint as subordinate) and the SoC-facing debug window
-      .soc_mgr_ahb_req_o (chip_if.soc_mgr_ahb_req),
-      .soc_mgr_ahb_rsp_i (chip_if.soc_mgr_ahb_rsp),
-      .soc_mbx_ahb_req_i (chip_if.soc_mbx_ahb_req),
-      .soc_mbx_ahb_rsp_o (chip_if.soc_mbx_ahb_rsp),
-      .soc_dbg_tl_req_i  (chip_if.soc_dbg_tl_req ),
-      .soc_dbg_tl_rsp_o  (chip_if.soc_dbg_tl_rsp ),
+    // SoC bus boundary: AHB egress (Peppermint as manager), AHB ingress into the mailboxes
+    // (Peppermint as subordinate) and the SoC-facing debug window
+    .soc_mgr_ahb_req_o (chip_if.soc_mgr_ahb_req),
+    .soc_mgr_ahb_rsp_i (chip_if.soc_mgr_ahb_rsp),
+    .soc_mbx_ahb_req_i (chip_if.soc_mbx_ahb_req),
+    .soc_mbx_ahb_rsp_o (chip_if.soc_mbx_ahb_rsp),
+    .soc_dbg_tl_req    (chip_if.soc_dbg_tl_req ),
+    .soc_dbg_tl_rsp    (chip_if.soc_dbg_tl_rsp ),
 
-      // Resets and boot address out to the SoC
-      .rst_main_no         (chip_if.rst_main_no      ),
-      .rst_soc_cpu_no      (chip_if.rst_soc_cpu_no   ),
-      .soc_cpu_boot_addr_o (chip_if.soc_cpu_boot_addr),
+    // Resets and boot address out to the SoC
+    .rst_main_no         (chip_if.rst_main_no      ),
+    .rst_soc_cpu_no      (chip_if.rst_soc_cpu_no   ),
+    .soc_cpu_boot_addr_o (chip_if.soc_cpu_boot_addr),
 
-      // Life cycle function control to the wider SoC
-      .soc_lc_dft_en_o       (chip_if.soc_lc_dft_en      ),
-      .soc_lc_nvm_debug_en_o (chip_if.soc_lc_nvm_debug_en),
-      .soc_lc_hw_debug_en_o  (chip_if.soc_lc_hw_debug_en ),
-      .soc_lc_cpu_en_o       (chip_if.soc_lc_cpu_en      )
-    );
-  end : dut
+    // Life cycle function control to the wider SoC
+    .soc_lc_dft_en       (chip_if.soc_lc_dft_en      ),
+    .soc_lc_nvm_debug_en (chip_if.soc_lc_nvm_debug_en),
+    .soc_lc_hw_debug_en  (chip_if.soc_lc_hw_debug_en ),
+    .soc_lc_cpu_en       (chip_if.soc_lc_cpu_en      )
+  );
 
   // Checks on static values to make before anything starts
   initial begin
@@ -141,16 +133,18 @@ module tb;
     // EntropySrcRngBusWidth would truncate the stimulus with nothing to report it. The sibling tops
     // do not check: they size the bus from ast_pkg::EntropyStreams and assume it matches the top
     // parameter. Their chip_if is bound inside the DUT, and ours is a standalone interface
-    // connected by name, so a mismatch here is silent.
+    // connected by name, so a mismatch here is silent. The port checked is the chip-level one,
+    // which is what chip_if connects to and which chip_peppermint_asic declares as a literal width.
     // TODO (peppermint-embargoed#43): extend this when the entropy_src RNG agent is connected. The
     //   agent carries a configured width of its own, so three things will have to agree: compare
-    //   it against chip_common_pkg::EsRngBusWidth and the DUT parameter, or collapse all three
+    //   it against chip_common_pkg::EsRngBusWidth and the DUT port width, or collapse all three
     //   onto one source and delete the check. The agent also needs a clk_rst_if of its own at
     //   chip_common_pkg::EsRngSampleRateKhz, since pacing it from clk_main would change the noise
     //   source bit rate when firmware programs the PLL.
-    if (EsRngBusWidth != $bits(`TOP_HIER.es_rng_bit_i)) begin
-      $fatal(1, "chip_common_pkg::EsRngBusWidth is %0d but top_peppermint drives %0d rng bits",
-             EsRngBusWidth, $bits(`TOP_HIER.es_rng_bit_i));
+    if (EsRngBusWidth != $bits(dut.es_rng_bit)) begin
+      $fatal(1,
+             "chip_common_pkg::EsRngBusWidth is %0d but chip_peppermint_asic drives %0d rng bits",
+             EsRngBusWidth, $bits(dut.es_rng_bit));
     end
 
     // Check to guarantee a whole AON cycle
@@ -422,12 +416,7 @@ module tb;
   `undef SIM_SRAM_IF
 
   // Control assertions in the DUT with UVM resource string "dut_assert_en"
-  //
-  // Targets the top instance. VCS refuses a generate block as the scope argument of $asserton and
-  // others, where Xcelium accepts one, so tb.dut fails to elaborate there.
-  // Note this does not rescue hw/dv/tools/vcs/xprop.cfg, which names tb.dut and is shared with the
-  // sibling tops; a chip-level wrapper is what fixes both (TODO see peppermint-embargoed#38).
-  `DV_ASSERT_CTRL("dut_assert_en", tb.dut.top_peppermint)
+  `DV_ASSERT_CTRL("dut_assert_en", tb.dut)
 
   // Drives alert_if[*].alert_tx from each IP's alert_tx_o, in the order of LIST_OF_ALERTS
   `include "../autogen/tb__alert_handler_connect.sv"

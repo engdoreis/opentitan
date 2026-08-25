@@ -8,7 +8,7 @@
   variant: top_peppermint
 
   // Testbench top
-  dut: top_peppermint
+  dut: chip_peppermint_asic
   tb: tb
 
   // Testplan

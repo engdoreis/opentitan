@@ -7,7 +7,7 @@ description: "Peppermint chip DV sim target"
 filesets:
   files_rtl:
     depend:
-      - "!gatelevel ? (lowrisc:systems:top_peppermint)"
+      - "!gatelevel ? (lowrisc:systems:chip_peppermint_asic)"
       - lowrisc:systems:top_peppermint_pkg
 
   files_dv:
