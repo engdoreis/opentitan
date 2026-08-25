@@ -104,5 +104,17 @@
       stage: V2S
       tests: ["rstmgr_csr_rw"]
     }
+% if topname == 'peppermint':
+    {
+      name: sec_cm_soc_cpu_boot_addr_config_regwen
+      desc: '''Verify the countermeasure(s) SOC_CPU_BOOT_ADDR.CONFIG.REGWEN.
+
+            RSTMGR.SOC_CPU_BOOT_ADDR.
+            This is covered by auto csr test.
+            '''
+      stage: V2S
+      tests: ["rstmgr_csr_rw"]
+    }
+% endif
   ]
 }

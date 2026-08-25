@@ -912,6 +912,23 @@
           index: -1
         }
         {
+          name: soc_cpu_boot_addr
+          desc:
+            '''
+            Boot address for the SoC CPU, set by software before releasing it
+            from reset.
+            '''
+          struct: logic
+          type: uni
+          act: req
+          width: 32
+          inst_name: rstmgr
+          default: ""
+          package: ""
+          top_signame: rstmgr_soc_cpu_boot_addr
+          index: -1
+        }
+        {
           name: tl
           struct: tl
           package: tlul_pkg
@@ -7359,6 +7376,7 @@
       rstmgr.resets
       rstmgr.rst_en
       rstmgr.por_n
+      rstmgr.soc_cpu_boot_addr
       pwrmgr.pwr_ast
       lc_ctrl.lc_nvm_debug_en
       rv_core_ibex.irq_timer
@@ -12087,6 +12105,23 @@
         end_idx: -1
         top_type: broadcast
         top_signame: rstmgr_sw_rst_req
+        index: -1
+      }
+      {
+        name: soc_cpu_boot_addr
+        desc:
+          '''
+          Boot address for the SoC CPU, set by software before releasing it
+          from reset.
+          '''
+        struct: logic
+        type: uni
+        act: req
+        width: 32
+        inst_name: rstmgr
+        default: ""
+        package: ""
+        top_signame: rstmgr_soc_cpu_boot_addr
         index: -1
       }
       {
@@ -19344,6 +19379,16 @@
         signame: rstmgr_por_n
         domain: Aon
         width: 2
+        type: uni
+        end_idx: -1
+        default: ""
+      }
+      {
+        package: ""
+        struct: logic
+        signame: rstmgr_soc_cpu_boot_addr
+        domain: Aon
+        width: 32
         type: uni
         end_idx: -1
         default: ""

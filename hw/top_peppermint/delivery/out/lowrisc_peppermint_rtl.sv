@@ -50088,7 +50088,7 @@ package lowrisc_rstmgr_reg_pkg;
   parameter int BlockAw = 6;
 
   // Number of registers for every interface
-  parameter int NumRegs = 14;
+  parameter int NumRegs = 16;
 
   // Alert indices
   typedef enum int {
@@ -50159,6 +50159,10 @@ package lowrisc_rstmgr_reg_pkg;
   } rstmgr_reg2hw_err_code_reg_t;
 
   typedef struct packed {
+    logic [31:0] q;
+  } rstmgr_reg2hw_soc_cpu_boot_addr_reg_t;
+
+  typedef struct packed {
     logic [3:0]  d;
     logic        de;
   } rstmgr_hw2reg_reset_req_reg_t;
@@ -50225,13 +50229,14 @@ package lowrisc_rstmgr_reg_pkg;
 
   // Register -> HW type
   typedef struct packed {
-    rstmgr_reg2hw_alert_test_reg_t alert_test; // [26:23]
-    rstmgr_reg2hw_reset_req_reg_t reset_req; // [22:19]
-    rstmgr_reg2hw_reset_info_reg_t reset_info; // [18:14]
-    rstmgr_reg2hw_alert_info_ctrl_reg_t alert_info_ctrl; // [13:9]
-    rstmgr_reg2hw_cpu_info_ctrl_reg_t cpu_info_ctrl; // [8:4]
-    rstmgr_reg2hw_sw_rst_ctrl_n_mreg_t [0:0] sw_rst_ctrl_n; // [3:3]
-    rstmgr_reg2hw_err_code_reg_t err_code; // [2:0]
+    rstmgr_reg2hw_alert_test_reg_t alert_test; // [58:55]
+    rstmgr_reg2hw_reset_req_reg_t reset_req; // [54:51]
+    rstmgr_reg2hw_reset_info_reg_t reset_info; // [50:46]
+    rstmgr_reg2hw_alert_info_ctrl_reg_t alert_info_ctrl; // [45:41]
+    rstmgr_reg2hw_cpu_info_ctrl_reg_t cpu_info_ctrl; // [40:36]
+    rstmgr_reg2hw_sw_rst_ctrl_n_mreg_t [0:0] sw_rst_ctrl_n; // [35:35]
+    rstmgr_reg2hw_err_code_reg_t err_code; // [34:32]
+    rstmgr_reg2hw_soc_cpu_boot_addr_reg_t soc_cpu_boot_addr; // [31:0]
   } rstmgr_reg2hw_t;
 
   // HW -> register type
@@ -50262,6 +50267,8 @@ package lowrisc_rstmgr_reg_pkg;
   parameter logic [BlockAw-1:0] RSTMGR_SW_RST_REGWEN_OFFSET = 6'h 2c;
   parameter logic [BlockAw-1:0] RSTMGR_SW_RST_CTRL_N_OFFSET = 6'h 30;
   parameter logic [BlockAw-1:0] RSTMGR_ERR_CODE_OFFSET = 6'h 34;
+  parameter logic [BlockAw-1:0] RSTMGR_SOC_CPU_BOOT_ADDR_REGWEN_OFFSET = 6'h 38;
+  parameter logic [BlockAw-1:0] RSTMGR_SOC_CPU_BOOT_ADDR_OFFSET = 6'h 3c;
 
   // Reset values for hwext registers and their fields
   parameter logic [1:0] RSTMGR_ALERT_TEST_RESVAL = 2'h 0;
@@ -50291,11 +50298,13 @@ package lowrisc_rstmgr_reg_pkg;
     RSTMGR_CPU_INFO,
     RSTMGR_SW_RST_REGWEN,
     RSTMGR_SW_RST_CTRL_N,
-    RSTMGR_ERR_CODE
+    RSTMGR_ERR_CODE,
+    RSTMGR_SOC_CPU_BOOT_ADDR_REGWEN,
+    RSTMGR_SOC_CPU_BOOT_ADDR
   } rstmgr_id_e;
 
   // Register width information to check illegal writes
-  parameter logic [3:0] RSTMGR_PERMIT [14] = '{
+  parameter logic [3:0] RSTMGR_PERMIT [16] = '{
     4'b 0001, // index[ 0] RSTMGR_ALERT_TEST
     4'b 0001, // index[ 1] RSTMGR_RESET_REQ
     4'b 0001, // index[ 2] RSTMGR_RESET_INFO
@@ -50309,7 +50318,9 @@ package lowrisc_rstmgr_reg_pkg;
     4'b 1111, // index[10] RSTMGR_CPU_INFO
     4'b 0001, // index[11] RSTMGR_SW_RST_REGWEN
     4'b 0001, // index[12] RSTMGR_SW_RST_CTRL_N
-    4'b 0001  // index[13] RSTMGR_ERR_CODE
+    4'b 0001, // index[13] RSTMGR_ERR_CODE
+    4'b 0001, // index[14] RSTMGR_SOC_CPU_BOOT_ADDR_REGWEN
+    4'b 1111  // index[15] RSTMGR_SOC_CPU_BOOT_ADDR
   };
 
 endpackage
@@ -57759,9 +57770,9 @@ module lowrisc_rstmgr_reg_top (
 
   // also check for spurious write enables
   logic reg_we_err;
-  logic [13:0] reg_we_check;
+  logic [15:0] reg_we_check;
   lowrisc_prim_reg_we_check #(
-    .OneHotWidth(14)
+    .OneHotWidth(16)
   ) u_prim_reg_we_check (
     .clk_i(clk_i),
     .rst_ni(rst_ni),
@@ -57876,6 +57887,12 @@ module lowrisc_rstmgr_reg_top (
   logic err_code_reg_intg_err_qs;
   logic err_code_reset_consistency_err_qs;
   logic err_code_fsm_err_qs;
+  logic soc_cpu_boot_addr_regwen_we;
+  logic soc_cpu_boot_addr_regwen_qs;
+  logic soc_cpu_boot_addr_regwen_wd;
+  logic soc_cpu_boot_addr_we;
+  logic [31:0] soc_cpu_boot_addr_qs;
+  logic [31:0] soc_cpu_boot_addr_wd;
   // Define register CDC handling.
   // CDC handling is done on a per-reg instead of per-field boundary.
 
@@ -58445,8 +58462,67 @@ module lowrisc_rstmgr_reg_top (
   );
 
 
+  // R[soc_cpu_boot_addr_regwen]: V(False)
+  lowrisc_prim_subreg #(
+    .DW      (1),
+    .SwAccess(lowrisc_prim_subreg_pkg::SwAccessW0C),
+    .RESVAL  (1'h1),
+    .Mubi    (1'b0)
+  ) u_soc_cpu_boot_addr_regwen (
+    .clk_i   (clk_i),
+    .rst_ni  (rst_ni),
 
-  logic [13:0] addr_hit;
+    // from register interface
+    .we     (soc_cpu_boot_addr_regwen_we),
+    .wd     (soc_cpu_boot_addr_regwen_wd),
+
+    // from internal hardware
+    .de     (1'b0),
+    .d      ('0),
+
+    // to internal hardware
+    .qe     (),
+    .q      (),
+    .ds     (),
+
+    // to register interface (read)
+    .qs     (soc_cpu_boot_addr_regwen_qs)
+  );
+
+
+  // R[soc_cpu_boot_addr]: V(False)
+  // Create REGWEN-gated WE signal
+  logic soc_cpu_boot_addr_gated_we;
+  assign soc_cpu_boot_addr_gated_we = soc_cpu_boot_addr_we & soc_cpu_boot_addr_regwen_qs;
+  lowrisc_prim_subreg #(
+    .DW      (32),
+    .SwAccess(lowrisc_prim_subreg_pkg::SwAccessRW),
+    .RESVAL  (32'h0),
+    .Mubi    (1'b0)
+  ) u_soc_cpu_boot_addr (
+    .clk_i   (clk_i),
+    .rst_ni  (rst_ni),
+
+    // from register interface
+    .we     (soc_cpu_boot_addr_gated_we),
+    .wd     (soc_cpu_boot_addr_wd),
+
+    // from internal hardware
+    .de     (1'b0),
+    .d      ('0),
+
+    // to internal hardware
+    .qe     (),
+    .q      (reg2hw.soc_cpu_boot_addr.q),
+    .ds     (),
+
+    // to register interface (read)
+    .qs     (soc_cpu_boot_addr_qs)
+  );
+
+
+
+  logic [15:0] addr_hit;
   always_comb begin
     addr_hit[ 0] = (reg_addr == RSTMGR_ALERT_TEST_OFFSET);
     addr_hit[ 1] = (reg_addr == RSTMGR_RESET_REQ_OFFSET);
@@ -58462,6 +58538,8 @@ module lowrisc_rstmgr_reg_top (
     addr_hit[11] = (reg_addr == RSTMGR_SW_RST_REGWEN_OFFSET);
     addr_hit[12] = (reg_addr == RSTMGR_SW_RST_CTRL_N_OFFSET);
     addr_hit[13] = (reg_addr == RSTMGR_ERR_CODE_OFFSET);
+    addr_hit[14] = (reg_addr == RSTMGR_SOC_CPU_BOOT_ADDR_REGWEN_OFFSET);
+    addr_hit[15] = (reg_addr == RSTMGR_SOC_CPU_BOOT_ADDR_OFFSET);
   end
 
   assign addrmiss = (reg_re || reg_we) ? ~|addr_hit : 1'b0 ;
@@ -58482,7 +58560,9 @@ module lowrisc_rstmgr_reg_top (
                (addr_hit[10] & (|(RSTMGR_PERMIT[10] & ~reg_be))) |
                (addr_hit[11] & (|(RSTMGR_PERMIT[11] & ~reg_be))) |
                (addr_hit[12] & (|(RSTMGR_PERMIT[12] & ~reg_be))) |
-               (addr_hit[13] & (|(RSTMGR_PERMIT[13] & ~reg_be)))));
+               (addr_hit[13] & (|(RSTMGR_PERMIT[13] & ~reg_be))) |
+               (addr_hit[14] & (|(RSTMGR_PERMIT[14] & ~reg_be))) |
+               (addr_hit[15] & (|(RSTMGR_PERMIT[15] & ~reg_be)))));
   end
 
   // Generate write-enables
@@ -58529,6 +58609,12 @@ module lowrisc_rstmgr_reg_top (
   assign sw_rst_ctrl_n_we = addr_hit[12] & reg_we & !reg_error;
 
   assign sw_rst_ctrl_n_wd = reg_wdata[0];
+  assign soc_cpu_boot_addr_regwen_we = addr_hit[14] & reg_we & !reg_error;
+
+  assign soc_cpu_boot_addr_regwen_wd = reg_wdata[0];
+  assign soc_cpu_boot_addr_we = addr_hit[15] & reg_we & !reg_error;
+
+  assign soc_cpu_boot_addr_wd = reg_wdata[31:0];
 
   // Assign write-enables to checker logic vector.
   always_comb begin
@@ -58546,6 +58632,8 @@ module lowrisc_rstmgr_reg_top (
     reg_we_check[11] = sw_rst_regwen_we;
     reg_we_check[12] = sw_rst_ctrl_n_gated_we;
     reg_we_check[13] = 1'b0;
+    reg_we_check[14] = soc_cpu_boot_addr_regwen_we;
+    reg_we_check[15] = soc_cpu_boot_addr_gated_we;
   end
 
   // Read data return
@@ -58614,6 +58702,14 @@ module lowrisc_rstmgr_reg_top (
         reg_rdata_next[0] = err_code_reg_intg_err_qs;
         reg_rdata_next[1] = err_code_reset_consistency_err_qs;
         reg_rdata_next[2] = err_code_fsm_err_qs;
+      end
+
+      addr_hit[14]: begin
+        reg_rdata_next[0] = soc_cpu_boot_addr_regwen_qs;
+      end
+
+      addr_hit[15]: begin
+        reg_rdata_next[31:0] = soc_cpu_boot_addr_qs;
       end
 
       default: begin
@@ -168805,7 +168901,11 @@ module lowrisc_rstmgr
   output rstmgr_rst_en_t rst_en_o,
 
   // reset outputs
-  output rstmgr_out_t resets_o
+  output rstmgr_out_t resets_o,
+
+  // Boot address for the SoC CPU, set by software before
+  // releasing it from reset.
+  output logic [31:0] soc_cpu_boot_addr_o
 
 );
 
@@ -168910,6 +169010,7 @@ module lowrisc_rstmgr
   logic reg_intg_err;
   // SEC_CM: BUS.INTEGRITY
   // SEC_CM: SW_RST.CONFIG.REGWEN, DUMP_CTRL.CONFIG.REGWEN
+  // SEC_CM: SOC_CPU_BOOT_ADDR.CONFIG.REGWEN
   lowrisc_rstmgr_reg_top u_reg (
     .clk_i,
     .rst_ni,
@@ -169346,6 +169447,10 @@ module lowrisc_rstmgr
   // software initiated reset request
   assign sw_rst_req_o = lowrisc_prim_mubi_pkg::mubi4_t'(reg2hw.reset_req.q);
 
+  // Boot address for the SoC CPU, set by software before
+  // releasing it from reset.
+  assign soc_cpu_boot_addr_o = reg2hw.soc_cpu_boot_addr.q;
+
   // when pwrmgr reset request is received (reset is imminent), clear software
   // request so we are not in an infinite reset loop.
   assign hw2reg.reset_req.de = pwrmgr_rst_req;
@@ -169425,6 +169530,7 @@ module lowrisc_rstmgr
   // when upstream resets, downstream must also reset
 
   // output known asserts
+
 
 
 
@@ -293374,6 +293480,7 @@ module lowrisc_peppermint_pd_aon #(
   lowrisc_rstmgr_pkg::rstmgr_out_t       rstmgr_resets;
   lowrisc_rstmgr_pkg::rstmgr_rst_en_t       rstmgr_rst_en;
   logic [1:0] rstmgr_por_n;
+  logic [31:0] rstmgr_soc_cpu_boot_addr;
   lowrisc_pwrmgr_pkg::pwr_ast_req_t       pwrmgr_pwr_ast_req;
   lowrisc_pwrmgr_pkg::pwr_ast_rsp_t       pwrmgr_pwr_ast_rsp;
 
@@ -293415,8 +293522,8 @@ module lowrisc_peppermint_pd_aon #(
   // The SW-controlled SoC CPU reset.
   assign rst_soc_cpu_no = rstmgr_resets.rst_soc_cpu_n[lowrisc_rstmgr_pkg::DomainAonSel];
 
-  // Boot address of the SoC CPU. Tied off until a source for it exists.
-  assign soc_cpu_boot_addr_o = '0;
+  // Boot address of the SoC CPU, driven by a register in rstmgr
+  assign soc_cpu_boot_addr_o = rstmgr_soc_cpu_boot_addr[SocCpuBootAddrWidth-1:0];
 
   // Life cycle function control forwarded registered in AON domain so that the states survive a
   // power down.
@@ -293629,6 +293736,7 @@ module lowrisc_peppermint_pd_aon #(
     .alert_dump_i(alert_handler_crashdump),
     .cpu_dump_i(rv_core_ibex_crash_dump_i),
     .sw_rst_req_o(rstmgr_sw_rst_req),
+    .soc_cpu_boot_addr_o(rstmgr_soc_cpu_boot_addr),
     .tl_i(rstmgr_tl_req),
     .tl_o(rstmgr_tl_rsp)
   );

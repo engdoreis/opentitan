@@ -54,9 +54,9 @@ module rstmgr_reg_top (
 
   // also check for spurious write enables
   logic reg_we_err;
-  logic [13:0] reg_we_check;
+  logic [15:0] reg_we_check;
   prim_reg_we_check #(
-    .OneHotWidth(14)
+    .OneHotWidth(16)
   ) u_prim_reg_we_check (
     .clk_i(clk_i),
     .rst_ni(rst_ni),
@@ -171,6 +171,12 @@ module rstmgr_reg_top (
   logic err_code_reg_intg_err_qs;
   logic err_code_reset_consistency_err_qs;
   logic err_code_fsm_err_qs;
+  logic soc_cpu_boot_addr_regwen_we;
+  logic soc_cpu_boot_addr_regwen_qs;
+  logic soc_cpu_boot_addr_regwen_wd;
+  logic soc_cpu_boot_addr_we;
+  logic [31:0] soc_cpu_boot_addr_qs;
+  logic [31:0] soc_cpu_boot_addr_wd;
   // Define register CDC handling.
   // CDC handling is done on a per-reg instead of per-field boundary.
 
@@ -740,8 +746,67 @@ module rstmgr_reg_top (
   );
 
 
+  // R[soc_cpu_boot_addr_regwen]: V(False)
+  prim_subreg #(
+    .DW      (1),
+    .SwAccess(prim_subreg_pkg::SwAccessW0C),
+    .RESVAL  (1'h1),
+    .Mubi    (1'b0)
+  ) u_soc_cpu_boot_addr_regwen (
+    .clk_i   (clk_i),
+    .rst_ni  (rst_ni),
 
-  logic [13:0] addr_hit;
+    // from register interface
+    .we     (soc_cpu_boot_addr_regwen_we),
+    .wd     (soc_cpu_boot_addr_regwen_wd),
+
+    // from internal hardware
+    .de     (1'b0),
+    .d      ('0),
+
+    // to internal hardware
+    .qe     (),
+    .q      (),
+    .ds     (),
+
+    // to register interface (read)
+    .qs     (soc_cpu_boot_addr_regwen_qs)
+  );
+
+
+  // R[soc_cpu_boot_addr]: V(False)
+  // Create REGWEN-gated WE signal
+  logic soc_cpu_boot_addr_gated_we;
+  assign soc_cpu_boot_addr_gated_we = soc_cpu_boot_addr_we & soc_cpu_boot_addr_regwen_qs;
+  prim_subreg #(
+    .DW      (32),
+    .SwAccess(prim_subreg_pkg::SwAccessRW),
+    .RESVAL  (32'h0),
+    .Mubi    (1'b0)
+  ) u_soc_cpu_boot_addr (
+    .clk_i   (clk_i),
+    .rst_ni  (rst_ni),
+
+    // from register interface
+    .we     (soc_cpu_boot_addr_gated_we),
+    .wd     (soc_cpu_boot_addr_wd),
+
+    // from internal hardware
+    .de     (1'b0),
+    .d      ('0),
+
+    // to internal hardware
+    .qe     (),
+    .q      (reg2hw.soc_cpu_boot_addr.q),
+    .ds     (),
+
+    // to register interface (read)
+    .qs     (soc_cpu_boot_addr_qs)
+  );
+
+
+
+  logic [15:0] addr_hit;
   always_comb begin
     addr_hit[ 0] = (reg_addr == RSTMGR_ALERT_TEST_OFFSET);
     addr_hit[ 1] = (reg_addr == RSTMGR_RESET_REQ_OFFSET);
@@ -757,6 +822,8 @@ module rstmgr_reg_top (
     addr_hit[11] = (reg_addr == RSTMGR_SW_RST_REGWEN_OFFSET);
     addr_hit[12] = (reg_addr == RSTMGR_SW_RST_CTRL_N_OFFSET);
     addr_hit[13] = (reg_addr == RSTMGR_ERR_CODE_OFFSET);
+    addr_hit[14] = (reg_addr == RSTMGR_SOC_CPU_BOOT_ADDR_REGWEN_OFFSET);
+    addr_hit[15] = (reg_addr == RSTMGR_SOC_CPU_BOOT_ADDR_OFFSET);
   end
 
   assign addrmiss = (reg_re || reg_we) ? ~|addr_hit : 1'b0 ;
@@ -777,7 +844,9 @@ module rstmgr_reg_top (
                (addr_hit[10] & (|(RSTMGR_PERMIT[10] & ~reg_be))) |
                (addr_hit[11] & (|(RSTMGR_PERMIT[11] & ~reg_be))) |
                (addr_hit[12] & (|(RSTMGR_PERMIT[12] & ~reg_be))) |
-               (addr_hit[13] & (|(RSTMGR_PERMIT[13] & ~reg_be)))));
+               (addr_hit[13] & (|(RSTMGR_PERMIT[13] & ~reg_be))) |
+               (addr_hit[14] & (|(RSTMGR_PERMIT[14] & ~reg_be))) |
+               (addr_hit[15] & (|(RSTMGR_PERMIT[15] & ~reg_be)))));
   end
 
   // Generate write-enables
@@ -824,6 +893,12 @@ module rstmgr_reg_top (
   assign sw_rst_ctrl_n_we = addr_hit[12] & reg_we & !reg_error;
 
   assign sw_rst_ctrl_n_wd = reg_wdata[0];
+  assign soc_cpu_boot_addr_regwen_we = addr_hit[14] & reg_we & !reg_error;
+
+  assign soc_cpu_boot_addr_regwen_wd = reg_wdata[0];
+  assign soc_cpu_boot_addr_we = addr_hit[15] & reg_we & !reg_error;
+
+  assign soc_cpu_boot_addr_wd = reg_wdata[31:0];
 
   // Assign write-enables to checker logic vector.
   always_comb begin
@@ -841,6 +916,8 @@ module rstmgr_reg_top (
     reg_we_check[11] = sw_rst_regwen_we;
     reg_we_check[12] = sw_rst_ctrl_n_gated_we;
     reg_we_check[13] = 1'b0;
+    reg_we_check[14] = soc_cpu_boot_addr_regwen_we;
+    reg_we_check[15] = soc_cpu_boot_addr_gated_we;
   end
 
   // Read data return
@@ -909,6 +986,14 @@ module rstmgr_reg_top (
         reg_rdata_next[0] = err_code_reg_intg_err_qs;
         reg_rdata_next[1] = err_code_reset_consistency_err_qs;
         reg_rdata_next[2] = err_code_fsm_err_qs;
+      end
+
+      addr_hit[14]: begin
+        reg_rdata_next[0] = soc_cpu_boot_addr_regwen_qs;
+      end
+
+      addr_hit[15]: begin
+        reg_rdata_next[31:0] = soc_cpu_boot_addr_qs;
       end
 
       default: begin

@@ -3,22 +3,24 @@
 <!-- BEGIN CMDGEN util/regtool.py -d ./hw/top_peppermint/ip_autogen/rstmgr/data/rstmgr.hjson -->
 ## Summary
 
-| Name                                         | Offset   |   Length | Description                                                        |
-|:---------------------------------------------|:---------|---------:|:-------------------------------------------------------------------|
-| rstmgr.[`ALERT_TEST`](#alert_test)           | 0x0      |        4 | Alert Test Register                                                |
-| rstmgr.[`RESET_REQ`](#reset_req)             | 0x4      |        4 | Software requested system reset.                                   |
-| rstmgr.[`RESET_INFO`](#reset_info)           | 0x8      |        4 | Device reset reason.                                               |
-| rstmgr.[`ALERT_REGWEN`](#alert_regwen)       | 0xc      |        4 | Alert write enable                                                 |
-| rstmgr.[`ALERT_INFO_CTRL`](#alert_info_ctrl) | 0x10     |        4 | Alert info dump controls.                                          |
-| rstmgr.[`ALERT_INFO_ATTR`](#alert_info_attr) | 0x14     |        4 | Alert info dump attributes.                                        |
-| rstmgr.[`ALERT_INFO`](#alert_info)           | 0x18     |        4 | Alert dump information prior to last reset.                        |
-| rstmgr.[`CPU_REGWEN`](#cpu_regwen)           | 0x1c     |        4 | Cpu write enable                                                   |
-| rstmgr.[`CPU_INFO_CTRL`](#cpu_info_ctrl)     | 0x20     |        4 | Cpu info dump controls.                                            |
-| rstmgr.[`CPU_INFO_ATTR`](#cpu_info_attr)     | 0x24     |        4 | Cpu info dump attributes.                                          |
-| rstmgr.[`CPU_INFO`](#cpu_info)               | 0x28     |        4 | Cpu dump information prior to last reset.                          |
-| rstmgr.[`SW_RST_REGWEN`](#sw_rst_regwen)     | 0x2c     |        4 | Register write enable for software controllable resets.            |
-| rstmgr.[`SW_RST_CTRL_N`](#sw_rst_ctrl_n)     | 0x30     |        4 | Software controllable resets.                                      |
-| rstmgr.[`ERR_CODE`](#err_code)               | 0x34     |        4 | A bit vector of all the errors that have occurred in reset manager |
+| Name                                                           | Offset   |   Length | Description                                                          |
+|:---------------------------------------------------------------|:---------|---------:|:---------------------------------------------------------------------|
+| rstmgr.[`ALERT_TEST`](#alert_test)                             | 0x0      |        4 | Alert Test Register                                                  |
+| rstmgr.[`RESET_REQ`](#reset_req)                               | 0x4      |        4 | Software requested system reset.                                     |
+| rstmgr.[`RESET_INFO`](#reset_info)                             | 0x8      |        4 | Device reset reason.                                                 |
+| rstmgr.[`ALERT_REGWEN`](#alert_regwen)                         | 0xc      |        4 | Alert write enable                                                   |
+| rstmgr.[`ALERT_INFO_CTRL`](#alert_info_ctrl)                   | 0x10     |        4 | Alert info dump controls.                                            |
+| rstmgr.[`ALERT_INFO_ATTR`](#alert_info_attr)                   | 0x14     |        4 | Alert info dump attributes.                                          |
+| rstmgr.[`ALERT_INFO`](#alert_info)                             | 0x18     |        4 | Alert dump information prior to last reset.                          |
+| rstmgr.[`CPU_REGWEN`](#cpu_regwen)                             | 0x1c     |        4 | Cpu write enable                                                     |
+| rstmgr.[`CPU_INFO_CTRL`](#cpu_info_ctrl)                       | 0x20     |        4 | Cpu info dump controls.                                              |
+| rstmgr.[`CPU_INFO_ATTR`](#cpu_info_attr)                       | 0x24     |        4 | Cpu info dump attributes.                                            |
+| rstmgr.[`CPU_INFO`](#cpu_info)                                 | 0x28     |        4 | Cpu dump information prior to last reset.                            |
+| rstmgr.[`SW_RST_REGWEN`](#sw_rst_regwen)                       | 0x2c     |        4 | Register write enable for software controllable resets.              |
+| rstmgr.[`SW_RST_CTRL_N`](#sw_rst_ctrl_n)                       | 0x30     |        4 | Software controllable resets.                                        |
+| rstmgr.[`ERR_CODE`](#err_code)                                 | 0x34     |        4 | A bit vector of all the errors that have occurred in reset manager   |
+| rstmgr.[`SOC_CPU_BOOT_ADDR_REGWEN`](#soc_cpu_boot_addr_regwen) | 0x38     |        4 | Register write enable for [`SOC_CPU_BOOT_ADDR.`](#soc_cpu_boot_addr) |
+| rstmgr.[`SOC_CPU_BOOT_ADDR`](#soc_cpu_boot_addr)               | 0x3c     |        4 | Boot address for the SoC CPU, driven out on soc_cpu_boot_addr_o.     |
 
 ## ALERT_TEST
 Alert Test Register
@@ -303,6 +305,44 @@ A bit vector of all the errors that have occurred in reset manager
 |   2    |   ro   |   0x0   | FSM_ERR               | Sparsely encoded fsm error.                           |
 |   1    |   ro   |   0x0   | RESET_CONSISTENCY_ERR | A inconsistent parent / child reset was observed.     |
 |   0    |   ro   |   0x0   | REG_INTG_ERR          | The register file has experienced an integrity error. |
+
+## SOC_CPU_BOOT_ADDR_REGWEN
+Register write enable for [`SOC_CPU_BOOT_ADDR.`](#soc_cpu_boot_addr)
+When 0, [`SOC_CPU_BOOT_ADDR`](#soc_cpu_boot_addr) can no longer be changed.
+When 1, [`SOC_CPU_BOOT_ADDR`](#soc_cpu_boot_addr) can be changed.
+- Offset: `0x38`
+- Reset default: `0x1`
+- Reset mask: `0x1`
+
+### Fields
+
+```wavejson
+{"reg": [{"name": "EN", "bits": 1, "attr": ["rw0c"], "rotate": -90}, {"bits": 31}], "config": {"lanes": 1, "fontsize": 10, "vspace": 80}}
+```
+
+|  Bits  |  Type  |  Reset  | Name   | Description                                        |
+|:------:|:------:|:-------:|:-------|:---------------------------------------------------|
+|  31:1  |        |         |        | Reserved                                           |
+|   0    |  rw0c  |   0x1   | EN     | Register write enable for the SoC CPU boot address |
+
+## SOC_CPU_BOOT_ADDR
+Boot address for the SoC CPU, driven out on soc_cpu_boot_addr_o.
+Intended to be set by software before releasing the SoC CPU from
+reset, then locked via [`SOC_CPU_BOOT_ADDR_REGWEN.`](#soc_cpu_boot_addr_regwen)
+- Offset: `0x3c`
+- Reset default: `0x0`
+- Reset mask: `0xffffffff`
+- Register enable: [`SOC_CPU_BOOT_ADDR_REGWEN`](#soc_cpu_boot_addr_regwen)
+
+### Fields
+
+```wavejson
+{"reg": [{"name": "VAL", "bits": 32, "attr": ["rw"], "rotate": 0}], "config": {"lanes": 1, "fontsize": 10, "vspace": 80}}
+```
+
+|  Bits  |  Type  |  Reset  | Name   | Description          |
+|:------:|:------:|:-------:|:-------|:---------------------|
+|  31:0  |   rw   |   0x0   | VAL    | SoC CPU boot address |
 
 
 <!-- END CMDGEN -->

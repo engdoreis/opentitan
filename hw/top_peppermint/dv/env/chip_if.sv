@@ -142,8 +142,8 @@ interface chip_if;
   lc_ctrl_pkg::lc_tx_t soc_lc_hw_debug_en;
   lc_ctrl_pkg::lc_tx_t soc_lc_cpu_en;
 
-  // Boot address handed to the SoC CPU once Peppermint releases it. DUT output.
-  // TODO: the RTL ties this to zero, so nothing here can check it yet (peppermint-embargoed#36).
+  // Boot address handed to the SoC CPU once Peppermint releases it. DUT output,
+  // driven by the rstmgr SOC_CPU_BOOT_ADDR register.
   logic [31:0] soc_cpu_boot_addr;
 
   // pwrmgr fetch enable, sampled inside the DUT by tb.sv. The SW test status interface uses it to

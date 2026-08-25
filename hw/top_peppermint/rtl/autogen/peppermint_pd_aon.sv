@@ -280,6 +280,7 @@ module peppermint_pd_aon #(
   rstmgr_pkg::rstmgr_out_t       rstmgr_resets;
   rstmgr_pkg::rstmgr_rst_en_t       rstmgr_rst_en;
   logic [1:0] rstmgr_por_n;
+  logic [31:0] rstmgr_soc_cpu_boot_addr;
   pwrmgr_pkg::pwr_ast_req_t       pwrmgr_pwr_ast_req;
   pwrmgr_pkg::pwr_ast_rsp_t       pwrmgr_pwr_ast_rsp;
 
@@ -321,8 +322,8 @@ module peppermint_pd_aon #(
   // The SW-controlled SoC CPU reset.
   assign rst_soc_cpu_no = rstmgr_resets.rst_soc_cpu_n[rstmgr_pkg::DomainAonSel];
 
-  // Boot address of the SoC CPU. Tied off until a source for it exists.
-  assign soc_cpu_boot_addr_o = '0;
+  // Boot address of the SoC CPU, driven by a register in rstmgr
+  assign soc_cpu_boot_addr_o = rstmgr_soc_cpu_boot_addr[SocCpuBootAddrWidth-1:0];
 
   // Life cycle function control forwarded registered in AON domain so that the states survive a
   // power down.
@@ -535,6 +536,7 @@ module peppermint_pd_aon #(
     .alert_dump_i(alert_handler_crashdump),
     .cpu_dump_i(rv_core_ibex_crash_dump_i),
     .sw_rst_req_o(rstmgr_sw_rst_req),
+    .soc_cpu_boot_addr_o(rstmgr_soc_cpu_boot_addr),
     .tl_i(rstmgr_tl_req),
     .tl_o(rstmgr_tl_rsp)
   );

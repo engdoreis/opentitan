@@ -92,8 +92,8 @@ module ${top["name"]}_pd_${domain.lower()} #(
   // The SW-controlled SoC CPU reset.
   assign rst_soc_cpu_no = rstmgr_resets.rst_soc_cpu_n[rstmgr_pkg::DomainAonSel];
 
-  // Boot address of the SoC CPU. Tied off until a source for it exists.
-  assign soc_cpu_boot_addr_o = '0;
+  // Boot address of the SoC CPU, driven by a register in rstmgr
+  assign soc_cpu_boot_addr_o = rstmgr_soc_cpu_boot_addr[SocCpuBootAddrWidth-1:0];
 
   // Life cycle function control forwarded registered in AON domain so that the states survive a
   // power down.

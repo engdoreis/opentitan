@@ -88,6 +88,11 @@
     { name: "DUMP_CTRL.CONFIG.REGWEN",
       desc: "Crash dump controls are protected by regwen"
     }
+% if topname == 'peppermint':
+    { name: "SOC_CPU_BOOT_ADDR.CONFIG.REGWEN",
+      desc: "The SoC CPU boot address is protected by regwen"
+    }
+% endif
   ]
   regwidth: "32",
   scan: "true",
@@ -256,6 +261,20 @@
       '''
     },
 
+% if topname == 'peppermint':
+    { struct:  "logic",
+      type:    "uni",
+      name:    "soc_cpu_boot_addr",
+      act:     "req",
+      width:   "32",
+      package: "",
+      desc:    '''
+        Boot address for the SoC CPU, set by software before releasing it
+        from reset.
+      '''
+    },
+
+% endif
     // Exported resets
 % for intf in export_rsts:
     { struct:  "rstmgr_${intf}_out",
@@ -521,5 +540,42 @@
 
       ]
     },
+% if topname == 'peppermint':
+
+    { name: "SOC_CPU_BOOT_ADDR_REGWEN",
+      desc: '''
+        Register write enable for !!SOC_CPU_BOOT_ADDR.
+        When 0, !!SOC_CPU_BOOT_ADDR can no longer be changed.
+        When 1, !!SOC_CPU_BOOT_ADDR can be changed.
+      ''',
+      swaccess: "rw0c",
+      hwaccess: "none",
+      fields: [
+        { bits: "0",
+          name: "EN",
+          desc: "Register write enable for the SoC CPU boot address",
+          resval: "1",
+        },
+      ],
+    },
+
+    { name: "SOC_CPU_BOOT_ADDR",
+      desc: '''
+        Boot address for the SoC CPU, driven out on soc_cpu_boot_addr_o.
+        Intended to be set by software before releasing the SoC CPU from
+        reset, then locked via !!SOC_CPU_BOOT_ADDR_REGWEN.
+      ''',
+      swaccess: "rw",
+      hwaccess: "hro",
+      regwen: "SOC_CPU_BOOT_ADDR_REGWEN",
+      fields: [
+        { bits: "31:0",
+          name: "VAL",
+          desc: "SoC CPU boot address",
+          resval: "0",
+        },
+      ],
+    },
+% endif
   ]
 }

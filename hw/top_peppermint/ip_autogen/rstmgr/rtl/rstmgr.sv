@@ -60,7 +60,11 @@ module rstmgr
   output rstmgr_rst_en_t rst_en_o,
 
   // reset outputs
-  output rstmgr_out_t resets_o
+  output rstmgr_out_t resets_o,
+
+  // Boot address for the SoC CPU, set by software before
+  // releasing it from reset.
+  output logic [31:0] soc_cpu_boot_addr_o
 
 );
 
@@ -165,6 +169,7 @@ module rstmgr
   logic reg_intg_err;
   // SEC_CM: BUS.INTEGRITY
   // SEC_CM: SW_RST.CONFIG.REGWEN, DUMP_CTRL.CONFIG.REGWEN
+  // SEC_CM: SOC_CPU_BOOT_ADDR.CONFIG.REGWEN
   rstmgr_reg_top u_reg (
     .clk_i,
     .rst_ni,
@@ -587,6 +592,10 @@ module rstmgr
   // software initiated reset request
   assign sw_rst_req_o = prim_mubi_pkg::mubi4_t'(reg2hw.reset_req.q);
 
+  // Boot address for the SoC CPU, set by software before
+  // releasing it from reset.
+  assign soc_cpu_boot_addr_o = reg2hw.soc_cpu_boot_addr.q;
+
   // when pwrmgr reset request is received (reset is imminent), clear software
   // request so we are not in an infinite reset loop.
   assign hw2reg.reset_req.de = pwrmgr_rst_req;
@@ -672,6 +681,7 @@ module rstmgr
   `ASSERT_KNOWN(PwrKnownO_A,         pwr_o         )
   `ASSERT_KNOWN(ResetsKnownO_A,      resets_o      )
   `ASSERT_KNOWN(RstEnKnownO_A,       rst_en_o      )
+  `ASSERT_KNOWN(SocCpuBootAddrKnownO_A, soc_cpu_boot_addr_o)
 
   // Alert assertions for reg_we onehot check
   `ASSERT_PRIM_REG_WE_ONEHOT_ERROR_TRIGGER_ALERT(RegWeOnehotCheck_A, u_reg, alert_tx_o[0])

@@ -21,16 +21,17 @@ Referring to the [Comportable guideline for peripheral device functionality](htt
 
 ## [Inter-Module Signals](https://opentitan.org/book/doc/contributing/hw/comportability/index.html#inter-signal-handling)
 
-| Port Name   | Package::Struct                    | Type    | Act   |   Width | Description                                                                                                                  |
-|:------------|:-----------------------------------|:--------|:------|--------:|:-----------------------------------------------------------------------------------------------------------------------------|
-| por_n       | logic                              | uni     | rcv   |       2 | Root power on reset signals from ast. There is one root reset signal for each core power domain.                             |
-| pwr         | pwr_rst                            | req_rsp | rsp   |       1 | Reset request signals from power manager. Power manager can request for specific domains of the lc/sys reset tree to assert. |
-| resets      | rstmgr_pkg::rstmgr_out             | uni     | req   |       1 | Leaf resets fed to the system.                                                                                               |
-| rst_en      | rstmgr_pkg::rstmgr_rst_en          | uni     | req   |       1 | Low-power-group outputs used by alert handler.                                                                               |
-| alert_dump  | alert_handler_pkg::alert_crashdump | uni     | rcv   |       1 | Alert handler crash dump information.                                                                                        |
-| cpu_dump    | rv_core_ibex_pkg::cpu_crash_dump   | uni     | rcv   |       1 | Main processing element crash dump information.                                                                              |
-| sw_rst_req  | prim_mubi_pkg::mubi4               | uni     | req   |       1 | Software requested system reset to pwrmgr.                                                                                   |
-| tl          | tlul_pkg::tl                       | req_rsp | rsp   |       1 |                                                                                                                              |
+| Port Name         | Package::Struct                    | Type    | Act   |   Width | Description                                                                                                                  |
+|:------------------|:-----------------------------------|:--------|:------|--------:|:-----------------------------------------------------------------------------------------------------------------------------|
+| por_n             | logic                              | uni     | rcv   |       2 | Root power on reset signals from ast. There is one root reset signal for each core power domain.                             |
+| pwr               | pwr_rst                            | req_rsp | rsp   |       1 | Reset request signals from power manager. Power manager can request for specific domains of the lc/sys reset tree to assert. |
+| resets            | rstmgr_pkg::rstmgr_out             | uni     | req   |       1 | Leaf resets fed to the system.                                                                                               |
+| rst_en            | rstmgr_pkg::rstmgr_rst_en          | uni     | req   |       1 | Low-power-group outputs used by alert handler.                                                                               |
+| alert_dump        | alert_handler_pkg::alert_crashdump | uni     | rcv   |       1 | Alert handler crash dump information.                                                                                        |
+| cpu_dump          | rv_core_ibex_pkg::cpu_crash_dump   | uni     | rcv   |       1 | Main processing element crash dump information.                                                                              |
+| sw_rst_req        | prim_mubi_pkg::mubi4               | uni     | req   |       1 | Software requested system reset to pwrmgr.                                                                                   |
+| soc_cpu_boot_addr | logic                              | uni     | req   |      32 | Boot address for the SoC CPU, set by software before releasing it from reset.                                                |
+| tl                | tlul_pkg::tl                       | req_rsp | rsp   |       1 |                                                                                                                              |
 
 ## Security Alerts
 
@@ -41,15 +42,16 @@ Referring to the [Comportable guideline for peripheral device functionality](htt
 
 ## Security Countermeasures
 
-| Countermeasure ID              | Description                                                                                                                |
-|:-------------------------------|:---------------------------------------------------------------------------------------------------------------------------|
-| RSTMGR.BUS.INTEGRITY           | End-to-end bus integrity scheme.                                                                                           |
-| RSTMGR.SCAN.INTERSIG.MUBI      | scan control signals are multibit                                                                                          |
-| RSTMGR.LEAF.RST.BKGN_CHK       | Background consistency checks for each leaf reset.                                                                         |
-| RSTMGR.LEAF.RST.SHADOW         | Leaf resets to blocks containing shadow registers are shadowed                                                             |
-| RSTMGR.LEAF.FSM.SPARSE         | Sparsely encoded fsm for each leaf rst check. The Hamming delta is only 3 as there are a significant number of leaf resets |
-| RSTMGR.SW_RST.CONFIG.REGWEN    | Software reset controls are protected by regwen                                                                            |
-| RSTMGR.DUMP_CTRL.CONFIG.REGWEN | Crash dump controls are protected by regwen                                                                                |
+| Countermeasure ID                      | Description                                                                                                                |
+|:---------------------------------------|:---------------------------------------------------------------------------------------------------------------------------|
+| RSTMGR.BUS.INTEGRITY                   | End-to-end bus integrity scheme.                                                                                           |
+| RSTMGR.SCAN.INTERSIG.MUBI              | scan control signals are multibit                                                                                          |
+| RSTMGR.LEAF.RST.BKGN_CHK               | Background consistency checks for each leaf reset.                                                                         |
+| RSTMGR.LEAF.RST.SHADOW                 | Leaf resets to blocks containing shadow registers are shadowed                                                             |
+| RSTMGR.LEAF.FSM.SPARSE                 | Sparsely encoded fsm for each leaf rst check. The Hamming delta is only 3 as there are a significant number of leaf resets |
+| RSTMGR.SW_RST.CONFIG.REGWEN            | Software reset controls are protected by regwen                                                                            |
+| RSTMGR.DUMP_CTRL.CONFIG.REGWEN         | Crash dump controls are protected by regwen                                                                                |
+| RSTMGR.SOC_CPU_BOOT_ADDR.CONFIG.REGWEN | The SoC CPU boot address is protected by regwen                                                                            |
 
 
 <!-- END CMDGEN -->

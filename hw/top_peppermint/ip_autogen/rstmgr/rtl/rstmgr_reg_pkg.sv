@@ -18,7 +18,7 @@ package rstmgr_reg_pkg;
   parameter int BlockAw = 6;
 
   // Number of registers for every interface
-  parameter int NumRegs = 14;
+  parameter int NumRegs = 16;
 
   // Alert indices
   typedef enum int {
@@ -89,6 +89,10 @@ package rstmgr_reg_pkg;
   } rstmgr_reg2hw_err_code_reg_t;
 
   typedef struct packed {
+    logic [31:0] q;
+  } rstmgr_reg2hw_soc_cpu_boot_addr_reg_t;
+
+  typedef struct packed {
     logic [3:0]  d;
     logic        de;
   } rstmgr_hw2reg_reset_req_reg_t;
@@ -155,13 +159,14 @@ package rstmgr_reg_pkg;
 
   // Register -> HW type
   typedef struct packed {
-    rstmgr_reg2hw_alert_test_reg_t alert_test; // [26:23]
-    rstmgr_reg2hw_reset_req_reg_t reset_req; // [22:19]
-    rstmgr_reg2hw_reset_info_reg_t reset_info; // [18:14]
-    rstmgr_reg2hw_alert_info_ctrl_reg_t alert_info_ctrl; // [13:9]
-    rstmgr_reg2hw_cpu_info_ctrl_reg_t cpu_info_ctrl; // [8:4]
-    rstmgr_reg2hw_sw_rst_ctrl_n_mreg_t [0:0] sw_rst_ctrl_n; // [3:3]
-    rstmgr_reg2hw_err_code_reg_t err_code; // [2:0]
+    rstmgr_reg2hw_alert_test_reg_t alert_test; // [58:55]
+    rstmgr_reg2hw_reset_req_reg_t reset_req; // [54:51]
+    rstmgr_reg2hw_reset_info_reg_t reset_info; // [50:46]
+    rstmgr_reg2hw_alert_info_ctrl_reg_t alert_info_ctrl; // [45:41]
+    rstmgr_reg2hw_cpu_info_ctrl_reg_t cpu_info_ctrl; // [40:36]
+    rstmgr_reg2hw_sw_rst_ctrl_n_mreg_t [0:0] sw_rst_ctrl_n; // [35:35]
+    rstmgr_reg2hw_err_code_reg_t err_code; // [34:32]
+    rstmgr_reg2hw_soc_cpu_boot_addr_reg_t soc_cpu_boot_addr; // [31:0]
   } rstmgr_reg2hw_t;
 
   // HW -> register type
@@ -192,6 +197,8 @@ package rstmgr_reg_pkg;
   parameter logic [BlockAw-1:0] RSTMGR_SW_RST_REGWEN_OFFSET = 6'h 2c;
   parameter logic [BlockAw-1:0] RSTMGR_SW_RST_CTRL_N_OFFSET = 6'h 30;
   parameter logic [BlockAw-1:0] RSTMGR_ERR_CODE_OFFSET = 6'h 34;
+  parameter logic [BlockAw-1:0] RSTMGR_SOC_CPU_BOOT_ADDR_REGWEN_OFFSET = 6'h 38;
+  parameter logic [BlockAw-1:0] RSTMGR_SOC_CPU_BOOT_ADDR_OFFSET = 6'h 3c;
 
   // Reset values for hwext registers and their fields
   parameter logic [1:0] RSTMGR_ALERT_TEST_RESVAL = 2'h 0;
@@ -221,11 +228,13 @@ package rstmgr_reg_pkg;
     RSTMGR_CPU_INFO,
     RSTMGR_SW_RST_REGWEN,
     RSTMGR_SW_RST_CTRL_N,
-    RSTMGR_ERR_CODE
+    RSTMGR_ERR_CODE,
+    RSTMGR_SOC_CPU_BOOT_ADDR_REGWEN,
+    RSTMGR_SOC_CPU_BOOT_ADDR
   } rstmgr_id_e;
 
   // Register width information to check illegal writes
-  parameter logic [3:0] RSTMGR_PERMIT [14] = '{
+  parameter logic [3:0] RSTMGR_PERMIT [16] = '{
     4'b 0001, // index[ 0] RSTMGR_ALERT_TEST
     4'b 0001, // index[ 1] RSTMGR_RESET_REQ
     4'b 0001, // index[ 2] RSTMGR_RESET_INFO
@@ -239,7 +248,9 @@ package rstmgr_reg_pkg;
     4'b 1111, // index[10] RSTMGR_CPU_INFO
     4'b 0001, // index[11] RSTMGR_SW_RST_REGWEN
     4'b 0001, // index[12] RSTMGR_SW_RST_CTRL_N
-    4'b 0001  // index[13] RSTMGR_ERR_CODE
+    4'b 0001, // index[13] RSTMGR_ERR_CODE
+    4'b 0001, // index[14] RSTMGR_SOC_CPU_BOOT_ADDR_REGWEN
+    4'b 1111  // index[15] RSTMGR_SOC_CPU_BOOT_ADDR
   };
 
 endpackage

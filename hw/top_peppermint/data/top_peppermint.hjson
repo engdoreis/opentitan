@@ -860,6 +860,9 @@
 
         'rstmgr.por_n',
 
+        // Boot address for the SoC CPU
+        'rstmgr.soc_cpu_boot_addr',
+
         // Power handshake with the SoC; broken out into flat signals by hand
         // in the pd_aon template.
         'pwrmgr.pwr_ast',

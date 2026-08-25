@@ -9,7 +9,7 @@ Signal name suffixes indicate the direction: `_i` input, `_o` output, and `_ni`/
 
 | Parameter | Default | Meaning |
 |---|---|---|
-| `SocCpuBootAddrWidth` | `32` | Width of `soc_cpu_boot_addr_o`. Between 1 and 32 bits. |
+| `SocCpuBootAddrWidth` | `32` | Width of `soc_cpu_boot_addr_o`. Between 1 and 32 bits. The register driving the port is always 32 bit wide; only its lower `SocCpuBootAddrWidth` bits reach the port. |
 | `EntropySrcRngBusWidth` | `4` | Width of `es_rng_bit_i`. Confirm any value other than 4 with the supplier before using. |
 
 `lowrisc_top_peppermint` has additional parameters, which are not integrator-facing.
@@ -321,8 +321,9 @@ The SoC must wire them ensuring the following (for the full SoC, not just Pepper
 
 `soc_cpu_boot_addr_o` must be connected to the first CPU in the SoC to boot after Peppermint.
 It provides the boot address/vector of that CPU.
-
-***Note***: `soc_cpu_boot_addr_o` is tied to zero in `Peppermint-1.0-M1`.
+It is driven by the `SOC_CPU_BOOT_ADDR` register of Peppermint's reset manager.
+Software programs that register before releasing `rst_soc_cpu_no`.
+The register resets to zero.
 
 
 ## Noise source
