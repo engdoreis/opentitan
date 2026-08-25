@@ -890,14 +890,86 @@ pub enum AlertId {
     RvCoreIbexFatalHwErr = 43,
     /// rv_core_ibex_recov_hw_err
     RvCoreIbexRecovHwErr = 44,
+    /// incoming_soc_soc_recov_alert_0
+    IncomingSocSocRecovAlert0 = 45,
+    /// incoming_soc_soc_recov_alert_1
+    IncomingSocSocRecovAlert1 = 46,
+    /// incoming_soc_soc_recov_alert_2
+    IncomingSocSocRecovAlert2 = 47,
+    /// incoming_soc_soc_recov_alert_3
+    IncomingSocSocRecovAlert3 = 48,
+    /// incoming_soc_soc_recov_alert_4
+    IncomingSocSocRecovAlert4 = 49,
+    /// incoming_soc_soc_recov_alert_5
+    IncomingSocSocRecovAlert5 = 50,
+    /// incoming_soc_soc_recov_alert_6
+    IncomingSocSocRecovAlert6 = 51,
+    /// incoming_soc_soc_recov_alert_7
+    IncomingSocSocRecovAlert7 = 52,
+    /// incoming_soc_soc_recov_alert_8
+    IncomingSocSocRecovAlert8 = 53,
+    /// incoming_soc_soc_recov_alert_9
+    IncomingSocSocRecovAlert9 = 54,
+    /// incoming_soc_soc_recov_alert_10
+    IncomingSocSocRecovAlert10 = 55,
+    /// incoming_soc_soc_recov_alert_11
+    IncomingSocSocRecovAlert11 = 56,
+    /// incoming_soc_soc_recov_alert_12
+    IncomingSocSocRecovAlert12 = 57,
+    /// incoming_soc_soc_recov_alert_13
+    IncomingSocSocRecovAlert13 = 58,
+    /// incoming_soc_soc_recov_alert_14
+    IncomingSocSocRecovAlert14 = 59,
+    /// incoming_soc_soc_recov_alert_15
+    IncomingSocSocRecovAlert15 = 60,
+    /// incoming_soc_soc_recov_alert_16
+    IncomingSocSocRecovAlert16 = 61,
+    /// incoming_soc_soc_recov_alert_17
+    IncomingSocSocRecovAlert17 = 62,
+    /// incoming_soc_soc_recov_alert_18
+    IncomingSocSocRecovAlert18 = 63,
+    /// incoming_soc_soc_recov_alert_19
+    IncomingSocSocRecovAlert19 = 64,
+    /// incoming_soc_soc_recov_alert_20
+    IncomingSocSocRecovAlert20 = 65,
+    /// incoming_soc_soc_recov_alert_21
+    IncomingSocSocRecovAlert21 = 66,
+    /// incoming_soc_soc_recov_alert_22
+    IncomingSocSocRecovAlert22 = 67,
+    /// incoming_soc_soc_recov_alert_23
+    IncomingSocSocRecovAlert23 = 68,
+    /// incoming_soc_soc_recov_alert_24
+    IncomingSocSocRecovAlert24 = 69,
+    /// incoming_soc_soc_recov_alert_25
+    IncomingSocSocRecovAlert25 = 70,
+    /// incoming_soc_soc_recov_alert_26
+    IncomingSocSocRecovAlert26 = 71,
+    /// incoming_soc_soc_recov_alert_27
+    IncomingSocSocRecovAlert27 = 72,
+    /// incoming_soc_soc_recov_alert_28
+    IncomingSocSocRecovAlert28 = 73,
+    /// incoming_soc_soc_recov_alert_29
+    IncomingSocSocRecovAlert29 = 74,
+    /// incoming_soc_soc_recov_alert_30
+    IncomingSocSocRecovAlert30 = 75,
+    /// incoming_soc_soc_recov_alert_31
+    IncomingSocSocRecovAlert31 = 76,
     /// incoming_soc_soc_fatal_alert_0
-    IncomingSocSocFatalAlert0 = 45,
+    IncomingSocSocFatalAlert0 = 77,
     /// incoming_soc_soc_fatal_alert_1
-    IncomingSocSocFatalAlert1 = 46,
+    IncomingSocSocFatalAlert1 = 78,
     /// incoming_soc_soc_fatal_alert_2
-    IncomingSocSocFatalAlert2 = 47,
+    IncomingSocSocFatalAlert2 = 79,
     /// incoming_soc_soc_fatal_alert_3
-    IncomingSocSocFatalAlert3 = 48,
+    IncomingSocSocFatalAlert3 = 80,
+    /// incoming_soc_soc_fatal_alert_4
+    IncomingSocSocFatalAlert4 = 81,
+    /// incoming_soc_soc_fatal_alert_5
+    IncomingSocSocFatalAlert5 = 82,
+    /// incoming_soc_soc_fatal_alert_6
+    IncomingSocSocFatalAlert6 = 83,
+    /// incoming_soc_soc_fatal_alert_7
+    IncomingSocSocFatalAlert7 = 84,
 }
 
 impl TryFrom<u32> for AlertId {
@@ -949,10 +1021,46 @@ impl TryFrom<u32> for AlertId {
             42 => Ok(Self::RvCoreIbexRecovSwErr),
             43 => Ok(Self::RvCoreIbexFatalHwErr),
             44 => Ok(Self::RvCoreIbexRecovHwErr),
-            45 => Ok(Self::IncomingSocSocFatalAlert0),
-            46 => Ok(Self::IncomingSocSocFatalAlert1),
-            47 => Ok(Self::IncomingSocSocFatalAlert2),
-            48 => Ok(Self::IncomingSocSocFatalAlert3),
+            45 => Ok(Self::IncomingSocSocRecovAlert0),
+            46 => Ok(Self::IncomingSocSocRecovAlert1),
+            47 => Ok(Self::IncomingSocSocRecovAlert2),
+            48 => Ok(Self::IncomingSocSocRecovAlert3),
+            49 => Ok(Self::IncomingSocSocRecovAlert4),
+            50 => Ok(Self::IncomingSocSocRecovAlert5),
+            51 => Ok(Self::IncomingSocSocRecovAlert6),
+            52 => Ok(Self::IncomingSocSocRecovAlert7),
+            53 => Ok(Self::IncomingSocSocRecovAlert8),
+            54 => Ok(Self::IncomingSocSocRecovAlert9),
+            55 => Ok(Self::IncomingSocSocRecovAlert10),
+            56 => Ok(Self::IncomingSocSocRecovAlert11),
+            57 => Ok(Self::IncomingSocSocRecovAlert12),
+            58 => Ok(Self::IncomingSocSocRecovAlert13),
+            59 => Ok(Self::IncomingSocSocRecovAlert14),
+            60 => Ok(Self::IncomingSocSocRecovAlert15),
+            61 => Ok(Self::IncomingSocSocRecovAlert16),
+            62 => Ok(Self::IncomingSocSocRecovAlert17),
+            63 => Ok(Self::IncomingSocSocRecovAlert18),
+            64 => Ok(Self::IncomingSocSocRecovAlert19),
+            65 => Ok(Self::IncomingSocSocRecovAlert20),
+            66 => Ok(Self::IncomingSocSocRecovAlert21),
+            67 => Ok(Self::IncomingSocSocRecovAlert22),
+            68 => Ok(Self::IncomingSocSocRecovAlert23),
+            69 => Ok(Self::IncomingSocSocRecovAlert24),
+            70 => Ok(Self::IncomingSocSocRecovAlert25),
+            71 => Ok(Self::IncomingSocSocRecovAlert26),
+            72 => Ok(Self::IncomingSocSocRecovAlert27),
+            73 => Ok(Self::IncomingSocSocRecovAlert28),
+            74 => Ok(Self::IncomingSocSocRecovAlert29),
+            75 => Ok(Self::IncomingSocSocRecovAlert30),
+            76 => Ok(Self::IncomingSocSocRecovAlert31),
+            77 => Ok(Self::IncomingSocSocFatalAlert0),
+            78 => Ok(Self::IncomingSocSocFatalAlert1),
+            79 => Ok(Self::IncomingSocSocFatalAlert2),
+            80 => Ok(Self::IncomingSocSocFatalAlert3),
+            81 => Ok(Self::IncomingSocSocFatalAlert4),
+            82 => Ok(Self::IncomingSocSocFatalAlert5),
+            83 => Ok(Self::IncomingSocSocFatalAlert6),
+            84 => Ok(Self::IncomingSocSocFatalAlert7),
             _ => Err(val),
         }
     }
@@ -962,7 +1070,7 @@ impl TryFrom<u32> for AlertId {
 ///
 /// This array is a mapping from `AlertId` to
 /// `AlertPeripheral`.
-pub const ALERT_FOR_PERIPHERAL: [AlertPeripheral; 49] = [
+pub const ALERT_FOR_PERIPHERAL: [AlertPeripheral; 85] = [
     // PwrmgrFatalFault -> AlertPeripheral::Pwrmgr
     AlertPeripheral::Pwrmgr,
     // RstmgrFatalFault -> AlertPeripheral::Rstmgr
@@ -1053,6 +1161,70 @@ pub const ALERT_FOR_PERIPHERAL: [AlertPeripheral; 49] = [
     AlertPeripheral::RvCoreIbex,
     // RvCoreIbexRecovHwErr -> AlertPeripheral::RvCoreIbex
     AlertPeripheral::RvCoreIbex,
+    // IncomingSocSocRecovAlert0 -> AlertPeripheral::External
+    AlertPeripheral::External,
+    // IncomingSocSocRecovAlert1 -> AlertPeripheral::External
+    AlertPeripheral::External,
+    // IncomingSocSocRecovAlert2 -> AlertPeripheral::External
+    AlertPeripheral::External,
+    // IncomingSocSocRecovAlert3 -> AlertPeripheral::External
+    AlertPeripheral::External,
+    // IncomingSocSocRecovAlert4 -> AlertPeripheral::External
+    AlertPeripheral::External,
+    // IncomingSocSocRecovAlert5 -> AlertPeripheral::External
+    AlertPeripheral::External,
+    // IncomingSocSocRecovAlert6 -> AlertPeripheral::External
+    AlertPeripheral::External,
+    // IncomingSocSocRecovAlert7 -> AlertPeripheral::External
+    AlertPeripheral::External,
+    // IncomingSocSocRecovAlert8 -> AlertPeripheral::External
+    AlertPeripheral::External,
+    // IncomingSocSocRecovAlert9 -> AlertPeripheral::External
+    AlertPeripheral::External,
+    // IncomingSocSocRecovAlert10 -> AlertPeripheral::External
+    AlertPeripheral::External,
+    // IncomingSocSocRecovAlert11 -> AlertPeripheral::External
+    AlertPeripheral::External,
+    // IncomingSocSocRecovAlert12 -> AlertPeripheral::External
+    AlertPeripheral::External,
+    // IncomingSocSocRecovAlert13 -> AlertPeripheral::External
+    AlertPeripheral::External,
+    // IncomingSocSocRecovAlert14 -> AlertPeripheral::External
+    AlertPeripheral::External,
+    // IncomingSocSocRecovAlert15 -> AlertPeripheral::External
+    AlertPeripheral::External,
+    // IncomingSocSocRecovAlert16 -> AlertPeripheral::External
+    AlertPeripheral::External,
+    // IncomingSocSocRecovAlert17 -> AlertPeripheral::External
+    AlertPeripheral::External,
+    // IncomingSocSocRecovAlert18 -> AlertPeripheral::External
+    AlertPeripheral::External,
+    // IncomingSocSocRecovAlert19 -> AlertPeripheral::External
+    AlertPeripheral::External,
+    // IncomingSocSocRecovAlert20 -> AlertPeripheral::External
+    AlertPeripheral::External,
+    // IncomingSocSocRecovAlert21 -> AlertPeripheral::External
+    AlertPeripheral::External,
+    // IncomingSocSocRecovAlert22 -> AlertPeripheral::External
+    AlertPeripheral::External,
+    // IncomingSocSocRecovAlert23 -> AlertPeripheral::External
+    AlertPeripheral::External,
+    // IncomingSocSocRecovAlert24 -> AlertPeripheral::External
+    AlertPeripheral::External,
+    // IncomingSocSocRecovAlert25 -> AlertPeripheral::External
+    AlertPeripheral::External,
+    // IncomingSocSocRecovAlert26 -> AlertPeripheral::External
+    AlertPeripheral::External,
+    // IncomingSocSocRecovAlert27 -> AlertPeripheral::External
+    AlertPeripheral::External,
+    // IncomingSocSocRecovAlert28 -> AlertPeripheral::External
+    AlertPeripheral::External,
+    // IncomingSocSocRecovAlert29 -> AlertPeripheral::External
+    AlertPeripheral::External,
+    // IncomingSocSocRecovAlert30 -> AlertPeripheral::External
+    AlertPeripheral::External,
+    // IncomingSocSocRecovAlert31 -> AlertPeripheral::External
+    AlertPeripheral::External,
     // IncomingSocSocFatalAlert0 -> AlertPeripheral::External
     AlertPeripheral::External,
     // IncomingSocSocFatalAlert1 -> AlertPeripheral::External
@@ -1060,6 +1232,14 @@ pub const ALERT_FOR_PERIPHERAL: [AlertPeripheral; 49] = [
     // IncomingSocSocFatalAlert2 -> AlertPeripheral::External
     AlertPeripheral::External,
     // IncomingSocSocFatalAlert3 -> AlertPeripheral::External
+    AlertPeripheral::External,
+    // IncomingSocSocFatalAlert4 -> AlertPeripheral::External
+    AlertPeripheral::External,
+    // IncomingSocSocFatalAlert5 -> AlertPeripheral::External
+    AlertPeripheral::External,
+    // IncomingSocSocFatalAlert6 -> AlertPeripheral::External
+    AlertPeripheral::External,
+    // IncomingSocSocFatalAlert7 -> AlertPeripheral::External
     AlertPeripheral::External,
 ];
 

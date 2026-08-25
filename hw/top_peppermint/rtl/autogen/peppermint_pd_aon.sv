@@ -211,12 +211,48 @@ module peppermint_pd_aon #(
   assign alert_rx_pd_main_o[37] = alert_rx[43];
   assign alert_rx_pd_main_o[38] = alert_rx[44];
   // Alert mapping to the alert handler for alert group soc
-  // alert_handler[45]: soc_fatal_alert_0
-  // alert_handler[46]: soc_fatal_alert_1
-  // alert_handler[47]: soc_fatal_alert_2
-  // alert_handler[48]: soc_fatal_alert_3
-  assign alert_tx[48:45] = incoming_alert_soc_tx_i;
-  assign incoming_alert_soc_rx_o = alert_rx[48:45];
+  // alert_handler[45]: soc_recov_alert_0
+  // alert_handler[46]: soc_recov_alert_1
+  // alert_handler[47]: soc_recov_alert_2
+  // alert_handler[48]: soc_recov_alert_3
+  // alert_handler[49]: soc_recov_alert_4
+  // alert_handler[50]: soc_recov_alert_5
+  // alert_handler[51]: soc_recov_alert_6
+  // alert_handler[52]: soc_recov_alert_7
+  // alert_handler[53]: soc_recov_alert_8
+  // alert_handler[54]: soc_recov_alert_9
+  // alert_handler[55]: soc_recov_alert_10
+  // alert_handler[56]: soc_recov_alert_11
+  // alert_handler[57]: soc_recov_alert_12
+  // alert_handler[58]: soc_recov_alert_13
+  // alert_handler[59]: soc_recov_alert_14
+  // alert_handler[60]: soc_recov_alert_15
+  // alert_handler[61]: soc_recov_alert_16
+  // alert_handler[62]: soc_recov_alert_17
+  // alert_handler[63]: soc_recov_alert_18
+  // alert_handler[64]: soc_recov_alert_19
+  // alert_handler[65]: soc_recov_alert_20
+  // alert_handler[66]: soc_recov_alert_21
+  // alert_handler[67]: soc_recov_alert_22
+  // alert_handler[68]: soc_recov_alert_23
+  // alert_handler[69]: soc_recov_alert_24
+  // alert_handler[70]: soc_recov_alert_25
+  // alert_handler[71]: soc_recov_alert_26
+  // alert_handler[72]: soc_recov_alert_27
+  // alert_handler[73]: soc_recov_alert_28
+  // alert_handler[74]: soc_recov_alert_29
+  // alert_handler[75]: soc_recov_alert_30
+  // alert_handler[76]: soc_recov_alert_31
+  // alert_handler[77]: soc_fatal_alert_0
+  // alert_handler[78]: soc_fatal_alert_1
+  // alert_handler[79]: soc_fatal_alert_2
+  // alert_handler[80]: soc_fatal_alert_3
+  // alert_handler[81]: soc_fatal_alert_4
+  // alert_handler[82]: soc_fatal_alert_5
+  // alert_handler[83]: soc_fatal_alert_6
+  // alert_handler[84]: soc_fatal_alert_7
+  assign alert_tx[84:45] = incoming_alert_soc_tx_i;
+  assign incoming_alert_soc_rx_o = alert_rx[84:45];
 
   // Define inter-module signals
   pwrmgr_pkg::pwr_rst_req_t       pwrmgr_pwr_rst_req;
@@ -361,6 +397,20 @@ module peppermint_pd_aon #(
   assign lpg_rst_en[3] = rstmgr_rst_en.sys[rstmgr_pkg::DomainMainSel];
   assign lpg_cg_en[4] = incoming_lpg_cg_en_soc_i[0];
   assign lpg_rst_en[4] = incoming_lpg_rst_en_soc_i[0];
+  assign lpg_cg_en[5] = incoming_lpg_cg_en_soc_i[1];
+  assign lpg_rst_en[5] = incoming_lpg_rst_en_soc_i[1];
+  assign lpg_cg_en[6] = incoming_lpg_cg_en_soc_i[2];
+  assign lpg_rst_en[6] = incoming_lpg_rst_en_soc_i[2];
+  assign lpg_cg_en[7] = incoming_lpg_cg_en_soc_i[3];
+  assign lpg_rst_en[7] = incoming_lpg_rst_en_soc_i[3];
+  assign lpg_cg_en[8] = incoming_lpg_cg_en_soc_i[4];
+  assign lpg_rst_en[8] = incoming_lpg_rst_en_soc_i[4];
+  assign lpg_cg_en[9] = incoming_lpg_cg_en_soc_i[5];
+  assign lpg_rst_en[9] = incoming_lpg_rst_en_soc_i[5];
+  assign lpg_cg_en[10] = incoming_lpg_cg_en_soc_i[6];
+  assign lpg_rst_en[10] = incoming_lpg_rst_en_soc_i[6];
+  assign lpg_cg_en[11] = incoming_lpg_cg_en_soc_i[7];
+  assign lpg_rst_en[11] = incoming_lpg_rst_en_soc_i[7];
 
 // Tie off unused clock- and reset enables
 //VCS coverage off

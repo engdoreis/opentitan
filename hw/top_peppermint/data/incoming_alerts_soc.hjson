@@ -3,12 +3,26 @@
 // SPDX-License-Identifier: Apache-2.0
 //
 // Alerts from the wider SoC into Peppermint's alert handler. The SoC side
-// drives these with prim_alert_sender instances (async mode). Extend this
-// list as the SoC integration defines more alert sources.
+// drives these with prim_alert_sender instances (async mode).
+//
+// 32 recoverable and 8 fatal alert inputs are reserved for the SoC.
+//
+// The inputs are spread over eight SoC low-power groups (LPGs) so that alert
+// senders in different SoC clock and reset domains can be gated
+// independently.  Currently, the mapping is as follows:
+// - For 0 <= i <= 7, LPG i holds soc_recov_alert_[4*i] to
+//   soc_recov_alert_[4*i+3].
+// - For 0 <= i <= 3, LPG i holds soc_fatal_alert[2*i] and
+//   soc_fatal_alert[2*i+1].
+//
+// This mapping can be changed based on the requirements of the SoC; it was
+// chosen mainly to reserve 8 LPGs on the interfaces and come up with a
+// distribution that is statistically sensible.
+
 {
     soc: [
         {
-            name: soc_fatal_alert_0
+            name: soc_recov_alert_0
             module_name: soc
             index: 0
             type: alert
@@ -17,7 +31,7 @@
             lpg_idx: 0
         }
         {
-            name: soc_fatal_alert_1
+            name: soc_recov_alert_1
             module_name: soc
             index: 1
             type: alert
@@ -26,7 +40,7 @@
             lpg_idx: 0
         }
         {
-            name: soc_fatal_alert_2
+            name: soc_recov_alert_2
             module_name: soc
             index: 2
             type: alert
@@ -35,13 +49,337 @@
             lpg_idx: 0
         }
         {
-            name: soc_fatal_alert_3
+            name: soc_recov_alert_3
             module_name: soc
             index: 3
             type: alert
             async: 1
             width: 1
             lpg_idx: 0
+        }
+        {
+            name: soc_recov_alert_4
+            module_name: soc
+            index: 4
+            type: alert
+            async: 1
+            width: 1
+            lpg_idx: 1
+        }
+        {
+            name: soc_recov_alert_5
+            module_name: soc
+            index: 5
+            type: alert
+            async: 1
+            width: 1
+            lpg_idx: 1
+        }
+        {
+            name: soc_recov_alert_6
+            module_name: soc
+            index: 6
+            type: alert
+            async: 1
+            width: 1
+            lpg_idx: 1
+        }
+        {
+            name: soc_recov_alert_7
+            module_name: soc
+            index: 7
+            type: alert
+            async: 1
+            width: 1
+            lpg_idx: 1
+        }
+        {
+            name: soc_recov_alert_8
+            module_name: soc
+            index: 8
+            type: alert
+            async: 1
+            width: 1
+            lpg_idx: 2
+        }
+        {
+            name: soc_recov_alert_9
+            module_name: soc
+            index: 9
+            type: alert
+            async: 1
+            width: 1
+            lpg_idx: 2
+        }
+        {
+            name: soc_recov_alert_10
+            module_name: soc
+            index: 10
+            type: alert
+            async: 1
+            width: 1
+            lpg_idx: 2
+        }
+        {
+            name: soc_recov_alert_11
+            module_name: soc
+            index: 11
+            type: alert
+            async: 1
+            width: 1
+            lpg_idx: 2
+        }
+        {
+            name: soc_recov_alert_12
+            module_name: soc
+            index: 12
+            type: alert
+            async: 1
+            width: 1
+            lpg_idx: 3
+        }
+        {
+            name: soc_recov_alert_13
+            module_name: soc
+            index: 13
+            type: alert
+            async: 1
+            width: 1
+            lpg_idx: 3
+        }
+        {
+            name: soc_recov_alert_14
+            module_name: soc
+            index: 14
+            type: alert
+            async: 1
+            width: 1
+            lpg_idx: 3
+        }
+        {
+            name: soc_recov_alert_15
+            module_name: soc
+            index: 15
+            type: alert
+            async: 1
+            width: 1
+            lpg_idx: 3
+        }
+        {
+            name: soc_recov_alert_16
+            module_name: soc
+            index: 16
+            type: alert
+            async: 1
+            width: 1
+            lpg_idx: 4
+        }
+        {
+            name: soc_recov_alert_17
+            module_name: soc
+            index: 17
+            type: alert
+            async: 1
+            width: 1
+            lpg_idx: 4
+        }
+        {
+            name: soc_recov_alert_18
+            module_name: soc
+            index: 18
+            type: alert
+            async: 1
+            width: 1
+            lpg_idx: 4
+        }
+        {
+            name: soc_recov_alert_19
+            module_name: soc
+            index: 19
+            type: alert
+            async: 1
+            width: 1
+            lpg_idx: 4
+        }
+        {
+            name: soc_recov_alert_20
+            module_name: soc
+            index: 20
+            type: alert
+            async: 1
+            width: 1
+            lpg_idx: 5
+        }
+        {
+            name: soc_recov_alert_21
+            module_name: soc
+            index: 21
+            type: alert
+            async: 1
+            width: 1
+            lpg_idx: 5
+        }
+        {
+            name: soc_recov_alert_22
+            module_name: soc
+            index: 22
+            type: alert
+            async: 1
+            width: 1
+            lpg_idx: 5
+        }
+        {
+            name: soc_recov_alert_23
+            module_name: soc
+            index: 23
+            type: alert
+            async: 1
+            width: 1
+            lpg_idx: 5
+        }
+        {
+            name: soc_recov_alert_24
+            module_name: soc
+            index: 24
+            type: alert
+            async: 1
+            width: 1
+            lpg_idx: 6
+        }
+        {
+            name: soc_recov_alert_25
+            module_name: soc
+            index: 25
+            type: alert
+            async: 1
+            width: 1
+            lpg_idx: 6
+        }
+        {
+            name: soc_recov_alert_26
+            module_name: soc
+            index: 26
+            type: alert
+            async: 1
+            width: 1
+            lpg_idx: 6
+        }
+        {
+            name: soc_recov_alert_27
+            module_name: soc
+            index: 27
+            type: alert
+            async: 1
+            width: 1
+            lpg_idx: 6
+        }
+        {
+            name: soc_recov_alert_28
+            module_name: soc
+            index: 28
+            type: alert
+            async: 1
+            width: 1
+            lpg_idx: 7
+        }
+        {
+            name: soc_recov_alert_29
+            module_name: soc
+            index: 29
+            type: alert
+            async: 1
+            width: 1
+            lpg_idx: 7
+        }
+        {
+            name: soc_recov_alert_30
+            module_name: soc
+            index: 30
+            type: alert
+            async: 1
+            width: 1
+            lpg_idx: 7
+        }
+        {
+            name: soc_recov_alert_31
+            module_name: soc
+            index: 31
+            type: alert
+            async: 1
+            width: 1
+            lpg_idx: 7
+        }
+        {
+            name: soc_fatal_alert_0
+            module_name: soc
+            index: 32
+            type: alert
+            async: 1
+            width: 1
+            lpg_idx: 0
+        }
+        {
+            name: soc_fatal_alert_1
+            module_name: soc
+            index: 33
+            type: alert
+            async: 1
+            width: 1
+            lpg_idx: 0
+        }
+        {
+            name: soc_fatal_alert_2
+            module_name: soc
+            index: 34
+            type: alert
+            async: 1
+            width: 1
+            lpg_idx: 1
+        }
+        {
+            name: soc_fatal_alert_3
+            module_name: soc
+            index: 35
+            type: alert
+            async: 1
+            width: 1
+            lpg_idx: 1
+        }
+        {
+            name: soc_fatal_alert_4
+            module_name: soc
+            index: 36
+            type: alert
+            async: 1
+            width: 1
+            lpg_idx: 2
+        }
+        {
+            name: soc_fatal_alert_5
+            module_name: soc
+            index: 37
+            type: alert
+            async: 1
+            width: 1
+            lpg_idx: 2
+        }
+        {
+            name: soc_fatal_alert_6
+            module_name: soc
+            index: 38
+            type: alert
+            async: 1
+            width: 1
+            lpg_idx: 3
+        }
+        {
+            name: soc_fatal_alert_7
+            module_name: soc
+            index: 39
+            type: alert
+            async: 1
+            width: 1
+            lpg_idx: 3
         }
     ]
 }

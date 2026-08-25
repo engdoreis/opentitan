@@ -743,11 +743,47 @@ typedef enum top_peppermint_alert_id {
   kTopPeppermintAlertIdRvCoreIbexRecovSwErr = 42, /**< rv_core_ibex_recov_sw_err */
   kTopPeppermintAlertIdRvCoreIbexFatalHwErr = 43, /**< rv_core_ibex_fatal_hw_err */
   kTopPeppermintAlertIdRvCoreIbexRecovHwErr = 44, /**< rv_core_ibex_recov_hw_err */
-  kTopPeppermintAlertIdIncomingSocSocFatalAlert0 = 45, /**< incoming_soc_soc_fatal_alert_0 */
-  kTopPeppermintAlertIdIncomingSocSocFatalAlert1 = 46, /**< incoming_soc_soc_fatal_alert_1 */
-  kTopPeppermintAlertIdIncomingSocSocFatalAlert2 = 47, /**< incoming_soc_soc_fatal_alert_2 */
-  kTopPeppermintAlertIdIncomingSocSocFatalAlert3 = 48, /**< incoming_soc_soc_fatal_alert_3 */
-  kTopPeppermintAlertIdLast = 48, /**< \internal The Last Valid Alert ID. */
+  kTopPeppermintAlertIdIncomingSocSocRecovAlert0 = 45, /**< incoming_soc_soc_recov_alert_0 */
+  kTopPeppermintAlertIdIncomingSocSocRecovAlert1 = 46, /**< incoming_soc_soc_recov_alert_1 */
+  kTopPeppermintAlertIdIncomingSocSocRecovAlert2 = 47, /**< incoming_soc_soc_recov_alert_2 */
+  kTopPeppermintAlertIdIncomingSocSocRecovAlert3 = 48, /**< incoming_soc_soc_recov_alert_3 */
+  kTopPeppermintAlertIdIncomingSocSocRecovAlert4 = 49, /**< incoming_soc_soc_recov_alert_4 */
+  kTopPeppermintAlertIdIncomingSocSocRecovAlert5 = 50, /**< incoming_soc_soc_recov_alert_5 */
+  kTopPeppermintAlertIdIncomingSocSocRecovAlert6 = 51, /**< incoming_soc_soc_recov_alert_6 */
+  kTopPeppermintAlertIdIncomingSocSocRecovAlert7 = 52, /**< incoming_soc_soc_recov_alert_7 */
+  kTopPeppermintAlertIdIncomingSocSocRecovAlert8 = 53, /**< incoming_soc_soc_recov_alert_8 */
+  kTopPeppermintAlertIdIncomingSocSocRecovAlert9 = 54, /**< incoming_soc_soc_recov_alert_9 */
+  kTopPeppermintAlertIdIncomingSocSocRecovAlert10 = 55, /**< incoming_soc_soc_recov_alert_10 */
+  kTopPeppermintAlertIdIncomingSocSocRecovAlert11 = 56, /**< incoming_soc_soc_recov_alert_11 */
+  kTopPeppermintAlertIdIncomingSocSocRecovAlert12 = 57, /**< incoming_soc_soc_recov_alert_12 */
+  kTopPeppermintAlertIdIncomingSocSocRecovAlert13 = 58, /**< incoming_soc_soc_recov_alert_13 */
+  kTopPeppermintAlertIdIncomingSocSocRecovAlert14 = 59, /**< incoming_soc_soc_recov_alert_14 */
+  kTopPeppermintAlertIdIncomingSocSocRecovAlert15 = 60, /**< incoming_soc_soc_recov_alert_15 */
+  kTopPeppermintAlertIdIncomingSocSocRecovAlert16 = 61, /**< incoming_soc_soc_recov_alert_16 */
+  kTopPeppermintAlertIdIncomingSocSocRecovAlert17 = 62, /**< incoming_soc_soc_recov_alert_17 */
+  kTopPeppermintAlertIdIncomingSocSocRecovAlert18 = 63, /**< incoming_soc_soc_recov_alert_18 */
+  kTopPeppermintAlertIdIncomingSocSocRecovAlert19 = 64, /**< incoming_soc_soc_recov_alert_19 */
+  kTopPeppermintAlertIdIncomingSocSocRecovAlert20 = 65, /**< incoming_soc_soc_recov_alert_20 */
+  kTopPeppermintAlertIdIncomingSocSocRecovAlert21 = 66, /**< incoming_soc_soc_recov_alert_21 */
+  kTopPeppermintAlertIdIncomingSocSocRecovAlert22 = 67, /**< incoming_soc_soc_recov_alert_22 */
+  kTopPeppermintAlertIdIncomingSocSocRecovAlert23 = 68, /**< incoming_soc_soc_recov_alert_23 */
+  kTopPeppermintAlertIdIncomingSocSocRecovAlert24 = 69, /**< incoming_soc_soc_recov_alert_24 */
+  kTopPeppermintAlertIdIncomingSocSocRecovAlert25 = 70, /**< incoming_soc_soc_recov_alert_25 */
+  kTopPeppermintAlertIdIncomingSocSocRecovAlert26 = 71, /**< incoming_soc_soc_recov_alert_26 */
+  kTopPeppermintAlertIdIncomingSocSocRecovAlert27 = 72, /**< incoming_soc_soc_recov_alert_27 */
+  kTopPeppermintAlertIdIncomingSocSocRecovAlert28 = 73, /**< incoming_soc_soc_recov_alert_28 */
+  kTopPeppermintAlertIdIncomingSocSocRecovAlert29 = 74, /**< incoming_soc_soc_recov_alert_29 */
+  kTopPeppermintAlertIdIncomingSocSocRecovAlert30 = 75, /**< incoming_soc_soc_recov_alert_30 */
+  kTopPeppermintAlertIdIncomingSocSocRecovAlert31 = 76, /**< incoming_soc_soc_recov_alert_31 */
+  kTopPeppermintAlertIdIncomingSocSocFatalAlert0 = 77, /**< incoming_soc_soc_fatal_alert_0 */
+  kTopPeppermintAlertIdIncomingSocSocFatalAlert1 = 78, /**< incoming_soc_soc_fatal_alert_1 */
+  kTopPeppermintAlertIdIncomingSocSocFatalAlert2 = 79, /**< incoming_soc_soc_fatal_alert_2 */
+  kTopPeppermintAlertIdIncomingSocSocFatalAlert3 = 80, /**< incoming_soc_soc_fatal_alert_3 */
+  kTopPeppermintAlertIdIncomingSocSocFatalAlert4 = 81, /**< incoming_soc_soc_fatal_alert_4 */
+  kTopPeppermintAlertIdIncomingSocSocFatalAlert5 = 82, /**< incoming_soc_soc_fatal_alert_5 */
+  kTopPeppermintAlertIdIncomingSocSocFatalAlert6 = 83, /**< incoming_soc_soc_fatal_alert_6 */
+  kTopPeppermintAlertIdIncomingSocSocFatalAlert7 = 84, /**< incoming_soc_soc_fatal_alert_7 */
+  kTopPeppermintAlertIdLast = 84, /**< \internal The Last Valid Alert ID. */
 } top_peppermint_alert_id_t;
 
 /**
@@ -757,7 +793,7 @@ typedef enum top_peppermint_alert_id {
  * `top_peppermint_alert_peripheral_t`.
  */
 extern const top_peppermint_alert_peripheral_t
-    top_peppermint_alert_for_peripheral[49];
+    top_peppermint_alert_for_peripheral[85];
 
 /**
  * Power Manager Wakeup Signals

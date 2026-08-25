@@ -56,9 +56,9 @@ module alert_handler_reg_top (
 
   // also check for spurious write enables
   logic reg_we_err;
-  logic [285:0] reg_we_check;
+  logic [429:0] reg_we_check;
   prim_reg_we_check #(
-    .OneHotWidth(286)
+    .OneHotWidth(430)
   ) u_prim_reg_we_check (
     .clk_i(clk_i),
     .rst_ni(rst_ni),
@@ -310,6 +310,114 @@ module alert_handler_reg_top (
   logic alert_regwen_48_we;
   logic alert_regwen_48_qs;
   logic alert_regwen_48_wd;
+  logic alert_regwen_49_we;
+  logic alert_regwen_49_qs;
+  logic alert_regwen_49_wd;
+  logic alert_regwen_50_we;
+  logic alert_regwen_50_qs;
+  logic alert_regwen_50_wd;
+  logic alert_regwen_51_we;
+  logic alert_regwen_51_qs;
+  logic alert_regwen_51_wd;
+  logic alert_regwen_52_we;
+  logic alert_regwen_52_qs;
+  logic alert_regwen_52_wd;
+  logic alert_regwen_53_we;
+  logic alert_regwen_53_qs;
+  logic alert_regwen_53_wd;
+  logic alert_regwen_54_we;
+  logic alert_regwen_54_qs;
+  logic alert_regwen_54_wd;
+  logic alert_regwen_55_we;
+  logic alert_regwen_55_qs;
+  logic alert_regwen_55_wd;
+  logic alert_regwen_56_we;
+  logic alert_regwen_56_qs;
+  logic alert_regwen_56_wd;
+  logic alert_regwen_57_we;
+  logic alert_regwen_57_qs;
+  logic alert_regwen_57_wd;
+  logic alert_regwen_58_we;
+  logic alert_regwen_58_qs;
+  logic alert_regwen_58_wd;
+  logic alert_regwen_59_we;
+  logic alert_regwen_59_qs;
+  logic alert_regwen_59_wd;
+  logic alert_regwen_60_we;
+  logic alert_regwen_60_qs;
+  logic alert_regwen_60_wd;
+  logic alert_regwen_61_we;
+  logic alert_regwen_61_qs;
+  logic alert_regwen_61_wd;
+  logic alert_regwen_62_we;
+  logic alert_regwen_62_qs;
+  logic alert_regwen_62_wd;
+  logic alert_regwen_63_we;
+  logic alert_regwen_63_qs;
+  logic alert_regwen_63_wd;
+  logic alert_regwen_64_we;
+  logic alert_regwen_64_qs;
+  logic alert_regwen_64_wd;
+  logic alert_regwen_65_we;
+  logic alert_regwen_65_qs;
+  logic alert_regwen_65_wd;
+  logic alert_regwen_66_we;
+  logic alert_regwen_66_qs;
+  logic alert_regwen_66_wd;
+  logic alert_regwen_67_we;
+  logic alert_regwen_67_qs;
+  logic alert_regwen_67_wd;
+  logic alert_regwen_68_we;
+  logic alert_regwen_68_qs;
+  logic alert_regwen_68_wd;
+  logic alert_regwen_69_we;
+  logic alert_regwen_69_qs;
+  logic alert_regwen_69_wd;
+  logic alert_regwen_70_we;
+  logic alert_regwen_70_qs;
+  logic alert_regwen_70_wd;
+  logic alert_regwen_71_we;
+  logic alert_regwen_71_qs;
+  logic alert_regwen_71_wd;
+  logic alert_regwen_72_we;
+  logic alert_regwen_72_qs;
+  logic alert_regwen_72_wd;
+  logic alert_regwen_73_we;
+  logic alert_regwen_73_qs;
+  logic alert_regwen_73_wd;
+  logic alert_regwen_74_we;
+  logic alert_regwen_74_qs;
+  logic alert_regwen_74_wd;
+  logic alert_regwen_75_we;
+  logic alert_regwen_75_qs;
+  logic alert_regwen_75_wd;
+  logic alert_regwen_76_we;
+  logic alert_regwen_76_qs;
+  logic alert_regwen_76_wd;
+  logic alert_regwen_77_we;
+  logic alert_regwen_77_qs;
+  logic alert_regwen_77_wd;
+  logic alert_regwen_78_we;
+  logic alert_regwen_78_qs;
+  logic alert_regwen_78_wd;
+  logic alert_regwen_79_we;
+  logic alert_regwen_79_qs;
+  logic alert_regwen_79_wd;
+  logic alert_regwen_80_we;
+  logic alert_regwen_80_qs;
+  logic alert_regwen_80_wd;
+  logic alert_regwen_81_we;
+  logic alert_regwen_81_qs;
+  logic alert_regwen_81_wd;
+  logic alert_regwen_82_we;
+  logic alert_regwen_82_qs;
+  logic alert_regwen_82_wd;
+  logic alert_regwen_83_we;
+  logic alert_regwen_83_qs;
+  logic alert_regwen_83_wd;
+  logic alert_regwen_84_we;
+  logic alert_regwen_84_qs;
+  logic alert_regwen_84_wd;
   logic alert_en_shadowed_0_re;
   logic alert_en_shadowed_0_we;
   logic alert_en_shadowed_0_qs;
@@ -604,6 +712,222 @@ module alert_handler_reg_top (
   logic alert_en_shadowed_48_wd;
   logic alert_en_shadowed_48_storage_err;
   logic alert_en_shadowed_48_update_err;
+  logic alert_en_shadowed_49_re;
+  logic alert_en_shadowed_49_we;
+  logic alert_en_shadowed_49_qs;
+  logic alert_en_shadowed_49_wd;
+  logic alert_en_shadowed_49_storage_err;
+  logic alert_en_shadowed_49_update_err;
+  logic alert_en_shadowed_50_re;
+  logic alert_en_shadowed_50_we;
+  logic alert_en_shadowed_50_qs;
+  logic alert_en_shadowed_50_wd;
+  logic alert_en_shadowed_50_storage_err;
+  logic alert_en_shadowed_50_update_err;
+  logic alert_en_shadowed_51_re;
+  logic alert_en_shadowed_51_we;
+  logic alert_en_shadowed_51_qs;
+  logic alert_en_shadowed_51_wd;
+  logic alert_en_shadowed_51_storage_err;
+  logic alert_en_shadowed_51_update_err;
+  logic alert_en_shadowed_52_re;
+  logic alert_en_shadowed_52_we;
+  logic alert_en_shadowed_52_qs;
+  logic alert_en_shadowed_52_wd;
+  logic alert_en_shadowed_52_storage_err;
+  logic alert_en_shadowed_52_update_err;
+  logic alert_en_shadowed_53_re;
+  logic alert_en_shadowed_53_we;
+  logic alert_en_shadowed_53_qs;
+  logic alert_en_shadowed_53_wd;
+  logic alert_en_shadowed_53_storage_err;
+  logic alert_en_shadowed_53_update_err;
+  logic alert_en_shadowed_54_re;
+  logic alert_en_shadowed_54_we;
+  logic alert_en_shadowed_54_qs;
+  logic alert_en_shadowed_54_wd;
+  logic alert_en_shadowed_54_storage_err;
+  logic alert_en_shadowed_54_update_err;
+  logic alert_en_shadowed_55_re;
+  logic alert_en_shadowed_55_we;
+  logic alert_en_shadowed_55_qs;
+  logic alert_en_shadowed_55_wd;
+  logic alert_en_shadowed_55_storage_err;
+  logic alert_en_shadowed_55_update_err;
+  logic alert_en_shadowed_56_re;
+  logic alert_en_shadowed_56_we;
+  logic alert_en_shadowed_56_qs;
+  logic alert_en_shadowed_56_wd;
+  logic alert_en_shadowed_56_storage_err;
+  logic alert_en_shadowed_56_update_err;
+  logic alert_en_shadowed_57_re;
+  logic alert_en_shadowed_57_we;
+  logic alert_en_shadowed_57_qs;
+  logic alert_en_shadowed_57_wd;
+  logic alert_en_shadowed_57_storage_err;
+  logic alert_en_shadowed_57_update_err;
+  logic alert_en_shadowed_58_re;
+  logic alert_en_shadowed_58_we;
+  logic alert_en_shadowed_58_qs;
+  logic alert_en_shadowed_58_wd;
+  logic alert_en_shadowed_58_storage_err;
+  logic alert_en_shadowed_58_update_err;
+  logic alert_en_shadowed_59_re;
+  logic alert_en_shadowed_59_we;
+  logic alert_en_shadowed_59_qs;
+  logic alert_en_shadowed_59_wd;
+  logic alert_en_shadowed_59_storage_err;
+  logic alert_en_shadowed_59_update_err;
+  logic alert_en_shadowed_60_re;
+  logic alert_en_shadowed_60_we;
+  logic alert_en_shadowed_60_qs;
+  logic alert_en_shadowed_60_wd;
+  logic alert_en_shadowed_60_storage_err;
+  logic alert_en_shadowed_60_update_err;
+  logic alert_en_shadowed_61_re;
+  logic alert_en_shadowed_61_we;
+  logic alert_en_shadowed_61_qs;
+  logic alert_en_shadowed_61_wd;
+  logic alert_en_shadowed_61_storage_err;
+  logic alert_en_shadowed_61_update_err;
+  logic alert_en_shadowed_62_re;
+  logic alert_en_shadowed_62_we;
+  logic alert_en_shadowed_62_qs;
+  logic alert_en_shadowed_62_wd;
+  logic alert_en_shadowed_62_storage_err;
+  logic alert_en_shadowed_62_update_err;
+  logic alert_en_shadowed_63_re;
+  logic alert_en_shadowed_63_we;
+  logic alert_en_shadowed_63_qs;
+  logic alert_en_shadowed_63_wd;
+  logic alert_en_shadowed_63_storage_err;
+  logic alert_en_shadowed_63_update_err;
+  logic alert_en_shadowed_64_re;
+  logic alert_en_shadowed_64_we;
+  logic alert_en_shadowed_64_qs;
+  logic alert_en_shadowed_64_wd;
+  logic alert_en_shadowed_64_storage_err;
+  logic alert_en_shadowed_64_update_err;
+  logic alert_en_shadowed_65_re;
+  logic alert_en_shadowed_65_we;
+  logic alert_en_shadowed_65_qs;
+  logic alert_en_shadowed_65_wd;
+  logic alert_en_shadowed_65_storage_err;
+  logic alert_en_shadowed_65_update_err;
+  logic alert_en_shadowed_66_re;
+  logic alert_en_shadowed_66_we;
+  logic alert_en_shadowed_66_qs;
+  logic alert_en_shadowed_66_wd;
+  logic alert_en_shadowed_66_storage_err;
+  logic alert_en_shadowed_66_update_err;
+  logic alert_en_shadowed_67_re;
+  logic alert_en_shadowed_67_we;
+  logic alert_en_shadowed_67_qs;
+  logic alert_en_shadowed_67_wd;
+  logic alert_en_shadowed_67_storage_err;
+  logic alert_en_shadowed_67_update_err;
+  logic alert_en_shadowed_68_re;
+  logic alert_en_shadowed_68_we;
+  logic alert_en_shadowed_68_qs;
+  logic alert_en_shadowed_68_wd;
+  logic alert_en_shadowed_68_storage_err;
+  logic alert_en_shadowed_68_update_err;
+  logic alert_en_shadowed_69_re;
+  logic alert_en_shadowed_69_we;
+  logic alert_en_shadowed_69_qs;
+  logic alert_en_shadowed_69_wd;
+  logic alert_en_shadowed_69_storage_err;
+  logic alert_en_shadowed_69_update_err;
+  logic alert_en_shadowed_70_re;
+  logic alert_en_shadowed_70_we;
+  logic alert_en_shadowed_70_qs;
+  logic alert_en_shadowed_70_wd;
+  logic alert_en_shadowed_70_storage_err;
+  logic alert_en_shadowed_70_update_err;
+  logic alert_en_shadowed_71_re;
+  logic alert_en_shadowed_71_we;
+  logic alert_en_shadowed_71_qs;
+  logic alert_en_shadowed_71_wd;
+  logic alert_en_shadowed_71_storage_err;
+  logic alert_en_shadowed_71_update_err;
+  logic alert_en_shadowed_72_re;
+  logic alert_en_shadowed_72_we;
+  logic alert_en_shadowed_72_qs;
+  logic alert_en_shadowed_72_wd;
+  logic alert_en_shadowed_72_storage_err;
+  logic alert_en_shadowed_72_update_err;
+  logic alert_en_shadowed_73_re;
+  logic alert_en_shadowed_73_we;
+  logic alert_en_shadowed_73_qs;
+  logic alert_en_shadowed_73_wd;
+  logic alert_en_shadowed_73_storage_err;
+  logic alert_en_shadowed_73_update_err;
+  logic alert_en_shadowed_74_re;
+  logic alert_en_shadowed_74_we;
+  logic alert_en_shadowed_74_qs;
+  logic alert_en_shadowed_74_wd;
+  logic alert_en_shadowed_74_storage_err;
+  logic alert_en_shadowed_74_update_err;
+  logic alert_en_shadowed_75_re;
+  logic alert_en_shadowed_75_we;
+  logic alert_en_shadowed_75_qs;
+  logic alert_en_shadowed_75_wd;
+  logic alert_en_shadowed_75_storage_err;
+  logic alert_en_shadowed_75_update_err;
+  logic alert_en_shadowed_76_re;
+  logic alert_en_shadowed_76_we;
+  logic alert_en_shadowed_76_qs;
+  logic alert_en_shadowed_76_wd;
+  logic alert_en_shadowed_76_storage_err;
+  logic alert_en_shadowed_76_update_err;
+  logic alert_en_shadowed_77_re;
+  logic alert_en_shadowed_77_we;
+  logic alert_en_shadowed_77_qs;
+  logic alert_en_shadowed_77_wd;
+  logic alert_en_shadowed_77_storage_err;
+  logic alert_en_shadowed_77_update_err;
+  logic alert_en_shadowed_78_re;
+  logic alert_en_shadowed_78_we;
+  logic alert_en_shadowed_78_qs;
+  logic alert_en_shadowed_78_wd;
+  logic alert_en_shadowed_78_storage_err;
+  logic alert_en_shadowed_78_update_err;
+  logic alert_en_shadowed_79_re;
+  logic alert_en_shadowed_79_we;
+  logic alert_en_shadowed_79_qs;
+  logic alert_en_shadowed_79_wd;
+  logic alert_en_shadowed_79_storage_err;
+  logic alert_en_shadowed_79_update_err;
+  logic alert_en_shadowed_80_re;
+  logic alert_en_shadowed_80_we;
+  logic alert_en_shadowed_80_qs;
+  logic alert_en_shadowed_80_wd;
+  logic alert_en_shadowed_80_storage_err;
+  logic alert_en_shadowed_80_update_err;
+  logic alert_en_shadowed_81_re;
+  logic alert_en_shadowed_81_we;
+  logic alert_en_shadowed_81_qs;
+  logic alert_en_shadowed_81_wd;
+  logic alert_en_shadowed_81_storage_err;
+  logic alert_en_shadowed_81_update_err;
+  logic alert_en_shadowed_82_re;
+  logic alert_en_shadowed_82_we;
+  logic alert_en_shadowed_82_qs;
+  logic alert_en_shadowed_82_wd;
+  logic alert_en_shadowed_82_storage_err;
+  logic alert_en_shadowed_82_update_err;
+  logic alert_en_shadowed_83_re;
+  logic alert_en_shadowed_83_we;
+  logic alert_en_shadowed_83_qs;
+  logic alert_en_shadowed_83_wd;
+  logic alert_en_shadowed_83_storage_err;
+  logic alert_en_shadowed_83_update_err;
+  logic alert_en_shadowed_84_re;
+  logic alert_en_shadowed_84_we;
+  logic alert_en_shadowed_84_qs;
+  logic alert_en_shadowed_84_wd;
+  logic alert_en_shadowed_84_storage_err;
+  logic alert_en_shadowed_84_update_err;
   logic alert_class_shadowed_0_re;
   logic alert_class_shadowed_0_we;
   logic [1:0] alert_class_shadowed_0_qs;
@@ -898,6 +1222,222 @@ module alert_handler_reg_top (
   logic [1:0] alert_class_shadowed_48_wd;
   logic alert_class_shadowed_48_storage_err;
   logic alert_class_shadowed_48_update_err;
+  logic alert_class_shadowed_49_re;
+  logic alert_class_shadowed_49_we;
+  logic [1:0] alert_class_shadowed_49_qs;
+  logic [1:0] alert_class_shadowed_49_wd;
+  logic alert_class_shadowed_49_storage_err;
+  logic alert_class_shadowed_49_update_err;
+  logic alert_class_shadowed_50_re;
+  logic alert_class_shadowed_50_we;
+  logic [1:0] alert_class_shadowed_50_qs;
+  logic [1:0] alert_class_shadowed_50_wd;
+  logic alert_class_shadowed_50_storage_err;
+  logic alert_class_shadowed_50_update_err;
+  logic alert_class_shadowed_51_re;
+  logic alert_class_shadowed_51_we;
+  logic [1:0] alert_class_shadowed_51_qs;
+  logic [1:0] alert_class_shadowed_51_wd;
+  logic alert_class_shadowed_51_storage_err;
+  logic alert_class_shadowed_51_update_err;
+  logic alert_class_shadowed_52_re;
+  logic alert_class_shadowed_52_we;
+  logic [1:0] alert_class_shadowed_52_qs;
+  logic [1:0] alert_class_shadowed_52_wd;
+  logic alert_class_shadowed_52_storage_err;
+  logic alert_class_shadowed_52_update_err;
+  logic alert_class_shadowed_53_re;
+  logic alert_class_shadowed_53_we;
+  logic [1:0] alert_class_shadowed_53_qs;
+  logic [1:0] alert_class_shadowed_53_wd;
+  logic alert_class_shadowed_53_storage_err;
+  logic alert_class_shadowed_53_update_err;
+  logic alert_class_shadowed_54_re;
+  logic alert_class_shadowed_54_we;
+  logic [1:0] alert_class_shadowed_54_qs;
+  logic [1:0] alert_class_shadowed_54_wd;
+  logic alert_class_shadowed_54_storage_err;
+  logic alert_class_shadowed_54_update_err;
+  logic alert_class_shadowed_55_re;
+  logic alert_class_shadowed_55_we;
+  logic [1:0] alert_class_shadowed_55_qs;
+  logic [1:0] alert_class_shadowed_55_wd;
+  logic alert_class_shadowed_55_storage_err;
+  logic alert_class_shadowed_55_update_err;
+  logic alert_class_shadowed_56_re;
+  logic alert_class_shadowed_56_we;
+  logic [1:0] alert_class_shadowed_56_qs;
+  logic [1:0] alert_class_shadowed_56_wd;
+  logic alert_class_shadowed_56_storage_err;
+  logic alert_class_shadowed_56_update_err;
+  logic alert_class_shadowed_57_re;
+  logic alert_class_shadowed_57_we;
+  logic [1:0] alert_class_shadowed_57_qs;
+  logic [1:0] alert_class_shadowed_57_wd;
+  logic alert_class_shadowed_57_storage_err;
+  logic alert_class_shadowed_57_update_err;
+  logic alert_class_shadowed_58_re;
+  logic alert_class_shadowed_58_we;
+  logic [1:0] alert_class_shadowed_58_qs;
+  logic [1:0] alert_class_shadowed_58_wd;
+  logic alert_class_shadowed_58_storage_err;
+  logic alert_class_shadowed_58_update_err;
+  logic alert_class_shadowed_59_re;
+  logic alert_class_shadowed_59_we;
+  logic [1:0] alert_class_shadowed_59_qs;
+  logic [1:0] alert_class_shadowed_59_wd;
+  logic alert_class_shadowed_59_storage_err;
+  logic alert_class_shadowed_59_update_err;
+  logic alert_class_shadowed_60_re;
+  logic alert_class_shadowed_60_we;
+  logic [1:0] alert_class_shadowed_60_qs;
+  logic [1:0] alert_class_shadowed_60_wd;
+  logic alert_class_shadowed_60_storage_err;
+  logic alert_class_shadowed_60_update_err;
+  logic alert_class_shadowed_61_re;
+  logic alert_class_shadowed_61_we;
+  logic [1:0] alert_class_shadowed_61_qs;
+  logic [1:0] alert_class_shadowed_61_wd;
+  logic alert_class_shadowed_61_storage_err;
+  logic alert_class_shadowed_61_update_err;
+  logic alert_class_shadowed_62_re;
+  logic alert_class_shadowed_62_we;
+  logic [1:0] alert_class_shadowed_62_qs;
+  logic [1:0] alert_class_shadowed_62_wd;
+  logic alert_class_shadowed_62_storage_err;
+  logic alert_class_shadowed_62_update_err;
+  logic alert_class_shadowed_63_re;
+  logic alert_class_shadowed_63_we;
+  logic [1:0] alert_class_shadowed_63_qs;
+  logic [1:0] alert_class_shadowed_63_wd;
+  logic alert_class_shadowed_63_storage_err;
+  logic alert_class_shadowed_63_update_err;
+  logic alert_class_shadowed_64_re;
+  logic alert_class_shadowed_64_we;
+  logic [1:0] alert_class_shadowed_64_qs;
+  logic [1:0] alert_class_shadowed_64_wd;
+  logic alert_class_shadowed_64_storage_err;
+  logic alert_class_shadowed_64_update_err;
+  logic alert_class_shadowed_65_re;
+  logic alert_class_shadowed_65_we;
+  logic [1:0] alert_class_shadowed_65_qs;
+  logic [1:0] alert_class_shadowed_65_wd;
+  logic alert_class_shadowed_65_storage_err;
+  logic alert_class_shadowed_65_update_err;
+  logic alert_class_shadowed_66_re;
+  logic alert_class_shadowed_66_we;
+  logic [1:0] alert_class_shadowed_66_qs;
+  logic [1:0] alert_class_shadowed_66_wd;
+  logic alert_class_shadowed_66_storage_err;
+  logic alert_class_shadowed_66_update_err;
+  logic alert_class_shadowed_67_re;
+  logic alert_class_shadowed_67_we;
+  logic [1:0] alert_class_shadowed_67_qs;
+  logic [1:0] alert_class_shadowed_67_wd;
+  logic alert_class_shadowed_67_storage_err;
+  logic alert_class_shadowed_67_update_err;
+  logic alert_class_shadowed_68_re;
+  logic alert_class_shadowed_68_we;
+  logic [1:0] alert_class_shadowed_68_qs;
+  logic [1:0] alert_class_shadowed_68_wd;
+  logic alert_class_shadowed_68_storage_err;
+  logic alert_class_shadowed_68_update_err;
+  logic alert_class_shadowed_69_re;
+  logic alert_class_shadowed_69_we;
+  logic [1:0] alert_class_shadowed_69_qs;
+  logic [1:0] alert_class_shadowed_69_wd;
+  logic alert_class_shadowed_69_storage_err;
+  logic alert_class_shadowed_69_update_err;
+  logic alert_class_shadowed_70_re;
+  logic alert_class_shadowed_70_we;
+  logic [1:0] alert_class_shadowed_70_qs;
+  logic [1:0] alert_class_shadowed_70_wd;
+  logic alert_class_shadowed_70_storage_err;
+  logic alert_class_shadowed_70_update_err;
+  logic alert_class_shadowed_71_re;
+  logic alert_class_shadowed_71_we;
+  logic [1:0] alert_class_shadowed_71_qs;
+  logic [1:0] alert_class_shadowed_71_wd;
+  logic alert_class_shadowed_71_storage_err;
+  logic alert_class_shadowed_71_update_err;
+  logic alert_class_shadowed_72_re;
+  logic alert_class_shadowed_72_we;
+  logic [1:0] alert_class_shadowed_72_qs;
+  logic [1:0] alert_class_shadowed_72_wd;
+  logic alert_class_shadowed_72_storage_err;
+  logic alert_class_shadowed_72_update_err;
+  logic alert_class_shadowed_73_re;
+  logic alert_class_shadowed_73_we;
+  logic [1:0] alert_class_shadowed_73_qs;
+  logic [1:0] alert_class_shadowed_73_wd;
+  logic alert_class_shadowed_73_storage_err;
+  logic alert_class_shadowed_73_update_err;
+  logic alert_class_shadowed_74_re;
+  logic alert_class_shadowed_74_we;
+  logic [1:0] alert_class_shadowed_74_qs;
+  logic [1:0] alert_class_shadowed_74_wd;
+  logic alert_class_shadowed_74_storage_err;
+  logic alert_class_shadowed_74_update_err;
+  logic alert_class_shadowed_75_re;
+  logic alert_class_shadowed_75_we;
+  logic [1:0] alert_class_shadowed_75_qs;
+  logic [1:0] alert_class_shadowed_75_wd;
+  logic alert_class_shadowed_75_storage_err;
+  logic alert_class_shadowed_75_update_err;
+  logic alert_class_shadowed_76_re;
+  logic alert_class_shadowed_76_we;
+  logic [1:0] alert_class_shadowed_76_qs;
+  logic [1:0] alert_class_shadowed_76_wd;
+  logic alert_class_shadowed_76_storage_err;
+  logic alert_class_shadowed_76_update_err;
+  logic alert_class_shadowed_77_re;
+  logic alert_class_shadowed_77_we;
+  logic [1:0] alert_class_shadowed_77_qs;
+  logic [1:0] alert_class_shadowed_77_wd;
+  logic alert_class_shadowed_77_storage_err;
+  logic alert_class_shadowed_77_update_err;
+  logic alert_class_shadowed_78_re;
+  logic alert_class_shadowed_78_we;
+  logic [1:0] alert_class_shadowed_78_qs;
+  logic [1:0] alert_class_shadowed_78_wd;
+  logic alert_class_shadowed_78_storage_err;
+  logic alert_class_shadowed_78_update_err;
+  logic alert_class_shadowed_79_re;
+  logic alert_class_shadowed_79_we;
+  logic [1:0] alert_class_shadowed_79_qs;
+  logic [1:0] alert_class_shadowed_79_wd;
+  logic alert_class_shadowed_79_storage_err;
+  logic alert_class_shadowed_79_update_err;
+  logic alert_class_shadowed_80_re;
+  logic alert_class_shadowed_80_we;
+  logic [1:0] alert_class_shadowed_80_qs;
+  logic [1:0] alert_class_shadowed_80_wd;
+  logic alert_class_shadowed_80_storage_err;
+  logic alert_class_shadowed_80_update_err;
+  logic alert_class_shadowed_81_re;
+  logic alert_class_shadowed_81_we;
+  logic [1:0] alert_class_shadowed_81_qs;
+  logic [1:0] alert_class_shadowed_81_wd;
+  logic alert_class_shadowed_81_storage_err;
+  logic alert_class_shadowed_81_update_err;
+  logic alert_class_shadowed_82_re;
+  logic alert_class_shadowed_82_we;
+  logic [1:0] alert_class_shadowed_82_qs;
+  logic [1:0] alert_class_shadowed_82_wd;
+  logic alert_class_shadowed_82_storage_err;
+  logic alert_class_shadowed_82_update_err;
+  logic alert_class_shadowed_83_re;
+  logic alert_class_shadowed_83_we;
+  logic [1:0] alert_class_shadowed_83_qs;
+  logic [1:0] alert_class_shadowed_83_wd;
+  logic alert_class_shadowed_83_storage_err;
+  logic alert_class_shadowed_83_update_err;
+  logic alert_class_shadowed_84_re;
+  logic alert_class_shadowed_84_we;
+  logic [1:0] alert_class_shadowed_84_qs;
+  logic [1:0] alert_class_shadowed_84_wd;
+  logic alert_class_shadowed_84_storage_err;
+  logic alert_class_shadowed_84_update_err;
   logic alert_cause_0_we;
   logic alert_cause_0_qs;
   logic alert_cause_0_wd;
@@ -1045,6 +1585,114 @@ module alert_handler_reg_top (
   logic alert_cause_48_we;
   logic alert_cause_48_qs;
   logic alert_cause_48_wd;
+  logic alert_cause_49_we;
+  logic alert_cause_49_qs;
+  logic alert_cause_49_wd;
+  logic alert_cause_50_we;
+  logic alert_cause_50_qs;
+  logic alert_cause_50_wd;
+  logic alert_cause_51_we;
+  logic alert_cause_51_qs;
+  logic alert_cause_51_wd;
+  logic alert_cause_52_we;
+  logic alert_cause_52_qs;
+  logic alert_cause_52_wd;
+  logic alert_cause_53_we;
+  logic alert_cause_53_qs;
+  logic alert_cause_53_wd;
+  logic alert_cause_54_we;
+  logic alert_cause_54_qs;
+  logic alert_cause_54_wd;
+  logic alert_cause_55_we;
+  logic alert_cause_55_qs;
+  logic alert_cause_55_wd;
+  logic alert_cause_56_we;
+  logic alert_cause_56_qs;
+  logic alert_cause_56_wd;
+  logic alert_cause_57_we;
+  logic alert_cause_57_qs;
+  logic alert_cause_57_wd;
+  logic alert_cause_58_we;
+  logic alert_cause_58_qs;
+  logic alert_cause_58_wd;
+  logic alert_cause_59_we;
+  logic alert_cause_59_qs;
+  logic alert_cause_59_wd;
+  logic alert_cause_60_we;
+  logic alert_cause_60_qs;
+  logic alert_cause_60_wd;
+  logic alert_cause_61_we;
+  logic alert_cause_61_qs;
+  logic alert_cause_61_wd;
+  logic alert_cause_62_we;
+  logic alert_cause_62_qs;
+  logic alert_cause_62_wd;
+  logic alert_cause_63_we;
+  logic alert_cause_63_qs;
+  logic alert_cause_63_wd;
+  logic alert_cause_64_we;
+  logic alert_cause_64_qs;
+  logic alert_cause_64_wd;
+  logic alert_cause_65_we;
+  logic alert_cause_65_qs;
+  logic alert_cause_65_wd;
+  logic alert_cause_66_we;
+  logic alert_cause_66_qs;
+  logic alert_cause_66_wd;
+  logic alert_cause_67_we;
+  logic alert_cause_67_qs;
+  logic alert_cause_67_wd;
+  logic alert_cause_68_we;
+  logic alert_cause_68_qs;
+  logic alert_cause_68_wd;
+  logic alert_cause_69_we;
+  logic alert_cause_69_qs;
+  logic alert_cause_69_wd;
+  logic alert_cause_70_we;
+  logic alert_cause_70_qs;
+  logic alert_cause_70_wd;
+  logic alert_cause_71_we;
+  logic alert_cause_71_qs;
+  logic alert_cause_71_wd;
+  logic alert_cause_72_we;
+  logic alert_cause_72_qs;
+  logic alert_cause_72_wd;
+  logic alert_cause_73_we;
+  logic alert_cause_73_qs;
+  logic alert_cause_73_wd;
+  logic alert_cause_74_we;
+  logic alert_cause_74_qs;
+  logic alert_cause_74_wd;
+  logic alert_cause_75_we;
+  logic alert_cause_75_qs;
+  logic alert_cause_75_wd;
+  logic alert_cause_76_we;
+  logic alert_cause_76_qs;
+  logic alert_cause_76_wd;
+  logic alert_cause_77_we;
+  logic alert_cause_77_qs;
+  logic alert_cause_77_wd;
+  logic alert_cause_78_we;
+  logic alert_cause_78_qs;
+  logic alert_cause_78_wd;
+  logic alert_cause_79_we;
+  logic alert_cause_79_qs;
+  logic alert_cause_79_wd;
+  logic alert_cause_80_we;
+  logic alert_cause_80_qs;
+  logic alert_cause_80_wd;
+  logic alert_cause_81_we;
+  logic alert_cause_81_qs;
+  logic alert_cause_81_wd;
+  logic alert_cause_82_we;
+  logic alert_cause_82_qs;
+  logic alert_cause_82_wd;
+  logic alert_cause_83_we;
+  logic alert_cause_83_qs;
+  logic alert_cause_83_wd;
+  logic alert_cause_84_we;
+  logic alert_cause_84_qs;
+  logic alert_cause_84_wd;
   logic loc_alert_regwen_0_we;
   logic loc_alert_regwen_0_qs;
   logic loc_alert_regwen_0_wd;
@@ -3399,6 +4047,1050 @@ module alert_handler_reg_top (
   );
 
 
+  // Subregister 49 of Multireg alert_regwen
+  // R[alert_regwen_49]: V(False)
+  prim_subreg #(
+    .DW      (1),
+    .SwAccess(prim_subreg_pkg::SwAccessW0C),
+    .RESVAL  (1'h1),
+    .Mubi    (1'b0)
+  ) u_alert_regwen_49 (
+    .clk_i   (clk_i),
+    .rst_ni  (rst_ni),
+
+    // from register interface
+    .we     (alert_regwen_49_we),
+    .wd     (alert_regwen_49_wd),
+
+    // from internal hardware
+    .de     (1'b0),
+    .d      ('0),
+
+    // to internal hardware
+    .qe     (),
+    .q      (reg2hw.alert_regwen[49].q),
+    .ds     (),
+
+    // to register interface (read)
+    .qs     (alert_regwen_49_qs)
+  );
+
+
+  // Subregister 50 of Multireg alert_regwen
+  // R[alert_regwen_50]: V(False)
+  prim_subreg #(
+    .DW      (1),
+    .SwAccess(prim_subreg_pkg::SwAccessW0C),
+    .RESVAL  (1'h1),
+    .Mubi    (1'b0)
+  ) u_alert_regwen_50 (
+    .clk_i   (clk_i),
+    .rst_ni  (rst_ni),
+
+    // from register interface
+    .we     (alert_regwen_50_we),
+    .wd     (alert_regwen_50_wd),
+
+    // from internal hardware
+    .de     (1'b0),
+    .d      ('0),
+
+    // to internal hardware
+    .qe     (),
+    .q      (reg2hw.alert_regwen[50].q),
+    .ds     (),
+
+    // to register interface (read)
+    .qs     (alert_regwen_50_qs)
+  );
+
+
+  // Subregister 51 of Multireg alert_regwen
+  // R[alert_regwen_51]: V(False)
+  prim_subreg #(
+    .DW      (1),
+    .SwAccess(prim_subreg_pkg::SwAccessW0C),
+    .RESVAL  (1'h1),
+    .Mubi    (1'b0)
+  ) u_alert_regwen_51 (
+    .clk_i   (clk_i),
+    .rst_ni  (rst_ni),
+
+    // from register interface
+    .we     (alert_regwen_51_we),
+    .wd     (alert_regwen_51_wd),
+
+    // from internal hardware
+    .de     (1'b0),
+    .d      ('0),
+
+    // to internal hardware
+    .qe     (),
+    .q      (reg2hw.alert_regwen[51].q),
+    .ds     (),
+
+    // to register interface (read)
+    .qs     (alert_regwen_51_qs)
+  );
+
+
+  // Subregister 52 of Multireg alert_regwen
+  // R[alert_regwen_52]: V(False)
+  prim_subreg #(
+    .DW      (1),
+    .SwAccess(prim_subreg_pkg::SwAccessW0C),
+    .RESVAL  (1'h1),
+    .Mubi    (1'b0)
+  ) u_alert_regwen_52 (
+    .clk_i   (clk_i),
+    .rst_ni  (rst_ni),
+
+    // from register interface
+    .we     (alert_regwen_52_we),
+    .wd     (alert_regwen_52_wd),
+
+    // from internal hardware
+    .de     (1'b0),
+    .d      ('0),
+
+    // to internal hardware
+    .qe     (),
+    .q      (reg2hw.alert_regwen[52].q),
+    .ds     (),
+
+    // to register interface (read)
+    .qs     (alert_regwen_52_qs)
+  );
+
+
+  // Subregister 53 of Multireg alert_regwen
+  // R[alert_regwen_53]: V(False)
+  prim_subreg #(
+    .DW      (1),
+    .SwAccess(prim_subreg_pkg::SwAccessW0C),
+    .RESVAL  (1'h1),
+    .Mubi    (1'b0)
+  ) u_alert_regwen_53 (
+    .clk_i   (clk_i),
+    .rst_ni  (rst_ni),
+
+    // from register interface
+    .we     (alert_regwen_53_we),
+    .wd     (alert_regwen_53_wd),
+
+    // from internal hardware
+    .de     (1'b0),
+    .d      ('0),
+
+    // to internal hardware
+    .qe     (),
+    .q      (reg2hw.alert_regwen[53].q),
+    .ds     (),
+
+    // to register interface (read)
+    .qs     (alert_regwen_53_qs)
+  );
+
+
+  // Subregister 54 of Multireg alert_regwen
+  // R[alert_regwen_54]: V(False)
+  prim_subreg #(
+    .DW      (1),
+    .SwAccess(prim_subreg_pkg::SwAccessW0C),
+    .RESVAL  (1'h1),
+    .Mubi    (1'b0)
+  ) u_alert_regwen_54 (
+    .clk_i   (clk_i),
+    .rst_ni  (rst_ni),
+
+    // from register interface
+    .we     (alert_regwen_54_we),
+    .wd     (alert_regwen_54_wd),
+
+    // from internal hardware
+    .de     (1'b0),
+    .d      ('0),
+
+    // to internal hardware
+    .qe     (),
+    .q      (reg2hw.alert_regwen[54].q),
+    .ds     (),
+
+    // to register interface (read)
+    .qs     (alert_regwen_54_qs)
+  );
+
+
+  // Subregister 55 of Multireg alert_regwen
+  // R[alert_regwen_55]: V(False)
+  prim_subreg #(
+    .DW      (1),
+    .SwAccess(prim_subreg_pkg::SwAccessW0C),
+    .RESVAL  (1'h1),
+    .Mubi    (1'b0)
+  ) u_alert_regwen_55 (
+    .clk_i   (clk_i),
+    .rst_ni  (rst_ni),
+
+    // from register interface
+    .we     (alert_regwen_55_we),
+    .wd     (alert_regwen_55_wd),
+
+    // from internal hardware
+    .de     (1'b0),
+    .d      ('0),
+
+    // to internal hardware
+    .qe     (),
+    .q      (reg2hw.alert_regwen[55].q),
+    .ds     (),
+
+    // to register interface (read)
+    .qs     (alert_regwen_55_qs)
+  );
+
+
+  // Subregister 56 of Multireg alert_regwen
+  // R[alert_regwen_56]: V(False)
+  prim_subreg #(
+    .DW      (1),
+    .SwAccess(prim_subreg_pkg::SwAccessW0C),
+    .RESVAL  (1'h1),
+    .Mubi    (1'b0)
+  ) u_alert_regwen_56 (
+    .clk_i   (clk_i),
+    .rst_ni  (rst_ni),
+
+    // from register interface
+    .we     (alert_regwen_56_we),
+    .wd     (alert_regwen_56_wd),
+
+    // from internal hardware
+    .de     (1'b0),
+    .d      ('0),
+
+    // to internal hardware
+    .qe     (),
+    .q      (reg2hw.alert_regwen[56].q),
+    .ds     (),
+
+    // to register interface (read)
+    .qs     (alert_regwen_56_qs)
+  );
+
+
+  // Subregister 57 of Multireg alert_regwen
+  // R[alert_regwen_57]: V(False)
+  prim_subreg #(
+    .DW      (1),
+    .SwAccess(prim_subreg_pkg::SwAccessW0C),
+    .RESVAL  (1'h1),
+    .Mubi    (1'b0)
+  ) u_alert_regwen_57 (
+    .clk_i   (clk_i),
+    .rst_ni  (rst_ni),
+
+    // from register interface
+    .we     (alert_regwen_57_we),
+    .wd     (alert_regwen_57_wd),
+
+    // from internal hardware
+    .de     (1'b0),
+    .d      ('0),
+
+    // to internal hardware
+    .qe     (),
+    .q      (reg2hw.alert_regwen[57].q),
+    .ds     (),
+
+    // to register interface (read)
+    .qs     (alert_regwen_57_qs)
+  );
+
+
+  // Subregister 58 of Multireg alert_regwen
+  // R[alert_regwen_58]: V(False)
+  prim_subreg #(
+    .DW      (1),
+    .SwAccess(prim_subreg_pkg::SwAccessW0C),
+    .RESVAL  (1'h1),
+    .Mubi    (1'b0)
+  ) u_alert_regwen_58 (
+    .clk_i   (clk_i),
+    .rst_ni  (rst_ni),
+
+    // from register interface
+    .we     (alert_regwen_58_we),
+    .wd     (alert_regwen_58_wd),
+
+    // from internal hardware
+    .de     (1'b0),
+    .d      ('0),
+
+    // to internal hardware
+    .qe     (),
+    .q      (reg2hw.alert_regwen[58].q),
+    .ds     (),
+
+    // to register interface (read)
+    .qs     (alert_regwen_58_qs)
+  );
+
+
+  // Subregister 59 of Multireg alert_regwen
+  // R[alert_regwen_59]: V(False)
+  prim_subreg #(
+    .DW      (1),
+    .SwAccess(prim_subreg_pkg::SwAccessW0C),
+    .RESVAL  (1'h1),
+    .Mubi    (1'b0)
+  ) u_alert_regwen_59 (
+    .clk_i   (clk_i),
+    .rst_ni  (rst_ni),
+
+    // from register interface
+    .we     (alert_regwen_59_we),
+    .wd     (alert_regwen_59_wd),
+
+    // from internal hardware
+    .de     (1'b0),
+    .d      ('0),
+
+    // to internal hardware
+    .qe     (),
+    .q      (reg2hw.alert_regwen[59].q),
+    .ds     (),
+
+    // to register interface (read)
+    .qs     (alert_regwen_59_qs)
+  );
+
+
+  // Subregister 60 of Multireg alert_regwen
+  // R[alert_regwen_60]: V(False)
+  prim_subreg #(
+    .DW      (1),
+    .SwAccess(prim_subreg_pkg::SwAccessW0C),
+    .RESVAL  (1'h1),
+    .Mubi    (1'b0)
+  ) u_alert_regwen_60 (
+    .clk_i   (clk_i),
+    .rst_ni  (rst_ni),
+
+    // from register interface
+    .we     (alert_regwen_60_we),
+    .wd     (alert_regwen_60_wd),
+
+    // from internal hardware
+    .de     (1'b0),
+    .d      ('0),
+
+    // to internal hardware
+    .qe     (),
+    .q      (reg2hw.alert_regwen[60].q),
+    .ds     (),
+
+    // to register interface (read)
+    .qs     (alert_regwen_60_qs)
+  );
+
+
+  // Subregister 61 of Multireg alert_regwen
+  // R[alert_regwen_61]: V(False)
+  prim_subreg #(
+    .DW      (1),
+    .SwAccess(prim_subreg_pkg::SwAccessW0C),
+    .RESVAL  (1'h1),
+    .Mubi    (1'b0)
+  ) u_alert_regwen_61 (
+    .clk_i   (clk_i),
+    .rst_ni  (rst_ni),
+
+    // from register interface
+    .we     (alert_regwen_61_we),
+    .wd     (alert_regwen_61_wd),
+
+    // from internal hardware
+    .de     (1'b0),
+    .d      ('0),
+
+    // to internal hardware
+    .qe     (),
+    .q      (reg2hw.alert_regwen[61].q),
+    .ds     (),
+
+    // to register interface (read)
+    .qs     (alert_regwen_61_qs)
+  );
+
+
+  // Subregister 62 of Multireg alert_regwen
+  // R[alert_regwen_62]: V(False)
+  prim_subreg #(
+    .DW      (1),
+    .SwAccess(prim_subreg_pkg::SwAccessW0C),
+    .RESVAL  (1'h1),
+    .Mubi    (1'b0)
+  ) u_alert_regwen_62 (
+    .clk_i   (clk_i),
+    .rst_ni  (rst_ni),
+
+    // from register interface
+    .we     (alert_regwen_62_we),
+    .wd     (alert_regwen_62_wd),
+
+    // from internal hardware
+    .de     (1'b0),
+    .d      ('0),
+
+    // to internal hardware
+    .qe     (),
+    .q      (reg2hw.alert_regwen[62].q),
+    .ds     (),
+
+    // to register interface (read)
+    .qs     (alert_regwen_62_qs)
+  );
+
+
+  // Subregister 63 of Multireg alert_regwen
+  // R[alert_regwen_63]: V(False)
+  prim_subreg #(
+    .DW      (1),
+    .SwAccess(prim_subreg_pkg::SwAccessW0C),
+    .RESVAL  (1'h1),
+    .Mubi    (1'b0)
+  ) u_alert_regwen_63 (
+    .clk_i   (clk_i),
+    .rst_ni  (rst_ni),
+
+    // from register interface
+    .we     (alert_regwen_63_we),
+    .wd     (alert_regwen_63_wd),
+
+    // from internal hardware
+    .de     (1'b0),
+    .d      ('0),
+
+    // to internal hardware
+    .qe     (),
+    .q      (reg2hw.alert_regwen[63].q),
+    .ds     (),
+
+    // to register interface (read)
+    .qs     (alert_regwen_63_qs)
+  );
+
+
+  // Subregister 64 of Multireg alert_regwen
+  // R[alert_regwen_64]: V(False)
+  prim_subreg #(
+    .DW      (1),
+    .SwAccess(prim_subreg_pkg::SwAccessW0C),
+    .RESVAL  (1'h1),
+    .Mubi    (1'b0)
+  ) u_alert_regwen_64 (
+    .clk_i   (clk_i),
+    .rst_ni  (rst_ni),
+
+    // from register interface
+    .we     (alert_regwen_64_we),
+    .wd     (alert_regwen_64_wd),
+
+    // from internal hardware
+    .de     (1'b0),
+    .d      ('0),
+
+    // to internal hardware
+    .qe     (),
+    .q      (reg2hw.alert_regwen[64].q),
+    .ds     (),
+
+    // to register interface (read)
+    .qs     (alert_regwen_64_qs)
+  );
+
+
+  // Subregister 65 of Multireg alert_regwen
+  // R[alert_regwen_65]: V(False)
+  prim_subreg #(
+    .DW      (1),
+    .SwAccess(prim_subreg_pkg::SwAccessW0C),
+    .RESVAL  (1'h1),
+    .Mubi    (1'b0)
+  ) u_alert_regwen_65 (
+    .clk_i   (clk_i),
+    .rst_ni  (rst_ni),
+
+    // from register interface
+    .we     (alert_regwen_65_we),
+    .wd     (alert_regwen_65_wd),
+
+    // from internal hardware
+    .de     (1'b0),
+    .d      ('0),
+
+    // to internal hardware
+    .qe     (),
+    .q      (reg2hw.alert_regwen[65].q),
+    .ds     (),
+
+    // to register interface (read)
+    .qs     (alert_regwen_65_qs)
+  );
+
+
+  // Subregister 66 of Multireg alert_regwen
+  // R[alert_regwen_66]: V(False)
+  prim_subreg #(
+    .DW      (1),
+    .SwAccess(prim_subreg_pkg::SwAccessW0C),
+    .RESVAL  (1'h1),
+    .Mubi    (1'b0)
+  ) u_alert_regwen_66 (
+    .clk_i   (clk_i),
+    .rst_ni  (rst_ni),
+
+    // from register interface
+    .we     (alert_regwen_66_we),
+    .wd     (alert_regwen_66_wd),
+
+    // from internal hardware
+    .de     (1'b0),
+    .d      ('0),
+
+    // to internal hardware
+    .qe     (),
+    .q      (reg2hw.alert_regwen[66].q),
+    .ds     (),
+
+    // to register interface (read)
+    .qs     (alert_regwen_66_qs)
+  );
+
+
+  // Subregister 67 of Multireg alert_regwen
+  // R[alert_regwen_67]: V(False)
+  prim_subreg #(
+    .DW      (1),
+    .SwAccess(prim_subreg_pkg::SwAccessW0C),
+    .RESVAL  (1'h1),
+    .Mubi    (1'b0)
+  ) u_alert_regwen_67 (
+    .clk_i   (clk_i),
+    .rst_ni  (rst_ni),
+
+    // from register interface
+    .we     (alert_regwen_67_we),
+    .wd     (alert_regwen_67_wd),
+
+    // from internal hardware
+    .de     (1'b0),
+    .d      ('0),
+
+    // to internal hardware
+    .qe     (),
+    .q      (reg2hw.alert_regwen[67].q),
+    .ds     (),
+
+    // to register interface (read)
+    .qs     (alert_regwen_67_qs)
+  );
+
+
+  // Subregister 68 of Multireg alert_regwen
+  // R[alert_regwen_68]: V(False)
+  prim_subreg #(
+    .DW      (1),
+    .SwAccess(prim_subreg_pkg::SwAccessW0C),
+    .RESVAL  (1'h1),
+    .Mubi    (1'b0)
+  ) u_alert_regwen_68 (
+    .clk_i   (clk_i),
+    .rst_ni  (rst_ni),
+
+    // from register interface
+    .we     (alert_regwen_68_we),
+    .wd     (alert_regwen_68_wd),
+
+    // from internal hardware
+    .de     (1'b0),
+    .d      ('0),
+
+    // to internal hardware
+    .qe     (),
+    .q      (reg2hw.alert_regwen[68].q),
+    .ds     (),
+
+    // to register interface (read)
+    .qs     (alert_regwen_68_qs)
+  );
+
+
+  // Subregister 69 of Multireg alert_regwen
+  // R[alert_regwen_69]: V(False)
+  prim_subreg #(
+    .DW      (1),
+    .SwAccess(prim_subreg_pkg::SwAccessW0C),
+    .RESVAL  (1'h1),
+    .Mubi    (1'b0)
+  ) u_alert_regwen_69 (
+    .clk_i   (clk_i),
+    .rst_ni  (rst_ni),
+
+    // from register interface
+    .we     (alert_regwen_69_we),
+    .wd     (alert_regwen_69_wd),
+
+    // from internal hardware
+    .de     (1'b0),
+    .d      ('0),
+
+    // to internal hardware
+    .qe     (),
+    .q      (reg2hw.alert_regwen[69].q),
+    .ds     (),
+
+    // to register interface (read)
+    .qs     (alert_regwen_69_qs)
+  );
+
+
+  // Subregister 70 of Multireg alert_regwen
+  // R[alert_regwen_70]: V(False)
+  prim_subreg #(
+    .DW      (1),
+    .SwAccess(prim_subreg_pkg::SwAccessW0C),
+    .RESVAL  (1'h1),
+    .Mubi    (1'b0)
+  ) u_alert_regwen_70 (
+    .clk_i   (clk_i),
+    .rst_ni  (rst_ni),
+
+    // from register interface
+    .we     (alert_regwen_70_we),
+    .wd     (alert_regwen_70_wd),
+
+    // from internal hardware
+    .de     (1'b0),
+    .d      ('0),
+
+    // to internal hardware
+    .qe     (),
+    .q      (reg2hw.alert_regwen[70].q),
+    .ds     (),
+
+    // to register interface (read)
+    .qs     (alert_regwen_70_qs)
+  );
+
+
+  // Subregister 71 of Multireg alert_regwen
+  // R[alert_regwen_71]: V(False)
+  prim_subreg #(
+    .DW      (1),
+    .SwAccess(prim_subreg_pkg::SwAccessW0C),
+    .RESVAL  (1'h1),
+    .Mubi    (1'b0)
+  ) u_alert_regwen_71 (
+    .clk_i   (clk_i),
+    .rst_ni  (rst_ni),
+
+    // from register interface
+    .we     (alert_regwen_71_we),
+    .wd     (alert_regwen_71_wd),
+
+    // from internal hardware
+    .de     (1'b0),
+    .d      ('0),
+
+    // to internal hardware
+    .qe     (),
+    .q      (reg2hw.alert_regwen[71].q),
+    .ds     (),
+
+    // to register interface (read)
+    .qs     (alert_regwen_71_qs)
+  );
+
+
+  // Subregister 72 of Multireg alert_regwen
+  // R[alert_regwen_72]: V(False)
+  prim_subreg #(
+    .DW      (1),
+    .SwAccess(prim_subreg_pkg::SwAccessW0C),
+    .RESVAL  (1'h1),
+    .Mubi    (1'b0)
+  ) u_alert_regwen_72 (
+    .clk_i   (clk_i),
+    .rst_ni  (rst_ni),
+
+    // from register interface
+    .we     (alert_regwen_72_we),
+    .wd     (alert_regwen_72_wd),
+
+    // from internal hardware
+    .de     (1'b0),
+    .d      ('0),
+
+    // to internal hardware
+    .qe     (),
+    .q      (reg2hw.alert_regwen[72].q),
+    .ds     (),
+
+    // to register interface (read)
+    .qs     (alert_regwen_72_qs)
+  );
+
+
+  // Subregister 73 of Multireg alert_regwen
+  // R[alert_regwen_73]: V(False)
+  prim_subreg #(
+    .DW      (1),
+    .SwAccess(prim_subreg_pkg::SwAccessW0C),
+    .RESVAL  (1'h1),
+    .Mubi    (1'b0)
+  ) u_alert_regwen_73 (
+    .clk_i   (clk_i),
+    .rst_ni  (rst_ni),
+
+    // from register interface
+    .we     (alert_regwen_73_we),
+    .wd     (alert_regwen_73_wd),
+
+    // from internal hardware
+    .de     (1'b0),
+    .d      ('0),
+
+    // to internal hardware
+    .qe     (),
+    .q      (reg2hw.alert_regwen[73].q),
+    .ds     (),
+
+    // to register interface (read)
+    .qs     (alert_regwen_73_qs)
+  );
+
+
+  // Subregister 74 of Multireg alert_regwen
+  // R[alert_regwen_74]: V(False)
+  prim_subreg #(
+    .DW      (1),
+    .SwAccess(prim_subreg_pkg::SwAccessW0C),
+    .RESVAL  (1'h1),
+    .Mubi    (1'b0)
+  ) u_alert_regwen_74 (
+    .clk_i   (clk_i),
+    .rst_ni  (rst_ni),
+
+    // from register interface
+    .we     (alert_regwen_74_we),
+    .wd     (alert_regwen_74_wd),
+
+    // from internal hardware
+    .de     (1'b0),
+    .d      ('0),
+
+    // to internal hardware
+    .qe     (),
+    .q      (reg2hw.alert_regwen[74].q),
+    .ds     (),
+
+    // to register interface (read)
+    .qs     (alert_regwen_74_qs)
+  );
+
+
+  // Subregister 75 of Multireg alert_regwen
+  // R[alert_regwen_75]: V(False)
+  prim_subreg #(
+    .DW      (1),
+    .SwAccess(prim_subreg_pkg::SwAccessW0C),
+    .RESVAL  (1'h1),
+    .Mubi    (1'b0)
+  ) u_alert_regwen_75 (
+    .clk_i   (clk_i),
+    .rst_ni  (rst_ni),
+
+    // from register interface
+    .we     (alert_regwen_75_we),
+    .wd     (alert_regwen_75_wd),
+
+    // from internal hardware
+    .de     (1'b0),
+    .d      ('0),
+
+    // to internal hardware
+    .qe     (),
+    .q      (reg2hw.alert_regwen[75].q),
+    .ds     (),
+
+    // to register interface (read)
+    .qs     (alert_regwen_75_qs)
+  );
+
+
+  // Subregister 76 of Multireg alert_regwen
+  // R[alert_regwen_76]: V(False)
+  prim_subreg #(
+    .DW      (1),
+    .SwAccess(prim_subreg_pkg::SwAccessW0C),
+    .RESVAL  (1'h1),
+    .Mubi    (1'b0)
+  ) u_alert_regwen_76 (
+    .clk_i   (clk_i),
+    .rst_ni  (rst_ni),
+
+    // from register interface
+    .we     (alert_regwen_76_we),
+    .wd     (alert_regwen_76_wd),
+
+    // from internal hardware
+    .de     (1'b0),
+    .d      ('0),
+
+    // to internal hardware
+    .qe     (),
+    .q      (reg2hw.alert_regwen[76].q),
+    .ds     (),
+
+    // to register interface (read)
+    .qs     (alert_regwen_76_qs)
+  );
+
+
+  // Subregister 77 of Multireg alert_regwen
+  // R[alert_regwen_77]: V(False)
+  prim_subreg #(
+    .DW      (1),
+    .SwAccess(prim_subreg_pkg::SwAccessW0C),
+    .RESVAL  (1'h1),
+    .Mubi    (1'b0)
+  ) u_alert_regwen_77 (
+    .clk_i   (clk_i),
+    .rst_ni  (rst_ni),
+
+    // from register interface
+    .we     (alert_regwen_77_we),
+    .wd     (alert_regwen_77_wd),
+
+    // from internal hardware
+    .de     (1'b0),
+    .d      ('0),
+
+    // to internal hardware
+    .qe     (),
+    .q      (reg2hw.alert_regwen[77].q),
+    .ds     (),
+
+    // to register interface (read)
+    .qs     (alert_regwen_77_qs)
+  );
+
+
+  // Subregister 78 of Multireg alert_regwen
+  // R[alert_regwen_78]: V(False)
+  prim_subreg #(
+    .DW      (1),
+    .SwAccess(prim_subreg_pkg::SwAccessW0C),
+    .RESVAL  (1'h1),
+    .Mubi    (1'b0)
+  ) u_alert_regwen_78 (
+    .clk_i   (clk_i),
+    .rst_ni  (rst_ni),
+
+    // from register interface
+    .we     (alert_regwen_78_we),
+    .wd     (alert_regwen_78_wd),
+
+    // from internal hardware
+    .de     (1'b0),
+    .d      ('0),
+
+    // to internal hardware
+    .qe     (),
+    .q      (reg2hw.alert_regwen[78].q),
+    .ds     (),
+
+    // to register interface (read)
+    .qs     (alert_regwen_78_qs)
+  );
+
+
+  // Subregister 79 of Multireg alert_regwen
+  // R[alert_regwen_79]: V(False)
+  prim_subreg #(
+    .DW      (1),
+    .SwAccess(prim_subreg_pkg::SwAccessW0C),
+    .RESVAL  (1'h1),
+    .Mubi    (1'b0)
+  ) u_alert_regwen_79 (
+    .clk_i   (clk_i),
+    .rst_ni  (rst_ni),
+
+    // from register interface
+    .we     (alert_regwen_79_we),
+    .wd     (alert_regwen_79_wd),
+
+    // from internal hardware
+    .de     (1'b0),
+    .d      ('0),
+
+    // to internal hardware
+    .qe     (),
+    .q      (reg2hw.alert_regwen[79].q),
+    .ds     (),
+
+    // to register interface (read)
+    .qs     (alert_regwen_79_qs)
+  );
+
+
+  // Subregister 80 of Multireg alert_regwen
+  // R[alert_regwen_80]: V(False)
+  prim_subreg #(
+    .DW      (1),
+    .SwAccess(prim_subreg_pkg::SwAccessW0C),
+    .RESVAL  (1'h1),
+    .Mubi    (1'b0)
+  ) u_alert_regwen_80 (
+    .clk_i   (clk_i),
+    .rst_ni  (rst_ni),
+
+    // from register interface
+    .we     (alert_regwen_80_we),
+    .wd     (alert_regwen_80_wd),
+
+    // from internal hardware
+    .de     (1'b0),
+    .d      ('0),
+
+    // to internal hardware
+    .qe     (),
+    .q      (reg2hw.alert_regwen[80].q),
+    .ds     (),
+
+    // to register interface (read)
+    .qs     (alert_regwen_80_qs)
+  );
+
+
+  // Subregister 81 of Multireg alert_regwen
+  // R[alert_regwen_81]: V(False)
+  prim_subreg #(
+    .DW      (1),
+    .SwAccess(prim_subreg_pkg::SwAccessW0C),
+    .RESVAL  (1'h1),
+    .Mubi    (1'b0)
+  ) u_alert_regwen_81 (
+    .clk_i   (clk_i),
+    .rst_ni  (rst_ni),
+
+    // from register interface
+    .we     (alert_regwen_81_we),
+    .wd     (alert_regwen_81_wd),
+
+    // from internal hardware
+    .de     (1'b0),
+    .d      ('0),
+
+    // to internal hardware
+    .qe     (),
+    .q      (reg2hw.alert_regwen[81].q),
+    .ds     (),
+
+    // to register interface (read)
+    .qs     (alert_regwen_81_qs)
+  );
+
+
+  // Subregister 82 of Multireg alert_regwen
+  // R[alert_regwen_82]: V(False)
+  prim_subreg #(
+    .DW      (1),
+    .SwAccess(prim_subreg_pkg::SwAccessW0C),
+    .RESVAL  (1'h1),
+    .Mubi    (1'b0)
+  ) u_alert_regwen_82 (
+    .clk_i   (clk_i),
+    .rst_ni  (rst_ni),
+
+    // from register interface
+    .we     (alert_regwen_82_we),
+    .wd     (alert_regwen_82_wd),
+
+    // from internal hardware
+    .de     (1'b0),
+    .d      ('0),
+
+    // to internal hardware
+    .qe     (),
+    .q      (reg2hw.alert_regwen[82].q),
+    .ds     (),
+
+    // to register interface (read)
+    .qs     (alert_regwen_82_qs)
+  );
+
+
+  // Subregister 83 of Multireg alert_regwen
+  // R[alert_regwen_83]: V(False)
+  prim_subreg #(
+    .DW      (1),
+    .SwAccess(prim_subreg_pkg::SwAccessW0C),
+    .RESVAL  (1'h1),
+    .Mubi    (1'b0)
+  ) u_alert_regwen_83 (
+    .clk_i   (clk_i),
+    .rst_ni  (rst_ni),
+
+    // from register interface
+    .we     (alert_regwen_83_we),
+    .wd     (alert_regwen_83_wd),
+
+    // from internal hardware
+    .de     (1'b0),
+    .d      ('0),
+
+    // to internal hardware
+    .qe     (),
+    .q      (reg2hw.alert_regwen[83].q),
+    .ds     (),
+
+    // to register interface (read)
+    .qs     (alert_regwen_83_qs)
+  );
+
+
+  // Subregister 84 of Multireg alert_regwen
+  // R[alert_regwen_84]: V(False)
+  prim_subreg #(
+    .DW      (1),
+    .SwAccess(prim_subreg_pkg::SwAccessW0C),
+    .RESVAL  (1'h1),
+    .Mubi    (1'b0)
+  ) u_alert_regwen_84 (
+    .clk_i   (clk_i),
+    .rst_ni  (rst_ni),
+
+    // from register interface
+    .we     (alert_regwen_84_we),
+    .wd     (alert_regwen_84_wd),
+
+    // from internal hardware
+    .de     (1'b0),
+    .d      ('0),
+
+    // to internal hardware
+    .qe     (),
+    .q      (reg2hw.alert_regwen[84].q),
+    .ds     (),
+
+    // to register interface (read)
+    .qs     (alert_regwen_84_qs)
+  );
+
+
   // Subregister 0 of Multireg alert_en_shadowed
   // R[alert_en_shadowed_0]: V(False)
   // Create REGWEN-gated WE signal
@@ -5405,6 +7097,1482 @@ module alert_handler_reg_top (
     // Shadow register error conditions
     .err_update  (alert_en_shadowed_48_update_err),
     .err_storage (alert_en_shadowed_48_storage_err)
+  );
+
+
+  // Subregister 49 of Multireg alert_en_shadowed
+  // R[alert_en_shadowed_49]: V(False)
+  // Create REGWEN-gated WE signal
+  logic alert_en_shadowed_49_gated_we;
+  assign alert_en_shadowed_49_gated_we = alert_en_shadowed_49_we & alert_regwen_49_qs;
+  prim_subreg_shadow #(
+    .DW      (1),
+    .SwAccess(prim_subreg_pkg::SwAccessRW),
+    .RESVAL  (1'h0),
+    .Mubi    (1'b0)
+  ) u_alert_en_shadowed_49 (
+    .clk_i   (clk_i),
+    .rst_ni  (rst_ni),
+    .rst_shadowed_ni (rst_shadowed_ni),
+
+    // from register interface
+    .re     (alert_en_shadowed_49_re),
+    .we     (alert_en_shadowed_49_gated_we),
+    .wd     (alert_en_shadowed_49_wd),
+
+    // from internal hardware
+    .de     (1'b0),
+    .d      ('0),
+
+    // to internal hardware
+    .qe     (),
+    .q      (reg2hw.alert_en_shadowed[49].q),
+    .ds     (),
+
+    // to register interface (read)
+    .qs     (alert_en_shadowed_49_qs),
+
+    // Shadow register phase. Relevant for hwext only.
+    .phase  (),
+
+    // Shadow register error conditions
+    .err_update  (alert_en_shadowed_49_update_err),
+    .err_storage (alert_en_shadowed_49_storage_err)
+  );
+
+
+  // Subregister 50 of Multireg alert_en_shadowed
+  // R[alert_en_shadowed_50]: V(False)
+  // Create REGWEN-gated WE signal
+  logic alert_en_shadowed_50_gated_we;
+  assign alert_en_shadowed_50_gated_we = alert_en_shadowed_50_we & alert_regwen_50_qs;
+  prim_subreg_shadow #(
+    .DW      (1),
+    .SwAccess(prim_subreg_pkg::SwAccessRW),
+    .RESVAL  (1'h0),
+    .Mubi    (1'b0)
+  ) u_alert_en_shadowed_50 (
+    .clk_i   (clk_i),
+    .rst_ni  (rst_ni),
+    .rst_shadowed_ni (rst_shadowed_ni),
+
+    // from register interface
+    .re     (alert_en_shadowed_50_re),
+    .we     (alert_en_shadowed_50_gated_we),
+    .wd     (alert_en_shadowed_50_wd),
+
+    // from internal hardware
+    .de     (1'b0),
+    .d      ('0),
+
+    // to internal hardware
+    .qe     (),
+    .q      (reg2hw.alert_en_shadowed[50].q),
+    .ds     (),
+
+    // to register interface (read)
+    .qs     (alert_en_shadowed_50_qs),
+
+    // Shadow register phase. Relevant for hwext only.
+    .phase  (),
+
+    // Shadow register error conditions
+    .err_update  (alert_en_shadowed_50_update_err),
+    .err_storage (alert_en_shadowed_50_storage_err)
+  );
+
+
+  // Subregister 51 of Multireg alert_en_shadowed
+  // R[alert_en_shadowed_51]: V(False)
+  // Create REGWEN-gated WE signal
+  logic alert_en_shadowed_51_gated_we;
+  assign alert_en_shadowed_51_gated_we = alert_en_shadowed_51_we & alert_regwen_51_qs;
+  prim_subreg_shadow #(
+    .DW      (1),
+    .SwAccess(prim_subreg_pkg::SwAccessRW),
+    .RESVAL  (1'h0),
+    .Mubi    (1'b0)
+  ) u_alert_en_shadowed_51 (
+    .clk_i   (clk_i),
+    .rst_ni  (rst_ni),
+    .rst_shadowed_ni (rst_shadowed_ni),
+
+    // from register interface
+    .re     (alert_en_shadowed_51_re),
+    .we     (alert_en_shadowed_51_gated_we),
+    .wd     (alert_en_shadowed_51_wd),
+
+    // from internal hardware
+    .de     (1'b0),
+    .d      ('0),
+
+    // to internal hardware
+    .qe     (),
+    .q      (reg2hw.alert_en_shadowed[51].q),
+    .ds     (),
+
+    // to register interface (read)
+    .qs     (alert_en_shadowed_51_qs),
+
+    // Shadow register phase. Relevant for hwext only.
+    .phase  (),
+
+    // Shadow register error conditions
+    .err_update  (alert_en_shadowed_51_update_err),
+    .err_storage (alert_en_shadowed_51_storage_err)
+  );
+
+
+  // Subregister 52 of Multireg alert_en_shadowed
+  // R[alert_en_shadowed_52]: V(False)
+  // Create REGWEN-gated WE signal
+  logic alert_en_shadowed_52_gated_we;
+  assign alert_en_shadowed_52_gated_we = alert_en_shadowed_52_we & alert_regwen_52_qs;
+  prim_subreg_shadow #(
+    .DW      (1),
+    .SwAccess(prim_subreg_pkg::SwAccessRW),
+    .RESVAL  (1'h0),
+    .Mubi    (1'b0)
+  ) u_alert_en_shadowed_52 (
+    .clk_i   (clk_i),
+    .rst_ni  (rst_ni),
+    .rst_shadowed_ni (rst_shadowed_ni),
+
+    // from register interface
+    .re     (alert_en_shadowed_52_re),
+    .we     (alert_en_shadowed_52_gated_we),
+    .wd     (alert_en_shadowed_52_wd),
+
+    // from internal hardware
+    .de     (1'b0),
+    .d      ('0),
+
+    // to internal hardware
+    .qe     (),
+    .q      (reg2hw.alert_en_shadowed[52].q),
+    .ds     (),
+
+    // to register interface (read)
+    .qs     (alert_en_shadowed_52_qs),
+
+    // Shadow register phase. Relevant for hwext only.
+    .phase  (),
+
+    // Shadow register error conditions
+    .err_update  (alert_en_shadowed_52_update_err),
+    .err_storage (alert_en_shadowed_52_storage_err)
+  );
+
+
+  // Subregister 53 of Multireg alert_en_shadowed
+  // R[alert_en_shadowed_53]: V(False)
+  // Create REGWEN-gated WE signal
+  logic alert_en_shadowed_53_gated_we;
+  assign alert_en_shadowed_53_gated_we = alert_en_shadowed_53_we & alert_regwen_53_qs;
+  prim_subreg_shadow #(
+    .DW      (1),
+    .SwAccess(prim_subreg_pkg::SwAccessRW),
+    .RESVAL  (1'h0),
+    .Mubi    (1'b0)
+  ) u_alert_en_shadowed_53 (
+    .clk_i   (clk_i),
+    .rst_ni  (rst_ni),
+    .rst_shadowed_ni (rst_shadowed_ni),
+
+    // from register interface
+    .re     (alert_en_shadowed_53_re),
+    .we     (alert_en_shadowed_53_gated_we),
+    .wd     (alert_en_shadowed_53_wd),
+
+    // from internal hardware
+    .de     (1'b0),
+    .d      ('0),
+
+    // to internal hardware
+    .qe     (),
+    .q      (reg2hw.alert_en_shadowed[53].q),
+    .ds     (),
+
+    // to register interface (read)
+    .qs     (alert_en_shadowed_53_qs),
+
+    // Shadow register phase. Relevant for hwext only.
+    .phase  (),
+
+    // Shadow register error conditions
+    .err_update  (alert_en_shadowed_53_update_err),
+    .err_storage (alert_en_shadowed_53_storage_err)
+  );
+
+
+  // Subregister 54 of Multireg alert_en_shadowed
+  // R[alert_en_shadowed_54]: V(False)
+  // Create REGWEN-gated WE signal
+  logic alert_en_shadowed_54_gated_we;
+  assign alert_en_shadowed_54_gated_we = alert_en_shadowed_54_we & alert_regwen_54_qs;
+  prim_subreg_shadow #(
+    .DW      (1),
+    .SwAccess(prim_subreg_pkg::SwAccessRW),
+    .RESVAL  (1'h0),
+    .Mubi    (1'b0)
+  ) u_alert_en_shadowed_54 (
+    .clk_i   (clk_i),
+    .rst_ni  (rst_ni),
+    .rst_shadowed_ni (rst_shadowed_ni),
+
+    // from register interface
+    .re     (alert_en_shadowed_54_re),
+    .we     (alert_en_shadowed_54_gated_we),
+    .wd     (alert_en_shadowed_54_wd),
+
+    // from internal hardware
+    .de     (1'b0),
+    .d      ('0),
+
+    // to internal hardware
+    .qe     (),
+    .q      (reg2hw.alert_en_shadowed[54].q),
+    .ds     (),
+
+    // to register interface (read)
+    .qs     (alert_en_shadowed_54_qs),
+
+    // Shadow register phase. Relevant for hwext only.
+    .phase  (),
+
+    // Shadow register error conditions
+    .err_update  (alert_en_shadowed_54_update_err),
+    .err_storage (alert_en_shadowed_54_storage_err)
+  );
+
+
+  // Subregister 55 of Multireg alert_en_shadowed
+  // R[alert_en_shadowed_55]: V(False)
+  // Create REGWEN-gated WE signal
+  logic alert_en_shadowed_55_gated_we;
+  assign alert_en_shadowed_55_gated_we = alert_en_shadowed_55_we & alert_regwen_55_qs;
+  prim_subreg_shadow #(
+    .DW      (1),
+    .SwAccess(prim_subreg_pkg::SwAccessRW),
+    .RESVAL  (1'h0),
+    .Mubi    (1'b0)
+  ) u_alert_en_shadowed_55 (
+    .clk_i   (clk_i),
+    .rst_ni  (rst_ni),
+    .rst_shadowed_ni (rst_shadowed_ni),
+
+    // from register interface
+    .re     (alert_en_shadowed_55_re),
+    .we     (alert_en_shadowed_55_gated_we),
+    .wd     (alert_en_shadowed_55_wd),
+
+    // from internal hardware
+    .de     (1'b0),
+    .d      ('0),
+
+    // to internal hardware
+    .qe     (),
+    .q      (reg2hw.alert_en_shadowed[55].q),
+    .ds     (),
+
+    // to register interface (read)
+    .qs     (alert_en_shadowed_55_qs),
+
+    // Shadow register phase. Relevant for hwext only.
+    .phase  (),
+
+    // Shadow register error conditions
+    .err_update  (alert_en_shadowed_55_update_err),
+    .err_storage (alert_en_shadowed_55_storage_err)
+  );
+
+
+  // Subregister 56 of Multireg alert_en_shadowed
+  // R[alert_en_shadowed_56]: V(False)
+  // Create REGWEN-gated WE signal
+  logic alert_en_shadowed_56_gated_we;
+  assign alert_en_shadowed_56_gated_we = alert_en_shadowed_56_we & alert_regwen_56_qs;
+  prim_subreg_shadow #(
+    .DW      (1),
+    .SwAccess(prim_subreg_pkg::SwAccessRW),
+    .RESVAL  (1'h0),
+    .Mubi    (1'b0)
+  ) u_alert_en_shadowed_56 (
+    .clk_i   (clk_i),
+    .rst_ni  (rst_ni),
+    .rst_shadowed_ni (rst_shadowed_ni),
+
+    // from register interface
+    .re     (alert_en_shadowed_56_re),
+    .we     (alert_en_shadowed_56_gated_we),
+    .wd     (alert_en_shadowed_56_wd),
+
+    // from internal hardware
+    .de     (1'b0),
+    .d      ('0),
+
+    // to internal hardware
+    .qe     (),
+    .q      (reg2hw.alert_en_shadowed[56].q),
+    .ds     (),
+
+    // to register interface (read)
+    .qs     (alert_en_shadowed_56_qs),
+
+    // Shadow register phase. Relevant for hwext only.
+    .phase  (),
+
+    // Shadow register error conditions
+    .err_update  (alert_en_shadowed_56_update_err),
+    .err_storage (alert_en_shadowed_56_storage_err)
+  );
+
+
+  // Subregister 57 of Multireg alert_en_shadowed
+  // R[alert_en_shadowed_57]: V(False)
+  // Create REGWEN-gated WE signal
+  logic alert_en_shadowed_57_gated_we;
+  assign alert_en_shadowed_57_gated_we = alert_en_shadowed_57_we & alert_regwen_57_qs;
+  prim_subreg_shadow #(
+    .DW      (1),
+    .SwAccess(prim_subreg_pkg::SwAccessRW),
+    .RESVAL  (1'h0),
+    .Mubi    (1'b0)
+  ) u_alert_en_shadowed_57 (
+    .clk_i   (clk_i),
+    .rst_ni  (rst_ni),
+    .rst_shadowed_ni (rst_shadowed_ni),
+
+    // from register interface
+    .re     (alert_en_shadowed_57_re),
+    .we     (alert_en_shadowed_57_gated_we),
+    .wd     (alert_en_shadowed_57_wd),
+
+    // from internal hardware
+    .de     (1'b0),
+    .d      ('0),
+
+    // to internal hardware
+    .qe     (),
+    .q      (reg2hw.alert_en_shadowed[57].q),
+    .ds     (),
+
+    // to register interface (read)
+    .qs     (alert_en_shadowed_57_qs),
+
+    // Shadow register phase. Relevant for hwext only.
+    .phase  (),
+
+    // Shadow register error conditions
+    .err_update  (alert_en_shadowed_57_update_err),
+    .err_storage (alert_en_shadowed_57_storage_err)
+  );
+
+
+  // Subregister 58 of Multireg alert_en_shadowed
+  // R[alert_en_shadowed_58]: V(False)
+  // Create REGWEN-gated WE signal
+  logic alert_en_shadowed_58_gated_we;
+  assign alert_en_shadowed_58_gated_we = alert_en_shadowed_58_we & alert_regwen_58_qs;
+  prim_subreg_shadow #(
+    .DW      (1),
+    .SwAccess(prim_subreg_pkg::SwAccessRW),
+    .RESVAL  (1'h0),
+    .Mubi    (1'b0)
+  ) u_alert_en_shadowed_58 (
+    .clk_i   (clk_i),
+    .rst_ni  (rst_ni),
+    .rst_shadowed_ni (rst_shadowed_ni),
+
+    // from register interface
+    .re     (alert_en_shadowed_58_re),
+    .we     (alert_en_shadowed_58_gated_we),
+    .wd     (alert_en_shadowed_58_wd),
+
+    // from internal hardware
+    .de     (1'b0),
+    .d      ('0),
+
+    // to internal hardware
+    .qe     (),
+    .q      (reg2hw.alert_en_shadowed[58].q),
+    .ds     (),
+
+    // to register interface (read)
+    .qs     (alert_en_shadowed_58_qs),
+
+    // Shadow register phase. Relevant for hwext only.
+    .phase  (),
+
+    // Shadow register error conditions
+    .err_update  (alert_en_shadowed_58_update_err),
+    .err_storage (alert_en_shadowed_58_storage_err)
+  );
+
+
+  // Subregister 59 of Multireg alert_en_shadowed
+  // R[alert_en_shadowed_59]: V(False)
+  // Create REGWEN-gated WE signal
+  logic alert_en_shadowed_59_gated_we;
+  assign alert_en_shadowed_59_gated_we = alert_en_shadowed_59_we & alert_regwen_59_qs;
+  prim_subreg_shadow #(
+    .DW      (1),
+    .SwAccess(prim_subreg_pkg::SwAccessRW),
+    .RESVAL  (1'h0),
+    .Mubi    (1'b0)
+  ) u_alert_en_shadowed_59 (
+    .clk_i   (clk_i),
+    .rst_ni  (rst_ni),
+    .rst_shadowed_ni (rst_shadowed_ni),
+
+    // from register interface
+    .re     (alert_en_shadowed_59_re),
+    .we     (alert_en_shadowed_59_gated_we),
+    .wd     (alert_en_shadowed_59_wd),
+
+    // from internal hardware
+    .de     (1'b0),
+    .d      ('0),
+
+    // to internal hardware
+    .qe     (),
+    .q      (reg2hw.alert_en_shadowed[59].q),
+    .ds     (),
+
+    // to register interface (read)
+    .qs     (alert_en_shadowed_59_qs),
+
+    // Shadow register phase. Relevant for hwext only.
+    .phase  (),
+
+    // Shadow register error conditions
+    .err_update  (alert_en_shadowed_59_update_err),
+    .err_storage (alert_en_shadowed_59_storage_err)
+  );
+
+
+  // Subregister 60 of Multireg alert_en_shadowed
+  // R[alert_en_shadowed_60]: V(False)
+  // Create REGWEN-gated WE signal
+  logic alert_en_shadowed_60_gated_we;
+  assign alert_en_shadowed_60_gated_we = alert_en_shadowed_60_we & alert_regwen_60_qs;
+  prim_subreg_shadow #(
+    .DW      (1),
+    .SwAccess(prim_subreg_pkg::SwAccessRW),
+    .RESVAL  (1'h0),
+    .Mubi    (1'b0)
+  ) u_alert_en_shadowed_60 (
+    .clk_i   (clk_i),
+    .rst_ni  (rst_ni),
+    .rst_shadowed_ni (rst_shadowed_ni),
+
+    // from register interface
+    .re     (alert_en_shadowed_60_re),
+    .we     (alert_en_shadowed_60_gated_we),
+    .wd     (alert_en_shadowed_60_wd),
+
+    // from internal hardware
+    .de     (1'b0),
+    .d      ('0),
+
+    // to internal hardware
+    .qe     (),
+    .q      (reg2hw.alert_en_shadowed[60].q),
+    .ds     (),
+
+    // to register interface (read)
+    .qs     (alert_en_shadowed_60_qs),
+
+    // Shadow register phase. Relevant for hwext only.
+    .phase  (),
+
+    // Shadow register error conditions
+    .err_update  (alert_en_shadowed_60_update_err),
+    .err_storage (alert_en_shadowed_60_storage_err)
+  );
+
+
+  // Subregister 61 of Multireg alert_en_shadowed
+  // R[alert_en_shadowed_61]: V(False)
+  // Create REGWEN-gated WE signal
+  logic alert_en_shadowed_61_gated_we;
+  assign alert_en_shadowed_61_gated_we = alert_en_shadowed_61_we & alert_regwen_61_qs;
+  prim_subreg_shadow #(
+    .DW      (1),
+    .SwAccess(prim_subreg_pkg::SwAccessRW),
+    .RESVAL  (1'h0),
+    .Mubi    (1'b0)
+  ) u_alert_en_shadowed_61 (
+    .clk_i   (clk_i),
+    .rst_ni  (rst_ni),
+    .rst_shadowed_ni (rst_shadowed_ni),
+
+    // from register interface
+    .re     (alert_en_shadowed_61_re),
+    .we     (alert_en_shadowed_61_gated_we),
+    .wd     (alert_en_shadowed_61_wd),
+
+    // from internal hardware
+    .de     (1'b0),
+    .d      ('0),
+
+    // to internal hardware
+    .qe     (),
+    .q      (reg2hw.alert_en_shadowed[61].q),
+    .ds     (),
+
+    // to register interface (read)
+    .qs     (alert_en_shadowed_61_qs),
+
+    // Shadow register phase. Relevant for hwext only.
+    .phase  (),
+
+    // Shadow register error conditions
+    .err_update  (alert_en_shadowed_61_update_err),
+    .err_storage (alert_en_shadowed_61_storage_err)
+  );
+
+
+  // Subregister 62 of Multireg alert_en_shadowed
+  // R[alert_en_shadowed_62]: V(False)
+  // Create REGWEN-gated WE signal
+  logic alert_en_shadowed_62_gated_we;
+  assign alert_en_shadowed_62_gated_we = alert_en_shadowed_62_we & alert_regwen_62_qs;
+  prim_subreg_shadow #(
+    .DW      (1),
+    .SwAccess(prim_subreg_pkg::SwAccessRW),
+    .RESVAL  (1'h0),
+    .Mubi    (1'b0)
+  ) u_alert_en_shadowed_62 (
+    .clk_i   (clk_i),
+    .rst_ni  (rst_ni),
+    .rst_shadowed_ni (rst_shadowed_ni),
+
+    // from register interface
+    .re     (alert_en_shadowed_62_re),
+    .we     (alert_en_shadowed_62_gated_we),
+    .wd     (alert_en_shadowed_62_wd),
+
+    // from internal hardware
+    .de     (1'b0),
+    .d      ('0),
+
+    // to internal hardware
+    .qe     (),
+    .q      (reg2hw.alert_en_shadowed[62].q),
+    .ds     (),
+
+    // to register interface (read)
+    .qs     (alert_en_shadowed_62_qs),
+
+    // Shadow register phase. Relevant for hwext only.
+    .phase  (),
+
+    // Shadow register error conditions
+    .err_update  (alert_en_shadowed_62_update_err),
+    .err_storage (alert_en_shadowed_62_storage_err)
+  );
+
+
+  // Subregister 63 of Multireg alert_en_shadowed
+  // R[alert_en_shadowed_63]: V(False)
+  // Create REGWEN-gated WE signal
+  logic alert_en_shadowed_63_gated_we;
+  assign alert_en_shadowed_63_gated_we = alert_en_shadowed_63_we & alert_regwen_63_qs;
+  prim_subreg_shadow #(
+    .DW      (1),
+    .SwAccess(prim_subreg_pkg::SwAccessRW),
+    .RESVAL  (1'h0),
+    .Mubi    (1'b0)
+  ) u_alert_en_shadowed_63 (
+    .clk_i   (clk_i),
+    .rst_ni  (rst_ni),
+    .rst_shadowed_ni (rst_shadowed_ni),
+
+    // from register interface
+    .re     (alert_en_shadowed_63_re),
+    .we     (alert_en_shadowed_63_gated_we),
+    .wd     (alert_en_shadowed_63_wd),
+
+    // from internal hardware
+    .de     (1'b0),
+    .d      ('0),
+
+    // to internal hardware
+    .qe     (),
+    .q      (reg2hw.alert_en_shadowed[63].q),
+    .ds     (),
+
+    // to register interface (read)
+    .qs     (alert_en_shadowed_63_qs),
+
+    // Shadow register phase. Relevant for hwext only.
+    .phase  (),
+
+    // Shadow register error conditions
+    .err_update  (alert_en_shadowed_63_update_err),
+    .err_storage (alert_en_shadowed_63_storage_err)
+  );
+
+
+  // Subregister 64 of Multireg alert_en_shadowed
+  // R[alert_en_shadowed_64]: V(False)
+  // Create REGWEN-gated WE signal
+  logic alert_en_shadowed_64_gated_we;
+  assign alert_en_shadowed_64_gated_we = alert_en_shadowed_64_we & alert_regwen_64_qs;
+  prim_subreg_shadow #(
+    .DW      (1),
+    .SwAccess(prim_subreg_pkg::SwAccessRW),
+    .RESVAL  (1'h0),
+    .Mubi    (1'b0)
+  ) u_alert_en_shadowed_64 (
+    .clk_i   (clk_i),
+    .rst_ni  (rst_ni),
+    .rst_shadowed_ni (rst_shadowed_ni),
+
+    // from register interface
+    .re     (alert_en_shadowed_64_re),
+    .we     (alert_en_shadowed_64_gated_we),
+    .wd     (alert_en_shadowed_64_wd),
+
+    // from internal hardware
+    .de     (1'b0),
+    .d      ('0),
+
+    // to internal hardware
+    .qe     (),
+    .q      (reg2hw.alert_en_shadowed[64].q),
+    .ds     (),
+
+    // to register interface (read)
+    .qs     (alert_en_shadowed_64_qs),
+
+    // Shadow register phase. Relevant for hwext only.
+    .phase  (),
+
+    // Shadow register error conditions
+    .err_update  (alert_en_shadowed_64_update_err),
+    .err_storage (alert_en_shadowed_64_storage_err)
+  );
+
+
+  // Subregister 65 of Multireg alert_en_shadowed
+  // R[alert_en_shadowed_65]: V(False)
+  // Create REGWEN-gated WE signal
+  logic alert_en_shadowed_65_gated_we;
+  assign alert_en_shadowed_65_gated_we = alert_en_shadowed_65_we & alert_regwen_65_qs;
+  prim_subreg_shadow #(
+    .DW      (1),
+    .SwAccess(prim_subreg_pkg::SwAccessRW),
+    .RESVAL  (1'h0),
+    .Mubi    (1'b0)
+  ) u_alert_en_shadowed_65 (
+    .clk_i   (clk_i),
+    .rst_ni  (rst_ni),
+    .rst_shadowed_ni (rst_shadowed_ni),
+
+    // from register interface
+    .re     (alert_en_shadowed_65_re),
+    .we     (alert_en_shadowed_65_gated_we),
+    .wd     (alert_en_shadowed_65_wd),
+
+    // from internal hardware
+    .de     (1'b0),
+    .d      ('0),
+
+    // to internal hardware
+    .qe     (),
+    .q      (reg2hw.alert_en_shadowed[65].q),
+    .ds     (),
+
+    // to register interface (read)
+    .qs     (alert_en_shadowed_65_qs),
+
+    // Shadow register phase. Relevant for hwext only.
+    .phase  (),
+
+    // Shadow register error conditions
+    .err_update  (alert_en_shadowed_65_update_err),
+    .err_storage (alert_en_shadowed_65_storage_err)
+  );
+
+
+  // Subregister 66 of Multireg alert_en_shadowed
+  // R[alert_en_shadowed_66]: V(False)
+  // Create REGWEN-gated WE signal
+  logic alert_en_shadowed_66_gated_we;
+  assign alert_en_shadowed_66_gated_we = alert_en_shadowed_66_we & alert_regwen_66_qs;
+  prim_subreg_shadow #(
+    .DW      (1),
+    .SwAccess(prim_subreg_pkg::SwAccessRW),
+    .RESVAL  (1'h0),
+    .Mubi    (1'b0)
+  ) u_alert_en_shadowed_66 (
+    .clk_i   (clk_i),
+    .rst_ni  (rst_ni),
+    .rst_shadowed_ni (rst_shadowed_ni),
+
+    // from register interface
+    .re     (alert_en_shadowed_66_re),
+    .we     (alert_en_shadowed_66_gated_we),
+    .wd     (alert_en_shadowed_66_wd),
+
+    // from internal hardware
+    .de     (1'b0),
+    .d      ('0),
+
+    // to internal hardware
+    .qe     (),
+    .q      (reg2hw.alert_en_shadowed[66].q),
+    .ds     (),
+
+    // to register interface (read)
+    .qs     (alert_en_shadowed_66_qs),
+
+    // Shadow register phase. Relevant for hwext only.
+    .phase  (),
+
+    // Shadow register error conditions
+    .err_update  (alert_en_shadowed_66_update_err),
+    .err_storage (alert_en_shadowed_66_storage_err)
+  );
+
+
+  // Subregister 67 of Multireg alert_en_shadowed
+  // R[alert_en_shadowed_67]: V(False)
+  // Create REGWEN-gated WE signal
+  logic alert_en_shadowed_67_gated_we;
+  assign alert_en_shadowed_67_gated_we = alert_en_shadowed_67_we & alert_regwen_67_qs;
+  prim_subreg_shadow #(
+    .DW      (1),
+    .SwAccess(prim_subreg_pkg::SwAccessRW),
+    .RESVAL  (1'h0),
+    .Mubi    (1'b0)
+  ) u_alert_en_shadowed_67 (
+    .clk_i   (clk_i),
+    .rst_ni  (rst_ni),
+    .rst_shadowed_ni (rst_shadowed_ni),
+
+    // from register interface
+    .re     (alert_en_shadowed_67_re),
+    .we     (alert_en_shadowed_67_gated_we),
+    .wd     (alert_en_shadowed_67_wd),
+
+    // from internal hardware
+    .de     (1'b0),
+    .d      ('0),
+
+    // to internal hardware
+    .qe     (),
+    .q      (reg2hw.alert_en_shadowed[67].q),
+    .ds     (),
+
+    // to register interface (read)
+    .qs     (alert_en_shadowed_67_qs),
+
+    // Shadow register phase. Relevant for hwext only.
+    .phase  (),
+
+    // Shadow register error conditions
+    .err_update  (alert_en_shadowed_67_update_err),
+    .err_storage (alert_en_shadowed_67_storage_err)
+  );
+
+
+  // Subregister 68 of Multireg alert_en_shadowed
+  // R[alert_en_shadowed_68]: V(False)
+  // Create REGWEN-gated WE signal
+  logic alert_en_shadowed_68_gated_we;
+  assign alert_en_shadowed_68_gated_we = alert_en_shadowed_68_we & alert_regwen_68_qs;
+  prim_subreg_shadow #(
+    .DW      (1),
+    .SwAccess(prim_subreg_pkg::SwAccessRW),
+    .RESVAL  (1'h0),
+    .Mubi    (1'b0)
+  ) u_alert_en_shadowed_68 (
+    .clk_i   (clk_i),
+    .rst_ni  (rst_ni),
+    .rst_shadowed_ni (rst_shadowed_ni),
+
+    // from register interface
+    .re     (alert_en_shadowed_68_re),
+    .we     (alert_en_shadowed_68_gated_we),
+    .wd     (alert_en_shadowed_68_wd),
+
+    // from internal hardware
+    .de     (1'b0),
+    .d      ('0),
+
+    // to internal hardware
+    .qe     (),
+    .q      (reg2hw.alert_en_shadowed[68].q),
+    .ds     (),
+
+    // to register interface (read)
+    .qs     (alert_en_shadowed_68_qs),
+
+    // Shadow register phase. Relevant for hwext only.
+    .phase  (),
+
+    // Shadow register error conditions
+    .err_update  (alert_en_shadowed_68_update_err),
+    .err_storage (alert_en_shadowed_68_storage_err)
+  );
+
+
+  // Subregister 69 of Multireg alert_en_shadowed
+  // R[alert_en_shadowed_69]: V(False)
+  // Create REGWEN-gated WE signal
+  logic alert_en_shadowed_69_gated_we;
+  assign alert_en_shadowed_69_gated_we = alert_en_shadowed_69_we & alert_regwen_69_qs;
+  prim_subreg_shadow #(
+    .DW      (1),
+    .SwAccess(prim_subreg_pkg::SwAccessRW),
+    .RESVAL  (1'h0),
+    .Mubi    (1'b0)
+  ) u_alert_en_shadowed_69 (
+    .clk_i   (clk_i),
+    .rst_ni  (rst_ni),
+    .rst_shadowed_ni (rst_shadowed_ni),
+
+    // from register interface
+    .re     (alert_en_shadowed_69_re),
+    .we     (alert_en_shadowed_69_gated_we),
+    .wd     (alert_en_shadowed_69_wd),
+
+    // from internal hardware
+    .de     (1'b0),
+    .d      ('0),
+
+    // to internal hardware
+    .qe     (),
+    .q      (reg2hw.alert_en_shadowed[69].q),
+    .ds     (),
+
+    // to register interface (read)
+    .qs     (alert_en_shadowed_69_qs),
+
+    // Shadow register phase. Relevant for hwext only.
+    .phase  (),
+
+    // Shadow register error conditions
+    .err_update  (alert_en_shadowed_69_update_err),
+    .err_storage (alert_en_shadowed_69_storage_err)
+  );
+
+
+  // Subregister 70 of Multireg alert_en_shadowed
+  // R[alert_en_shadowed_70]: V(False)
+  // Create REGWEN-gated WE signal
+  logic alert_en_shadowed_70_gated_we;
+  assign alert_en_shadowed_70_gated_we = alert_en_shadowed_70_we & alert_regwen_70_qs;
+  prim_subreg_shadow #(
+    .DW      (1),
+    .SwAccess(prim_subreg_pkg::SwAccessRW),
+    .RESVAL  (1'h0),
+    .Mubi    (1'b0)
+  ) u_alert_en_shadowed_70 (
+    .clk_i   (clk_i),
+    .rst_ni  (rst_ni),
+    .rst_shadowed_ni (rst_shadowed_ni),
+
+    // from register interface
+    .re     (alert_en_shadowed_70_re),
+    .we     (alert_en_shadowed_70_gated_we),
+    .wd     (alert_en_shadowed_70_wd),
+
+    // from internal hardware
+    .de     (1'b0),
+    .d      ('0),
+
+    // to internal hardware
+    .qe     (),
+    .q      (reg2hw.alert_en_shadowed[70].q),
+    .ds     (),
+
+    // to register interface (read)
+    .qs     (alert_en_shadowed_70_qs),
+
+    // Shadow register phase. Relevant for hwext only.
+    .phase  (),
+
+    // Shadow register error conditions
+    .err_update  (alert_en_shadowed_70_update_err),
+    .err_storage (alert_en_shadowed_70_storage_err)
+  );
+
+
+  // Subregister 71 of Multireg alert_en_shadowed
+  // R[alert_en_shadowed_71]: V(False)
+  // Create REGWEN-gated WE signal
+  logic alert_en_shadowed_71_gated_we;
+  assign alert_en_shadowed_71_gated_we = alert_en_shadowed_71_we & alert_regwen_71_qs;
+  prim_subreg_shadow #(
+    .DW      (1),
+    .SwAccess(prim_subreg_pkg::SwAccessRW),
+    .RESVAL  (1'h0),
+    .Mubi    (1'b0)
+  ) u_alert_en_shadowed_71 (
+    .clk_i   (clk_i),
+    .rst_ni  (rst_ni),
+    .rst_shadowed_ni (rst_shadowed_ni),
+
+    // from register interface
+    .re     (alert_en_shadowed_71_re),
+    .we     (alert_en_shadowed_71_gated_we),
+    .wd     (alert_en_shadowed_71_wd),
+
+    // from internal hardware
+    .de     (1'b0),
+    .d      ('0),
+
+    // to internal hardware
+    .qe     (),
+    .q      (reg2hw.alert_en_shadowed[71].q),
+    .ds     (),
+
+    // to register interface (read)
+    .qs     (alert_en_shadowed_71_qs),
+
+    // Shadow register phase. Relevant for hwext only.
+    .phase  (),
+
+    // Shadow register error conditions
+    .err_update  (alert_en_shadowed_71_update_err),
+    .err_storage (alert_en_shadowed_71_storage_err)
+  );
+
+
+  // Subregister 72 of Multireg alert_en_shadowed
+  // R[alert_en_shadowed_72]: V(False)
+  // Create REGWEN-gated WE signal
+  logic alert_en_shadowed_72_gated_we;
+  assign alert_en_shadowed_72_gated_we = alert_en_shadowed_72_we & alert_regwen_72_qs;
+  prim_subreg_shadow #(
+    .DW      (1),
+    .SwAccess(prim_subreg_pkg::SwAccessRW),
+    .RESVAL  (1'h0),
+    .Mubi    (1'b0)
+  ) u_alert_en_shadowed_72 (
+    .clk_i   (clk_i),
+    .rst_ni  (rst_ni),
+    .rst_shadowed_ni (rst_shadowed_ni),
+
+    // from register interface
+    .re     (alert_en_shadowed_72_re),
+    .we     (alert_en_shadowed_72_gated_we),
+    .wd     (alert_en_shadowed_72_wd),
+
+    // from internal hardware
+    .de     (1'b0),
+    .d      ('0),
+
+    // to internal hardware
+    .qe     (),
+    .q      (reg2hw.alert_en_shadowed[72].q),
+    .ds     (),
+
+    // to register interface (read)
+    .qs     (alert_en_shadowed_72_qs),
+
+    // Shadow register phase. Relevant for hwext only.
+    .phase  (),
+
+    // Shadow register error conditions
+    .err_update  (alert_en_shadowed_72_update_err),
+    .err_storage (alert_en_shadowed_72_storage_err)
+  );
+
+
+  // Subregister 73 of Multireg alert_en_shadowed
+  // R[alert_en_shadowed_73]: V(False)
+  // Create REGWEN-gated WE signal
+  logic alert_en_shadowed_73_gated_we;
+  assign alert_en_shadowed_73_gated_we = alert_en_shadowed_73_we & alert_regwen_73_qs;
+  prim_subreg_shadow #(
+    .DW      (1),
+    .SwAccess(prim_subreg_pkg::SwAccessRW),
+    .RESVAL  (1'h0),
+    .Mubi    (1'b0)
+  ) u_alert_en_shadowed_73 (
+    .clk_i   (clk_i),
+    .rst_ni  (rst_ni),
+    .rst_shadowed_ni (rst_shadowed_ni),
+
+    // from register interface
+    .re     (alert_en_shadowed_73_re),
+    .we     (alert_en_shadowed_73_gated_we),
+    .wd     (alert_en_shadowed_73_wd),
+
+    // from internal hardware
+    .de     (1'b0),
+    .d      ('0),
+
+    // to internal hardware
+    .qe     (),
+    .q      (reg2hw.alert_en_shadowed[73].q),
+    .ds     (),
+
+    // to register interface (read)
+    .qs     (alert_en_shadowed_73_qs),
+
+    // Shadow register phase. Relevant for hwext only.
+    .phase  (),
+
+    // Shadow register error conditions
+    .err_update  (alert_en_shadowed_73_update_err),
+    .err_storage (alert_en_shadowed_73_storage_err)
+  );
+
+
+  // Subregister 74 of Multireg alert_en_shadowed
+  // R[alert_en_shadowed_74]: V(False)
+  // Create REGWEN-gated WE signal
+  logic alert_en_shadowed_74_gated_we;
+  assign alert_en_shadowed_74_gated_we = alert_en_shadowed_74_we & alert_regwen_74_qs;
+  prim_subreg_shadow #(
+    .DW      (1),
+    .SwAccess(prim_subreg_pkg::SwAccessRW),
+    .RESVAL  (1'h0),
+    .Mubi    (1'b0)
+  ) u_alert_en_shadowed_74 (
+    .clk_i   (clk_i),
+    .rst_ni  (rst_ni),
+    .rst_shadowed_ni (rst_shadowed_ni),
+
+    // from register interface
+    .re     (alert_en_shadowed_74_re),
+    .we     (alert_en_shadowed_74_gated_we),
+    .wd     (alert_en_shadowed_74_wd),
+
+    // from internal hardware
+    .de     (1'b0),
+    .d      ('0),
+
+    // to internal hardware
+    .qe     (),
+    .q      (reg2hw.alert_en_shadowed[74].q),
+    .ds     (),
+
+    // to register interface (read)
+    .qs     (alert_en_shadowed_74_qs),
+
+    // Shadow register phase. Relevant for hwext only.
+    .phase  (),
+
+    // Shadow register error conditions
+    .err_update  (alert_en_shadowed_74_update_err),
+    .err_storage (alert_en_shadowed_74_storage_err)
+  );
+
+
+  // Subregister 75 of Multireg alert_en_shadowed
+  // R[alert_en_shadowed_75]: V(False)
+  // Create REGWEN-gated WE signal
+  logic alert_en_shadowed_75_gated_we;
+  assign alert_en_shadowed_75_gated_we = alert_en_shadowed_75_we & alert_regwen_75_qs;
+  prim_subreg_shadow #(
+    .DW      (1),
+    .SwAccess(prim_subreg_pkg::SwAccessRW),
+    .RESVAL  (1'h0),
+    .Mubi    (1'b0)
+  ) u_alert_en_shadowed_75 (
+    .clk_i   (clk_i),
+    .rst_ni  (rst_ni),
+    .rst_shadowed_ni (rst_shadowed_ni),
+
+    // from register interface
+    .re     (alert_en_shadowed_75_re),
+    .we     (alert_en_shadowed_75_gated_we),
+    .wd     (alert_en_shadowed_75_wd),
+
+    // from internal hardware
+    .de     (1'b0),
+    .d      ('0),
+
+    // to internal hardware
+    .qe     (),
+    .q      (reg2hw.alert_en_shadowed[75].q),
+    .ds     (),
+
+    // to register interface (read)
+    .qs     (alert_en_shadowed_75_qs),
+
+    // Shadow register phase. Relevant for hwext only.
+    .phase  (),
+
+    // Shadow register error conditions
+    .err_update  (alert_en_shadowed_75_update_err),
+    .err_storage (alert_en_shadowed_75_storage_err)
+  );
+
+
+  // Subregister 76 of Multireg alert_en_shadowed
+  // R[alert_en_shadowed_76]: V(False)
+  // Create REGWEN-gated WE signal
+  logic alert_en_shadowed_76_gated_we;
+  assign alert_en_shadowed_76_gated_we = alert_en_shadowed_76_we & alert_regwen_76_qs;
+  prim_subreg_shadow #(
+    .DW      (1),
+    .SwAccess(prim_subreg_pkg::SwAccessRW),
+    .RESVAL  (1'h0),
+    .Mubi    (1'b0)
+  ) u_alert_en_shadowed_76 (
+    .clk_i   (clk_i),
+    .rst_ni  (rst_ni),
+    .rst_shadowed_ni (rst_shadowed_ni),
+
+    // from register interface
+    .re     (alert_en_shadowed_76_re),
+    .we     (alert_en_shadowed_76_gated_we),
+    .wd     (alert_en_shadowed_76_wd),
+
+    // from internal hardware
+    .de     (1'b0),
+    .d      ('0),
+
+    // to internal hardware
+    .qe     (),
+    .q      (reg2hw.alert_en_shadowed[76].q),
+    .ds     (),
+
+    // to register interface (read)
+    .qs     (alert_en_shadowed_76_qs),
+
+    // Shadow register phase. Relevant for hwext only.
+    .phase  (),
+
+    // Shadow register error conditions
+    .err_update  (alert_en_shadowed_76_update_err),
+    .err_storage (alert_en_shadowed_76_storage_err)
+  );
+
+
+  // Subregister 77 of Multireg alert_en_shadowed
+  // R[alert_en_shadowed_77]: V(False)
+  // Create REGWEN-gated WE signal
+  logic alert_en_shadowed_77_gated_we;
+  assign alert_en_shadowed_77_gated_we = alert_en_shadowed_77_we & alert_regwen_77_qs;
+  prim_subreg_shadow #(
+    .DW      (1),
+    .SwAccess(prim_subreg_pkg::SwAccessRW),
+    .RESVAL  (1'h0),
+    .Mubi    (1'b0)
+  ) u_alert_en_shadowed_77 (
+    .clk_i   (clk_i),
+    .rst_ni  (rst_ni),
+    .rst_shadowed_ni (rst_shadowed_ni),
+
+    // from register interface
+    .re     (alert_en_shadowed_77_re),
+    .we     (alert_en_shadowed_77_gated_we),
+    .wd     (alert_en_shadowed_77_wd),
+
+    // from internal hardware
+    .de     (1'b0),
+    .d      ('0),
+
+    // to internal hardware
+    .qe     (),
+    .q      (reg2hw.alert_en_shadowed[77].q),
+    .ds     (),
+
+    // to register interface (read)
+    .qs     (alert_en_shadowed_77_qs),
+
+    // Shadow register phase. Relevant for hwext only.
+    .phase  (),
+
+    // Shadow register error conditions
+    .err_update  (alert_en_shadowed_77_update_err),
+    .err_storage (alert_en_shadowed_77_storage_err)
+  );
+
+
+  // Subregister 78 of Multireg alert_en_shadowed
+  // R[alert_en_shadowed_78]: V(False)
+  // Create REGWEN-gated WE signal
+  logic alert_en_shadowed_78_gated_we;
+  assign alert_en_shadowed_78_gated_we = alert_en_shadowed_78_we & alert_regwen_78_qs;
+  prim_subreg_shadow #(
+    .DW      (1),
+    .SwAccess(prim_subreg_pkg::SwAccessRW),
+    .RESVAL  (1'h0),
+    .Mubi    (1'b0)
+  ) u_alert_en_shadowed_78 (
+    .clk_i   (clk_i),
+    .rst_ni  (rst_ni),
+    .rst_shadowed_ni (rst_shadowed_ni),
+
+    // from register interface
+    .re     (alert_en_shadowed_78_re),
+    .we     (alert_en_shadowed_78_gated_we),
+    .wd     (alert_en_shadowed_78_wd),
+
+    // from internal hardware
+    .de     (1'b0),
+    .d      ('0),
+
+    // to internal hardware
+    .qe     (),
+    .q      (reg2hw.alert_en_shadowed[78].q),
+    .ds     (),
+
+    // to register interface (read)
+    .qs     (alert_en_shadowed_78_qs),
+
+    // Shadow register phase. Relevant for hwext only.
+    .phase  (),
+
+    // Shadow register error conditions
+    .err_update  (alert_en_shadowed_78_update_err),
+    .err_storage (alert_en_shadowed_78_storage_err)
+  );
+
+
+  // Subregister 79 of Multireg alert_en_shadowed
+  // R[alert_en_shadowed_79]: V(False)
+  // Create REGWEN-gated WE signal
+  logic alert_en_shadowed_79_gated_we;
+  assign alert_en_shadowed_79_gated_we = alert_en_shadowed_79_we & alert_regwen_79_qs;
+  prim_subreg_shadow #(
+    .DW      (1),
+    .SwAccess(prim_subreg_pkg::SwAccessRW),
+    .RESVAL  (1'h0),
+    .Mubi    (1'b0)
+  ) u_alert_en_shadowed_79 (
+    .clk_i   (clk_i),
+    .rst_ni  (rst_ni),
+    .rst_shadowed_ni (rst_shadowed_ni),
+
+    // from register interface
+    .re     (alert_en_shadowed_79_re),
+    .we     (alert_en_shadowed_79_gated_we),
+    .wd     (alert_en_shadowed_79_wd),
+
+    // from internal hardware
+    .de     (1'b0),
+    .d      ('0),
+
+    // to internal hardware
+    .qe     (),
+    .q      (reg2hw.alert_en_shadowed[79].q),
+    .ds     (),
+
+    // to register interface (read)
+    .qs     (alert_en_shadowed_79_qs),
+
+    // Shadow register phase. Relevant for hwext only.
+    .phase  (),
+
+    // Shadow register error conditions
+    .err_update  (alert_en_shadowed_79_update_err),
+    .err_storage (alert_en_shadowed_79_storage_err)
+  );
+
+
+  // Subregister 80 of Multireg alert_en_shadowed
+  // R[alert_en_shadowed_80]: V(False)
+  // Create REGWEN-gated WE signal
+  logic alert_en_shadowed_80_gated_we;
+  assign alert_en_shadowed_80_gated_we = alert_en_shadowed_80_we & alert_regwen_80_qs;
+  prim_subreg_shadow #(
+    .DW      (1),
+    .SwAccess(prim_subreg_pkg::SwAccessRW),
+    .RESVAL  (1'h0),
+    .Mubi    (1'b0)
+  ) u_alert_en_shadowed_80 (
+    .clk_i   (clk_i),
+    .rst_ni  (rst_ni),
+    .rst_shadowed_ni (rst_shadowed_ni),
+
+    // from register interface
+    .re     (alert_en_shadowed_80_re),
+    .we     (alert_en_shadowed_80_gated_we),
+    .wd     (alert_en_shadowed_80_wd),
+
+    // from internal hardware
+    .de     (1'b0),
+    .d      ('0),
+
+    // to internal hardware
+    .qe     (),
+    .q      (reg2hw.alert_en_shadowed[80].q),
+    .ds     (),
+
+    // to register interface (read)
+    .qs     (alert_en_shadowed_80_qs),
+
+    // Shadow register phase. Relevant for hwext only.
+    .phase  (),
+
+    // Shadow register error conditions
+    .err_update  (alert_en_shadowed_80_update_err),
+    .err_storage (alert_en_shadowed_80_storage_err)
+  );
+
+
+  // Subregister 81 of Multireg alert_en_shadowed
+  // R[alert_en_shadowed_81]: V(False)
+  // Create REGWEN-gated WE signal
+  logic alert_en_shadowed_81_gated_we;
+  assign alert_en_shadowed_81_gated_we = alert_en_shadowed_81_we & alert_regwen_81_qs;
+  prim_subreg_shadow #(
+    .DW      (1),
+    .SwAccess(prim_subreg_pkg::SwAccessRW),
+    .RESVAL  (1'h0),
+    .Mubi    (1'b0)
+  ) u_alert_en_shadowed_81 (
+    .clk_i   (clk_i),
+    .rst_ni  (rst_ni),
+    .rst_shadowed_ni (rst_shadowed_ni),
+
+    // from register interface
+    .re     (alert_en_shadowed_81_re),
+    .we     (alert_en_shadowed_81_gated_we),
+    .wd     (alert_en_shadowed_81_wd),
+
+    // from internal hardware
+    .de     (1'b0),
+    .d      ('0),
+
+    // to internal hardware
+    .qe     (),
+    .q      (reg2hw.alert_en_shadowed[81].q),
+    .ds     (),
+
+    // to register interface (read)
+    .qs     (alert_en_shadowed_81_qs),
+
+    // Shadow register phase. Relevant for hwext only.
+    .phase  (),
+
+    // Shadow register error conditions
+    .err_update  (alert_en_shadowed_81_update_err),
+    .err_storage (alert_en_shadowed_81_storage_err)
+  );
+
+
+  // Subregister 82 of Multireg alert_en_shadowed
+  // R[alert_en_shadowed_82]: V(False)
+  // Create REGWEN-gated WE signal
+  logic alert_en_shadowed_82_gated_we;
+  assign alert_en_shadowed_82_gated_we = alert_en_shadowed_82_we & alert_regwen_82_qs;
+  prim_subreg_shadow #(
+    .DW      (1),
+    .SwAccess(prim_subreg_pkg::SwAccessRW),
+    .RESVAL  (1'h0),
+    .Mubi    (1'b0)
+  ) u_alert_en_shadowed_82 (
+    .clk_i   (clk_i),
+    .rst_ni  (rst_ni),
+    .rst_shadowed_ni (rst_shadowed_ni),
+
+    // from register interface
+    .re     (alert_en_shadowed_82_re),
+    .we     (alert_en_shadowed_82_gated_we),
+    .wd     (alert_en_shadowed_82_wd),
+
+    // from internal hardware
+    .de     (1'b0),
+    .d      ('0),
+
+    // to internal hardware
+    .qe     (),
+    .q      (reg2hw.alert_en_shadowed[82].q),
+    .ds     (),
+
+    // to register interface (read)
+    .qs     (alert_en_shadowed_82_qs),
+
+    // Shadow register phase. Relevant for hwext only.
+    .phase  (),
+
+    // Shadow register error conditions
+    .err_update  (alert_en_shadowed_82_update_err),
+    .err_storage (alert_en_shadowed_82_storage_err)
+  );
+
+
+  // Subregister 83 of Multireg alert_en_shadowed
+  // R[alert_en_shadowed_83]: V(False)
+  // Create REGWEN-gated WE signal
+  logic alert_en_shadowed_83_gated_we;
+  assign alert_en_shadowed_83_gated_we = alert_en_shadowed_83_we & alert_regwen_83_qs;
+  prim_subreg_shadow #(
+    .DW      (1),
+    .SwAccess(prim_subreg_pkg::SwAccessRW),
+    .RESVAL  (1'h0),
+    .Mubi    (1'b0)
+  ) u_alert_en_shadowed_83 (
+    .clk_i   (clk_i),
+    .rst_ni  (rst_ni),
+    .rst_shadowed_ni (rst_shadowed_ni),
+
+    // from register interface
+    .re     (alert_en_shadowed_83_re),
+    .we     (alert_en_shadowed_83_gated_we),
+    .wd     (alert_en_shadowed_83_wd),
+
+    // from internal hardware
+    .de     (1'b0),
+    .d      ('0),
+
+    // to internal hardware
+    .qe     (),
+    .q      (reg2hw.alert_en_shadowed[83].q),
+    .ds     (),
+
+    // to register interface (read)
+    .qs     (alert_en_shadowed_83_qs),
+
+    // Shadow register phase. Relevant for hwext only.
+    .phase  (),
+
+    // Shadow register error conditions
+    .err_update  (alert_en_shadowed_83_update_err),
+    .err_storage (alert_en_shadowed_83_storage_err)
+  );
+
+
+  // Subregister 84 of Multireg alert_en_shadowed
+  // R[alert_en_shadowed_84]: V(False)
+  // Create REGWEN-gated WE signal
+  logic alert_en_shadowed_84_gated_we;
+  assign alert_en_shadowed_84_gated_we = alert_en_shadowed_84_we & alert_regwen_84_qs;
+  prim_subreg_shadow #(
+    .DW      (1),
+    .SwAccess(prim_subreg_pkg::SwAccessRW),
+    .RESVAL  (1'h0),
+    .Mubi    (1'b0)
+  ) u_alert_en_shadowed_84 (
+    .clk_i   (clk_i),
+    .rst_ni  (rst_ni),
+    .rst_shadowed_ni (rst_shadowed_ni),
+
+    // from register interface
+    .re     (alert_en_shadowed_84_re),
+    .we     (alert_en_shadowed_84_gated_we),
+    .wd     (alert_en_shadowed_84_wd),
+
+    // from internal hardware
+    .de     (1'b0),
+    .d      ('0),
+
+    // to internal hardware
+    .qe     (),
+    .q      (reg2hw.alert_en_shadowed[84].q),
+    .ds     (),
+
+    // to register interface (read)
+    .qs     (alert_en_shadowed_84_qs),
+
+    // Shadow register phase. Relevant for hwext only.
+    .phase  (),
+
+    // Shadow register error conditions
+    .err_update  (alert_en_shadowed_84_update_err),
+    .err_storage (alert_en_shadowed_84_storage_err)
   );
 
 
@@ -7417,6 +10585,1482 @@ module alert_handler_reg_top (
   );
 
 
+  // Subregister 49 of Multireg alert_class_shadowed
+  // R[alert_class_shadowed_49]: V(False)
+  // Create REGWEN-gated WE signal
+  logic alert_class_shadowed_49_gated_we;
+  assign alert_class_shadowed_49_gated_we = alert_class_shadowed_49_we & alert_regwen_49_qs;
+  prim_subreg_shadow #(
+    .DW      (2),
+    .SwAccess(prim_subreg_pkg::SwAccessRW),
+    .RESVAL  (2'h0),
+    .Mubi    (1'b0)
+  ) u_alert_class_shadowed_49 (
+    .clk_i   (clk_i),
+    .rst_ni  (rst_ni),
+    .rst_shadowed_ni (rst_shadowed_ni),
+
+    // from register interface
+    .re     (alert_class_shadowed_49_re),
+    .we     (alert_class_shadowed_49_gated_we),
+    .wd     (alert_class_shadowed_49_wd),
+
+    // from internal hardware
+    .de     (1'b0),
+    .d      ('0),
+
+    // to internal hardware
+    .qe     (),
+    .q      (reg2hw.alert_class_shadowed[49].q),
+    .ds     (),
+
+    // to register interface (read)
+    .qs     (alert_class_shadowed_49_qs),
+
+    // Shadow register phase. Relevant for hwext only.
+    .phase  (),
+
+    // Shadow register error conditions
+    .err_update  (alert_class_shadowed_49_update_err),
+    .err_storage (alert_class_shadowed_49_storage_err)
+  );
+
+
+  // Subregister 50 of Multireg alert_class_shadowed
+  // R[alert_class_shadowed_50]: V(False)
+  // Create REGWEN-gated WE signal
+  logic alert_class_shadowed_50_gated_we;
+  assign alert_class_shadowed_50_gated_we = alert_class_shadowed_50_we & alert_regwen_50_qs;
+  prim_subreg_shadow #(
+    .DW      (2),
+    .SwAccess(prim_subreg_pkg::SwAccessRW),
+    .RESVAL  (2'h0),
+    .Mubi    (1'b0)
+  ) u_alert_class_shadowed_50 (
+    .clk_i   (clk_i),
+    .rst_ni  (rst_ni),
+    .rst_shadowed_ni (rst_shadowed_ni),
+
+    // from register interface
+    .re     (alert_class_shadowed_50_re),
+    .we     (alert_class_shadowed_50_gated_we),
+    .wd     (alert_class_shadowed_50_wd),
+
+    // from internal hardware
+    .de     (1'b0),
+    .d      ('0),
+
+    // to internal hardware
+    .qe     (),
+    .q      (reg2hw.alert_class_shadowed[50].q),
+    .ds     (),
+
+    // to register interface (read)
+    .qs     (alert_class_shadowed_50_qs),
+
+    // Shadow register phase. Relevant for hwext only.
+    .phase  (),
+
+    // Shadow register error conditions
+    .err_update  (alert_class_shadowed_50_update_err),
+    .err_storage (alert_class_shadowed_50_storage_err)
+  );
+
+
+  // Subregister 51 of Multireg alert_class_shadowed
+  // R[alert_class_shadowed_51]: V(False)
+  // Create REGWEN-gated WE signal
+  logic alert_class_shadowed_51_gated_we;
+  assign alert_class_shadowed_51_gated_we = alert_class_shadowed_51_we & alert_regwen_51_qs;
+  prim_subreg_shadow #(
+    .DW      (2),
+    .SwAccess(prim_subreg_pkg::SwAccessRW),
+    .RESVAL  (2'h0),
+    .Mubi    (1'b0)
+  ) u_alert_class_shadowed_51 (
+    .clk_i   (clk_i),
+    .rst_ni  (rst_ni),
+    .rst_shadowed_ni (rst_shadowed_ni),
+
+    // from register interface
+    .re     (alert_class_shadowed_51_re),
+    .we     (alert_class_shadowed_51_gated_we),
+    .wd     (alert_class_shadowed_51_wd),
+
+    // from internal hardware
+    .de     (1'b0),
+    .d      ('0),
+
+    // to internal hardware
+    .qe     (),
+    .q      (reg2hw.alert_class_shadowed[51].q),
+    .ds     (),
+
+    // to register interface (read)
+    .qs     (alert_class_shadowed_51_qs),
+
+    // Shadow register phase. Relevant for hwext only.
+    .phase  (),
+
+    // Shadow register error conditions
+    .err_update  (alert_class_shadowed_51_update_err),
+    .err_storage (alert_class_shadowed_51_storage_err)
+  );
+
+
+  // Subregister 52 of Multireg alert_class_shadowed
+  // R[alert_class_shadowed_52]: V(False)
+  // Create REGWEN-gated WE signal
+  logic alert_class_shadowed_52_gated_we;
+  assign alert_class_shadowed_52_gated_we = alert_class_shadowed_52_we & alert_regwen_52_qs;
+  prim_subreg_shadow #(
+    .DW      (2),
+    .SwAccess(prim_subreg_pkg::SwAccessRW),
+    .RESVAL  (2'h0),
+    .Mubi    (1'b0)
+  ) u_alert_class_shadowed_52 (
+    .clk_i   (clk_i),
+    .rst_ni  (rst_ni),
+    .rst_shadowed_ni (rst_shadowed_ni),
+
+    // from register interface
+    .re     (alert_class_shadowed_52_re),
+    .we     (alert_class_shadowed_52_gated_we),
+    .wd     (alert_class_shadowed_52_wd),
+
+    // from internal hardware
+    .de     (1'b0),
+    .d      ('0),
+
+    // to internal hardware
+    .qe     (),
+    .q      (reg2hw.alert_class_shadowed[52].q),
+    .ds     (),
+
+    // to register interface (read)
+    .qs     (alert_class_shadowed_52_qs),
+
+    // Shadow register phase. Relevant for hwext only.
+    .phase  (),
+
+    // Shadow register error conditions
+    .err_update  (alert_class_shadowed_52_update_err),
+    .err_storage (alert_class_shadowed_52_storage_err)
+  );
+
+
+  // Subregister 53 of Multireg alert_class_shadowed
+  // R[alert_class_shadowed_53]: V(False)
+  // Create REGWEN-gated WE signal
+  logic alert_class_shadowed_53_gated_we;
+  assign alert_class_shadowed_53_gated_we = alert_class_shadowed_53_we & alert_regwen_53_qs;
+  prim_subreg_shadow #(
+    .DW      (2),
+    .SwAccess(prim_subreg_pkg::SwAccessRW),
+    .RESVAL  (2'h0),
+    .Mubi    (1'b0)
+  ) u_alert_class_shadowed_53 (
+    .clk_i   (clk_i),
+    .rst_ni  (rst_ni),
+    .rst_shadowed_ni (rst_shadowed_ni),
+
+    // from register interface
+    .re     (alert_class_shadowed_53_re),
+    .we     (alert_class_shadowed_53_gated_we),
+    .wd     (alert_class_shadowed_53_wd),
+
+    // from internal hardware
+    .de     (1'b0),
+    .d      ('0),
+
+    // to internal hardware
+    .qe     (),
+    .q      (reg2hw.alert_class_shadowed[53].q),
+    .ds     (),
+
+    // to register interface (read)
+    .qs     (alert_class_shadowed_53_qs),
+
+    // Shadow register phase. Relevant for hwext only.
+    .phase  (),
+
+    // Shadow register error conditions
+    .err_update  (alert_class_shadowed_53_update_err),
+    .err_storage (alert_class_shadowed_53_storage_err)
+  );
+
+
+  // Subregister 54 of Multireg alert_class_shadowed
+  // R[alert_class_shadowed_54]: V(False)
+  // Create REGWEN-gated WE signal
+  logic alert_class_shadowed_54_gated_we;
+  assign alert_class_shadowed_54_gated_we = alert_class_shadowed_54_we & alert_regwen_54_qs;
+  prim_subreg_shadow #(
+    .DW      (2),
+    .SwAccess(prim_subreg_pkg::SwAccessRW),
+    .RESVAL  (2'h0),
+    .Mubi    (1'b0)
+  ) u_alert_class_shadowed_54 (
+    .clk_i   (clk_i),
+    .rst_ni  (rst_ni),
+    .rst_shadowed_ni (rst_shadowed_ni),
+
+    // from register interface
+    .re     (alert_class_shadowed_54_re),
+    .we     (alert_class_shadowed_54_gated_we),
+    .wd     (alert_class_shadowed_54_wd),
+
+    // from internal hardware
+    .de     (1'b0),
+    .d      ('0),
+
+    // to internal hardware
+    .qe     (),
+    .q      (reg2hw.alert_class_shadowed[54].q),
+    .ds     (),
+
+    // to register interface (read)
+    .qs     (alert_class_shadowed_54_qs),
+
+    // Shadow register phase. Relevant for hwext only.
+    .phase  (),
+
+    // Shadow register error conditions
+    .err_update  (alert_class_shadowed_54_update_err),
+    .err_storage (alert_class_shadowed_54_storage_err)
+  );
+
+
+  // Subregister 55 of Multireg alert_class_shadowed
+  // R[alert_class_shadowed_55]: V(False)
+  // Create REGWEN-gated WE signal
+  logic alert_class_shadowed_55_gated_we;
+  assign alert_class_shadowed_55_gated_we = alert_class_shadowed_55_we & alert_regwen_55_qs;
+  prim_subreg_shadow #(
+    .DW      (2),
+    .SwAccess(prim_subreg_pkg::SwAccessRW),
+    .RESVAL  (2'h0),
+    .Mubi    (1'b0)
+  ) u_alert_class_shadowed_55 (
+    .clk_i   (clk_i),
+    .rst_ni  (rst_ni),
+    .rst_shadowed_ni (rst_shadowed_ni),
+
+    // from register interface
+    .re     (alert_class_shadowed_55_re),
+    .we     (alert_class_shadowed_55_gated_we),
+    .wd     (alert_class_shadowed_55_wd),
+
+    // from internal hardware
+    .de     (1'b0),
+    .d      ('0),
+
+    // to internal hardware
+    .qe     (),
+    .q      (reg2hw.alert_class_shadowed[55].q),
+    .ds     (),
+
+    // to register interface (read)
+    .qs     (alert_class_shadowed_55_qs),
+
+    // Shadow register phase. Relevant for hwext only.
+    .phase  (),
+
+    // Shadow register error conditions
+    .err_update  (alert_class_shadowed_55_update_err),
+    .err_storage (alert_class_shadowed_55_storage_err)
+  );
+
+
+  // Subregister 56 of Multireg alert_class_shadowed
+  // R[alert_class_shadowed_56]: V(False)
+  // Create REGWEN-gated WE signal
+  logic alert_class_shadowed_56_gated_we;
+  assign alert_class_shadowed_56_gated_we = alert_class_shadowed_56_we & alert_regwen_56_qs;
+  prim_subreg_shadow #(
+    .DW      (2),
+    .SwAccess(prim_subreg_pkg::SwAccessRW),
+    .RESVAL  (2'h0),
+    .Mubi    (1'b0)
+  ) u_alert_class_shadowed_56 (
+    .clk_i   (clk_i),
+    .rst_ni  (rst_ni),
+    .rst_shadowed_ni (rst_shadowed_ni),
+
+    // from register interface
+    .re     (alert_class_shadowed_56_re),
+    .we     (alert_class_shadowed_56_gated_we),
+    .wd     (alert_class_shadowed_56_wd),
+
+    // from internal hardware
+    .de     (1'b0),
+    .d      ('0),
+
+    // to internal hardware
+    .qe     (),
+    .q      (reg2hw.alert_class_shadowed[56].q),
+    .ds     (),
+
+    // to register interface (read)
+    .qs     (alert_class_shadowed_56_qs),
+
+    // Shadow register phase. Relevant for hwext only.
+    .phase  (),
+
+    // Shadow register error conditions
+    .err_update  (alert_class_shadowed_56_update_err),
+    .err_storage (alert_class_shadowed_56_storage_err)
+  );
+
+
+  // Subregister 57 of Multireg alert_class_shadowed
+  // R[alert_class_shadowed_57]: V(False)
+  // Create REGWEN-gated WE signal
+  logic alert_class_shadowed_57_gated_we;
+  assign alert_class_shadowed_57_gated_we = alert_class_shadowed_57_we & alert_regwen_57_qs;
+  prim_subreg_shadow #(
+    .DW      (2),
+    .SwAccess(prim_subreg_pkg::SwAccessRW),
+    .RESVAL  (2'h0),
+    .Mubi    (1'b0)
+  ) u_alert_class_shadowed_57 (
+    .clk_i   (clk_i),
+    .rst_ni  (rst_ni),
+    .rst_shadowed_ni (rst_shadowed_ni),
+
+    // from register interface
+    .re     (alert_class_shadowed_57_re),
+    .we     (alert_class_shadowed_57_gated_we),
+    .wd     (alert_class_shadowed_57_wd),
+
+    // from internal hardware
+    .de     (1'b0),
+    .d      ('0),
+
+    // to internal hardware
+    .qe     (),
+    .q      (reg2hw.alert_class_shadowed[57].q),
+    .ds     (),
+
+    // to register interface (read)
+    .qs     (alert_class_shadowed_57_qs),
+
+    // Shadow register phase. Relevant for hwext only.
+    .phase  (),
+
+    // Shadow register error conditions
+    .err_update  (alert_class_shadowed_57_update_err),
+    .err_storage (alert_class_shadowed_57_storage_err)
+  );
+
+
+  // Subregister 58 of Multireg alert_class_shadowed
+  // R[alert_class_shadowed_58]: V(False)
+  // Create REGWEN-gated WE signal
+  logic alert_class_shadowed_58_gated_we;
+  assign alert_class_shadowed_58_gated_we = alert_class_shadowed_58_we & alert_regwen_58_qs;
+  prim_subreg_shadow #(
+    .DW      (2),
+    .SwAccess(prim_subreg_pkg::SwAccessRW),
+    .RESVAL  (2'h0),
+    .Mubi    (1'b0)
+  ) u_alert_class_shadowed_58 (
+    .clk_i   (clk_i),
+    .rst_ni  (rst_ni),
+    .rst_shadowed_ni (rst_shadowed_ni),
+
+    // from register interface
+    .re     (alert_class_shadowed_58_re),
+    .we     (alert_class_shadowed_58_gated_we),
+    .wd     (alert_class_shadowed_58_wd),
+
+    // from internal hardware
+    .de     (1'b0),
+    .d      ('0),
+
+    // to internal hardware
+    .qe     (),
+    .q      (reg2hw.alert_class_shadowed[58].q),
+    .ds     (),
+
+    // to register interface (read)
+    .qs     (alert_class_shadowed_58_qs),
+
+    // Shadow register phase. Relevant for hwext only.
+    .phase  (),
+
+    // Shadow register error conditions
+    .err_update  (alert_class_shadowed_58_update_err),
+    .err_storage (alert_class_shadowed_58_storage_err)
+  );
+
+
+  // Subregister 59 of Multireg alert_class_shadowed
+  // R[alert_class_shadowed_59]: V(False)
+  // Create REGWEN-gated WE signal
+  logic alert_class_shadowed_59_gated_we;
+  assign alert_class_shadowed_59_gated_we = alert_class_shadowed_59_we & alert_regwen_59_qs;
+  prim_subreg_shadow #(
+    .DW      (2),
+    .SwAccess(prim_subreg_pkg::SwAccessRW),
+    .RESVAL  (2'h0),
+    .Mubi    (1'b0)
+  ) u_alert_class_shadowed_59 (
+    .clk_i   (clk_i),
+    .rst_ni  (rst_ni),
+    .rst_shadowed_ni (rst_shadowed_ni),
+
+    // from register interface
+    .re     (alert_class_shadowed_59_re),
+    .we     (alert_class_shadowed_59_gated_we),
+    .wd     (alert_class_shadowed_59_wd),
+
+    // from internal hardware
+    .de     (1'b0),
+    .d      ('0),
+
+    // to internal hardware
+    .qe     (),
+    .q      (reg2hw.alert_class_shadowed[59].q),
+    .ds     (),
+
+    // to register interface (read)
+    .qs     (alert_class_shadowed_59_qs),
+
+    // Shadow register phase. Relevant for hwext only.
+    .phase  (),
+
+    // Shadow register error conditions
+    .err_update  (alert_class_shadowed_59_update_err),
+    .err_storage (alert_class_shadowed_59_storage_err)
+  );
+
+
+  // Subregister 60 of Multireg alert_class_shadowed
+  // R[alert_class_shadowed_60]: V(False)
+  // Create REGWEN-gated WE signal
+  logic alert_class_shadowed_60_gated_we;
+  assign alert_class_shadowed_60_gated_we = alert_class_shadowed_60_we & alert_regwen_60_qs;
+  prim_subreg_shadow #(
+    .DW      (2),
+    .SwAccess(prim_subreg_pkg::SwAccessRW),
+    .RESVAL  (2'h0),
+    .Mubi    (1'b0)
+  ) u_alert_class_shadowed_60 (
+    .clk_i   (clk_i),
+    .rst_ni  (rst_ni),
+    .rst_shadowed_ni (rst_shadowed_ni),
+
+    // from register interface
+    .re     (alert_class_shadowed_60_re),
+    .we     (alert_class_shadowed_60_gated_we),
+    .wd     (alert_class_shadowed_60_wd),
+
+    // from internal hardware
+    .de     (1'b0),
+    .d      ('0),
+
+    // to internal hardware
+    .qe     (),
+    .q      (reg2hw.alert_class_shadowed[60].q),
+    .ds     (),
+
+    // to register interface (read)
+    .qs     (alert_class_shadowed_60_qs),
+
+    // Shadow register phase. Relevant for hwext only.
+    .phase  (),
+
+    // Shadow register error conditions
+    .err_update  (alert_class_shadowed_60_update_err),
+    .err_storage (alert_class_shadowed_60_storage_err)
+  );
+
+
+  // Subregister 61 of Multireg alert_class_shadowed
+  // R[alert_class_shadowed_61]: V(False)
+  // Create REGWEN-gated WE signal
+  logic alert_class_shadowed_61_gated_we;
+  assign alert_class_shadowed_61_gated_we = alert_class_shadowed_61_we & alert_regwen_61_qs;
+  prim_subreg_shadow #(
+    .DW      (2),
+    .SwAccess(prim_subreg_pkg::SwAccessRW),
+    .RESVAL  (2'h0),
+    .Mubi    (1'b0)
+  ) u_alert_class_shadowed_61 (
+    .clk_i   (clk_i),
+    .rst_ni  (rst_ni),
+    .rst_shadowed_ni (rst_shadowed_ni),
+
+    // from register interface
+    .re     (alert_class_shadowed_61_re),
+    .we     (alert_class_shadowed_61_gated_we),
+    .wd     (alert_class_shadowed_61_wd),
+
+    // from internal hardware
+    .de     (1'b0),
+    .d      ('0),
+
+    // to internal hardware
+    .qe     (),
+    .q      (reg2hw.alert_class_shadowed[61].q),
+    .ds     (),
+
+    // to register interface (read)
+    .qs     (alert_class_shadowed_61_qs),
+
+    // Shadow register phase. Relevant for hwext only.
+    .phase  (),
+
+    // Shadow register error conditions
+    .err_update  (alert_class_shadowed_61_update_err),
+    .err_storage (alert_class_shadowed_61_storage_err)
+  );
+
+
+  // Subregister 62 of Multireg alert_class_shadowed
+  // R[alert_class_shadowed_62]: V(False)
+  // Create REGWEN-gated WE signal
+  logic alert_class_shadowed_62_gated_we;
+  assign alert_class_shadowed_62_gated_we = alert_class_shadowed_62_we & alert_regwen_62_qs;
+  prim_subreg_shadow #(
+    .DW      (2),
+    .SwAccess(prim_subreg_pkg::SwAccessRW),
+    .RESVAL  (2'h0),
+    .Mubi    (1'b0)
+  ) u_alert_class_shadowed_62 (
+    .clk_i   (clk_i),
+    .rst_ni  (rst_ni),
+    .rst_shadowed_ni (rst_shadowed_ni),
+
+    // from register interface
+    .re     (alert_class_shadowed_62_re),
+    .we     (alert_class_shadowed_62_gated_we),
+    .wd     (alert_class_shadowed_62_wd),
+
+    // from internal hardware
+    .de     (1'b0),
+    .d      ('0),
+
+    // to internal hardware
+    .qe     (),
+    .q      (reg2hw.alert_class_shadowed[62].q),
+    .ds     (),
+
+    // to register interface (read)
+    .qs     (alert_class_shadowed_62_qs),
+
+    // Shadow register phase. Relevant for hwext only.
+    .phase  (),
+
+    // Shadow register error conditions
+    .err_update  (alert_class_shadowed_62_update_err),
+    .err_storage (alert_class_shadowed_62_storage_err)
+  );
+
+
+  // Subregister 63 of Multireg alert_class_shadowed
+  // R[alert_class_shadowed_63]: V(False)
+  // Create REGWEN-gated WE signal
+  logic alert_class_shadowed_63_gated_we;
+  assign alert_class_shadowed_63_gated_we = alert_class_shadowed_63_we & alert_regwen_63_qs;
+  prim_subreg_shadow #(
+    .DW      (2),
+    .SwAccess(prim_subreg_pkg::SwAccessRW),
+    .RESVAL  (2'h0),
+    .Mubi    (1'b0)
+  ) u_alert_class_shadowed_63 (
+    .clk_i   (clk_i),
+    .rst_ni  (rst_ni),
+    .rst_shadowed_ni (rst_shadowed_ni),
+
+    // from register interface
+    .re     (alert_class_shadowed_63_re),
+    .we     (alert_class_shadowed_63_gated_we),
+    .wd     (alert_class_shadowed_63_wd),
+
+    // from internal hardware
+    .de     (1'b0),
+    .d      ('0),
+
+    // to internal hardware
+    .qe     (),
+    .q      (reg2hw.alert_class_shadowed[63].q),
+    .ds     (),
+
+    // to register interface (read)
+    .qs     (alert_class_shadowed_63_qs),
+
+    // Shadow register phase. Relevant for hwext only.
+    .phase  (),
+
+    // Shadow register error conditions
+    .err_update  (alert_class_shadowed_63_update_err),
+    .err_storage (alert_class_shadowed_63_storage_err)
+  );
+
+
+  // Subregister 64 of Multireg alert_class_shadowed
+  // R[alert_class_shadowed_64]: V(False)
+  // Create REGWEN-gated WE signal
+  logic alert_class_shadowed_64_gated_we;
+  assign alert_class_shadowed_64_gated_we = alert_class_shadowed_64_we & alert_regwen_64_qs;
+  prim_subreg_shadow #(
+    .DW      (2),
+    .SwAccess(prim_subreg_pkg::SwAccessRW),
+    .RESVAL  (2'h0),
+    .Mubi    (1'b0)
+  ) u_alert_class_shadowed_64 (
+    .clk_i   (clk_i),
+    .rst_ni  (rst_ni),
+    .rst_shadowed_ni (rst_shadowed_ni),
+
+    // from register interface
+    .re     (alert_class_shadowed_64_re),
+    .we     (alert_class_shadowed_64_gated_we),
+    .wd     (alert_class_shadowed_64_wd),
+
+    // from internal hardware
+    .de     (1'b0),
+    .d      ('0),
+
+    // to internal hardware
+    .qe     (),
+    .q      (reg2hw.alert_class_shadowed[64].q),
+    .ds     (),
+
+    // to register interface (read)
+    .qs     (alert_class_shadowed_64_qs),
+
+    // Shadow register phase. Relevant for hwext only.
+    .phase  (),
+
+    // Shadow register error conditions
+    .err_update  (alert_class_shadowed_64_update_err),
+    .err_storage (alert_class_shadowed_64_storage_err)
+  );
+
+
+  // Subregister 65 of Multireg alert_class_shadowed
+  // R[alert_class_shadowed_65]: V(False)
+  // Create REGWEN-gated WE signal
+  logic alert_class_shadowed_65_gated_we;
+  assign alert_class_shadowed_65_gated_we = alert_class_shadowed_65_we & alert_regwen_65_qs;
+  prim_subreg_shadow #(
+    .DW      (2),
+    .SwAccess(prim_subreg_pkg::SwAccessRW),
+    .RESVAL  (2'h0),
+    .Mubi    (1'b0)
+  ) u_alert_class_shadowed_65 (
+    .clk_i   (clk_i),
+    .rst_ni  (rst_ni),
+    .rst_shadowed_ni (rst_shadowed_ni),
+
+    // from register interface
+    .re     (alert_class_shadowed_65_re),
+    .we     (alert_class_shadowed_65_gated_we),
+    .wd     (alert_class_shadowed_65_wd),
+
+    // from internal hardware
+    .de     (1'b0),
+    .d      ('0),
+
+    // to internal hardware
+    .qe     (),
+    .q      (reg2hw.alert_class_shadowed[65].q),
+    .ds     (),
+
+    // to register interface (read)
+    .qs     (alert_class_shadowed_65_qs),
+
+    // Shadow register phase. Relevant for hwext only.
+    .phase  (),
+
+    // Shadow register error conditions
+    .err_update  (alert_class_shadowed_65_update_err),
+    .err_storage (alert_class_shadowed_65_storage_err)
+  );
+
+
+  // Subregister 66 of Multireg alert_class_shadowed
+  // R[alert_class_shadowed_66]: V(False)
+  // Create REGWEN-gated WE signal
+  logic alert_class_shadowed_66_gated_we;
+  assign alert_class_shadowed_66_gated_we = alert_class_shadowed_66_we & alert_regwen_66_qs;
+  prim_subreg_shadow #(
+    .DW      (2),
+    .SwAccess(prim_subreg_pkg::SwAccessRW),
+    .RESVAL  (2'h0),
+    .Mubi    (1'b0)
+  ) u_alert_class_shadowed_66 (
+    .clk_i   (clk_i),
+    .rst_ni  (rst_ni),
+    .rst_shadowed_ni (rst_shadowed_ni),
+
+    // from register interface
+    .re     (alert_class_shadowed_66_re),
+    .we     (alert_class_shadowed_66_gated_we),
+    .wd     (alert_class_shadowed_66_wd),
+
+    // from internal hardware
+    .de     (1'b0),
+    .d      ('0),
+
+    // to internal hardware
+    .qe     (),
+    .q      (reg2hw.alert_class_shadowed[66].q),
+    .ds     (),
+
+    // to register interface (read)
+    .qs     (alert_class_shadowed_66_qs),
+
+    // Shadow register phase. Relevant for hwext only.
+    .phase  (),
+
+    // Shadow register error conditions
+    .err_update  (alert_class_shadowed_66_update_err),
+    .err_storage (alert_class_shadowed_66_storage_err)
+  );
+
+
+  // Subregister 67 of Multireg alert_class_shadowed
+  // R[alert_class_shadowed_67]: V(False)
+  // Create REGWEN-gated WE signal
+  logic alert_class_shadowed_67_gated_we;
+  assign alert_class_shadowed_67_gated_we = alert_class_shadowed_67_we & alert_regwen_67_qs;
+  prim_subreg_shadow #(
+    .DW      (2),
+    .SwAccess(prim_subreg_pkg::SwAccessRW),
+    .RESVAL  (2'h0),
+    .Mubi    (1'b0)
+  ) u_alert_class_shadowed_67 (
+    .clk_i   (clk_i),
+    .rst_ni  (rst_ni),
+    .rst_shadowed_ni (rst_shadowed_ni),
+
+    // from register interface
+    .re     (alert_class_shadowed_67_re),
+    .we     (alert_class_shadowed_67_gated_we),
+    .wd     (alert_class_shadowed_67_wd),
+
+    // from internal hardware
+    .de     (1'b0),
+    .d      ('0),
+
+    // to internal hardware
+    .qe     (),
+    .q      (reg2hw.alert_class_shadowed[67].q),
+    .ds     (),
+
+    // to register interface (read)
+    .qs     (alert_class_shadowed_67_qs),
+
+    // Shadow register phase. Relevant for hwext only.
+    .phase  (),
+
+    // Shadow register error conditions
+    .err_update  (alert_class_shadowed_67_update_err),
+    .err_storage (alert_class_shadowed_67_storage_err)
+  );
+
+
+  // Subregister 68 of Multireg alert_class_shadowed
+  // R[alert_class_shadowed_68]: V(False)
+  // Create REGWEN-gated WE signal
+  logic alert_class_shadowed_68_gated_we;
+  assign alert_class_shadowed_68_gated_we = alert_class_shadowed_68_we & alert_regwen_68_qs;
+  prim_subreg_shadow #(
+    .DW      (2),
+    .SwAccess(prim_subreg_pkg::SwAccessRW),
+    .RESVAL  (2'h0),
+    .Mubi    (1'b0)
+  ) u_alert_class_shadowed_68 (
+    .clk_i   (clk_i),
+    .rst_ni  (rst_ni),
+    .rst_shadowed_ni (rst_shadowed_ni),
+
+    // from register interface
+    .re     (alert_class_shadowed_68_re),
+    .we     (alert_class_shadowed_68_gated_we),
+    .wd     (alert_class_shadowed_68_wd),
+
+    // from internal hardware
+    .de     (1'b0),
+    .d      ('0),
+
+    // to internal hardware
+    .qe     (),
+    .q      (reg2hw.alert_class_shadowed[68].q),
+    .ds     (),
+
+    // to register interface (read)
+    .qs     (alert_class_shadowed_68_qs),
+
+    // Shadow register phase. Relevant for hwext only.
+    .phase  (),
+
+    // Shadow register error conditions
+    .err_update  (alert_class_shadowed_68_update_err),
+    .err_storage (alert_class_shadowed_68_storage_err)
+  );
+
+
+  // Subregister 69 of Multireg alert_class_shadowed
+  // R[alert_class_shadowed_69]: V(False)
+  // Create REGWEN-gated WE signal
+  logic alert_class_shadowed_69_gated_we;
+  assign alert_class_shadowed_69_gated_we = alert_class_shadowed_69_we & alert_regwen_69_qs;
+  prim_subreg_shadow #(
+    .DW      (2),
+    .SwAccess(prim_subreg_pkg::SwAccessRW),
+    .RESVAL  (2'h0),
+    .Mubi    (1'b0)
+  ) u_alert_class_shadowed_69 (
+    .clk_i   (clk_i),
+    .rst_ni  (rst_ni),
+    .rst_shadowed_ni (rst_shadowed_ni),
+
+    // from register interface
+    .re     (alert_class_shadowed_69_re),
+    .we     (alert_class_shadowed_69_gated_we),
+    .wd     (alert_class_shadowed_69_wd),
+
+    // from internal hardware
+    .de     (1'b0),
+    .d      ('0),
+
+    // to internal hardware
+    .qe     (),
+    .q      (reg2hw.alert_class_shadowed[69].q),
+    .ds     (),
+
+    // to register interface (read)
+    .qs     (alert_class_shadowed_69_qs),
+
+    // Shadow register phase. Relevant for hwext only.
+    .phase  (),
+
+    // Shadow register error conditions
+    .err_update  (alert_class_shadowed_69_update_err),
+    .err_storage (alert_class_shadowed_69_storage_err)
+  );
+
+
+  // Subregister 70 of Multireg alert_class_shadowed
+  // R[alert_class_shadowed_70]: V(False)
+  // Create REGWEN-gated WE signal
+  logic alert_class_shadowed_70_gated_we;
+  assign alert_class_shadowed_70_gated_we = alert_class_shadowed_70_we & alert_regwen_70_qs;
+  prim_subreg_shadow #(
+    .DW      (2),
+    .SwAccess(prim_subreg_pkg::SwAccessRW),
+    .RESVAL  (2'h0),
+    .Mubi    (1'b0)
+  ) u_alert_class_shadowed_70 (
+    .clk_i   (clk_i),
+    .rst_ni  (rst_ni),
+    .rst_shadowed_ni (rst_shadowed_ni),
+
+    // from register interface
+    .re     (alert_class_shadowed_70_re),
+    .we     (alert_class_shadowed_70_gated_we),
+    .wd     (alert_class_shadowed_70_wd),
+
+    // from internal hardware
+    .de     (1'b0),
+    .d      ('0),
+
+    // to internal hardware
+    .qe     (),
+    .q      (reg2hw.alert_class_shadowed[70].q),
+    .ds     (),
+
+    // to register interface (read)
+    .qs     (alert_class_shadowed_70_qs),
+
+    // Shadow register phase. Relevant for hwext only.
+    .phase  (),
+
+    // Shadow register error conditions
+    .err_update  (alert_class_shadowed_70_update_err),
+    .err_storage (alert_class_shadowed_70_storage_err)
+  );
+
+
+  // Subregister 71 of Multireg alert_class_shadowed
+  // R[alert_class_shadowed_71]: V(False)
+  // Create REGWEN-gated WE signal
+  logic alert_class_shadowed_71_gated_we;
+  assign alert_class_shadowed_71_gated_we = alert_class_shadowed_71_we & alert_regwen_71_qs;
+  prim_subreg_shadow #(
+    .DW      (2),
+    .SwAccess(prim_subreg_pkg::SwAccessRW),
+    .RESVAL  (2'h0),
+    .Mubi    (1'b0)
+  ) u_alert_class_shadowed_71 (
+    .clk_i   (clk_i),
+    .rst_ni  (rst_ni),
+    .rst_shadowed_ni (rst_shadowed_ni),
+
+    // from register interface
+    .re     (alert_class_shadowed_71_re),
+    .we     (alert_class_shadowed_71_gated_we),
+    .wd     (alert_class_shadowed_71_wd),
+
+    // from internal hardware
+    .de     (1'b0),
+    .d      ('0),
+
+    // to internal hardware
+    .qe     (),
+    .q      (reg2hw.alert_class_shadowed[71].q),
+    .ds     (),
+
+    // to register interface (read)
+    .qs     (alert_class_shadowed_71_qs),
+
+    // Shadow register phase. Relevant for hwext only.
+    .phase  (),
+
+    // Shadow register error conditions
+    .err_update  (alert_class_shadowed_71_update_err),
+    .err_storage (alert_class_shadowed_71_storage_err)
+  );
+
+
+  // Subregister 72 of Multireg alert_class_shadowed
+  // R[alert_class_shadowed_72]: V(False)
+  // Create REGWEN-gated WE signal
+  logic alert_class_shadowed_72_gated_we;
+  assign alert_class_shadowed_72_gated_we = alert_class_shadowed_72_we & alert_regwen_72_qs;
+  prim_subreg_shadow #(
+    .DW      (2),
+    .SwAccess(prim_subreg_pkg::SwAccessRW),
+    .RESVAL  (2'h0),
+    .Mubi    (1'b0)
+  ) u_alert_class_shadowed_72 (
+    .clk_i   (clk_i),
+    .rst_ni  (rst_ni),
+    .rst_shadowed_ni (rst_shadowed_ni),
+
+    // from register interface
+    .re     (alert_class_shadowed_72_re),
+    .we     (alert_class_shadowed_72_gated_we),
+    .wd     (alert_class_shadowed_72_wd),
+
+    // from internal hardware
+    .de     (1'b0),
+    .d      ('0),
+
+    // to internal hardware
+    .qe     (),
+    .q      (reg2hw.alert_class_shadowed[72].q),
+    .ds     (),
+
+    // to register interface (read)
+    .qs     (alert_class_shadowed_72_qs),
+
+    // Shadow register phase. Relevant for hwext only.
+    .phase  (),
+
+    // Shadow register error conditions
+    .err_update  (alert_class_shadowed_72_update_err),
+    .err_storage (alert_class_shadowed_72_storage_err)
+  );
+
+
+  // Subregister 73 of Multireg alert_class_shadowed
+  // R[alert_class_shadowed_73]: V(False)
+  // Create REGWEN-gated WE signal
+  logic alert_class_shadowed_73_gated_we;
+  assign alert_class_shadowed_73_gated_we = alert_class_shadowed_73_we & alert_regwen_73_qs;
+  prim_subreg_shadow #(
+    .DW      (2),
+    .SwAccess(prim_subreg_pkg::SwAccessRW),
+    .RESVAL  (2'h0),
+    .Mubi    (1'b0)
+  ) u_alert_class_shadowed_73 (
+    .clk_i   (clk_i),
+    .rst_ni  (rst_ni),
+    .rst_shadowed_ni (rst_shadowed_ni),
+
+    // from register interface
+    .re     (alert_class_shadowed_73_re),
+    .we     (alert_class_shadowed_73_gated_we),
+    .wd     (alert_class_shadowed_73_wd),
+
+    // from internal hardware
+    .de     (1'b0),
+    .d      ('0),
+
+    // to internal hardware
+    .qe     (),
+    .q      (reg2hw.alert_class_shadowed[73].q),
+    .ds     (),
+
+    // to register interface (read)
+    .qs     (alert_class_shadowed_73_qs),
+
+    // Shadow register phase. Relevant for hwext only.
+    .phase  (),
+
+    // Shadow register error conditions
+    .err_update  (alert_class_shadowed_73_update_err),
+    .err_storage (alert_class_shadowed_73_storage_err)
+  );
+
+
+  // Subregister 74 of Multireg alert_class_shadowed
+  // R[alert_class_shadowed_74]: V(False)
+  // Create REGWEN-gated WE signal
+  logic alert_class_shadowed_74_gated_we;
+  assign alert_class_shadowed_74_gated_we = alert_class_shadowed_74_we & alert_regwen_74_qs;
+  prim_subreg_shadow #(
+    .DW      (2),
+    .SwAccess(prim_subreg_pkg::SwAccessRW),
+    .RESVAL  (2'h0),
+    .Mubi    (1'b0)
+  ) u_alert_class_shadowed_74 (
+    .clk_i   (clk_i),
+    .rst_ni  (rst_ni),
+    .rst_shadowed_ni (rst_shadowed_ni),
+
+    // from register interface
+    .re     (alert_class_shadowed_74_re),
+    .we     (alert_class_shadowed_74_gated_we),
+    .wd     (alert_class_shadowed_74_wd),
+
+    // from internal hardware
+    .de     (1'b0),
+    .d      ('0),
+
+    // to internal hardware
+    .qe     (),
+    .q      (reg2hw.alert_class_shadowed[74].q),
+    .ds     (),
+
+    // to register interface (read)
+    .qs     (alert_class_shadowed_74_qs),
+
+    // Shadow register phase. Relevant for hwext only.
+    .phase  (),
+
+    // Shadow register error conditions
+    .err_update  (alert_class_shadowed_74_update_err),
+    .err_storage (alert_class_shadowed_74_storage_err)
+  );
+
+
+  // Subregister 75 of Multireg alert_class_shadowed
+  // R[alert_class_shadowed_75]: V(False)
+  // Create REGWEN-gated WE signal
+  logic alert_class_shadowed_75_gated_we;
+  assign alert_class_shadowed_75_gated_we = alert_class_shadowed_75_we & alert_regwen_75_qs;
+  prim_subreg_shadow #(
+    .DW      (2),
+    .SwAccess(prim_subreg_pkg::SwAccessRW),
+    .RESVAL  (2'h0),
+    .Mubi    (1'b0)
+  ) u_alert_class_shadowed_75 (
+    .clk_i   (clk_i),
+    .rst_ni  (rst_ni),
+    .rst_shadowed_ni (rst_shadowed_ni),
+
+    // from register interface
+    .re     (alert_class_shadowed_75_re),
+    .we     (alert_class_shadowed_75_gated_we),
+    .wd     (alert_class_shadowed_75_wd),
+
+    // from internal hardware
+    .de     (1'b0),
+    .d      ('0),
+
+    // to internal hardware
+    .qe     (),
+    .q      (reg2hw.alert_class_shadowed[75].q),
+    .ds     (),
+
+    // to register interface (read)
+    .qs     (alert_class_shadowed_75_qs),
+
+    // Shadow register phase. Relevant for hwext only.
+    .phase  (),
+
+    // Shadow register error conditions
+    .err_update  (alert_class_shadowed_75_update_err),
+    .err_storage (alert_class_shadowed_75_storage_err)
+  );
+
+
+  // Subregister 76 of Multireg alert_class_shadowed
+  // R[alert_class_shadowed_76]: V(False)
+  // Create REGWEN-gated WE signal
+  logic alert_class_shadowed_76_gated_we;
+  assign alert_class_shadowed_76_gated_we = alert_class_shadowed_76_we & alert_regwen_76_qs;
+  prim_subreg_shadow #(
+    .DW      (2),
+    .SwAccess(prim_subreg_pkg::SwAccessRW),
+    .RESVAL  (2'h0),
+    .Mubi    (1'b0)
+  ) u_alert_class_shadowed_76 (
+    .clk_i   (clk_i),
+    .rst_ni  (rst_ni),
+    .rst_shadowed_ni (rst_shadowed_ni),
+
+    // from register interface
+    .re     (alert_class_shadowed_76_re),
+    .we     (alert_class_shadowed_76_gated_we),
+    .wd     (alert_class_shadowed_76_wd),
+
+    // from internal hardware
+    .de     (1'b0),
+    .d      ('0),
+
+    // to internal hardware
+    .qe     (),
+    .q      (reg2hw.alert_class_shadowed[76].q),
+    .ds     (),
+
+    // to register interface (read)
+    .qs     (alert_class_shadowed_76_qs),
+
+    // Shadow register phase. Relevant for hwext only.
+    .phase  (),
+
+    // Shadow register error conditions
+    .err_update  (alert_class_shadowed_76_update_err),
+    .err_storage (alert_class_shadowed_76_storage_err)
+  );
+
+
+  // Subregister 77 of Multireg alert_class_shadowed
+  // R[alert_class_shadowed_77]: V(False)
+  // Create REGWEN-gated WE signal
+  logic alert_class_shadowed_77_gated_we;
+  assign alert_class_shadowed_77_gated_we = alert_class_shadowed_77_we & alert_regwen_77_qs;
+  prim_subreg_shadow #(
+    .DW      (2),
+    .SwAccess(prim_subreg_pkg::SwAccessRW),
+    .RESVAL  (2'h0),
+    .Mubi    (1'b0)
+  ) u_alert_class_shadowed_77 (
+    .clk_i   (clk_i),
+    .rst_ni  (rst_ni),
+    .rst_shadowed_ni (rst_shadowed_ni),
+
+    // from register interface
+    .re     (alert_class_shadowed_77_re),
+    .we     (alert_class_shadowed_77_gated_we),
+    .wd     (alert_class_shadowed_77_wd),
+
+    // from internal hardware
+    .de     (1'b0),
+    .d      ('0),
+
+    // to internal hardware
+    .qe     (),
+    .q      (reg2hw.alert_class_shadowed[77].q),
+    .ds     (),
+
+    // to register interface (read)
+    .qs     (alert_class_shadowed_77_qs),
+
+    // Shadow register phase. Relevant for hwext only.
+    .phase  (),
+
+    // Shadow register error conditions
+    .err_update  (alert_class_shadowed_77_update_err),
+    .err_storage (alert_class_shadowed_77_storage_err)
+  );
+
+
+  // Subregister 78 of Multireg alert_class_shadowed
+  // R[alert_class_shadowed_78]: V(False)
+  // Create REGWEN-gated WE signal
+  logic alert_class_shadowed_78_gated_we;
+  assign alert_class_shadowed_78_gated_we = alert_class_shadowed_78_we & alert_regwen_78_qs;
+  prim_subreg_shadow #(
+    .DW      (2),
+    .SwAccess(prim_subreg_pkg::SwAccessRW),
+    .RESVAL  (2'h0),
+    .Mubi    (1'b0)
+  ) u_alert_class_shadowed_78 (
+    .clk_i   (clk_i),
+    .rst_ni  (rst_ni),
+    .rst_shadowed_ni (rst_shadowed_ni),
+
+    // from register interface
+    .re     (alert_class_shadowed_78_re),
+    .we     (alert_class_shadowed_78_gated_we),
+    .wd     (alert_class_shadowed_78_wd),
+
+    // from internal hardware
+    .de     (1'b0),
+    .d      ('0),
+
+    // to internal hardware
+    .qe     (),
+    .q      (reg2hw.alert_class_shadowed[78].q),
+    .ds     (),
+
+    // to register interface (read)
+    .qs     (alert_class_shadowed_78_qs),
+
+    // Shadow register phase. Relevant for hwext only.
+    .phase  (),
+
+    // Shadow register error conditions
+    .err_update  (alert_class_shadowed_78_update_err),
+    .err_storage (alert_class_shadowed_78_storage_err)
+  );
+
+
+  // Subregister 79 of Multireg alert_class_shadowed
+  // R[alert_class_shadowed_79]: V(False)
+  // Create REGWEN-gated WE signal
+  logic alert_class_shadowed_79_gated_we;
+  assign alert_class_shadowed_79_gated_we = alert_class_shadowed_79_we & alert_regwen_79_qs;
+  prim_subreg_shadow #(
+    .DW      (2),
+    .SwAccess(prim_subreg_pkg::SwAccessRW),
+    .RESVAL  (2'h0),
+    .Mubi    (1'b0)
+  ) u_alert_class_shadowed_79 (
+    .clk_i   (clk_i),
+    .rst_ni  (rst_ni),
+    .rst_shadowed_ni (rst_shadowed_ni),
+
+    // from register interface
+    .re     (alert_class_shadowed_79_re),
+    .we     (alert_class_shadowed_79_gated_we),
+    .wd     (alert_class_shadowed_79_wd),
+
+    // from internal hardware
+    .de     (1'b0),
+    .d      ('0),
+
+    // to internal hardware
+    .qe     (),
+    .q      (reg2hw.alert_class_shadowed[79].q),
+    .ds     (),
+
+    // to register interface (read)
+    .qs     (alert_class_shadowed_79_qs),
+
+    // Shadow register phase. Relevant for hwext only.
+    .phase  (),
+
+    // Shadow register error conditions
+    .err_update  (alert_class_shadowed_79_update_err),
+    .err_storage (alert_class_shadowed_79_storage_err)
+  );
+
+
+  // Subregister 80 of Multireg alert_class_shadowed
+  // R[alert_class_shadowed_80]: V(False)
+  // Create REGWEN-gated WE signal
+  logic alert_class_shadowed_80_gated_we;
+  assign alert_class_shadowed_80_gated_we = alert_class_shadowed_80_we & alert_regwen_80_qs;
+  prim_subreg_shadow #(
+    .DW      (2),
+    .SwAccess(prim_subreg_pkg::SwAccessRW),
+    .RESVAL  (2'h0),
+    .Mubi    (1'b0)
+  ) u_alert_class_shadowed_80 (
+    .clk_i   (clk_i),
+    .rst_ni  (rst_ni),
+    .rst_shadowed_ni (rst_shadowed_ni),
+
+    // from register interface
+    .re     (alert_class_shadowed_80_re),
+    .we     (alert_class_shadowed_80_gated_we),
+    .wd     (alert_class_shadowed_80_wd),
+
+    // from internal hardware
+    .de     (1'b0),
+    .d      ('0),
+
+    // to internal hardware
+    .qe     (),
+    .q      (reg2hw.alert_class_shadowed[80].q),
+    .ds     (),
+
+    // to register interface (read)
+    .qs     (alert_class_shadowed_80_qs),
+
+    // Shadow register phase. Relevant for hwext only.
+    .phase  (),
+
+    // Shadow register error conditions
+    .err_update  (alert_class_shadowed_80_update_err),
+    .err_storage (alert_class_shadowed_80_storage_err)
+  );
+
+
+  // Subregister 81 of Multireg alert_class_shadowed
+  // R[alert_class_shadowed_81]: V(False)
+  // Create REGWEN-gated WE signal
+  logic alert_class_shadowed_81_gated_we;
+  assign alert_class_shadowed_81_gated_we = alert_class_shadowed_81_we & alert_regwen_81_qs;
+  prim_subreg_shadow #(
+    .DW      (2),
+    .SwAccess(prim_subreg_pkg::SwAccessRW),
+    .RESVAL  (2'h0),
+    .Mubi    (1'b0)
+  ) u_alert_class_shadowed_81 (
+    .clk_i   (clk_i),
+    .rst_ni  (rst_ni),
+    .rst_shadowed_ni (rst_shadowed_ni),
+
+    // from register interface
+    .re     (alert_class_shadowed_81_re),
+    .we     (alert_class_shadowed_81_gated_we),
+    .wd     (alert_class_shadowed_81_wd),
+
+    // from internal hardware
+    .de     (1'b0),
+    .d      ('0),
+
+    // to internal hardware
+    .qe     (),
+    .q      (reg2hw.alert_class_shadowed[81].q),
+    .ds     (),
+
+    // to register interface (read)
+    .qs     (alert_class_shadowed_81_qs),
+
+    // Shadow register phase. Relevant for hwext only.
+    .phase  (),
+
+    // Shadow register error conditions
+    .err_update  (alert_class_shadowed_81_update_err),
+    .err_storage (alert_class_shadowed_81_storage_err)
+  );
+
+
+  // Subregister 82 of Multireg alert_class_shadowed
+  // R[alert_class_shadowed_82]: V(False)
+  // Create REGWEN-gated WE signal
+  logic alert_class_shadowed_82_gated_we;
+  assign alert_class_shadowed_82_gated_we = alert_class_shadowed_82_we & alert_regwen_82_qs;
+  prim_subreg_shadow #(
+    .DW      (2),
+    .SwAccess(prim_subreg_pkg::SwAccessRW),
+    .RESVAL  (2'h0),
+    .Mubi    (1'b0)
+  ) u_alert_class_shadowed_82 (
+    .clk_i   (clk_i),
+    .rst_ni  (rst_ni),
+    .rst_shadowed_ni (rst_shadowed_ni),
+
+    // from register interface
+    .re     (alert_class_shadowed_82_re),
+    .we     (alert_class_shadowed_82_gated_we),
+    .wd     (alert_class_shadowed_82_wd),
+
+    // from internal hardware
+    .de     (1'b0),
+    .d      ('0),
+
+    // to internal hardware
+    .qe     (),
+    .q      (reg2hw.alert_class_shadowed[82].q),
+    .ds     (),
+
+    // to register interface (read)
+    .qs     (alert_class_shadowed_82_qs),
+
+    // Shadow register phase. Relevant for hwext only.
+    .phase  (),
+
+    // Shadow register error conditions
+    .err_update  (alert_class_shadowed_82_update_err),
+    .err_storage (alert_class_shadowed_82_storage_err)
+  );
+
+
+  // Subregister 83 of Multireg alert_class_shadowed
+  // R[alert_class_shadowed_83]: V(False)
+  // Create REGWEN-gated WE signal
+  logic alert_class_shadowed_83_gated_we;
+  assign alert_class_shadowed_83_gated_we = alert_class_shadowed_83_we & alert_regwen_83_qs;
+  prim_subreg_shadow #(
+    .DW      (2),
+    .SwAccess(prim_subreg_pkg::SwAccessRW),
+    .RESVAL  (2'h0),
+    .Mubi    (1'b0)
+  ) u_alert_class_shadowed_83 (
+    .clk_i   (clk_i),
+    .rst_ni  (rst_ni),
+    .rst_shadowed_ni (rst_shadowed_ni),
+
+    // from register interface
+    .re     (alert_class_shadowed_83_re),
+    .we     (alert_class_shadowed_83_gated_we),
+    .wd     (alert_class_shadowed_83_wd),
+
+    // from internal hardware
+    .de     (1'b0),
+    .d      ('0),
+
+    // to internal hardware
+    .qe     (),
+    .q      (reg2hw.alert_class_shadowed[83].q),
+    .ds     (),
+
+    // to register interface (read)
+    .qs     (alert_class_shadowed_83_qs),
+
+    // Shadow register phase. Relevant for hwext only.
+    .phase  (),
+
+    // Shadow register error conditions
+    .err_update  (alert_class_shadowed_83_update_err),
+    .err_storage (alert_class_shadowed_83_storage_err)
+  );
+
+
+  // Subregister 84 of Multireg alert_class_shadowed
+  // R[alert_class_shadowed_84]: V(False)
+  // Create REGWEN-gated WE signal
+  logic alert_class_shadowed_84_gated_we;
+  assign alert_class_shadowed_84_gated_we = alert_class_shadowed_84_we & alert_regwen_84_qs;
+  prim_subreg_shadow #(
+    .DW      (2),
+    .SwAccess(prim_subreg_pkg::SwAccessRW),
+    .RESVAL  (2'h0),
+    .Mubi    (1'b0)
+  ) u_alert_class_shadowed_84 (
+    .clk_i   (clk_i),
+    .rst_ni  (rst_ni),
+    .rst_shadowed_ni (rst_shadowed_ni),
+
+    // from register interface
+    .re     (alert_class_shadowed_84_re),
+    .we     (alert_class_shadowed_84_gated_we),
+    .wd     (alert_class_shadowed_84_wd),
+
+    // from internal hardware
+    .de     (1'b0),
+    .d      ('0),
+
+    // to internal hardware
+    .qe     (),
+    .q      (reg2hw.alert_class_shadowed[84].q),
+    .ds     (),
+
+    // to register interface (read)
+    .qs     (alert_class_shadowed_84_qs),
+
+    // Shadow register phase. Relevant for hwext only.
+    .phase  (),
+
+    // Shadow register error conditions
+    .err_update  (alert_class_shadowed_84_update_err),
+    .err_storage (alert_class_shadowed_84_storage_err)
+  );
+
+
   // Subregister 0 of Multireg alert_cause
   // R[alert_cause_0]: V(False)
   prim_subreg #(
@@ -8835,6 +13479,1050 @@ module alert_handler_reg_top (
 
     // to register interface (read)
     .qs     (alert_cause_48_qs)
+  );
+
+
+  // Subregister 49 of Multireg alert_cause
+  // R[alert_cause_49]: V(False)
+  prim_subreg #(
+    .DW      (1),
+    .SwAccess(prim_subreg_pkg::SwAccessW1C),
+    .RESVAL  (1'h0),
+    .Mubi    (1'b0)
+  ) u_alert_cause_49 (
+    .clk_i   (clk_i),
+    .rst_ni  (rst_ni),
+
+    // from register interface
+    .we     (alert_cause_49_we),
+    .wd     (alert_cause_49_wd),
+
+    // from internal hardware
+    .de     (hw2reg.alert_cause[49].de),
+    .d      (hw2reg.alert_cause[49].d),
+
+    // to internal hardware
+    .qe     (),
+    .q      (reg2hw.alert_cause[49].q),
+    .ds     (),
+
+    // to register interface (read)
+    .qs     (alert_cause_49_qs)
+  );
+
+
+  // Subregister 50 of Multireg alert_cause
+  // R[alert_cause_50]: V(False)
+  prim_subreg #(
+    .DW      (1),
+    .SwAccess(prim_subreg_pkg::SwAccessW1C),
+    .RESVAL  (1'h0),
+    .Mubi    (1'b0)
+  ) u_alert_cause_50 (
+    .clk_i   (clk_i),
+    .rst_ni  (rst_ni),
+
+    // from register interface
+    .we     (alert_cause_50_we),
+    .wd     (alert_cause_50_wd),
+
+    // from internal hardware
+    .de     (hw2reg.alert_cause[50].de),
+    .d      (hw2reg.alert_cause[50].d),
+
+    // to internal hardware
+    .qe     (),
+    .q      (reg2hw.alert_cause[50].q),
+    .ds     (),
+
+    // to register interface (read)
+    .qs     (alert_cause_50_qs)
+  );
+
+
+  // Subregister 51 of Multireg alert_cause
+  // R[alert_cause_51]: V(False)
+  prim_subreg #(
+    .DW      (1),
+    .SwAccess(prim_subreg_pkg::SwAccessW1C),
+    .RESVAL  (1'h0),
+    .Mubi    (1'b0)
+  ) u_alert_cause_51 (
+    .clk_i   (clk_i),
+    .rst_ni  (rst_ni),
+
+    // from register interface
+    .we     (alert_cause_51_we),
+    .wd     (alert_cause_51_wd),
+
+    // from internal hardware
+    .de     (hw2reg.alert_cause[51].de),
+    .d      (hw2reg.alert_cause[51].d),
+
+    // to internal hardware
+    .qe     (),
+    .q      (reg2hw.alert_cause[51].q),
+    .ds     (),
+
+    // to register interface (read)
+    .qs     (alert_cause_51_qs)
+  );
+
+
+  // Subregister 52 of Multireg alert_cause
+  // R[alert_cause_52]: V(False)
+  prim_subreg #(
+    .DW      (1),
+    .SwAccess(prim_subreg_pkg::SwAccessW1C),
+    .RESVAL  (1'h0),
+    .Mubi    (1'b0)
+  ) u_alert_cause_52 (
+    .clk_i   (clk_i),
+    .rst_ni  (rst_ni),
+
+    // from register interface
+    .we     (alert_cause_52_we),
+    .wd     (alert_cause_52_wd),
+
+    // from internal hardware
+    .de     (hw2reg.alert_cause[52].de),
+    .d      (hw2reg.alert_cause[52].d),
+
+    // to internal hardware
+    .qe     (),
+    .q      (reg2hw.alert_cause[52].q),
+    .ds     (),
+
+    // to register interface (read)
+    .qs     (alert_cause_52_qs)
+  );
+
+
+  // Subregister 53 of Multireg alert_cause
+  // R[alert_cause_53]: V(False)
+  prim_subreg #(
+    .DW      (1),
+    .SwAccess(prim_subreg_pkg::SwAccessW1C),
+    .RESVAL  (1'h0),
+    .Mubi    (1'b0)
+  ) u_alert_cause_53 (
+    .clk_i   (clk_i),
+    .rst_ni  (rst_ni),
+
+    // from register interface
+    .we     (alert_cause_53_we),
+    .wd     (alert_cause_53_wd),
+
+    // from internal hardware
+    .de     (hw2reg.alert_cause[53].de),
+    .d      (hw2reg.alert_cause[53].d),
+
+    // to internal hardware
+    .qe     (),
+    .q      (reg2hw.alert_cause[53].q),
+    .ds     (),
+
+    // to register interface (read)
+    .qs     (alert_cause_53_qs)
+  );
+
+
+  // Subregister 54 of Multireg alert_cause
+  // R[alert_cause_54]: V(False)
+  prim_subreg #(
+    .DW      (1),
+    .SwAccess(prim_subreg_pkg::SwAccessW1C),
+    .RESVAL  (1'h0),
+    .Mubi    (1'b0)
+  ) u_alert_cause_54 (
+    .clk_i   (clk_i),
+    .rst_ni  (rst_ni),
+
+    // from register interface
+    .we     (alert_cause_54_we),
+    .wd     (alert_cause_54_wd),
+
+    // from internal hardware
+    .de     (hw2reg.alert_cause[54].de),
+    .d      (hw2reg.alert_cause[54].d),
+
+    // to internal hardware
+    .qe     (),
+    .q      (reg2hw.alert_cause[54].q),
+    .ds     (),
+
+    // to register interface (read)
+    .qs     (alert_cause_54_qs)
+  );
+
+
+  // Subregister 55 of Multireg alert_cause
+  // R[alert_cause_55]: V(False)
+  prim_subreg #(
+    .DW      (1),
+    .SwAccess(prim_subreg_pkg::SwAccessW1C),
+    .RESVAL  (1'h0),
+    .Mubi    (1'b0)
+  ) u_alert_cause_55 (
+    .clk_i   (clk_i),
+    .rst_ni  (rst_ni),
+
+    // from register interface
+    .we     (alert_cause_55_we),
+    .wd     (alert_cause_55_wd),
+
+    // from internal hardware
+    .de     (hw2reg.alert_cause[55].de),
+    .d      (hw2reg.alert_cause[55].d),
+
+    // to internal hardware
+    .qe     (),
+    .q      (reg2hw.alert_cause[55].q),
+    .ds     (),
+
+    // to register interface (read)
+    .qs     (alert_cause_55_qs)
+  );
+
+
+  // Subregister 56 of Multireg alert_cause
+  // R[alert_cause_56]: V(False)
+  prim_subreg #(
+    .DW      (1),
+    .SwAccess(prim_subreg_pkg::SwAccessW1C),
+    .RESVAL  (1'h0),
+    .Mubi    (1'b0)
+  ) u_alert_cause_56 (
+    .clk_i   (clk_i),
+    .rst_ni  (rst_ni),
+
+    // from register interface
+    .we     (alert_cause_56_we),
+    .wd     (alert_cause_56_wd),
+
+    // from internal hardware
+    .de     (hw2reg.alert_cause[56].de),
+    .d      (hw2reg.alert_cause[56].d),
+
+    // to internal hardware
+    .qe     (),
+    .q      (reg2hw.alert_cause[56].q),
+    .ds     (),
+
+    // to register interface (read)
+    .qs     (alert_cause_56_qs)
+  );
+
+
+  // Subregister 57 of Multireg alert_cause
+  // R[alert_cause_57]: V(False)
+  prim_subreg #(
+    .DW      (1),
+    .SwAccess(prim_subreg_pkg::SwAccessW1C),
+    .RESVAL  (1'h0),
+    .Mubi    (1'b0)
+  ) u_alert_cause_57 (
+    .clk_i   (clk_i),
+    .rst_ni  (rst_ni),
+
+    // from register interface
+    .we     (alert_cause_57_we),
+    .wd     (alert_cause_57_wd),
+
+    // from internal hardware
+    .de     (hw2reg.alert_cause[57].de),
+    .d      (hw2reg.alert_cause[57].d),
+
+    // to internal hardware
+    .qe     (),
+    .q      (reg2hw.alert_cause[57].q),
+    .ds     (),
+
+    // to register interface (read)
+    .qs     (alert_cause_57_qs)
+  );
+
+
+  // Subregister 58 of Multireg alert_cause
+  // R[alert_cause_58]: V(False)
+  prim_subreg #(
+    .DW      (1),
+    .SwAccess(prim_subreg_pkg::SwAccessW1C),
+    .RESVAL  (1'h0),
+    .Mubi    (1'b0)
+  ) u_alert_cause_58 (
+    .clk_i   (clk_i),
+    .rst_ni  (rst_ni),
+
+    // from register interface
+    .we     (alert_cause_58_we),
+    .wd     (alert_cause_58_wd),
+
+    // from internal hardware
+    .de     (hw2reg.alert_cause[58].de),
+    .d      (hw2reg.alert_cause[58].d),
+
+    // to internal hardware
+    .qe     (),
+    .q      (reg2hw.alert_cause[58].q),
+    .ds     (),
+
+    // to register interface (read)
+    .qs     (alert_cause_58_qs)
+  );
+
+
+  // Subregister 59 of Multireg alert_cause
+  // R[alert_cause_59]: V(False)
+  prim_subreg #(
+    .DW      (1),
+    .SwAccess(prim_subreg_pkg::SwAccessW1C),
+    .RESVAL  (1'h0),
+    .Mubi    (1'b0)
+  ) u_alert_cause_59 (
+    .clk_i   (clk_i),
+    .rst_ni  (rst_ni),
+
+    // from register interface
+    .we     (alert_cause_59_we),
+    .wd     (alert_cause_59_wd),
+
+    // from internal hardware
+    .de     (hw2reg.alert_cause[59].de),
+    .d      (hw2reg.alert_cause[59].d),
+
+    // to internal hardware
+    .qe     (),
+    .q      (reg2hw.alert_cause[59].q),
+    .ds     (),
+
+    // to register interface (read)
+    .qs     (alert_cause_59_qs)
+  );
+
+
+  // Subregister 60 of Multireg alert_cause
+  // R[alert_cause_60]: V(False)
+  prim_subreg #(
+    .DW      (1),
+    .SwAccess(prim_subreg_pkg::SwAccessW1C),
+    .RESVAL  (1'h0),
+    .Mubi    (1'b0)
+  ) u_alert_cause_60 (
+    .clk_i   (clk_i),
+    .rst_ni  (rst_ni),
+
+    // from register interface
+    .we     (alert_cause_60_we),
+    .wd     (alert_cause_60_wd),
+
+    // from internal hardware
+    .de     (hw2reg.alert_cause[60].de),
+    .d      (hw2reg.alert_cause[60].d),
+
+    // to internal hardware
+    .qe     (),
+    .q      (reg2hw.alert_cause[60].q),
+    .ds     (),
+
+    // to register interface (read)
+    .qs     (alert_cause_60_qs)
+  );
+
+
+  // Subregister 61 of Multireg alert_cause
+  // R[alert_cause_61]: V(False)
+  prim_subreg #(
+    .DW      (1),
+    .SwAccess(prim_subreg_pkg::SwAccessW1C),
+    .RESVAL  (1'h0),
+    .Mubi    (1'b0)
+  ) u_alert_cause_61 (
+    .clk_i   (clk_i),
+    .rst_ni  (rst_ni),
+
+    // from register interface
+    .we     (alert_cause_61_we),
+    .wd     (alert_cause_61_wd),
+
+    // from internal hardware
+    .de     (hw2reg.alert_cause[61].de),
+    .d      (hw2reg.alert_cause[61].d),
+
+    // to internal hardware
+    .qe     (),
+    .q      (reg2hw.alert_cause[61].q),
+    .ds     (),
+
+    // to register interface (read)
+    .qs     (alert_cause_61_qs)
+  );
+
+
+  // Subregister 62 of Multireg alert_cause
+  // R[alert_cause_62]: V(False)
+  prim_subreg #(
+    .DW      (1),
+    .SwAccess(prim_subreg_pkg::SwAccessW1C),
+    .RESVAL  (1'h0),
+    .Mubi    (1'b0)
+  ) u_alert_cause_62 (
+    .clk_i   (clk_i),
+    .rst_ni  (rst_ni),
+
+    // from register interface
+    .we     (alert_cause_62_we),
+    .wd     (alert_cause_62_wd),
+
+    // from internal hardware
+    .de     (hw2reg.alert_cause[62].de),
+    .d      (hw2reg.alert_cause[62].d),
+
+    // to internal hardware
+    .qe     (),
+    .q      (reg2hw.alert_cause[62].q),
+    .ds     (),
+
+    // to register interface (read)
+    .qs     (alert_cause_62_qs)
+  );
+
+
+  // Subregister 63 of Multireg alert_cause
+  // R[alert_cause_63]: V(False)
+  prim_subreg #(
+    .DW      (1),
+    .SwAccess(prim_subreg_pkg::SwAccessW1C),
+    .RESVAL  (1'h0),
+    .Mubi    (1'b0)
+  ) u_alert_cause_63 (
+    .clk_i   (clk_i),
+    .rst_ni  (rst_ni),
+
+    // from register interface
+    .we     (alert_cause_63_we),
+    .wd     (alert_cause_63_wd),
+
+    // from internal hardware
+    .de     (hw2reg.alert_cause[63].de),
+    .d      (hw2reg.alert_cause[63].d),
+
+    // to internal hardware
+    .qe     (),
+    .q      (reg2hw.alert_cause[63].q),
+    .ds     (),
+
+    // to register interface (read)
+    .qs     (alert_cause_63_qs)
+  );
+
+
+  // Subregister 64 of Multireg alert_cause
+  // R[alert_cause_64]: V(False)
+  prim_subreg #(
+    .DW      (1),
+    .SwAccess(prim_subreg_pkg::SwAccessW1C),
+    .RESVAL  (1'h0),
+    .Mubi    (1'b0)
+  ) u_alert_cause_64 (
+    .clk_i   (clk_i),
+    .rst_ni  (rst_ni),
+
+    // from register interface
+    .we     (alert_cause_64_we),
+    .wd     (alert_cause_64_wd),
+
+    // from internal hardware
+    .de     (hw2reg.alert_cause[64].de),
+    .d      (hw2reg.alert_cause[64].d),
+
+    // to internal hardware
+    .qe     (),
+    .q      (reg2hw.alert_cause[64].q),
+    .ds     (),
+
+    // to register interface (read)
+    .qs     (alert_cause_64_qs)
+  );
+
+
+  // Subregister 65 of Multireg alert_cause
+  // R[alert_cause_65]: V(False)
+  prim_subreg #(
+    .DW      (1),
+    .SwAccess(prim_subreg_pkg::SwAccessW1C),
+    .RESVAL  (1'h0),
+    .Mubi    (1'b0)
+  ) u_alert_cause_65 (
+    .clk_i   (clk_i),
+    .rst_ni  (rst_ni),
+
+    // from register interface
+    .we     (alert_cause_65_we),
+    .wd     (alert_cause_65_wd),
+
+    // from internal hardware
+    .de     (hw2reg.alert_cause[65].de),
+    .d      (hw2reg.alert_cause[65].d),
+
+    // to internal hardware
+    .qe     (),
+    .q      (reg2hw.alert_cause[65].q),
+    .ds     (),
+
+    // to register interface (read)
+    .qs     (alert_cause_65_qs)
+  );
+
+
+  // Subregister 66 of Multireg alert_cause
+  // R[alert_cause_66]: V(False)
+  prim_subreg #(
+    .DW      (1),
+    .SwAccess(prim_subreg_pkg::SwAccessW1C),
+    .RESVAL  (1'h0),
+    .Mubi    (1'b0)
+  ) u_alert_cause_66 (
+    .clk_i   (clk_i),
+    .rst_ni  (rst_ni),
+
+    // from register interface
+    .we     (alert_cause_66_we),
+    .wd     (alert_cause_66_wd),
+
+    // from internal hardware
+    .de     (hw2reg.alert_cause[66].de),
+    .d      (hw2reg.alert_cause[66].d),
+
+    // to internal hardware
+    .qe     (),
+    .q      (reg2hw.alert_cause[66].q),
+    .ds     (),
+
+    // to register interface (read)
+    .qs     (alert_cause_66_qs)
+  );
+
+
+  // Subregister 67 of Multireg alert_cause
+  // R[alert_cause_67]: V(False)
+  prim_subreg #(
+    .DW      (1),
+    .SwAccess(prim_subreg_pkg::SwAccessW1C),
+    .RESVAL  (1'h0),
+    .Mubi    (1'b0)
+  ) u_alert_cause_67 (
+    .clk_i   (clk_i),
+    .rst_ni  (rst_ni),
+
+    // from register interface
+    .we     (alert_cause_67_we),
+    .wd     (alert_cause_67_wd),
+
+    // from internal hardware
+    .de     (hw2reg.alert_cause[67].de),
+    .d      (hw2reg.alert_cause[67].d),
+
+    // to internal hardware
+    .qe     (),
+    .q      (reg2hw.alert_cause[67].q),
+    .ds     (),
+
+    // to register interface (read)
+    .qs     (alert_cause_67_qs)
+  );
+
+
+  // Subregister 68 of Multireg alert_cause
+  // R[alert_cause_68]: V(False)
+  prim_subreg #(
+    .DW      (1),
+    .SwAccess(prim_subreg_pkg::SwAccessW1C),
+    .RESVAL  (1'h0),
+    .Mubi    (1'b0)
+  ) u_alert_cause_68 (
+    .clk_i   (clk_i),
+    .rst_ni  (rst_ni),
+
+    // from register interface
+    .we     (alert_cause_68_we),
+    .wd     (alert_cause_68_wd),
+
+    // from internal hardware
+    .de     (hw2reg.alert_cause[68].de),
+    .d      (hw2reg.alert_cause[68].d),
+
+    // to internal hardware
+    .qe     (),
+    .q      (reg2hw.alert_cause[68].q),
+    .ds     (),
+
+    // to register interface (read)
+    .qs     (alert_cause_68_qs)
+  );
+
+
+  // Subregister 69 of Multireg alert_cause
+  // R[alert_cause_69]: V(False)
+  prim_subreg #(
+    .DW      (1),
+    .SwAccess(prim_subreg_pkg::SwAccessW1C),
+    .RESVAL  (1'h0),
+    .Mubi    (1'b0)
+  ) u_alert_cause_69 (
+    .clk_i   (clk_i),
+    .rst_ni  (rst_ni),
+
+    // from register interface
+    .we     (alert_cause_69_we),
+    .wd     (alert_cause_69_wd),
+
+    // from internal hardware
+    .de     (hw2reg.alert_cause[69].de),
+    .d      (hw2reg.alert_cause[69].d),
+
+    // to internal hardware
+    .qe     (),
+    .q      (reg2hw.alert_cause[69].q),
+    .ds     (),
+
+    // to register interface (read)
+    .qs     (alert_cause_69_qs)
+  );
+
+
+  // Subregister 70 of Multireg alert_cause
+  // R[alert_cause_70]: V(False)
+  prim_subreg #(
+    .DW      (1),
+    .SwAccess(prim_subreg_pkg::SwAccessW1C),
+    .RESVAL  (1'h0),
+    .Mubi    (1'b0)
+  ) u_alert_cause_70 (
+    .clk_i   (clk_i),
+    .rst_ni  (rst_ni),
+
+    // from register interface
+    .we     (alert_cause_70_we),
+    .wd     (alert_cause_70_wd),
+
+    // from internal hardware
+    .de     (hw2reg.alert_cause[70].de),
+    .d      (hw2reg.alert_cause[70].d),
+
+    // to internal hardware
+    .qe     (),
+    .q      (reg2hw.alert_cause[70].q),
+    .ds     (),
+
+    // to register interface (read)
+    .qs     (alert_cause_70_qs)
+  );
+
+
+  // Subregister 71 of Multireg alert_cause
+  // R[alert_cause_71]: V(False)
+  prim_subreg #(
+    .DW      (1),
+    .SwAccess(prim_subreg_pkg::SwAccessW1C),
+    .RESVAL  (1'h0),
+    .Mubi    (1'b0)
+  ) u_alert_cause_71 (
+    .clk_i   (clk_i),
+    .rst_ni  (rst_ni),
+
+    // from register interface
+    .we     (alert_cause_71_we),
+    .wd     (alert_cause_71_wd),
+
+    // from internal hardware
+    .de     (hw2reg.alert_cause[71].de),
+    .d      (hw2reg.alert_cause[71].d),
+
+    // to internal hardware
+    .qe     (),
+    .q      (reg2hw.alert_cause[71].q),
+    .ds     (),
+
+    // to register interface (read)
+    .qs     (alert_cause_71_qs)
+  );
+
+
+  // Subregister 72 of Multireg alert_cause
+  // R[alert_cause_72]: V(False)
+  prim_subreg #(
+    .DW      (1),
+    .SwAccess(prim_subreg_pkg::SwAccessW1C),
+    .RESVAL  (1'h0),
+    .Mubi    (1'b0)
+  ) u_alert_cause_72 (
+    .clk_i   (clk_i),
+    .rst_ni  (rst_ni),
+
+    // from register interface
+    .we     (alert_cause_72_we),
+    .wd     (alert_cause_72_wd),
+
+    // from internal hardware
+    .de     (hw2reg.alert_cause[72].de),
+    .d      (hw2reg.alert_cause[72].d),
+
+    // to internal hardware
+    .qe     (),
+    .q      (reg2hw.alert_cause[72].q),
+    .ds     (),
+
+    // to register interface (read)
+    .qs     (alert_cause_72_qs)
+  );
+
+
+  // Subregister 73 of Multireg alert_cause
+  // R[alert_cause_73]: V(False)
+  prim_subreg #(
+    .DW      (1),
+    .SwAccess(prim_subreg_pkg::SwAccessW1C),
+    .RESVAL  (1'h0),
+    .Mubi    (1'b0)
+  ) u_alert_cause_73 (
+    .clk_i   (clk_i),
+    .rst_ni  (rst_ni),
+
+    // from register interface
+    .we     (alert_cause_73_we),
+    .wd     (alert_cause_73_wd),
+
+    // from internal hardware
+    .de     (hw2reg.alert_cause[73].de),
+    .d      (hw2reg.alert_cause[73].d),
+
+    // to internal hardware
+    .qe     (),
+    .q      (reg2hw.alert_cause[73].q),
+    .ds     (),
+
+    // to register interface (read)
+    .qs     (alert_cause_73_qs)
+  );
+
+
+  // Subregister 74 of Multireg alert_cause
+  // R[alert_cause_74]: V(False)
+  prim_subreg #(
+    .DW      (1),
+    .SwAccess(prim_subreg_pkg::SwAccessW1C),
+    .RESVAL  (1'h0),
+    .Mubi    (1'b0)
+  ) u_alert_cause_74 (
+    .clk_i   (clk_i),
+    .rst_ni  (rst_ni),
+
+    // from register interface
+    .we     (alert_cause_74_we),
+    .wd     (alert_cause_74_wd),
+
+    // from internal hardware
+    .de     (hw2reg.alert_cause[74].de),
+    .d      (hw2reg.alert_cause[74].d),
+
+    // to internal hardware
+    .qe     (),
+    .q      (reg2hw.alert_cause[74].q),
+    .ds     (),
+
+    // to register interface (read)
+    .qs     (alert_cause_74_qs)
+  );
+
+
+  // Subregister 75 of Multireg alert_cause
+  // R[alert_cause_75]: V(False)
+  prim_subreg #(
+    .DW      (1),
+    .SwAccess(prim_subreg_pkg::SwAccessW1C),
+    .RESVAL  (1'h0),
+    .Mubi    (1'b0)
+  ) u_alert_cause_75 (
+    .clk_i   (clk_i),
+    .rst_ni  (rst_ni),
+
+    // from register interface
+    .we     (alert_cause_75_we),
+    .wd     (alert_cause_75_wd),
+
+    // from internal hardware
+    .de     (hw2reg.alert_cause[75].de),
+    .d      (hw2reg.alert_cause[75].d),
+
+    // to internal hardware
+    .qe     (),
+    .q      (reg2hw.alert_cause[75].q),
+    .ds     (),
+
+    // to register interface (read)
+    .qs     (alert_cause_75_qs)
+  );
+
+
+  // Subregister 76 of Multireg alert_cause
+  // R[alert_cause_76]: V(False)
+  prim_subreg #(
+    .DW      (1),
+    .SwAccess(prim_subreg_pkg::SwAccessW1C),
+    .RESVAL  (1'h0),
+    .Mubi    (1'b0)
+  ) u_alert_cause_76 (
+    .clk_i   (clk_i),
+    .rst_ni  (rst_ni),
+
+    // from register interface
+    .we     (alert_cause_76_we),
+    .wd     (alert_cause_76_wd),
+
+    // from internal hardware
+    .de     (hw2reg.alert_cause[76].de),
+    .d      (hw2reg.alert_cause[76].d),
+
+    // to internal hardware
+    .qe     (),
+    .q      (reg2hw.alert_cause[76].q),
+    .ds     (),
+
+    // to register interface (read)
+    .qs     (alert_cause_76_qs)
+  );
+
+
+  // Subregister 77 of Multireg alert_cause
+  // R[alert_cause_77]: V(False)
+  prim_subreg #(
+    .DW      (1),
+    .SwAccess(prim_subreg_pkg::SwAccessW1C),
+    .RESVAL  (1'h0),
+    .Mubi    (1'b0)
+  ) u_alert_cause_77 (
+    .clk_i   (clk_i),
+    .rst_ni  (rst_ni),
+
+    // from register interface
+    .we     (alert_cause_77_we),
+    .wd     (alert_cause_77_wd),
+
+    // from internal hardware
+    .de     (hw2reg.alert_cause[77].de),
+    .d      (hw2reg.alert_cause[77].d),
+
+    // to internal hardware
+    .qe     (),
+    .q      (reg2hw.alert_cause[77].q),
+    .ds     (),
+
+    // to register interface (read)
+    .qs     (alert_cause_77_qs)
+  );
+
+
+  // Subregister 78 of Multireg alert_cause
+  // R[alert_cause_78]: V(False)
+  prim_subreg #(
+    .DW      (1),
+    .SwAccess(prim_subreg_pkg::SwAccessW1C),
+    .RESVAL  (1'h0),
+    .Mubi    (1'b0)
+  ) u_alert_cause_78 (
+    .clk_i   (clk_i),
+    .rst_ni  (rst_ni),
+
+    // from register interface
+    .we     (alert_cause_78_we),
+    .wd     (alert_cause_78_wd),
+
+    // from internal hardware
+    .de     (hw2reg.alert_cause[78].de),
+    .d      (hw2reg.alert_cause[78].d),
+
+    // to internal hardware
+    .qe     (),
+    .q      (reg2hw.alert_cause[78].q),
+    .ds     (),
+
+    // to register interface (read)
+    .qs     (alert_cause_78_qs)
+  );
+
+
+  // Subregister 79 of Multireg alert_cause
+  // R[alert_cause_79]: V(False)
+  prim_subreg #(
+    .DW      (1),
+    .SwAccess(prim_subreg_pkg::SwAccessW1C),
+    .RESVAL  (1'h0),
+    .Mubi    (1'b0)
+  ) u_alert_cause_79 (
+    .clk_i   (clk_i),
+    .rst_ni  (rst_ni),
+
+    // from register interface
+    .we     (alert_cause_79_we),
+    .wd     (alert_cause_79_wd),
+
+    // from internal hardware
+    .de     (hw2reg.alert_cause[79].de),
+    .d      (hw2reg.alert_cause[79].d),
+
+    // to internal hardware
+    .qe     (),
+    .q      (reg2hw.alert_cause[79].q),
+    .ds     (),
+
+    // to register interface (read)
+    .qs     (alert_cause_79_qs)
+  );
+
+
+  // Subregister 80 of Multireg alert_cause
+  // R[alert_cause_80]: V(False)
+  prim_subreg #(
+    .DW      (1),
+    .SwAccess(prim_subreg_pkg::SwAccessW1C),
+    .RESVAL  (1'h0),
+    .Mubi    (1'b0)
+  ) u_alert_cause_80 (
+    .clk_i   (clk_i),
+    .rst_ni  (rst_ni),
+
+    // from register interface
+    .we     (alert_cause_80_we),
+    .wd     (alert_cause_80_wd),
+
+    // from internal hardware
+    .de     (hw2reg.alert_cause[80].de),
+    .d      (hw2reg.alert_cause[80].d),
+
+    // to internal hardware
+    .qe     (),
+    .q      (reg2hw.alert_cause[80].q),
+    .ds     (),
+
+    // to register interface (read)
+    .qs     (alert_cause_80_qs)
+  );
+
+
+  // Subregister 81 of Multireg alert_cause
+  // R[alert_cause_81]: V(False)
+  prim_subreg #(
+    .DW      (1),
+    .SwAccess(prim_subreg_pkg::SwAccessW1C),
+    .RESVAL  (1'h0),
+    .Mubi    (1'b0)
+  ) u_alert_cause_81 (
+    .clk_i   (clk_i),
+    .rst_ni  (rst_ni),
+
+    // from register interface
+    .we     (alert_cause_81_we),
+    .wd     (alert_cause_81_wd),
+
+    // from internal hardware
+    .de     (hw2reg.alert_cause[81].de),
+    .d      (hw2reg.alert_cause[81].d),
+
+    // to internal hardware
+    .qe     (),
+    .q      (reg2hw.alert_cause[81].q),
+    .ds     (),
+
+    // to register interface (read)
+    .qs     (alert_cause_81_qs)
+  );
+
+
+  // Subregister 82 of Multireg alert_cause
+  // R[alert_cause_82]: V(False)
+  prim_subreg #(
+    .DW      (1),
+    .SwAccess(prim_subreg_pkg::SwAccessW1C),
+    .RESVAL  (1'h0),
+    .Mubi    (1'b0)
+  ) u_alert_cause_82 (
+    .clk_i   (clk_i),
+    .rst_ni  (rst_ni),
+
+    // from register interface
+    .we     (alert_cause_82_we),
+    .wd     (alert_cause_82_wd),
+
+    // from internal hardware
+    .de     (hw2reg.alert_cause[82].de),
+    .d      (hw2reg.alert_cause[82].d),
+
+    // to internal hardware
+    .qe     (),
+    .q      (reg2hw.alert_cause[82].q),
+    .ds     (),
+
+    // to register interface (read)
+    .qs     (alert_cause_82_qs)
+  );
+
+
+  // Subregister 83 of Multireg alert_cause
+  // R[alert_cause_83]: V(False)
+  prim_subreg #(
+    .DW      (1),
+    .SwAccess(prim_subreg_pkg::SwAccessW1C),
+    .RESVAL  (1'h0),
+    .Mubi    (1'b0)
+  ) u_alert_cause_83 (
+    .clk_i   (clk_i),
+    .rst_ni  (rst_ni),
+
+    // from register interface
+    .we     (alert_cause_83_we),
+    .wd     (alert_cause_83_wd),
+
+    // from internal hardware
+    .de     (hw2reg.alert_cause[83].de),
+    .d      (hw2reg.alert_cause[83].d),
+
+    // to internal hardware
+    .qe     (),
+    .q      (reg2hw.alert_cause[83].q),
+    .ds     (),
+
+    // to register interface (read)
+    .qs     (alert_cause_83_qs)
+  );
+
+
+  // Subregister 84 of Multireg alert_cause
+  // R[alert_cause_84]: V(False)
+  prim_subreg #(
+    .DW      (1),
+    .SwAccess(prim_subreg_pkg::SwAccessW1C),
+    .RESVAL  (1'h0),
+    .Mubi    (1'b0)
+  ) u_alert_cause_84 (
+    .clk_i   (clk_i),
+    .rst_ni  (rst_ni),
+
+    // from register interface
+    .we     (alert_cause_84_we),
+    .wd     (alert_cause_84_wd),
+
+    // from internal hardware
+    .de     (hw2reg.alert_cause[84].de),
+    .d      (hw2reg.alert_cause[84].d),
+
+    // to internal hardware
+    .qe     (),
+    .q      (reg2hw.alert_cause[84].q),
+    .ds     (),
+
+    // to register interface (read)
+    .qs     (alert_cause_84_qs)
   );
 
 
@@ -13034,7 +18722,7 @@ module alert_handler_reg_top (
 
 
 
-  logic [285:0] addr_hit;
+  logic [429:0] addr_hit;
   always_comb begin
     addr_hit[  0] = (reg_addr == ALERT_HANDLER_INTR_STATE_OFFSET);
     addr_hit[  1] = (reg_addr == ALERT_HANDLER_INTR_ENABLE_OFFSET);
@@ -13091,237 +18779,381 @@ module alert_handler_reg_top (
     addr_hit[ 52] = (reg_addr == ALERT_HANDLER_ALERT_REGWEN_46_OFFSET);
     addr_hit[ 53] = (reg_addr == ALERT_HANDLER_ALERT_REGWEN_47_OFFSET);
     addr_hit[ 54] = (reg_addr == ALERT_HANDLER_ALERT_REGWEN_48_OFFSET);
-    addr_hit[ 55] = (reg_addr == ALERT_HANDLER_ALERT_EN_SHADOWED_0_OFFSET);
-    addr_hit[ 56] = (reg_addr == ALERT_HANDLER_ALERT_EN_SHADOWED_1_OFFSET);
-    addr_hit[ 57] = (reg_addr == ALERT_HANDLER_ALERT_EN_SHADOWED_2_OFFSET);
-    addr_hit[ 58] = (reg_addr == ALERT_HANDLER_ALERT_EN_SHADOWED_3_OFFSET);
-    addr_hit[ 59] = (reg_addr == ALERT_HANDLER_ALERT_EN_SHADOWED_4_OFFSET);
-    addr_hit[ 60] = (reg_addr == ALERT_HANDLER_ALERT_EN_SHADOWED_5_OFFSET);
-    addr_hit[ 61] = (reg_addr == ALERT_HANDLER_ALERT_EN_SHADOWED_6_OFFSET);
-    addr_hit[ 62] = (reg_addr == ALERT_HANDLER_ALERT_EN_SHADOWED_7_OFFSET);
-    addr_hit[ 63] = (reg_addr == ALERT_HANDLER_ALERT_EN_SHADOWED_8_OFFSET);
-    addr_hit[ 64] = (reg_addr == ALERT_HANDLER_ALERT_EN_SHADOWED_9_OFFSET);
-    addr_hit[ 65] = (reg_addr == ALERT_HANDLER_ALERT_EN_SHADOWED_10_OFFSET);
-    addr_hit[ 66] = (reg_addr == ALERT_HANDLER_ALERT_EN_SHADOWED_11_OFFSET);
-    addr_hit[ 67] = (reg_addr == ALERT_HANDLER_ALERT_EN_SHADOWED_12_OFFSET);
-    addr_hit[ 68] = (reg_addr == ALERT_HANDLER_ALERT_EN_SHADOWED_13_OFFSET);
-    addr_hit[ 69] = (reg_addr == ALERT_HANDLER_ALERT_EN_SHADOWED_14_OFFSET);
-    addr_hit[ 70] = (reg_addr == ALERT_HANDLER_ALERT_EN_SHADOWED_15_OFFSET);
-    addr_hit[ 71] = (reg_addr == ALERT_HANDLER_ALERT_EN_SHADOWED_16_OFFSET);
-    addr_hit[ 72] = (reg_addr == ALERT_HANDLER_ALERT_EN_SHADOWED_17_OFFSET);
-    addr_hit[ 73] = (reg_addr == ALERT_HANDLER_ALERT_EN_SHADOWED_18_OFFSET);
-    addr_hit[ 74] = (reg_addr == ALERT_HANDLER_ALERT_EN_SHADOWED_19_OFFSET);
-    addr_hit[ 75] = (reg_addr == ALERT_HANDLER_ALERT_EN_SHADOWED_20_OFFSET);
-    addr_hit[ 76] = (reg_addr == ALERT_HANDLER_ALERT_EN_SHADOWED_21_OFFSET);
-    addr_hit[ 77] = (reg_addr == ALERT_HANDLER_ALERT_EN_SHADOWED_22_OFFSET);
-    addr_hit[ 78] = (reg_addr == ALERT_HANDLER_ALERT_EN_SHADOWED_23_OFFSET);
-    addr_hit[ 79] = (reg_addr == ALERT_HANDLER_ALERT_EN_SHADOWED_24_OFFSET);
-    addr_hit[ 80] = (reg_addr == ALERT_HANDLER_ALERT_EN_SHADOWED_25_OFFSET);
-    addr_hit[ 81] = (reg_addr == ALERT_HANDLER_ALERT_EN_SHADOWED_26_OFFSET);
-    addr_hit[ 82] = (reg_addr == ALERT_HANDLER_ALERT_EN_SHADOWED_27_OFFSET);
-    addr_hit[ 83] = (reg_addr == ALERT_HANDLER_ALERT_EN_SHADOWED_28_OFFSET);
-    addr_hit[ 84] = (reg_addr == ALERT_HANDLER_ALERT_EN_SHADOWED_29_OFFSET);
-    addr_hit[ 85] = (reg_addr == ALERT_HANDLER_ALERT_EN_SHADOWED_30_OFFSET);
-    addr_hit[ 86] = (reg_addr == ALERT_HANDLER_ALERT_EN_SHADOWED_31_OFFSET);
-    addr_hit[ 87] = (reg_addr == ALERT_HANDLER_ALERT_EN_SHADOWED_32_OFFSET);
-    addr_hit[ 88] = (reg_addr == ALERT_HANDLER_ALERT_EN_SHADOWED_33_OFFSET);
-    addr_hit[ 89] = (reg_addr == ALERT_HANDLER_ALERT_EN_SHADOWED_34_OFFSET);
-    addr_hit[ 90] = (reg_addr == ALERT_HANDLER_ALERT_EN_SHADOWED_35_OFFSET);
-    addr_hit[ 91] = (reg_addr == ALERT_HANDLER_ALERT_EN_SHADOWED_36_OFFSET);
-    addr_hit[ 92] = (reg_addr == ALERT_HANDLER_ALERT_EN_SHADOWED_37_OFFSET);
-    addr_hit[ 93] = (reg_addr == ALERT_HANDLER_ALERT_EN_SHADOWED_38_OFFSET);
-    addr_hit[ 94] = (reg_addr == ALERT_HANDLER_ALERT_EN_SHADOWED_39_OFFSET);
-    addr_hit[ 95] = (reg_addr == ALERT_HANDLER_ALERT_EN_SHADOWED_40_OFFSET);
-    addr_hit[ 96] = (reg_addr == ALERT_HANDLER_ALERT_EN_SHADOWED_41_OFFSET);
-    addr_hit[ 97] = (reg_addr == ALERT_HANDLER_ALERT_EN_SHADOWED_42_OFFSET);
-    addr_hit[ 98] = (reg_addr == ALERT_HANDLER_ALERT_EN_SHADOWED_43_OFFSET);
-    addr_hit[ 99] = (reg_addr == ALERT_HANDLER_ALERT_EN_SHADOWED_44_OFFSET);
-    addr_hit[100] = (reg_addr == ALERT_HANDLER_ALERT_EN_SHADOWED_45_OFFSET);
-    addr_hit[101] = (reg_addr == ALERT_HANDLER_ALERT_EN_SHADOWED_46_OFFSET);
-    addr_hit[102] = (reg_addr == ALERT_HANDLER_ALERT_EN_SHADOWED_47_OFFSET);
-    addr_hit[103] = (reg_addr == ALERT_HANDLER_ALERT_EN_SHADOWED_48_OFFSET);
-    addr_hit[104] = (reg_addr == ALERT_HANDLER_ALERT_CLASS_SHADOWED_0_OFFSET);
-    addr_hit[105] = (reg_addr == ALERT_HANDLER_ALERT_CLASS_SHADOWED_1_OFFSET);
-    addr_hit[106] = (reg_addr == ALERT_HANDLER_ALERT_CLASS_SHADOWED_2_OFFSET);
-    addr_hit[107] = (reg_addr == ALERT_HANDLER_ALERT_CLASS_SHADOWED_3_OFFSET);
-    addr_hit[108] = (reg_addr == ALERT_HANDLER_ALERT_CLASS_SHADOWED_4_OFFSET);
-    addr_hit[109] = (reg_addr == ALERT_HANDLER_ALERT_CLASS_SHADOWED_5_OFFSET);
-    addr_hit[110] = (reg_addr == ALERT_HANDLER_ALERT_CLASS_SHADOWED_6_OFFSET);
-    addr_hit[111] = (reg_addr == ALERT_HANDLER_ALERT_CLASS_SHADOWED_7_OFFSET);
-    addr_hit[112] = (reg_addr == ALERT_HANDLER_ALERT_CLASS_SHADOWED_8_OFFSET);
-    addr_hit[113] = (reg_addr == ALERT_HANDLER_ALERT_CLASS_SHADOWED_9_OFFSET);
-    addr_hit[114] = (reg_addr == ALERT_HANDLER_ALERT_CLASS_SHADOWED_10_OFFSET);
-    addr_hit[115] = (reg_addr == ALERT_HANDLER_ALERT_CLASS_SHADOWED_11_OFFSET);
-    addr_hit[116] = (reg_addr == ALERT_HANDLER_ALERT_CLASS_SHADOWED_12_OFFSET);
-    addr_hit[117] = (reg_addr == ALERT_HANDLER_ALERT_CLASS_SHADOWED_13_OFFSET);
-    addr_hit[118] = (reg_addr == ALERT_HANDLER_ALERT_CLASS_SHADOWED_14_OFFSET);
-    addr_hit[119] = (reg_addr == ALERT_HANDLER_ALERT_CLASS_SHADOWED_15_OFFSET);
-    addr_hit[120] = (reg_addr == ALERT_HANDLER_ALERT_CLASS_SHADOWED_16_OFFSET);
-    addr_hit[121] = (reg_addr == ALERT_HANDLER_ALERT_CLASS_SHADOWED_17_OFFSET);
-    addr_hit[122] = (reg_addr == ALERT_HANDLER_ALERT_CLASS_SHADOWED_18_OFFSET);
-    addr_hit[123] = (reg_addr == ALERT_HANDLER_ALERT_CLASS_SHADOWED_19_OFFSET);
-    addr_hit[124] = (reg_addr == ALERT_HANDLER_ALERT_CLASS_SHADOWED_20_OFFSET);
-    addr_hit[125] = (reg_addr == ALERT_HANDLER_ALERT_CLASS_SHADOWED_21_OFFSET);
-    addr_hit[126] = (reg_addr == ALERT_HANDLER_ALERT_CLASS_SHADOWED_22_OFFSET);
-    addr_hit[127] = (reg_addr == ALERT_HANDLER_ALERT_CLASS_SHADOWED_23_OFFSET);
-    addr_hit[128] = (reg_addr == ALERT_HANDLER_ALERT_CLASS_SHADOWED_24_OFFSET);
-    addr_hit[129] = (reg_addr == ALERT_HANDLER_ALERT_CLASS_SHADOWED_25_OFFSET);
-    addr_hit[130] = (reg_addr == ALERT_HANDLER_ALERT_CLASS_SHADOWED_26_OFFSET);
-    addr_hit[131] = (reg_addr == ALERT_HANDLER_ALERT_CLASS_SHADOWED_27_OFFSET);
-    addr_hit[132] = (reg_addr == ALERT_HANDLER_ALERT_CLASS_SHADOWED_28_OFFSET);
-    addr_hit[133] = (reg_addr == ALERT_HANDLER_ALERT_CLASS_SHADOWED_29_OFFSET);
-    addr_hit[134] = (reg_addr == ALERT_HANDLER_ALERT_CLASS_SHADOWED_30_OFFSET);
-    addr_hit[135] = (reg_addr == ALERT_HANDLER_ALERT_CLASS_SHADOWED_31_OFFSET);
-    addr_hit[136] = (reg_addr == ALERT_HANDLER_ALERT_CLASS_SHADOWED_32_OFFSET);
-    addr_hit[137] = (reg_addr == ALERT_HANDLER_ALERT_CLASS_SHADOWED_33_OFFSET);
-    addr_hit[138] = (reg_addr == ALERT_HANDLER_ALERT_CLASS_SHADOWED_34_OFFSET);
-    addr_hit[139] = (reg_addr == ALERT_HANDLER_ALERT_CLASS_SHADOWED_35_OFFSET);
-    addr_hit[140] = (reg_addr == ALERT_HANDLER_ALERT_CLASS_SHADOWED_36_OFFSET);
-    addr_hit[141] = (reg_addr == ALERT_HANDLER_ALERT_CLASS_SHADOWED_37_OFFSET);
-    addr_hit[142] = (reg_addr == ALERT_HANDLER_ALERT_CLASS_SHADOWED_38_OFFSET);
-    addr_hit[143] = (reg_addr == ALERT_HANDLER_ALERT_CLASS_SHADOWED_39_OFFSET);
-    addr_hit[144] = (reg_addr == ALERT_HANDLER_ALERT_CLASS_SHADOWED_40_OFFSET);
-    addr_hit[145] = (reg_addr == ALERT_HANDLER_ALERT_CLASS_SHADOWED_41_OFFSET);
-    addr_hit[146] = (reg_addr == ALERT_HANDLER_ALERT_CLASS_SHADOWED_42_OFFSET);
-    addr_hit[147] = (reg_addr == ALERT_HANDLER_ALERT_CLASS_SHADOWED_43_OFFSET);
-    addr_hit[148] = (reg_addr == ALERT_HANDLER_ALERT_CLASS_SHADOWED_44_OFFSET);
-    addr_hit[149] = (reg_addr == ALERT_HANDLER_ALERT_CLASS_SHADOWED_45_OFFSET);
-    addr_hit[150] = (reg_addr == ALERT_HANDLER_ALERT_CLASS_SHADOWED_46_OFFSET);
-    addr_hit[151] = (reg_addr == ALERT_HANDLER_ALERT_CLASS_SHADOWED_47_OFFSET);
-    addr_hit[152] = (reg_addr == ALERT_HANDLER_ALERT_CLASS_SHADOWED_48_OFFSET);
-    addr_hit[153] = (reg_addr == ALERT_HANDLER_ALERT_CAUSE_0_OFFSET);
-    addr_hit[154] = (reg_addr == ALERT_HANDLER_ALERT_CAUSE_1_OFFSET);
-    addr_hit[155] = (reg_addr == ALERT_HANDLER_ALERT_CAUSE_2_OFFSET);
-    addr_hit[156] = (reg_addr == ALERT_HANDLER_ALERT_CAUSE_3_OFFSET);
-    addr_hit[157] = (reg_addr == ALERT_HANDLER_ALERT_CAUSE_4_OFFSET);
-    addr_hit[158] = (reg_addr == ALERT_HANDLER_ALERT_CAUSE_5_OFFSET);
-    addr_hit[159] = (reg_addr == ALERT_HANDLER_ALERT_CAUSE_6_OFFSET);
-    addr_hit[160] = (reg_addr == ALERT_HANDLER_ALERT_CAUSE_7_OFFSET);
-    addr_hit[161] = (reg_addr == ALERT_HANDLER_ALERT_CAUSE_8_OFFSET);
-    addr_hit[162] = (reg_addr == ALERT_HANDLER_ALERT_CAUSE_9_OFFSET);
-    addr_hit[163] = (reg_addr == ALERT_HANDLER_ALERT_CAUSE_10_OFFSET);
-    addr_hit[164] = (reg_addr == ALERT_HANDLER_ALERT_CAUSE_11_OFFSET);
-    addr_hit[165] = (reg_addr == ALERT_HANDLER_ALERT_CAUSE_12_OFFSET);
-    addr_hit[166] = (reg_addr == ALERT_HANDLER_ALERT_CAUSE_13_OFFSET);
-    addr_hit[167] = (reg_addr == ALERT_HANDLER_ALERT_CAUSE_14_OFFSET);
-    addr_hit[168] = (reg_addr == ALERT_HANDLER_ALERT_CAUSE_15_OFFSET);
-    addr_hit[169] = (reg_addr == ALERT_HANDLER_ALERT_CAUSE_16_OFFSET);
-    addr_hit[170] = (reg_addr == ALERT_HANDLER_ALERT_CAUSE_17_OFFSET);
-    addr_hit[171] = (reg_addr == ALERT_HANDLER_ALERT_CAUSE_18_OFFSET);
-    addr_hit[172] = (reg_addr == ALERT_HANDLER_ALERT_CAUSE_19_OFFSET);
-    addr_hit[173] = (reg_addr == ALERT_HANDLER_ALERT_CAUSE_20_OFFSET);
-    addr_hit[174] = (reg_addr == ALERT_HANDLER_ALERT_CAUSE_21_OFFSET);
-    addr_hit[175] = (reg_addr == ALERT_HANDLER_ALERT_CAUSE_22_OFFSET);
-    addr_hit[176] = (reg_addr == ALERT_HANDLER_ALERT_CAUSE_23_OFFSET);
-    addr_hit[177] = (reg_addr == ALERT_HANDLER_ALERT_CAUSE_24_OFFSET);
-    addr_hit[178] = (reg_addr == ALERT_HANDLER_ALERT_CAUSE_25_OFFSET);
-    addr_hit[179] = (reg_addr == ALERT_HANDLER_ALERT_CAUSE_26_OFFSET);
-    addr_hit[180] = (reg_addr == ALERT_HANDLER_ALERT_CAUSE_27_OFFSET);
-    addr_hit[181] = (reg_addr == ALERT_HANDLER_ALERT_CAUSE_28_OFFSET);
-    addr_hit[182] = (reg_addr == ALERT_HANDLER_ALERT_CAUSE_29_OFFSET);
-    addr_hit[183] = (reg_addr == ALERT_HANDLER_ALERT_CAUSE_30_OFFSET);
-    addr_hit[184] = (reg_addr == ALERT_HANDLER_ALERT_CAUSE_31_OFFSET);
-    addr_hit[185] = (reg_addr == ALERT_HANDLER_ALERT_CAUSE_32_OFFSET);
-    addr_hit[186] = (reg_addr == ALERT_HANDLER_ALERT_CAUSE_33_OFFSET);
-    addr_hit[187] = (reg_addr == ALERT_HANDLER_ALERT_CAUSE_34_OFFSET);
-    addr_hit[188] = (reg_addr == ALERT_HANDLER_ALERT_CAUSE_35_OFFSET);
-    addr_hit[189] = (reg_addr == ALERT_HANDLER_ALERT_CAUSE_36_OFFSET);
-    addr_hit[190] = (reg_addr == ALERT_HANDLER_ALERT_CAUSE_37_OFFSET);
-    addr_hit[191] = (reg_addr == ALERT_HANDLER_ALERT_CAUSE_38_OFFSET);
-    addr_hit[192] = (reg_addr == ALERT_HANDLER_ALERT_CAUSE_39_OFFSET);
-    addr_hit[193] = (reg_addr == ALERT_HANDLER_ALERT_CAUSE_40_OFFSET);
-    addr_hit[194] = (reg_addr == ALERT_HANDLER_ALERT_CAUSE_41_OFFSET);
-    addr_hit[195] = (reg_addr == ALERT_HANDLER_ALERT_CAUSE_42_OFFSET);
-    addr_hit[196] = (reg_addr == ALERT_HANDLER_ALERT_CAUSE_43_OFFSET);
-    addr_hit[197] = (reg_addr == ALERT_HANDLER_ALERT_CAUSE_44_OFFSET);
-    addr_hit[198] = (reg_addr == ALERT_HANDLER_ALERT_CAUSE_45_OFFSET);
-    addr_hit[199] = (reg_addr == ALERT_HANDLER_ALERT_CAUSE_46_OFFSET);
-    addr_hit[200] = (reg_addr == ALERT_HANDLER_ALERT_CAUSE_47_OFFSET);
-    addr_hit[201] = (reg_addr == ALERT_HANDLER_ALERT_CAUSE_48_OFFSET);
-    addr_hit[202] = (reg_addr == ALERT_HANDLER_LOC_ALERT_REGWEN_0_OFFSET);
-    addr_hit[203] = (reg_addr == ALERT_HANDLER_LOC_ALERT_REGWEN_1_OFFSET);
-    addr_hit[204] = (reg_addr == ALERT_HANDLER_LOC_ALERT_REGWEN_2_OFFSET);
-    addr_hit[205] = (reg_addr == ALERT_HANDLER_LOC_ALERT_REGWEN_3_OFFSET);
-    addr_hit[206] = (reg_addr == ALERT_HANDLER_LOC_ALERT_REGWEN_4_OFFSET);
-    addr_hit[207] = (reg_addr == ALERT_HANDLER_LOC_ALERT_REGWEN_5_OFFSET);
-    addr_hit[208] = (reg_addr == ALERT_HANDLER_LOC_ALERT_REGWEN_6_OFFSET);
-    addr_hit[209] = (reg_addr == ALERT_HANDLER_LOC_ALERT_EN_SHADOWED_0_OFFSET);
-    addr_hit[210] = (reg_addr == ALERT_HANDLER_LOC_ALERT_EN_SHADOWED_1_OFFSET);
-    addr_hit[211] = (reg_addr == ALERT_HANDLER_LOC_ALERT_EN_SHADOWED_2_OFFSET);
-    addr_hit[212] = (reg_addr == ALERT_HANDLER_LOC_ALERT_EN_SHADOWED_3_OFFSET);
-    addr_hit[213] = (reg_addr == ALERT_HANDLER_LOC_ALERT_EN_SHADOWED_4_OFFSET);
-    addr_hit[214] = (reg_addr == ALERT_HANDLER_LOC_ALERT_EN_SHADOWED_5_OFFSET);
-    addr_hit[215] = (reg_addr == ALERT_HANDLER_LOC_ALERT_EN_SHADOWED_6_OFFSET);
-    addr_hit[216] = (reg_addr == ALERT_HANDLER_LOC_ALERT_CLASS_SHADOWED_0_OFFSET);
-    addr_hit[217] = (reg_addr == ALERT_HANDLER_LOC_ALERT_CLASS_SHADOWED_1_OFFSET);
-    addr_hit[218] = (reg_addr == ALERT_HANDLER_LOC_ALERT_CLASS_SHADOWED_2_OFFSET);
-    addr_hit[219] = (reg_addr == ALERT_HANDLER_LOC_ALERT_CLASS_SHADOWED_3_OFFSET);
-    addr_hit[220] = (reg_addr == ALERT_HANDLER_LOC_ALERT_CLASS_SHADOWED_4_OFFSET);
-    addr_hit[221] = (reg_addr == ALERT_HANDLER_LOC_ALERT_CLASS_SHADOWED_5_OFFSET);
-    addr_hit[222] = (reg_addr == ALERT_HANDLER_LOC_ALERT_CLASS_SHADOWED_6_OFFSET);
-    addr_hit[223] = (reg_addr == ALERT_HANDLER_LOC_ALERT_CAUSE_0_OFFSET);
-    addr_hit[224] = (reg_addr == ALERT_HANDLER_LOC_ALERT_CAUSE_1_OFFSET);
-    addr_hit[225] = (reg_addr == ALERT_HANDLER_LOC_ALERT_CAUSE_2_OFFSET);
-    addr_hit[226] = (reg_addr == ALERT_HANDLER_LOC_ALERT_CAUSE_3_OFFSET);
-    addr_hit[227] = (reg_addr == ALERT_HANDLER_LOC_ALERT_CAUSE_4_OFFSET);
-    addr_hit[228] = (reg_addr == ALERT_HANDLER_LOC_ALERT_CAUSE_5_OFFSET);
-    addr_hit[229] = (reg_addr == ALERT_HANDLER_LOC_ALERT_CAUSE_6_OFFSET);
-    addr_hit[230] = (reg_addr == ALERT_HANDLER_CLASSA_REGWEN_OFFSET);
-    addr_hit[231] = (reg_addr == ALERT_HANDLER_CLASSA_CTRL_SHADOWED_OFFSET);
-    addr_hit[232] = (reg_addr == ALERT_HANDLER_CLASSA_CLR_REGWEN_OFFSET);
-    addr_hit[233] = (reg_addr == ALERT_HANDLER_CLASSA_CLR_SHADOWED_OFFSET);
-    addr_hit[234] = (reg_addr == ALERT_HANDLER_CLASSA_ACCUM_CNT_OFFSET);
-    addr_hit[235] = (reg_addr == ALERT_HANDLER_CLASSA_ACCUM_THRESH_SHADOWED_OFFSET);
-    addr_hit[236] = (reg_addr == ALERT_HANDLER_CLASSA_TIMEOUT_CYC_SHADOWED_OFFSET);
-    addr_hit[237] = (reg_addr == ALERT_HANDLER_CLASSA_CRASHDUMP_TRIGGER_SHADOWED_OFFSET);
-    addr_hit[238] = (reg_addr == ALERT_HANDLER_CLASSA_PHASE0_CYC_SHADOWED_OFFSET);
-    addr_hit[239] = (reg_addr == ALERT_HANDLER_CLASSA_PHASE1_CYC_SHADOWED_OFFSET);
-    addr_hit[240] = (reg_addr == ALERT_HANDLER_CLASSA_PHASE2_CYC_SHADOWED_OFFSET);
-    addr_hit[241] = (reg_addr == ALERT_HANDLER_CLASSA_PHASE3_CYC_SHADOWED_OFFSET);
-    addr_hit[242] = (reg_addr == ALERT_HANDLER_CLASSA_ESC_CNT_OFFSET);
-    addr_hit[243] = (reg_addr == ALERT_HANDLER_CLASSA_STATE_OFFSET);
-    addr_hit[244] = (reg_addr == ALERT_HANDLER_CLASSB_REGWEN_OFFSET);
-    addr_hit[245] = (reg_addr == ALERT_HANDLER_CLASSB_CTRL_SHADOWED_OFFSET);
-    addr_hit[246] = (reg_addr == ALERT_HANDLER_CLASSB_CLR_REGWEN_OFFSET);
-    addr_hit[247] = (reg_addr == ALERT_HANDLER_CLASSB_CLR_SHADOWED_OFFSET);
-    addr_hit[248] = (reg_addr == ALERT_HANDLER_CLASSB_ACCUM_CNT_OFFSET);
-    addr_hit[249] = (reg_addr == ALERT_HANDLER_CLASSB_ACCUM_THRESH_SHADOWED_OFFSET);
-    addr_hit[250] = (reg_addr == ALERT_HANDLER_CLASSB_TIMEOUT_CYC_SHADOWED_OFFSET);
-    addr_hit[251] = (reg_addr == ALERT_HANDLER_CLASSB_CRASHDUMP_TRIGGER_SHADOWED_OFFSET);
-    addr_hit[252] = (reg_addr == ALERT_HANDLER_CLASSB_PHASE0_CYC_SHADOWED_OFFSET);
-    addr_hit[253] = (reg_addr == ALERT_HANDLER_CLASSB_PHASE1_CYC_SHADOWED_OFFSET);
-    addr_hit[254] = (reg_addr == ALERT_HANDLER_CLASSB_PHASE2_CYC_SHADOWED_OFFSET);
-    addr_hit[255] = (reg_addr == ALERT_HANDLER_CLASSB_PHASE3_CYC_SHADOWED_OFFSET);
-    addr_hit[256] = (reg_addr == ALERT_HANDLER_CLASSB_ESC_CNT_OFFSET);
-    addr_hit[257] = (reg_addr == ALERT_HANDLER_CLASSB_STATE_OFFSET);
-    addr_hit[258] = (reg_addr == ALERT_HANDLER_CLASSC_REGWEN_OFFSET);
-    addr_hit[259] = (reg_addr == ALERT_HANDLER_CLASSC_CTRL_SHADOWED_OFFSET);
-    addr_hit[260] = (reg_addr == ALERT_HANDLER_CLASSC_CLR_REGWEN_OFFSET);
-    addr_hit[261] = (reg_addr == ALERT_HANDLER_CLASSC_CLR_SHADOWED_OFFSET);
-    addr_hit[262] = (reg_addr == ALERT_HANDLER_CLASSC_ACCUM_CNT_OFFSET);
-    addr_hit[263] = (reg_addr == ALERT_HANDLER_CLASSC_ACCUM_THRESH_SHADOWED_OFFSET);
-    addr_hit[264] = (reg_addr == ALERT_HANDLER_CLASSC_TIMEOUT_CYC_SHADOWED_OFFSET);
-    addr_hit[265] = (reg_addr == ALERT_HANDLER_CLASSC_CRASHDUMP_TRIGGER_SHADOWED_OFFSET);
-    addr_hit[266] = (reg_addr == ALERT_HANDLER_CLASSC_PHASE0_CYC_SHADOWED_OFFSET);
-    addr_hit[267] = (reg_addr == ALERT_HANDLER_CLASSC_PHASE1_CYC_SHADOWED_OFFSET);
-    addr_hit[268] = (reg_addr == ALERT_HANDLER_CLASSC_PHASE2_CYC_SHADOWED_OFFSET);
-    addr_hit[269] = (reg_addr == ALERT_HANDLER_CLASSC_PHASE3_CYC_SHADOWED_OFFSET);
-    addr_hit[270] = (reg_addr == ALERT_HANDLER_CLASSC_ESC_CNT_OFFSET);
-    addr_hit[271] = (reg_addr == ALERT_HANDLER_CLASSC_STATE_OFFSET);
-    addr_hit[272] = (reg_addr == ALERT_HANDLER_CLASSD_REGWEN_OFFSET);
-    addr_hit[273] = (reg_addr == ALERT_HANDLER_CLASSD_CTRL_SHADOWED_OFFSET);
-    addr_hit[274] = (reg_addr == ALERT_HANDLER_CLASSD_CLR_REGWEN_OFFSET);
-    addr_hit[275] = (reg_addr == ALERT_HANDLER_CLASSD_CLR_SHADOWED_OFFSET);
-    addr_hit[276] = (reg_addr == ALERT_HANDLER_CLASSD_ACCUM_CNT_OFFSET);
-    addr_hit[277] = (reg_addr == ALERT_HANDLER_CLASSD_ACCUM_THRESH_SHADOWED_OFFSET);
-    addr_hit[278] = (reg_addr == ALERT_HANDLER_CLASSD_TIMEOUT_CYC_SHADOWED_OFFSET);
-    addr_hit[279] = (reg_addr == ALERT_HANDLER_CLASSD_CRASHDUMP_TRIGGER_SHADOWED_OFFSET);
-    addr_hit[280] = (reg_addr == ALERT_HANDLER_CLASSD_PHASE0_CYC_SHADOWED_OFFSET);
-    addr_hit[281] = (reg_addr == ALERT_HANDLER_CLASSD_PHASE1_CYC_SHADOWED_OFFSET);
-    addr_hit[282] = (reg_addr == ALERT_HANDLER_CLASSD_PHASE2_CYC_SHADOWED_OFFSET);
-    addr_hit[283] = (reg_addr == ALERT_HANDLER_CLASSD_PHASE3_CYC_SHADOWED_OFFSET);
-    addr_hit[284] = (reg_addr == ALERT_HANDLER_CLASSD_ESC_CNT_OFFSET);
-    addr_hit[285] = (reg_addr == ALERT_HANDLER_CLASSD_STATE_OFFSET);
+    addr_hit[ 55] = (reg_addr == ALERT_HANDLER_ALERT_REGWEN_49_OFFSET);
+    addr_hit[ 56] = (reg_addr == ALERT_HANDLER_ALERT_REGWEN_50_OFFSET);
+    addr_hit[ 57] = (reg_addr == ALERT_HANDLER_ALERT_REGWEN_51_OFFSET);
+    addr_hit[ 58] = (reg_addr == ALERT_HANDLER_ALERT_REGWEN_52_OFFSET);
+    addr_hit[ 59] = (reg_addr == ALERT_HANDLER_ALERT_REGWEN_53_OFFSET);
+    addr_hit[ 60] = (reg_addr == ALERT_HANDLER_ALERT_REGWEN_54_OFFSET);
+    addr_hit[ 61] = (reg_addr == ALERT_HANDLER_ALERT_REGWEN_55_OFFSET);
+    addr_hit[ 62] = (reg_addr == ALERT_HANDLER_ALERT_REGWEN_56_OFFSET);
+    addr_hit[ 63] = (reg_addr == ALERT_HANDLER_ALERT_REGWEN_57_OFFSET);
+    addr_hit[ 64] = (reg_addr == ALERT_HANDLER_ALERT_REGWEN_58_OFFSET);
+    addr_hit[ 65] = (reg_addr == ALERT_HANDLER_ALERT_REGWEN_59_OFFSET);
+    addr_hit[ 66] = (reg_addr == ALERT_HANDLER_ALERT_REGWEN_60_OFFSET);
+    addr_hit[ 67] = (reg_addr == ALERT_HANDLER_ALERT_REGWEN_61_OFFSET);
+    addr_hit[ 68] = (reg_addr == ALERT_HANDLER_ALERT_REGWEN_62_OFFSET);
+    addr_hit[ 69] = (reg_addr == ALERT_HANDLER_ALERT_REGWEN_63_OFFSET);
+    addr_hit[ 70] = (reg_addr == ALERT_HANDLER_ALERT_REGWEN_64_OFFSET);
+    addr_hit[ 71] = (reg_addr == ALERT_HANDLER_ALERT_REGWEN_65_OFFSET);
+    addr_hit[ 72] = (reg_addr == ALERT_HANDLER_ALERT_REGWEN_66_OFFSET);
+    addr_hit[ 73] = (reg_addr == ALERT_HANDLER_ALERT_REGWEN_67_OFFSET);
+    addr_hit[ 74] = (reg_addr == ALERT_HANDLER_ALERT_REGWEN_68_OFFSET);
+    addr_hit[ 75] = (reg_addr == ALERT_HANDLER_ALERT_REGWEN_69_OFFSET);
+    addr_hit[ 76] = (reg_addr == ALERT_HANDLER_ALERT_REGWEN_70_OFFSET);
+    addr_hit[ 77] = (reg_addr == ALERT_HANDLER_ALERT_REGWEN_71_OFFSET);
+    addr_hit[ 78] = (reg_addr == ALERT_HANDLER_ALERT_REGWEN_72_OFFSET);
+    addr_hit[ 79] = (reg_addr == ALERT_HANDLER_ALERT_REGWEN_73_OFFSET);
+    addr_hit[ 80] = (reg_addr == ALERT_HANDLER_ALERT_REGWEN_74_OFFSET);
+    addr_hit[ 81] = (reg_addr == ALERT_HANDLER_ALERT_REGWEN_75_OFFSET);
+    addr_hit[ 82] = (reg_addr == ALERT_HANDLER_ALERT_REGWEN_76_OFFSET);
+    addr_hit[ 83] = (reg_addr == ALERT_HANDLER_ALERT_REGWEN_77_OFFSET);
+    addr_hit[ 84] = (reg_addr == ALERT_HANDLER_ALERT_REGWEN_78_OFFSET);
+    addr_hit[ 85] = (reg_addr == ALERT_HANDLER_ALERT_REGWEN_79_OFFSET);
+    addr_hit[ 86] = (reg_addr == ALERT_HANDLER_ALERT_REGWEN_80_OFFSET);
+    addr_hit[ 87] = (reg_addr == ALERT_HANDLER_ALERT_REGWEN_81_OFFSET);
+    addr_hit[ 88] = (reg_addr == ALERT_HANDLER_ALERT_REGWEN_82_OFFSET);
+    addr_hit[ 89] = (reg_addr == ALERT_HANDLER_ALERT_REGWEN_83_OFFSET);
+    addr_hit[ 90] = (reg_addr == ALERT_HANDLER_ALERT_REGWEN_84_OFFSET);
+    addr_hit[ 91] = (reg_addr == ALERT_HANDLER_ALERT_EN_SHADOWED_0_OFFSET);
+    addr_hit[ 92] = (reg_addr == ALERT_HANDLER_ALERT_EN_SHADOWED_1_OFFSET);
+    addr_hit[ 93] = (reg_addr == ALERT_HANDLER_ALERT_EN_SHADOWED_2_OFFSET);
+    addr_hit[ 94] = (reg_addr == ALERT_HANDLER_ALERT_EN_SHADOWED_3_OFFSET);
+    addr_hit[ 95] = (reg_addr == ALERT_HANDLER_ALERT_EN_SHADOWED_4_OFFSET);
+    addr_hit[ 96] = (reg_addr == ALERT_HANDLER_ALERT_EN_SHADOWED_5_OFFSET);
+    addr_hit[ 97] = (reg_addr == ALERT_HANDLER_ALERT_EN_SHADOWED_6_OFFSET);
+    addr_hit[ 98] = (reg_addr == ALERT_HANDLER_ALERT_EN_SHADOWED_7_OFFSET);
+    addr_hit[ 99] = (reg_addr == ALERT_HANDLER_ALERT_EN_SHADOWED_8_OFFSET);
+    addr_hit[100] = (reg_addr == ALERT_HANDLER_ALERT_EN_SHADOWED_9_OFFSET);
+    addr_hit[101] = (reg_addr == ALERT_HANDLER_ALERT_EN_SHADOWED_10_OFFSET);
+    addr_hit[102] = (reg_addr == ALERT_HANDLER_ALERT_EN_SHADOWED_11_OFFSET);
+    addr_hit[103] = (reg_addr == ALERT_HANDLER_ALERT_EN_SHADOWED_12_OFFSET);
+    addr_hit[104] = (reg_addr == ALERT_HANDLER_ALERT_EN_SHADOWED_13_OFFSET);
+    addr_hit[105] = (reg_addr == ALERT_HANDLER_ALERT_EN_SHADOWED_14_OFFSET);
+    addr_hit[106] = (reg_addr == ALERT_HANDLER_ALERT_EN_SHADOWED_15_OFFSET);
+    addr_hit[107] = (reg_addr == ALERT_HANDLER_ALERT_EN_SHADOWED_16_OFFSET);
+    addr_hit[108] = (reg_addr == ALERT_HANDLER_ALERT_EN_SHADOWED_17_OFFSET);
+    addr_hit[109] = (reg_addr == ALERT_HANDLER_ALERT_EN_SHADOWED_18_OFFSET);
+    addr_hit[110] = (reg_addr == ALERT_HANDLER_ALERT_EN_SHADOWED_19_OFFSET);
+    addr_hit[111] = (reg_addr == ALERT_HANDLER_ALERT_EN_SHADOWED_20_OFFSET);
+    addr_hit[112] = (reg_addr == ALERT_HANDLER_ALERT_EN_SHADOWED_21_OFFSET);
+    addr_hit[113] = (reg_addr == ALERT_HANDLER_ALERT_EN_SHADOWED_22_OFFSET);
+    addr_hit[114] = (reg_addr == ALERT_HANDLER_ALERT_EN_SHADOWED_23_OFFSET);
+    addr_hit[115] = (reg_addr == ALERT_HANDLER_ALERT_EN_SHADOWED_24_OFFSET);
+    addr_hit[116] = (reg_addr == ALERT_HANDLER_ALERT_EN_SHADOWED_25_OFFSET);
+    addr_hit[117] = (reg_addr == ALERT_HANDLER_ALERT_EN_SHADOWED_26_OFFSET);
+    addr_hit[118] = (reg_addr == ALERT_HANDLER_ALERT_EN_SHADOWED_27_OFFSET);
+    addr_hit[119] = (reg_addr == ALERT_HANDLER_ALERT_EN_SHADOWED_28_OFFSET);
+    addr_hit[120] = (reg_addr == ALERT_HANDLER_ALERT_EN_SHADOWED_29_OFFSET);
+    addr_hit[121] = (reg_addr == ALERT_HANDLER_ALERT_EN_SHADOWED_30_OFFSET);
+    addr_hit[122] = (reg_addr == ALERT_HANDLER_ALERT_EN_SHADOWED_31_OFFSET);
+    addr_hit[123] = (reg_addr == ALERT_HANDLER_ALERT_EN_SHADOWED_32_OFFSET);
+    addr_hit[124] = (reg_addr == ALERT_HANDLER_ALERT_EN_SHADOWED_33_OFFSET);
+    addr_hit[125] = (reg_addr == ALERT_HANDLER_ALERT_EN_SHADOWED_34_OFFSET);
+    addr_hit[126] = (reg_addr == ALERT_HANDLER_ALERT_EN_SHADOWED_35_OFFSET);
+    addr_hit[127] = (reg_addr == ALERT_HANDLER_ALERT_EN_SHADOWED_36_OFFSET);
+    addr_hit[128] = (reg_addr == ALERT_HANDLER_ALERT_EN_SHADOWED_37_OFFSET);
+    addr_hit[129] = (reg_addr == ALERT_HANDLER_ALERT_EN_SHADOWED_38_OFFSET);
+    addr_hit[130] = (reg_addr == ALERT_HANDLER_ALERT_EN_SHADOWED_39_OFFSET);
+    addr_hit[131] = (reg_addr == ALERT_HANDLER_ALERT_EN_SHADOWED_40_OFFSET);
+    addr_hit[132] = (reg_addr == ALERT_HANDLER_ALERT_EN_SHADOWED_41_OFFSET);
+    addr_hit[133] = (reg_addr == ALERT_HANDLER_ALERT_EN_SHADOWED_42_OFFSET);
+    addr_hit[134] = (reg_addr == ALERT_HANDLER_ALERT_EN_SHADOWED_43_OFFSET);
+    addr_hit[135] = (reg_addr == ALERT_HANDLER_ALERT_EN_SHADOWED_44_OFFSET);
+    addr_hit[136] = (reg_addr == ALERT_HANDLER_ALERT_EN_SHADOWED_45_OFFSET);
+    addr_hit[137] = (reg_addr == ALERT_HANDLER_ALERT_EN_SHADOWED_46_OFFSET);
+    addr_hit[138] = (reg_addr == ALERT_HANDLER_ALERT_EN_SHADOWED_47_OFFSET);
+    addr_hit[139] = (reg_addr == ALERT_HANDLER_ALERT_EN_SHADOWED_48_OFFSET);
+    addr_hit[140] = (reg_addr == ALERT_HANDLER_ALERT_EN_SHADOWED_49_OFFSET);
+    addr_hit[141] = (reg_addr == ALERT_HANDLER_ALERT_EN_SHADOWED_50_OFFSET);
+    addr_hit[142] = (reg_addr == ALERT_HANDLER_ALERT_EN_SHADOWED_51_OFFSET);
+    addr_hit[143] = (reg_addr == ALERT_HANDLER_ALERT_EN_SHADOWED_52_OFFSET);
+    addr_hit[144] = (reg_addr == ALERT_HANDLER_ALERT_EN_SHADOWED_53_OFFSET);
+    addr_hit[145] = (reg_addr == ALERT_HANDLER_ALERT_EN_SHADOWED_54_OFFSET);
+    addr_hit[146] = (reg_addr == ALERT_HANDLER_ALERT_EN_SHADOWED_55_OFFSET);
+    addr_hit[147] = (reg_addr == ALERT_HANDLER_ALERT_EN_SHADOWED_56_OFFSET);
+    addr_hit[148] = (reg_addr == ALERT_HANDLER_ALERT_EN_SHADOWED_57_OFFSET);
+    addr_hit[149] = (reg_addr == ALERT_HANDLER_ALERT_EN_SHADOWED_58_OFFSET);
+    addr_hit[150] = (reg_addr == ALERT_HANDLER_ALERT_EN_SHADOWED_59_OFFSET);
+    addr_hit[151] = (reg_addr == ALERT_HANDLER_ALERT_EN_SHADOWED_60_OFFSET);
+    addr_hit[152] = (reg_addr == ALERT_HANDLER_ALERT_EN_SHADOWED_61_OFFSET);
+    addr_hit[153] = (reg_addr == ALERT_HANDLER_ALERT_EN_SHADOWED_62_OFFSET);
+    addr_hit[154] = (reg_addr == ALERT_HANDLER_ALERT_EN_SHADOWED_63_OFFSET);
+    addr_hit[155] = (reg_addr == ALERT_HANDLER_ALERT_EN_SHADOWED_64_OFFSET);
+    addr_hit[156] = (reg_addr == ALERT_HANDLER_ALERT_EN_SHADOWED_65_OFFSET);
+    addr_hit[157] = (reg_addr == ALERT_HANDLER_ALERT_EN_SHADOWED_66_OFFSET);
+    addr_hit[158] = (reg_addr == ALERT_HANDLER_ALERT_EN_SHADOWED_67_OFFSET);
+    addr_hit[159] = (reg_addr == ALERT_HANDLER_ALERT_EN_SHADOWED_68_OFFSET);
+    addr_hit[160] = (reg_addr == ALERT_HANDLER_ALERT_EN_SHADOWED_69_OFFSET);
+    addr_hit[161] = (reg_addr == ALERT_HANDLER_ALERT_EN_SHADOWED_70_OFFSET);
+    addr_hit[162] = (reg_addr == ALERT_HANDLER_ALERT_EN_SHADOWED_71_OFFSET);
+    addr_hit[163] = (reg_addr == ALERT_HANDLER_ALERT_EN_SHADOWED_72_OFFSET);
+    addr_hit[164] = (reg_addr == ALERT_HANDLER_ALERT_EN_SHADOWED_73_OFFSET);
+    addr_hit[165] = (reg_addr == ALERT_HANDLER_ALERT_EN_SHADOWED_74_OFFSET);
+    addr_hit[166] = (reg_addr == ALERT_HANDLER_ALERT_EN_SHADOWED_75_OFFSET);
+    addr_hit[167] = (reg_addr == ALERT_HANDLER_ALERT_EN_SHADOWED_76_OFFSET);
+    addr_hit[168] = (reg_addr == ALERT_HANDLER_ALERT_EN_SHADOWED_77_OFFSET);
+    addr_hit[169] = (reg_addr == ALERT_HANDLER_ALERT_EN_SHADOWED_78_OFFSET);
+    addr_hit[170] = (reg_addr == ALERT_HANDLER_ALERT_EN_SHADOWED_79_OFFSET);
+    addr_hit[171] = (reg_addr == ALERT_HANDLER_ALERT_EN_SHADOWED_80_OFFSET);
+    addr_hit[172] = (reg_addr == ALERT_HANDLER_ALERT_EN_SHADOWED_81_OFFSET);
+    addr_hit[173] = (reg_addr == ALERT_HANDLER_ALERT_EN_SHADOWED_82_OFFSET);
+    addr_hit[174] = (reg_addr == ALERT_HANDLER_ALERT_EN_SHADOWED_83_OFFSET);
+    addr_hit[175] = (reg_addr == ALERT_HANDLER_ALERT_EN_SHADOWED_84_OFFSET);
+    addr_hit[176] = (reg_addr == ALERT_HANDLER_ALERT_CLASS_SHADOWED_0_OFFSET);
+    addr_hit[177] = (reg_addr == ALERT_HANDLER_ALERT_CLASS_SHADOWED_1_OFFSET);
+    addr_hit[178] = (reg_addr == ALERT_HANDLER_ALERT_CLASS_SHADOWED_2_OFFSET);
+    addr_hit[179] = (reg_addr == ALERT_HANDLER_ALERT_CLASS_SHADOWED_3_OFFSET);
+    addr_hit[180] = (reg_addr == ALERT_HANDLER_ALERT_CLASS_SHADOWED_4_OFFSET);
+    addr_hit[181] = (reg_addr == ALERT_HANDLER_ALERT_CLASS_SHADOWED_5_OFFSET);
+    addr_hit[182] = (reg_addr == ALERT_HANDLER_ALERT_CLASS_SHADOWED_6_OFFSET);
+    addr_hit[183] = (reg_addr == ALERT_HANDLER_ALERT_CLASS_SHADOWED_7_OFFSET);
+    addr_hit[184] = (reg_addr == ALERT_HANDLER_ALERT_CLASS_SHADOWED_8_OFFSET);
+    addr_hit[185] = (reg_addr == ALERT_HANDLER_ALERT_CLASS_SHADOWED_9_OFFSET);
+    addr_hit[186] = (reg_addr == ALERT_HANDLER_ALERT_CLASS_SHADOWED_10_OFFSET);
+    addr_hit[187] = (reg_addr == ALERT_HANDLER_ALERT_CLASS_SHADOWED_11_OFFSET);
+    addr_hit[188] = (reg_addr == ALERT_HANDLER_ALERT_CLASS_SHADOWED_12_OFFSET);
+    addr_hit[189] = (reg_addr == ALERT_HANDLER_ALERT_CLASS_SHADOWED_13_OFFSET);
+    addr_hit[190] = (reg_addr == ALERT_HANDLER_ALERT_CLASS_SHADOWED_14_OFFSET);
+    addr_hit[191] = (reg_addr == ALERT_HANDLER_ALERT_CLASS_SHADOWED_15_OFFSET);
+    addr_hit[192] = (reg_addr == ALERT_HANDLER_ALERT_CLASS_SHADOWED_16_OFFSET);
+    addr_hit[193] = (reg_addr == ALERT_HANDLER_ALERT_CLASS_SHADOWED_17_OFFSET);
+    addr_hit[194] = (reg_addr == ALERT_HANDLER_ALERT_CLASS_SHADOWED_18_OFFSET);
+    addr_hit[195] = (reg_addr == ALERT_HANDLER_ALERT_CLASS_SHADOWED_19_OFFSET);
+    addr_hit[196] = (reg_addr == ALERT_HANDLER_ALERT_CLASS_SHADOWED_20_OFFSET);
+    addr_hit[197] = (reg_addr == ALERT_HANDLER_ALERT_CLASS_SHADOWED_21_OFFSET);
+    addr_hit[198] = (reg_addr == ALERT_HANDLER_ALERT_CLASS_SHADOWED_22_OFFSET);
+    addr_hit[199] = (reg_addr == ALERT_HANDLER_ALERT_CLASS_SHADOWED_23_OFFSET);
+    addr_hit[200] = (reg_addr == ALERT_HANDLER_ALERT_CLASS_SHADOWED_24_OFFSET);
+    addr_hit[201] = (reg_addr == ALERT_HANDLER_ALERT_CLASS_SHADOWED_25_OFFSET);
+    addr_hit[202] = (reg_addr == ALERT_HANDLER_ALERT_CLASS_SHADOWED_26_OFFSET);
+    addr_hit[203] = (reg_addr == ALERT_HANDLER_ALERT_CLASS_SHADOWED_27_OFFSET);
+    addr_hit[204] = (reg_addr == ALERT_HANDLER_ALERT_CLASS_SHADOWED_28_OFFSET);
+    addr_hit[205] = (reg_addr == ALERT_HANDLER_ALERT_CLASS_SHADOWED_29_OFFSET);
+    addr_hit[206] = (reg_addr == ALERT_HANDLER_ALERT_CLASS_SHADOWED_30_OFFSET);
+    addr_hit[207] = (reg_addr == ALERT_HANDLER_ALERT_CLASS_SHADOWED_31_OFFSET);
+    addr_hit[208] = (reg_addr == ALERT_HANDLER_ALERT_CLASS_SHADOWED_32_OFFSET);
+    addr_hit[209] = (reg_addr == ALERT_HANDLER_ALERT_CLASS_SHADOWED_33_OFFSET);
+    addr_hit[210] = (reg_addr == ALERT_HANDLER_ALERT_CLASS_SHADOWED_34_OFFSET);
+    addr_hit[211] = (reg_addr == ALERT_HANDLER_ALERT_CLASS_SHADOWED_35_OFFSET);
+    addr_hit[212] = (reg_addr == ALERT_HANDLER_ALERT_CLASS_SHADOWED_36_OFFSET);
+    addr_hit[213] = (reg_addr == ALERT_HANDLER_ALERT_CLASS_SHADOWED_37_OFFSET);
+    addr_hit[214] = (reg_addr == ALERT_HANDLER_ALERT_CLASS_SHADOWED_38_OFFSET);
+    addr_hit[215] = (reg_addr == ALERT_HANDLER_ALERT_CLASS_SHADOWED_39_OFFSET);
+    addr_hit[216] = (reg_addr == ALERT_HANDLER_ALERT_CLASS_SHADOWED_40_OFFSET);
+    addr_hit[217] = (reg_addr == ALERT_HANDLER_ALERT_CLASS_SHADOWED_41_OFFSET);
+    addr_hit[218] = (reg_addr == ALERT_HANDLER_ALERT_CLASS_SHADOWED_42_OFFSET);
+    addr_hit[219] = (reg_addr == ALERT_HANDLER_ALERT_CLASS_SHADOWED_43_OFFSET);
+    addr_hit[220] = (reg_addr == ALERT_HANDLER_ALERT_CLASS_SHADOWED_44_OFFSET);
+    addr_hit[221] = (reg_addr == ALERT_HANDLER_ALERT_CLASS_SHADOWED_45_OFFSET);
+    addr_hit[222] = (reg_addr == ALERT_HANDLER_ALERT_CLASS_SHADOWED_46_OFFSET);
+    addr_hit[223] = (reg_addr == ALERT_HANDLER_ALERT_CLASS_SHADOWED_47_OFFSET);
+    addr_hit[224] = (reg_addr == ALERT_HANDLER_ALERT_CLASS_SHADOWED_48_OFFSET);
+    addr_hit[225] = (reg_addr == ALERT_HANDLER_ALERT_CLASS_SHADOWED_49_OFFSET);
+    addr_hit[226] = (reg_addr == ALERT_HANDLER_ALERT_CLASS_SHADOWED_50_OFFSET);
+    addr_hit[227] = (reg_addr == ALERT_HANDLER_ALERT_CLASS_SHADOWED_51_OFFSET);
+    addr_hit[228] = (reg_addr == ALERT_HANDLER_ALERT_CLASS_SHADOWED_52_OFFSET);
+    addr_hit[229] = (reg_addr == ALERT_HANDLER_ALERT_CLASS_SHADOWED_53_OFFSET);
+    addr_hit[230] = (reg_addr == ALERT_HANDLER_ALERT_CLASS_SHADOWED_54_OFFSET);
+    addr_hit[231] = (reg_addr == ALERT_HANDLER_ALERT_CLASS_SHADOWED_55_OFFSET);
+    addr_hit[232] = (reg_addr == ALERT_HANDLER_ALERT_CLASS_SHADOWED_56_OFFSET);
+    addr_hit[233] = (reg_addr == ALERT_HANDLER_ALERT_CLASS_SHADOWED_57_OFFSET);
+    addr_hit[234] = (reg_addr == ALERT_HANDLER_ALERT_CLASS_SHADOWED_58_OFFSET);
+    addr_hit[235] = (reg_addr == ALERT_HANDLER_ALERT_CLASS_SHADOWED_59_OFFSET);
+    addr_hit[236] = (reg_addr == ALERT_HANDLER_ALERT_CLASS_SHADOWED_60_OFFSET);
+    addr_hit[237] = (reg_addr == ALERT_HANDLER_ALERT_CLASS_SHADOWED_61_OFFSET);
+    addr_hit[238] = (reg_addr == ALERT_HANDLER_ALERT_CLASS_SHADOWED_62_OFFSET);
+    addr_hit[239] = (reg_addr == ALERT_HANDLER_ALERT_CLASS_SHADOWED_63_OFFSET);
+    addr_hit[240] = (reg_addr == ALERT_HANDLER_ALERT_CLASS_SHADOWED_64_OFFSET);
+    addr_hit[241] = (reg_addr == ALERT_HANDLER_ALERT_CLASS_SHADOWED_65_OFFSET);
+    addr_hit[242] = (reg_addr == ALERT_HANDLER_ALERT_CLASS_SHADOWED_66_OFFSET);
+    addr_hit[243] = (reg_addr == ALERT_HANDLER_ALERT_CLASS_SHADOWED_67_OFFSET);
+    addr_hit[244] = (reg_addr == ALERT_HANDLER_ALERT_CLASS_SHADOWED_68_OFFSET);
+    addr_hit[245] = (reg_addr == ALERT_HANDLER_ALERT_CLASS_SHADOWED_69_OFFSET);
+    addr_hit[246] = (reg_addr == ALERT_HANDLER_ALERT_CLASS_SHADOWED_70_OFFSET);
+    addr_hit[247] = (reg_addr == ALERT_HANDLER_ALERT_CLASS_SHADOWED_71_OFFSET);
+    addr_hit[248] = (reg_addr == ALERT_HANDLER_ALERT_CLASS_SHADOWED_72_OFFSET);
+    addr_hit[249] = (reg_addr == ALERT_HANDLER_ALERT_CLASS_SHADOWED_73_OFFSET);
+    addr_hit[250] = (reg_addr == ALERT_HANDLER_ALERT_CLASS_SHADOWED_74_OFFSET);
+    addr_hit[251] = (reg_addr == ALERT_HANDLER_ALERT_CLASS_SHADOWED_75_OFFSET);
+    addr_hit[252] = (reg_addr == ALERT_HANDLER_ALERT_CLASS_SHADOWED_76_OFFSET);
+    addr_hit[253] = (reg_addr == ALERT_HANDLER_ALERT_CLASS_SHADOWED_77_OFFSET);
+    addr_hit[254] = (reg_addr == ALERT_HANDLER_ALERT_CLASS_SHADOWED_78_OFFSET);
+    addr_hit[255] = (reg_addr == ALERT_HANDLER_ALERT_CLASS_SHADOWED_79_OFFSET);
+    addr_hit[256] = (reg_addr == ALERT_HANDLER_ALERT_CLASS_SHADOWED_80_OFFSET);
+    addr_hit[257] = (reg_addr == ALERT_HANDLER_ALERT_CLASS_SHADOWED_81_OFFSET);
+    addr_hit[258] = (reg_addr == ALERT_HANDLER_ALERT_CLASS_SHADOWED_82_OFFSET);
+    addr_hit[259] = (reg_addr == ALERT_HANDLER_ALERT_CLASS_SHADOWED_83_OFFSET);
+    addr_hit[260] = (reg_addr == ALERT_HANDLER_ALERT_CLASS_SHADOWED_84_OFFSET);
+    addr_hit[261] = (reg_addr == ALERT_HANDLER_ALERT_CAUSE_0_OFFSET);
+    addr_hit[262] = (reg_addr == ALERT_HANDLER_ALERT_CAUSE_1_OFFSET);
+    addr_hit[263] = (reg_addr == ALERT_HANDLER_ALERT_CAUSE_2_OFFSET);
+    addr_hit[264] = (reg_addr == ALERT_HANDLER_ALERT_CAUSE_3_OFFSET);
+    addr_hit[265] = (reg_addr == ALERT_HANDLER_ALERT_CAUSE_4_OFFSET);
+    addr_hit[266] = (reg_addr == ALERT_HANDLER_ALERT_CAUSE_5_OFFSET);
+    addr_hit[267] = (reg_addr == ALERT_HANDLER_ALERT_CAUSE_6_OFFSET);
+    addr_hit[268] = (reg_addr == ALERT_HANDLER_ALERT_CAUSE_7_OFFSET);
+    addr_hit[269] = (reg_addr == ALERT_HANDLER_ALERT_CAUSE_8_OFFSET);
+    addr_hit[270] = (reg_addr == ALERT_HANDLER_ALERT_CAUSE_9_OFFSET);
+    addr_hit[271] = (reg_addr == ALERT_HANDLER_ALERT_CAUSE_10_OFFSET);
+    addr_hit[272] = (reg_addr == ALERT_HANDLER_ALERT_CAUSE_11_OFFSET);
+    addr_hit[273] = (reg_addr == ALERT_HANDLER_ALERT_CAUSE_12_OFFSET);
+    addr_hit[274] = (reg_addr == ALERT_HANDLER_ALERT_CAUSE_13_OFFSET);
+    addr_hit[275] = (reg_addr == ALERT_HANDLER_ALERT_CAUSE_14_OFFSET);
+    addr_hit[276] = (reg_addr == ALERT_HANDLER_ALERT_CAUSE_15_OFFSET);
+    addr_hit[277] = (reg_addr == ALERT_HANDLER_ALERT_CAUSE_16_OFFSET);
+    addr_hit[278] = (reg_addr == ALERT_HANDLER_ALERT_CAUSE_17_OFFSET);
+    addr_hit[279] = (reg_addr == ALERT_HANDLER_ALERT_CAUSE_18_OFFSET);
+    addr_hit[280] = (reg_addr == ALERT_HANDLER_ALERT_CAUSE_19_OFFSET);
+    addr_hit[281] = (reg_addr == ALERT_HANDLER_ALERT_CAUSE_20_OFFSET);
+    addr_hit[282] = (reg_addr == ALERT_HANDLER_ALERT_CAUSE_21_OFFSET);
+    addr_hit[283] = (reg_addr == ALERT_HANDLER_ALERT_CAUSE_22_OFFSET);
+    addr_hit[284] = (reg_addr == ALERT_HANDLER_ALERT_CAUSE_23_OFFSET);
+    addr_hit[285] = (reg_addr == ALERT_HANDLER_ALERT_CAUSE_24_OFFSET);
+    addr_hit[286] = (reg_addr == ALERT_HANDLER_ALERT_CAUSE_25_OFFSET);
+    addr_hit[287] = (reg_addr == ALERT_HANDLER_ALERT_CAUSE_26_OFFSET);
+    addr_hit[288] = (reg_addr == ALERT_HANDLER_ALERT_CAUSE_27_OFFSET);
+    addr_hit[289] = (reg_addr == ALERT_HANDLER_ALERT_CAUSE_28_OFFSET);
+    addr_hit[290] = (reg_addr == ALERT_HANDLER_ALERT_CAUSE_29_OFFSET);
+    addr_hit[291] = (reg_addr == ALERT_HANDLER_ALERT_CAUSE_30_OFFSET);
+    addr_hit[292] = (reg_addr == ALERT_HANDLER_ALERT_CAUSE_31_OFFSET);
+    addr_hit[293] = (reg_addr == ALERT_HANDLER_ALERT_CAUSE_32_OFFSET);
+    addr_hit[294] = (reg_addr == ALERT_HANDLER_ALERT_CAUSE_33_OFFSET);
+    addr_hit[295] = (reg_addr == ALERT_HANDLER_ALERT_CAUSE_34_OFFSET);
+    addr_hit[296] = (reg_addr == ALERT_HANDLER_ALERT_CAUSE_35_OFFSET);
+    addr_hit[297] = (reg_addr == ALERT_HANDLER_ALERT_CAUSE_36_OFFSET);
+    addr_hit[298] = (reg_addr == ALERT_HANDLER_ALERT_CAUSE_37_OFFSET);
+    addr_hit[299] = (reg_addr == ALERT_HANDLER_ALERT_CAUSE_38_OFFSET);
+    addr_hit[300] = (reg_addr == ALERT_HANDLER_ALERT_CAUSE_39_OFFSET);
+    addr_hit[301] = (reg_addr == ALERT_HANDLER_ALERT_CAUSE_40_OFFSET);
+    addr_hit[302] = (reg_addr == ALERT_HANDLER_ALERT_CAUSE_41_OFFSET);
+    addr_hit[303] = (reg_addr == ALERT_HANDLER_ALERT_CAUSE_42_OFFSET);
+    addr_hit[304] = (reg_addr == ALERT_HANDLER_ALERT_CAUSE_43_OFFSET);
+    addr_hit[305] = (reg_addr == ALERT_HANDLER_ALERT_CAUSE_44_OFFSET);
+    addr_hit[306] = (reg_addr == ALERT_HANDLER_ALERT_CAUSE_45_OFFSET);
+    addr_hit[307] = (reg_addr == ALERT_HANDLER_ALERT_CAUSE_46_OFFSET);
+    addr_hit[308] = (reg_addr == ALERT_HANDLER_ALERT_CAUSE_47_OFFSET);
+    addr_hit[309] = (reg_addr == ALERT_HANDLER_ALERT_CAUSE_48_OFFSET);
+    addr_hit[310] = (reg_addr == ALERT_HANDLER_ALERT_CAUSE_49_OFFSET);
+    addr_hit[311] = (reg_addr == ALERT_HANDLER_ALERT_CAUSE_50_OFFSET);
+    addr_hit[312] = (reg_addr == ALERT_HANDLER_ALERT_CAUSE_51_OFFSET);
+    addr_hit[313] = (reg_addr == ALERT_HANDLER_ALERT_CAUSE_52_OFFSET);
+    addr_hit[314] = (reg_addr == ALERT_HANDLER_ALERT_CAUSE_53_OFFSET);
+    addr_hit[315] = (reg_addr == ALERT_HANDLER_ALERT_CAUSE_54_OFFSET);
+    addr_hit[316] = (reg_addr == ALERT_HANDLER_ALERT_CAUSE_55_OFFSET);
+    addr_hit[317] = (reg_addr == ALERT_HANDLER_ALERT_CAUSE_56_OFFSET);
+    addr_hit[318] = (reg_addr == ALERT_HANDLER_ALERT_CAUSE_57_OFFSET);
+    addr_hit[319] = (reg_addr == ALERT_HANDLER_ALERT_CAUSE_58_OFFSET);
+    addr_hit[320] = (reg_addr == ALERT_HANDLER_ALERT_CAUSE_59_OFFSET);
+    addr_hit[321] = (reg_addr == ALERT_HANDLER_ALERT_CAUSE_60_OFFSET);
+    addr_hit[322] = (reg_addr == ALERT_HANDLER_ALERT_CAUSE_61_OFFSET);
+    addr_hit[323] = (reg_addr == ALERT_HANDLER_ALERT_CAUSE_62_OFFSET);
+    addr_hit[324] = (reg_addr == ALERT_HANDLER_ALERT_CAUSE_63_OFFSET);
+    addr_hit[325] = (reg_addr == ALERT_HANDLER_ALERT_CAUSE_64_OFFSET);
+    addr_hit[326] = (reg_addr == ALERT_HANDLER_ALERT_CAUSE_65_OFFSET);
+    addr_hit[327] = (reg_addr == ALERT_HANDLER_ALERT_CAUSE_66_OFFSET);
+    addr_hit[328] = (reg_addr == ALERT_HANDLER_ALERT_CAUSE_67_OFFSET);
+    addr_hit[329] = (reg_addr == ALERT_HANDLER_ALERT_CAUSE_68_OFFSET);
+    addr_hit[330] = (reg_addr == ALERT_HANDLER_ALERT_CAUSE_69_OFFSET);
+    addr_hit[331] = (reg_addr == ALERT_HANDLER_ALERT_CAUSE_70_OFFSET);
+    addr_hit[332] = (reg_addr == ALERT_HANDLER_ALERT_CAUSE_71_OFFSET);
+    addr_hit[333] = (reg_addr == ALERT_HANDLER_ALERT_CAUSE_72_OFFSET);
+    addr_hit[334] = (reg_addr == ALERT_HANDLER_ALERT_CAUSE_73_OFFSET);
+    addr_hit[335] = (reg_addr == ALERT_HANDLER_ALERT_CAUSE_74_OFFSET);
+    addr_hit[336] = (reg_addr == ALERT_HANDLER_ALERT_CAUSE_75_OFFSET);
+    addr_hit[337] = (reg_addr == ALERT_HANDLER_ALERT_CAUSE_76_OFFSET);
+    addr_hit[338] = (reg_addr == ALERT_HANDLER_ALERT_CAUSE_77_OFFSET);
+    addr_hit[339] = (reg_addr == ALERT_HANDLER_ALERT_CAUSE_78_OFFSET);
+    addr_hit[340] = (reg_addr == ALERT_HANDLER_ALERT_CAUSE_79_OFFSET);
+    addr_hit[341] = (reg_addr == ALERT_HANDLER_ALERT_CAUSE_80_OFFSET);
+    addr_hit[342] = (reg_addr == ALERT_HANDLER_ALERT_CAUSE_81_OFFSET);
+    addr_hit[343] = (reg_addr == ALERT_HANDLER_ALERT_CAUSE_82_OFFSET);
+    addr_hit[344] = (reg_addr == ALERT_HANDLER_ALERT_CAUSE_83_OFFSET);
+    addr_hit[345] = (reg_addr == ALERT_HANDLER_ALERT_CAUSE_84_OFFSET);
+    addr_hit[346] = (reg_addr == ALERT_HANDLER_LOC_ALERT_REGWEN_0_OFFSET);
+    addr_hit[347] = (reg_addr == ALERT_HANDLER_LOC_ALERT_REGWEN_1_OFFSET);
+    addr_hit[348] = (reg_addr == ALERT_HANDLER_LOC_ALERT_REGWEN_2_OFFSET);
+    addr_hit[349] = (reg_addr == ALERT_HANDLER_LOC_ALERT_REGWEN_3_OFFSET);
+    addr_hit[350] = (reg_addr == ALERT_HANDLER_LOC_ALERT_REGWEN_4_OFFSET);
+    addr_hit[351] = (reg_addr == ALERT_HANDLER_LOC_ALERT_REGWEN_5_OFFSET);
+    addr_hit[352] = (reg_addr == ALERT_HANDLER_LOC_ALERT_REGWEN_6_OFFSET);
+    addr_hit[353] = (reg_addr == ALERT_HANDLER_LOC_ALERT_EN_SHADOWED_0_OFFSET);
+    addr_hit[354] = (reg_addr == ALERT_HANDLER_LOC_ALERT_EN_SHADOWED_1_OFFSET);
+    addr_hit[355] = (reg_addr == ALERT_HANDLER_LOC_ALERT_EN_SHADOWED_2_OFFSET);
+    addr_hit[356] = (reg_addr == ALERT_HANDLER_LOC_ALERT_EN_SHADOWED_3_OFFSET);
+    addr_hit[357] = (reg_addr == ALERT_HANDLER_LOC_ALERT_EN_SHADOWED_4_OFFSET);
+    addr_hit[358] = (reg_addr == ALERT_HANDLER_LOC_ALERT_EN_SHADOWED_5_OFFSET);
+    addr_hit[359] = (reg_addr == ALERT_HANDLER_LOC_ALERT_EN_SHADOWED_6_OFFSET);
+    addr_hit[360] = (reg_addr == ALERT_HANDLER_LOC_ALERT_CLASS_SHADOWED_0_OFFSET);
+    addr_hit[361] = (reg_addr == ALERT_HANDLER_LOC_ALERT_CLASS_SHADOWED_1_OFFSET);
+    addr_hit[362] = (reg_addr == ALERT_HANDLER_LOC_ALERT_CLASS_SHADOWED_2_OFFSET);
+    addr_hit[363] = (reg_addr == ALERT_HANDLER_LOC_ALERT_CLASS_SHADOWED_3_OFFSET);
+    addr_hit[364] = (reg_addr == ALERT_HANDLER_LOC_ALERT_CLASS_SHADOWED_4_OFFSET);
+    addr_hit[365] = (reg_addr == ALERT_HANDLER_LOC_ALERT_CLASS_SHADOWED_5_OFFSET);
+    addr_hit[366] = (reg_addr == ALERT_HANDLER_LOC_ALERT_CLASS_SHADOWED_6_OFFSET);
+    addr_hit[367] = (reg_addr == ALERT_HANDLER_LOC_ALERT_CAUSE_0_OFFSET);
+    addr_hit[368] = (reg_addr == ALERT_HANDLER_LOC_ALERT_CAUSE_1_OFFSET);
+    addr_hit[369] = (reg_addr == ALERT_HANDLER_LOC_ALERT_CAUSE_2_OFFSET);
+    addr_hit[370] = (reg_addr == ALERT_HANDLER_LOC_ALERT_CAUSE_3_OFFSET);
+    addr_hit[371] = (reg_addr == ALERT_HANDLER_LOC_ALERT_CAUSE_4_OFFSET);
+    addr_hit[372] = (reg_addr == ALERT_HANDLER_LOC_ALERT_CAUSE_5_OFFSET);
+    addr_hit[373] = (reg_addr == ALERT_HANDLER_LOC_ALERT_CAUSE_6_OFFSET);
+    addr_hit[374] = (reg_addr == ALERT_HANDLER_CLASSA_REGWEN_OFFSET);
+    addr_hit[375] = (reg_addr == ALERT_HANDLER_CLASSA_CTRL_SHADOWED_OFFSET);
+    addr_hit[376] = (reg_addr == ALERT_HANDLER_CLASSA_CLR_REGWEN_OFFSET);
+    addr_hit[377] = (reg_addr == ALERT_HANDLER_CLASSA_CLR_SHADOWED_OFFSET);
+    addr_hit[378] = (reg_addr == ALERT_HANDLER_CLASSA_ACCUM_CNT_OFFSET);
+    addr_hit[379] = (reg_addr == ALERT_HANDLER_CLASSA_ACCUM_THRESH_SHADOWED_OFFSET);
+    addr_hit[380] = (reg_addr == ALERT_HANDLER_CLASSA_TIMEOUT_CYC_SHADOWED_OFFSET);
+    addr_hit[381] = (reg_addr == ALERT_HANDLER_CLASSA_CRASHDUMP_TRIGGER_SHADOWED_OFFSET);
+    addr_hit[382] = (reg_addr == ALERT_HANDLER_CLASSA_PHASE0_CYC_SHADOWED_OFFSET);
+    addr_hit[383] = (reg_addr == ALERT_HANDLER_CLASSA_PHASE1_CYC_SHADOWED_OFFSET);
+    addr_hit[384] = (reg_addr == ALERT_HANDLER_CLASSA_PHASE2_CYC_SHADOWED_OFFSET);
+    addr_hit[385] = (reg_addr == ALERT_HANDLER_CLASSA_PHASE3_CYC_SHADOWED_OFFSET);
+    addr_hit[386] = (reg_addr == ALERT_HANDLER_CLASSA_ESC_CNT_OFFSET);
+    addr_hit[387] = (reg_addr == ALERT_HANDLER_CLASSA_STATE_OFFSET);
+    addr_hit[388] = (reg_addr == ALERT_HANDLER_CLASSB_REGWEN_OFFSET);
+    addr_hit[389] = (reg_addr == ALERT_HANDLER_CLASSB_CTRL_SHADOWED_OFFSET);
+    addr_hit[390] = (reg_addr == ALERT_HANDLER_CLASSB_CLR_REGWEN_OFFSET);
+    addr_hit[391] = (reg_addr == ALERT_HANDLER_CLASSB_CLR_SHADOWED_OFFSET);
+    addr_hit[392] = (reg_addr == ALERT_HANDLER_CLASSB_ACCUM_CNT_OFFSET);
+    addr_hit[393] = (reg_addr == ALERT_HANDLER_CLASSB_ACCUM_THRESH_SHADOWED_OFFSET);
+    addr_hit[394] = (reg_addr == ALERT_HANDLER_CLASSB_TIMEOUT_CYC_SHADOWED_OFFSET);
+    addr_hit[395] = (reg_addr == ALERT_HANDLER_CLASSB_CRASHDUMP_TRIGGER_SHADOWED_OFFSET);
+    addr_hit[396] = (reg_addr == ALERT_HANDLER_CLASSB_PHASE0_CYC_SHADOWED_OFFSET);
+    addr_hit[397] = (reg_addr == ALERT_HANDLER_CLASSB_PHASE1_CYC_SHADOWED_OFFSET);
+    addr_hit[398] = (reg_addr == ALERT_HANDLER_CLASSB_PHASE2_CYC_SHADOWED_OFFSET);
+    addr_hit[399] = (reg_addr == ALERT_HANDLER_CLASSB_PHASE3_CYC_SHADOWED_OFFSET);
+    addr_hit[400] = (reg_addr == ALERT_HANDLER_CLASSB_ESC_CNT_OFFSET);
+    addr_hit[401] = (reg_addr == ALERT_HANDLER_CLASSB_STATE_OFFSET);
+    addr_hit[402] = (reg_addr == ALERT_HANDLER_CLASSC_REGWEN_OFFSET);
+    addr_hit[403] = (reg_addr == ALERT_HANDLER_CLASSC_CTRL_SHADOWED_OFFSET);
+    addr_hit[404] = (reg_addr == ALERT_HANDLER_CLASSC_CLR_REGWEN_OFFSET);
+    addr_hit[405] = (reg_addr == ALERT_HANDLER_CLASSC_CLR_SHADOWED_OFFSET);
+    addr_hit[406] = (reg_addr == ALERT_HANDLER_CLASSC_ACCUM_CNT_OFFSET);
+    addr_hit[407] = (reg_addr == ALERT_HANDLER_CLASSC_ACCUM_THRESH_SHADOWED_OFFSET);
+    addr_hit[408] = (reg_addr == ALERT_HANDLER_CLASSC_TIMEOUT_CYC_SHADOWED_OFFSET);
+    addr_hit[409] = (reg_addr == ALERT_HANDLER_CLASSC_CRASHDUMP_TRIGGER_SHADOWED_OFFSET);
+    addr_hit[410] = (reg_addr == ALERT_HANDLER_CLASSC_PHASE0_CYC_SHADOWED_OFFSET);
+    addr_hit[411] = (reg_addr == ALERT_HANDLER_CLASSC_PHASE1_CYC_SHADOWED_OFFSET);
+    addr_hit[412] = (reg_addr == ALERT_HANDLER_CLASSC_PHASE2_CYC_SHADOWED_OFFSET);
+    addr_hit[413] = (reg_addr == ALERT_HANDLER_CLASSC_PHASE3_CYC_SHADOWED_OFFSET);
+    addr_hit[414] = (reg_addr == ALERT_HANDLER_CLASSC_ESC_CNT_OFFSET);
+    addr_hit[415] = (reg_addr == ALERT_HANDLER_CLASSC_STATE_OFFSET);
+    addr_hit[416] = (reg_addr == ALERT_HANDLER_CLASSD_REGWEN_OFFSET);
+    addr_hit[417] = (reg_addr == ALERT_HANDLER_CLASSD_CTRL_SHADOWED_OFFSET);
+    addr_hit[418] = (reg_addr == ALERT_HANDLER_CLASSD_CLR_REGWEN_OFFSET);
+    addr_hit[419] = (reg_addr == ALERT_HANDLER_CLASSD_CLR_SHADOWED_OFFSET);
+    addr_hit[420] = (reg_addr == ALERT_HANDLER_CLASSD_ACCUM_CNT_OFFSET);
+    addr_hit[421] = (reg_addr == ALERT_HANDLER_CLASSD_ACCUM_THRESH_SHADOWED_OFFSET);
+    addr_hit[422] = (reg_addr == ALERT_HANDLER_CLASSD_TIMEOUT_CYC_SHADOWED_OFFSET);
+    addr_hit[423] = (reg_addr == ALERT_HANDLER_CLASSD_CRASHDUMP_TRIGGER_SHADOWED_OFFSET);
+    addr_hit[424] = (reg_addr == ALERT_HANDLER_CLASSD_PHASE0_CYC_SHADOWED_OFFSET);
+    addr_hit[425] = (reg_addr == ALERT_HANDLER_CLASSD_PHASE1_CYC_SHADOWED_OFFSET);
+    addr_hit[426] = (reg_addr == ALERT_HANDLER_CLASSD_PHASE2_CYC_SHADOWED_OFFSET);
+    addr_hit[427] = (reg_addr == ALERT_HANDLER_CLASSD_PHASE3_CYC_SHADOWED_OFFSET);
+    addr_hit[428] = (reg_addr == ALERT_HANDLER_CLASSD_ESC_CNT_OFFSET);
+    addr_hit[429] = (reg_addr == ALERT_HANDLER_CLASSD_STATE_OFFSET);
   end
 
   assign addrmiss = (reg_re || reg_we) ? ~|addr_hit : 1'b0 ;
@@ -13614,7 +19446,151 @@ module alert_handler_reg_top (
                (addr_hit[282] & (|(ALERT_HANDLER_PERMIT[282] & ~reg_be))) |
                (addr_hit[283] & (|(ALERT_HANDLER_PERMIT[283] & ~reg_be))) |
                (addr_hit[284] & (|(ALERT_HANDLER_PERMIT[284] & ~reg_be))) |
-               (addr_hit[285] & (|(ALERT_HANDLER_PERMIT[285] & ~reg_be)))));
+               (addr_hit[285] & (|(ALERT_HANDLER_PERMIT[285] & ~reg_be))) |
+               (addr_hit[286] & (|(ALERT_HANDLER_PERMIT[286] & ~reg_be))) |
+               (addr_hit[287] & (|(ALERT_HANDLER_PERMIT[287] & ~reg_be))) |
+               (addr_hit[288] & (|(ALERT_HANDLER_PERMIT[288] & ~reg_be))) |
+               (addr_hit[289] & (|(ALERT_HANDLER_PERMIT[289] & ~reg_be))) |
+               (addr_hit[290] & (|(ALERT_HANDLER_PERMIT[290] & ~reg_be))) |
+               (addr_hit[291] & (|(ALERT_HANDLER_PERMIT[291] & ~reg_be))) |
+               (addr_hit[292] & (|(ALERT_HANDLER_PERMIT[292] & ~reg_be))) |
+               (addr_hit[293] & (|(ALERT_HANDLER_PERMIT[293] & ~reg_be))) |
+               (addr_hit[294] & (|(ALERT_HANDLER_PERMIT[294] & ~reg_be))) |
+               (addr_hit[295] & (|(ALERT_HANDLER_PERMIT[295] & ~reg_be))) |
+               (addr_hit[296] & (|(ALERT_HANDLER_PERMIT[296] & ~reg_be))) |
+               (addr_hit[297] & (|(ALERT_HANDLER_PERMIT[297] & ~reg_be))) |
+               (addr_hit[298] & (|(ALERT_HANDLER_PERMIT[298] & ~reg_be))) |
+               (addr_hit[299] & (|(ALERT_HANDLER_PERMIT[299] & ~reg_be))) |
+               (addr_hit[300] & (|(ALERT_HANDLER_PERMIT[300] & ~reg_be))) |
+               (addr_hit[301] & (|(ALERT_HANDLER_PERMIT[301] & ~reg_be))) |
+               (addr_hit[302] & (|(ALERT_HANDLER_PERMIT[302] & ~reg_be))) |
+               (addr_hit[303] & (|(ALERT_HANDLER_PERMIT[303] & ~reg_be))) |
+               (addr_hit[304] & (|(ALERT_HANDLER_PERMIT[304] & ~reg_be))) |
+               (addr_hit[305] & (|(ALERT_HANDLER_PERMIT[305] & ~reg_be))) |
+               (addr_hit[306] & (|(ALERT_HANDLER_PERMIT[306] & ~reg_be))) |
+               (addr_hit[307] & (|(ALERT_HANDLER_PERMIT[307] & ~reg_be))) |
+               (addr_hit[308] & (|(ALERT_HANDLER_PERMIT[308] & ~reg_be))) |
+               (addr_hit[309] & (|(ALERT_HANDLER_PERMIT[309] & ~reg_be))) |
+               (addr_hit[310] & (|(ALERT_HANDLER_PERMIT[310] & ~reg_be))) |
+               (addr_hit[311] & (|(ALERT_HANDLER_PERMIT[311] & ~reg_be))) |
+               (addr_hit[312] & (|(ALERT_HANDLER_PERMIT[312] & ~reg_be))) |
+               (addr_hit[313] & (|(ALERT_HANDLER_PERMIT[313] & ~reg_be))) |
+               (addr_hit[314] & (|(ALERT_HANDLER_PERMIT[314] & ~reg_be))) |
+               (addr_hit[315] & (|(ALERT_HANDLER_PERMIT[315] & ~reg_be))) |
+               (addr_hit[316] & (|(ALERT_HANDLER_PERMIT[316] & ~reg_be))) |
+               (addr_hit[317] & (|(ALERT_HANDLER_PERMIT[317] & ~reg_be))) |
+               (addr_hit[318] & (|(ALERT_HANDLER_PERMIT[318] & ~reg_be))) |
+               (addr_hit[319] & (|(ALERT_HANDLER_PERMIT[319] & ~reg_be))) |
+               (addr_hit[320] & (|(ALERT_HANDLER_PERMIT[320] & ~reg_be))) |
+               (addr_hit[321] & (|(ALERT_HANDLER_PERMIT[321] & ~reg_be))) |
+               (addr_hit[322] & (|(ALERT_HANDLER_PERMIT[322] & ~reg_be))) |
+               (addr_hit[323] & (|(ALERT_HANDLER_PERMIT[323] & ~reg_be))) |
+               (addr_hit[324] & (|(ALERT_HANDLER_PERMIT[324] & ~reg_be))) |
+               (addr_hit[325] & (|(ALERT_HANDLER_PERMIT[325] & ~reg_be))) |
+               (addr_hit[326] & (|(ALERT_HANDLER_PERMIT[326] & ~reg_be))) |
+               (addr_hit[327] & (|(ALERT_HANDLER_PERMIT[327] & ~reg_be))) |
+               (addr_hit[328] & (|(ALERT_HANDLER_PERMIT[328] & ~reg_be))) |
+               (addr_hit[329] & (|(ALERT_HANDLER_PERMIT[329] & ~reg_be))) |
+               (addr_hit[330] & (|(ALERT_HANDLER_PERMIT[330] & ~reg_be))) |
+               (addr_hit[331] & (|(ALERT_HANDLER_PERMIT[331] & ~reg_be))) |
+               (addr_hit[332] & (|(ALERT_HANDLER_PERMIT[332] & ~reg_be))) |
+               (addr_hit[333] & (|(ALERT_HANDLER_PERMIT[333] & ~reg_be))) |
+               (addr_hit[334] & (|(ALERT_HANDLER_PERMIT[334] & ~reg_be))) |
+               (addr_hit[335] & (|(ALERT_HANDLER_PERMIT[335] & ~reg_be))) |
+               (addr_hit[336] & (|(ALERT_HANDLER_PERMIT[336] & ~reg_be))) |
+               (addr_hit[337] & (|(ALERT_HANDLER_PERMIT[337] & ~reg_be))) |
+               (addr_hit[338] & (|(ALERT_HANDLER_PERMIT[338] & ~reg_be))) |
+               (addr_hit[339] & (|(ALERT_HANDLER_PERMIT[339] & ~reg_be))) |
+               (addr_hit[340] & (|(ALERT_HANDLER_PERMIT[340] & ~reg_be))) |
+               (addr_hit[341] & (|(ALERT_HANDLER_PERMIT[341] & ~reg_be))) |
+               (addr_hit[342] & (|(ALERT_HANDLER_PERMIT[342] & ~reg_be))) |
+               (addr_hit[343] & (|(ALERT_HANDLER_PERMIT[343] & ~reg_be))) |
+               (addr_hit[344] & (|(ALERT_HANDLER_PERMIT[344] & ~reg_be))) |
+               (addr_hit[345] & (|(ALERT_HANDLER_PERMIT[345] & ~reg_be))) |
+               (addr_hit[346] & (|(ALERT_HANDLER_PERMIT[346] & ~reg_be))) |
+               (addr_hit[347] & (|(ALERT_HANDLER_PERMIT[347] & ~reg_be))) |
+               (addr_hit[348] & (|(ALERT_HANDLER_PERMIT[348] & ~reg_be))) |
+               (addr_hit[349] & (|(ALERT_HANDLER_PERMIT[349] & ~reg_be))) |
+               (addr_hit[350] & (|(ALERT_HANDLER_PERMIT[350] & ~reg_be))) |
+               (addr_hit[351] & (|(ALERT_HANDLER_PERMIT[351] & ~reg_be))) |
+               (addr_hit[352] & (|(ALERT_HANDLER_PERMIT[352] & ~reg_be))) |
+               (addr_hit[353] & (|(ALERT_HANDLER_PERMIT[353] & ~reg_be))) |
+               (addr_hit[354] & (|(ALERT_HANDLER_PERMIT[354] & ~reg_be))) |
+               (addr_hit[355] & (|(ALERT_HANDLER_PERMIT[355] & ~reg_be))) |
+               (addr_hit[356] & (|(ALERT_HANDLER_PERMIT[356] & ~reg_be))) |
+               (addr_hit[357] & (|(ALERT_HANDLER_PERMIT[357] & ~reg_be))) |
+               (addr_hit[358] & (|(ALERT_HANDLER_PERMIT[358] & ~reg_be))) |
+               (addr_hit[359] & (|(ALERT_HANDLER_PERMIT[359] & ~reg_be))) |
+               (addr_hit[360] & (|(ALERT_HANDLER_PERMIT[360] & ~reg_be))) |
+               (addr_hit[361] & (|(ALERT_HANDLER_PERMIT[361] & ~reg_be))) |
+               (addr_hit[362] & (|(ALERT_HANDLER_PERMIT[362] & ~reg_be))) |
+               (addr_hit[363] & (|(ALERT_HANDLER_PERMIT[363] & ~reg_be))) |
+               (addr_hit[364] & (|(ALERT_HANDLER_PERMIT[364] & ~reg_be))) |
+               (addr_hit[365] & (|(ALERT_HANDLER_PERMIT[365] & ~reg_be))) |
+               (addr_hit[366] & (|(ALERT_HANDLER_PERMIT[366] & ~reg_be))) |
+               (addr_hit[367] & (|(ALERT_HANDLER_PERMIT[367] & ~reg_be))) |
+               (addr_hit[368] & (|(ALERT_HANDLER_PERMIT[368] & ~reg_be))) |
+               (addr_hit[369] & (|(ALERT_HANDLER_PERMIT[369] & ~reg_be))) |
+               (addr_hit[370] & (|(ALERT_HANDLER_PERMIT[370] & ~reg_be))) |
+               (addr_hit[371] & (|(ALERT_HANDLER_PERMIT[371] & ~reg_be))) |
+               (addr_hit[372] & (|(ALERT_HANDLER_PERMIT[372] & ~reg_be))) |
+               (addr_hit[373] & (|(ALERT_HANDLER_PERMIT[373] & ~reg_be))) |
+               (addr_hit[374] & (|(ALERT_HANDLER_PERMIT[374] & ~reg_be))) |
+               (addr_hit[375] & (|(ALERT_HANDLER_PERMIT[375] & ~reg_be))) |
+               (addr_hit[376] & (|(ALERT_HANDLER_PERMIT[376] & ~reg_be))) |
+               (addr_hit[377] & (|(ALERT_HANDLER_PERMIT[377] & ~reg_be))) |
+               (addr_hit[378] & (|(ALERT_HANDLER_PERMIT[378] & ~reg_be))) |
+               (addr_hit[379] & (|(ALERT_HANDLER_PERMIT[379] & ~reg_be))) |
+               (addr_hit[380] & (|(ALERT_HANDLER_PERMIT[380] & ~reg_be))) |
+               (addr_hit[381] & (|(ALERT_HANDLER_PERMIT[381] & ~reg_be))) |
+               (addr_hit[382] & (|(ALERT_HANDLER_PERMIT[382] & ~reg_be))) |
+               (addr_hit[383] & (|(ALERT_HANDLER_PERMIT[383] & ~reg_be))) |
+               (addr_hit[384] & (|(ALERT_HANDLER_PERMIT[384] & ~reg_be))) |
+               (addr_hit[385] & (|(ALERT_HANDLER_PERMIT[385] & ~reg_be))) |
+               (addr_hit[386] & (|(ALERT_HANDLER_PERMIT[386] & ~reg_be))) |
+               (addr_hit[387] & (|(ALERT_HANDLER_PERMIT[387] & ~reg_be))) |
+               (addr_hit[388] & (|(ALERT_HANDLER_PERMIT[388] & ~reg_be))) |
+               (addr_hit[389] & (|(ALERT_HANDLER_PERMIT[389] & ~reg_be))) |
+               (addr_hit[390] & (|(ALERT_HANDLER_PERMIT[390] & ~reg_be))) |
+               (addr_hit[391] & (|(ALERT_HANDLER_PERMIT[391] & ~reg_be))) |
+               (addr_hit[392] & (|(ALERT_HANDLER_PERMIT[392] & ~reg_be))) |
+               (addr_hit[393] & (|(ALERT_HANDLER_PERMIT[393] & ~reg_be))) |
+               (addr_hit[394] & (|(ALERT_HANDLER_PERMIT[394] & ~reg_be))) |
+               (addr_hit[395] & (|(ALERT_HANDLER_PERMIT[395] & ~reg_be))) |
+               (addr_hit[396] & (|(ALERT_HANDLER_PERMIT[396] & ~reg_be))) |
+               (addr_hit[397] & (|(ALERT_HANDLER_PERMIT[397] & ~reg_be))) |
+               (addr_hit[398] & (|(ALERT_HANDLER_PERMIT[398] & ~reg_be))) |
+               (addr_hit[399] & (|(ALERT_HANDLER_PERMIT[399] & ~reg_be))) |
+               (addr_hit[400] & (|(ALERT_HANDLER_PERMIT[400] & ~reg_be))) |
+               (addr_hit[401] & (|(ALERT_HANDLER_PERMIT[401] & ~reg_be))) |
+               (addr_hit[402] & (|(ALERT_HANDLER_PERMIT[402] & ~reg_be))) |
+               (addr_hit[403] & (|(ALERT_HANDLER_PERMIT[403] & ~reg_be))) |
+               (addr_hit[404] & (|(ALERT_HANDLER_PERMIT[404] & ~reg_be))) |
+               (addr_hit[405] & (|(ALERT_HANDLER_PERMIT[405] & ~reg_be))) |
+               (addr_hit[406] & (|(ALERT_HANDLER_PERMIT[406] & ~reg_be))) |
+               (addr_hit[407] & (|(ALERT_HANDLER_PERMIT[407] & ~reg_be))) |
+               (addr_hit[408] & (|(ALERT_HANDLER_PERMIT[408] & ~reg_be))) |
+               (addr_hit[409] & (|(ALERT_HANDLER_PERMIT[409] & ~reg_be))) |
+               (addr_hit[410] & (|(ALERT_HANDLER_PERMIT[410] & ~reg_be))) |
+               (addr_hit[411] & (|(ALERT_HANDLER_PERMIT[411] & ~reg_be))) |
+               (addr_hit[412] & (|(ALERT_HANDLER_PERMIT[412] & ~reg_be))) |
+               (addr_hit[413] & (|(ALERT_HANDLER_PERMIT[413] & ~reg_be))) |
+               (addr_hit[414] & (|(ALERT_HANDLER_PERMIT[414] & ~reg_be))) |
+               (addr_hit[415] & (|(ALERT_HANDLER_PERMIT[415] & ~reg_be))) |
+               (addr_hit[416] & (|(ALERT_HANDLER_PERMIT[416] & ~reg_be))) |
+               (addr_hit[417] & (|(ALERT_HANDLER_PERMIT[417] & ~reg_be))) |
+               (addr_hit[418] & (|(ALERT_HANDLER_PERMIT[418] & ~reg_be))) |
+               (addr_hit[419] & (|(ALERT_HANDLER_PERMIT[419] & ~reg_be))) |
+               (addr_hit[420] & (|(ALERT_HANDLER_PERMIT[420] & ~reg_be))) |
+               (addr_hit[421] & (|(ALERT_HANDLER_PERMIT[421] & ~reg_be))) |
+               (addr_hit[422] & (|(ALERT_HANDLER_PERMIT[422] & ~reg_be))) |
+               (addr_hit[423] & (|(ALERT_HANDLER_PERMIT[423] & ~reg_be))) |
+               (addr_hit[424] & (|(ALERT_HANDLER_PERMIT[424] & ~reg_be))) |
+               (addr_hit[425] & (|(ALERT_HANDLER_PERMIT[425] & ~reg_be))) |
+               (addr_hit[426] & (|(ALERT_HANDLER_PERMIT[426] & ~reg_be))) |
+               (addr_hit[427] & (|(ALERT_HANDLER_PERMIT[427] & ~reg_be))) |
+               (addr_hit[428] & (|(ALERT_HANDLER_PERMIT[428] & ~reg_be))) |
+               (addr_hit[429] & (|(ALERT_HANDLER_PERMIT[429] & ~reg_be)))));
   end
 
   // Generate write-enables
@@ -13803,648 +19779,1152 @@ module alert_handler_reg_top (
   assign alert_regwen_48_we = addr_hit[54] & reg_we & !reg_error;
 
   assign alert_regwen_48_wd = reg_wdata[0];
-  assign alert_en_shadowed_0_re = addr_hit[55] & reg_re & !reg_error;
-  assign alert_en_shadowed_0_we = addr_hit[55] & reg_we & !reg_error;
+  assign alert_regwen_49_we = addr_hit[55] & reg_we & !reg_error;
+
+  assign alert_regwen_49_wd = reg_wdata[0];
+  assign alert_regwen_50_we = addr_hit[56] & reg_we & !reg_error;
+
+  assign alert_regwen_50_wd = reg_wdata[0];
+  assign alert_regwen_51_we = addr_hit[57] & reg_we & !reg_error;
+
+  assign alert_regwen_51_wd = reg_wdata[0];
+  assign alert_regwen_52_we = addr_hit[58] & reg_we & !reg_error;
+
+  assign alert_regwen_52_wd = reg_wdata[0];
+  assign alert_regwen_53_we = addr_hit[59] & reg_we & !reg_error;
+
+  assign alert_regwen_53_wd = reg_wdata[0];
+  assign alert_regwen_54_we = addr_hit[60] & reg_we & !reg_error;
+
+  assign alert_regwen_54_wd = reg_wdata[0];
+  assign alert_regwen_55_we = addr_hit[61] & reg_we & !reg_error;
+
+  assign alert_regwen_55_wd = reg_wdata[0];
+  assign alert_regwen_56_we = addr_hit[62] & reg_we & !reg_error;
+
+  assign alert_regwen_56_wd = reg_wdata[0];
+  assign alert_regwen_57_we = addr_hit[63] & reg_we & !reg_error;
+
+  assign alert_regwen_57_wd = reg_wdata[0];
+  assign alert_regwen_58_we = addr_hit[64] & reg_we & !reg_error;
+
+  assign alert_regwen_58_wd = reg_wdata[0];
+  assign alert_regwen_59_we = addr_hit[65] & reg_we & !reg_error;
+
+  assign alert_regwen_59_wd = reg_wdata[0];
+  assign alert_regwen_60_we = addr_hit[66] & reg_we & !reg_error;
+
+  assign alert_regwen_60_wd = reg_wdata[0];
+  assign alert_regwen_61_we = addr_hit[67] & reg_we & !reg_error;
+
+  assign alert_regwen_61_wd = reg_wdata[0];
+  assign alert_regwen_62_we = addr_hit[68] & reg_we & !reg_error;
+
+  assign alert_regwen_62_wd = reg_wdata[0];
+  assign alert_regwen_63_we = addr_hit[69] & reg_we & !reg_error;
+
+  assign alert_regwen_63_wd = reg_wdata[0];
+  assign alert_regwen_64_we = addr_hit[70] & reg_we & !reg_error;
+
+  assign alert_regwen_64_wd = reg_wdata[0];
+  assign alert_regwen_65_we = addr_hit[71] & reg_we & !reg_error;
+
+  assign alert_regwen_65_wd = reg_wdata[0];
+  assign alert_regwen_66_we = addr_hit[72] & reg_we & !reg_error;
+
+  assign alert_regwen_66_wd = reg_wdata[0];
+  assign alert_regwen_67_we = addr_hit[73] & reg_we & !reg_error;
+
+  assign alert_regwen_67_wd = reg_wdata[0];
+  assign alert_regwen_68_we = addr_hit[74] & reg_we & !reg_error;
+
+  assign alert_regwen_68_wd = reg_wdata[0];
+  assign alert_regwen_69_we = addr_hit[75] & reg_we & !reg_error;
+
+  assign alert_regwen_69_wd = reg_wdata[0];
+  assign alert_regwen_70_we = addr_hit[76] & reg_we & !reg_error;
+
+  assign alert_regwen_70_wd = reg_wdata[0];
+  assign alert_regwen_71_we = addr_hit[77] & reg_we & !reg_error;
+
+  assign alert_regwen_71_wd = reg_wdata[0];
+  assign alert_regwen_72_we = addr_hit[78] & reg_we & !reg_error;
+
+  assign alert_regwen_72_wd = reg_wdata[0];
+  assign alert_regwen_73_we = addr_hit[79] & reg_we & !reg_error;
+
+  assign alert_regwen_73_wd = reg_wdata[0];
+  assign alert_regwen_74_we = addr_hit[80] & reg_we & !reg_error;
+
+  assign alert_regwen_74_wd = reg_wdata[0];
+  assign alert_regwen_75_we = addr_hit[81] & reg_we & !reg_error;
+
+  assign alert_regwen_75_wd = reg_wdata[0];
+  assign alert_regwen_76_we = addr_hit[82] & reg_we & !reg_error;
+
+  assign alert_regwen_76_wd = reg_wdata[0];
+  assign alert_regwen_77_we = addr_hit[83] & reg_we & !reg_error;
+
+  assign alert_regwen_77_wd = reg_wdata[0];
+  assign alert_regwen_78_we = addr_hit[84] & reg_we & !reg_error;
+
+  assign alert_regwen_78_wd = reg_wdata[0];
+  assign alert_regwen_79_we = addr_hit[85] & reg_we & !reg_error;
+
+  assign alert_regwen_79_wd = reg_wdata[0];
+  assign alert_regwen_80_we = addr_hit[86] & reg_we & !reg_error;
+
+  assign alert_regwen_80_wd = reg_wdata[0];
+  assign alert_regwen_81_we = addr_hit[87] & reg_we & !reg_error;
+
+  assign alert_regwen_81_wd = reg_wdata[0];
+  assign alert_regwen_82_we = addr_hit[88] & reg_we & !reg_error;
+
+  assign alert_regwen_82_wd = reg_wdata[0];
+  assign alert_regwen_83_we = addr_hit[89] & reg_we & !reg_error;
+
+  assign alert_regwen_83_wd = reg_wdata[0];
+  assign alert_regwen_84_we = addr_hit[90] & reg_we & !reg_error;
+
+  assign alert_regwen_84_wd = reg_wdata[0];
+  assign alert_en_shadowed_0_re = addr_hit[91] & reg_re & !reg_error;
+  assign alert_en_shadowed_0_we = addr_hit[91] & reg_we & !reg_error;
 
   assign alert_en_shadowed_0_wd = reg_wdata[0];
-  assign alert_en_shadowed_1_re = addr_hit[56] & reg_re & !reg_error;
-  assign alert_en_shadowed_1_we = addr_hit[56] & reg_we & !reg_error;
+  assign alert_en_shadowed_1_re = addr_hit[92] & reg_re & !reg_error;
+  assign alert_en_shadowed_1_we = addr_hit[92] & reg_we & !reg_error;
 
   assign alert_en_shadowed_1_wd = reg_wdata[0];
-  assign alert_en_shadowed_2_re = addr_hit[57] & reg_re & !reg_error;
-  assign alert_en_shadowed_2_we = addr_hit[57] & reg_we & !reg_error;
+  assign alert_en_shadowed_2_re = addr_hit[93] & reg_re & !reg_error;
+  assign alert_en_shadowed_2_we = addr_hit[93] & reg_we & !reg_error;
 
   assign alert_en_shadowed_2_wd = reg_wdata[0];
-  assign alert_en_shadowed_3_re = addr_hit[58] & reg_re & !reg_error;
-  assign alert_en_shadowed_3_we = addr_hit[58] & reg_we & !reg_error;
+  assign alert_en_shadowed_3_re = addr_hit[94] & reg_re & !reg_error;
+  assign alert_en_shadowed_3_we = addr_hit[94] & reg_we & !reg_error;
 
   assign alert_en_shadowed_3_wd = reg_wdata[0];
-  assign alert_en_shadowed_4_re = addr_hit[59] & reg_re & !reg_error;
-  assign alert_en_shadowed_4_we = addr_hit[59] & reg_we & !reg_error;
+  assign alert_en_shadowed_4_re = addr_hit[95] & reg_re & !reg_error;
+  assign alert_en_shadowed_4_we = addr_hit[95] & reg_we & !reg_error;
 
   assign alert_en_shadowed_4_wd = reg_wdata[0];
-  assign alert_en_shadowed_5_re = addr_hit[60] & reg_re & !reg_error;
-  assign alert_en_shadowed_5_we = addr_hit[60] & reg_we & !reg_error;
+  assign alert_en_shadowed_5_re = addr_hit[96] & reg_re & !reg_error;
+  assign alert_en_shadowed_5_we = addr_hit[96] & reg_we & !reg_error;
 
   assign alert_en_shadowed_5_wd = reg_wdata[0];
-  assign alert_en_shadowed_6_re = addr_hit[61] & reg_re & !reg_error;
-  assign alert_en_shadowed_6_we = addr_hit[61] & reg_we & !reg_error;
+  assign alert_en_shadowed_6_re = addr_hit[97] & reg_re & !reg_error;
+  assign alert_en_shadowed_6_we = addr_hit[97] & reg_we & !reg_error;
 
   assign alert_en_shadowed_6_wd = reg_wdata[0];
-  assign alert_en_shadowed_7_re = addr_hit[62] & reg_re & !reg_error;
-  assign alert_en_shadowed_7_we = addr_hit[62] & reg_we & !reg_error;
+  assign alert_en_shadowed_7_re = addr_hit[98] & reg_re & !reg_error;
+  assign alert_en_shadowed_7_we = addr_hit[98] & reg_we & !reg_error;
 
   assign alert_en_shadowed_7_wd = reg_wdata[0];
-  assign alert_en_shadowed_8_re = addr_hit[63] & reg_re & !reg_error;
-  assign alert_en_shadowed_8_we = addr_hit[63] & reg_we & !reg_error;
+  assign alert_en_shadowed_8_re = addr_hit[99] & reg_re & !reg_error;
+  assign alert_en_shadowed_8_we = addr_hit[99] & reg_we & !reg_error;
 
   assign alert_en_shadowed_8_wd = reg_wdata[0];
-  assign alert_en_shadowed_9_re = addr_hit[64] & reg_re & !reg_error;
-  assign alert_en_shadowed_9_we = addr_hit[64] & reg_we & !reg_error;
+  assign alert_en_shadowed_9_re = addr_hit[100] & reg_re & !reg_error;
+  assign alert_en_shadowed_9_we = addr_hit[100] & reg_we & !reg_error;
 
   assign alert_en_shadowed_9_wd = reg_wdata[0];
-  assign alert_en_shadowed_10_re = addr_hit[65] & reg_re & !reg_error;
-  assign alert_en_shadowed_10_we = addr_hit[65] & reg_we & !reg_error;
+  assign alert_en_shadowed_10_re = addr_hit[101] & reg_re & !reg_error;
+  assign alert_en_shadowed_10_we = addr_hit[101] & reg_we & !reg_error;
 
   assign alert_en_shadowed_10_wd = reg_wdata[0];
-  assign alert_en_shadowed_11_re = addr_hit[66] & reg_re & !reg_error;
-  assign alert_en_shadowed_11_we = addr_hit[66] & reg_we & !reg_error;
+  assign alert_en_shadowed_11_re = addr_hit[102] & reg_re & !reg_error;
+  assign alert_en_shadowed_11_we = addr_hit[102] & reg_we & !reg_error;
 
   assign alert_en_shadowed_11_wd = reg_wdata[0];
-  assign alert_en_shadowed_12_re = addr_hit[67] & reg_re & !reg_error;
-  assign alert_en_shadowed_12_we = addr_hit[67] & reg_we & !reg_error;
+  assign alert_en_shadowed_12_re = addr_hit[103] & reg_re & !reg_error;
+  assign alert_en_shadowed_12_we = addr_hit[103] & reg_we & !reg_error;
 
   assign alert_en_shadowed_12_wd = reg_wdata[0];
-  assign alert_en_shadowed_13_re = addr_hit[68] & reg_re & !reg_error;
-  assign alert_en_shadowed_13_we = addr_hit[68] & reg_we & !reg_error;
+  assign alert_en_shadowed_13_re = addr_hit[104] & reg_re & !reg_error;
+  assign alert_en_shadowed_13_we = addr_hit[104] & reg_we & !reg_error;
 
   assign alert_en_shadowed_13_wd = reg_wdata[0];
-  assign alert_en_shadowed_14_re = addr_hit[69] & reg_re & !reg_error;
-  assign alert_en_shadowed_14_we = addr_hit[69] & reg_we & !reg_error;
+  assign alert_en_shadowed_14_re = addr_hit[105] & reg_re & !reg_error;
+  assign alert_en_shadowed_14_we = addr_hit[105] & reg_we & !reg_error;
 
   assign alert_en_shadowed_14_wd = reg_wdata[0];
-  assign alert_en_shadowed_15_re = addr_hit[70] & reg_re & !reg_error;
-  assign alert_en_shadowed_15_we = addr_hit[70] & reg_we & !reg_error;
+  assign alert_en_shadowed_15_re = addr_hit[106] & reg_re & !reg_error;
+  assign alert_en_shadowed_15_we = addr_hit[106] & reg_we & !reg_error;
 
   assign alert_en_shadowed_15_wd = reg_wdata[0];
-  assign alert_en_shadowed_16_re = addr_hit[71] & reg_re & !reg_error;
-  assign alert_en_shadowed_16_we = addr_hit[71] & reg_we & !reg_error;
+  assign alert_en_shadowed_16_re = addr_hit[107] & reg_re & !reg_error;
+  assign alert_en_shadowed_16_we = addr_hit[107] & reg_we & !reg_error;
 
   assign alert_en_shadowed_16_wd = reg_wdata[0];
-  assign alert_en_shadowed_17_re = addr_hit[72] & reg_re & !reg_error;
-  assign alert_en_shadowed_17_we = addr_hit[72] & reg_we & !reg_error;
+  assign alert_en_shadowed_17_re = addr_hit[108] & reg_re & !reg_error;
+  assign alert_en_shadowed_17_we = addr_hit[108] & reg_we & !reg_error;
 
   assign alert_en_shadowed_17_wd = reg_wdata[0];
-  assign alert_en_shadowed_18_re = addr_hit[73] & reg_re & !reg_error;
-  assign alert_en_shadowed_18_we = addr_hit[73] & reg_we & !reg_error;
+  assign alert_en_shadowed_18_re = addr_hit[109] & reg_re & !reg_error;
+  assign alert_en_shadowed_18_we = addr_hit[109] & reg_we & !reg_error;
 
   assign alert_en_shadowed_18_wd = reg_wdata[0];
-  assign alert_en_shadowed_19_re = addr_hit[74] & reg_re & !reg_error;
-  assign alert_en_shadowed_19_we = addr_hit[74] & reg_we & !reg_error;
+  assign alert_en_shadowed_19_re = addr_hit[110] & reg_re & !reg_error;
+  assign alert_en_shadowed_19_we = addr_hit[110] & reg_we & !reg_error;
 
   assign alert_en_shadowed_19_wd = reg_wdata[0];
-  assign alert_en_shadowed_20_re = addr_hit[75] & reg_re & !reg_error;
-  assign alert_en_shadowed_20_we = addr_hit[75] & reg_we & !reg_error;
+  assign alert_en_shadowed_20_re = addr_hit[111] & reg_re & !reg_error;
+  assign alert_en_shadowed_20_we = addr_hit[111] & reg_we & !reg_error;
 
   assign alert_en_shadowed_20_wd = reg_wdata[0];
-  assign alert_en_shadowed_21_re = addr_hit[76] & reg_re & !reg_error;
-  assign alert_en_shadowed_21_we = addr_hit[76] & reg_we & !reg_error;
+  assign alert_en_shadowed_21_re = addr_hit[112] & reg_re & !reg_error;
+  assign alert_en_shadowed_21_we = addr_hit[112] & reg_we & !reg_error;
 
   assign alert_en_shadowed_21_wd = reg_wdata[0];
-  assign alert_en_shadowed_22_re = addr_hit[77] & reg_re & !reg_error;
-  assign alert_en_shadowed_22_we = addr_hit[77] & reg_we & !reg_error;
+  assign alert_en_shadowed_22_re = addr_hit[113] & reg_re & !reg_error;
+  assign alert_en_shadowed_22_we = addr_hit[113] & reg_we & !reg_error;
 
   assign alert_en_shadowed_22_wd = reg_wdata[0];
-  assign alert_en_shadowed_23_re = addr_hit[78] & reg_re & !reg_error;
-  assign alert_en_shadowed_23_we = addr_hit[78] & reg_we & !reg_error;
+  assign alert_en_shadowed_23_re = addr_hit[114] & reg_re & !reg_error;
+  assign alert_en_shadowed_23_we = addr_hit[114] & reg_we & !reg_error;
 
   assign alert_en_shadowed_23_wd = reg_wdata[0];
-  assign alert_en_shadowed_24_re = addr_hit[79] & reg_re & !reg_error;
-  assign alert_en_shadowed_24_we = addr_hit[79] & reg_we & !reg_error;
+  assign alert_en_shadowed_24_re = addr_hit[115] & reg_re & !reg_error;
+  assign alert_en_shadowed_24_we = addr_hit[115] & reg_we & !reg_error;
 
   assign alert_en_shadowed_24_wd = reg_wdata[0];
-  assign alert_en_shadowed_25_re = addr_hit[80] & reg_re & !reg_error;
-  assign alert_en_shadowed_25_we = addr_hit[80] & reg_we & !reg_error;
+  assign alert_en_shadowed_25_re = addr_hit[116] & reg_re & !reg_error;
+  assign alert_en_shadowed_25_we = addr_hit[116] & reg_we & !reg_error;
 
   assign alert_en_shadowed_25_wd = reg_wdata[0];
-  assign alert_en_shadowed_26_re = addr_hit[81] & reg_re & !reg_error;
-  assign alert_en_shadowed_26_we = addr_hit[81] & reg_we & !reg_error;
+  assign alert_en_shadowed_26_re = addr_hit[117] & reg_re & !reg_error;
+  assign alert_en_shadowed_26_we = addr_hit[117] & reg_we & !reg_error;
 
   assign alert_en_shadowed_26_wd = reg_wdata[0];
-  assign alert_en_shadowed_27_re = addr_hit[82] & reg_re & !reg_error;
-  assign alert_en_shadowed_27_we = addr_hit[82] & reg_we & !reg_error;
+  assign alert_en_shadowed_27_re = addr_hit[118] & reg_re & !reg_error;
+  assign alert_en_shadowed_27_we = addr_hit[118] & reg_we & !reg_error;
 
   assign alert_en_shadowed_27_wd = reg_wdata[0];
-  assign alert_en_shadowed_28_re = addr_hit[83] & reg_re & !reg_error;
-  assign alert_en_shadowed_28_we = addr_hit[83] & reg_we & !reg_error;
+  assign alert_en_shadowed_28_re = addr_hit[119] & reg_re & !reg_error;
+  assign alert_en_shadowed_28_we = addr_hit[119] & reg_we & !reg_error;
 
   assign alert_en_shadowed_28_wd = reg_wdata[0];
-  assign alert_en_shadowed_29_re = addr_hit[84] & reg_re & !reg_error;
-  assign alert_en_shadowed_29_we = addr_hit[84] & reg_we & !reg_error;
+  assign alert_en_shadowed_29_re = addr_hit[120] & reg_re & !reg_error;
+  assign alert_en_shadowed_29_we = addr_hit[120] & reg_we & !reg_error;
 
   assign alert_en_shadowed_29_wd = reg_wdata[0];
-  assign alert_en_shadowed_30_re = addr_hit[85] & reg_re & !reg_error;
-  assign alert_en_shadowed_30_we = addr_hit[85] & reg_we & !reg_error;
+  assign alert_en_shadowed_30_re = addr_hit[121] & reg_re & !reg_error;
+  assign alert_en_shadowed_30_we = addr_hit[121] & reg_we & !reg_error;
 
   assign alert_en_shadowed_30_wd = reg_wdata[0];
-  assign alert_en_shadowed_31_re = addr_hit[86] & reg_re & !reg_error;
-  assign alert_en_shadowed_31_we = addr_hit[86] & reg_we & !reg_error;
+  assign alert_en_shadowed_31_re = addr_hit[122] & reg_re & !reg_error;
+  assign alert_en_shadowed_31_we = addr_hit[122] & reg_we & !reg_error;
 
   assign alert_en_shadowed_31_wd = reg_wdata[0];
-  assign alert_en_shadowed_32_re = addr_hit[87] & reg_re & !reg_error;
-  assign alert_en_shadowed_32_we = addr_hit[87] & reg_we & !reg_error;
+  assign alert_en_shadowed_32_re = addr_hit[123] & reg_re & !reg_error;
+  assign alert_en_shadowed_32_we = addr_hit[123] & reg_we & !reg_error;
 
   assign alert_en_shadowed_32_wd = reg_wdata[0];
-  assign alert_en_shadowed_33_re = addr_hit[88] & reg_re & !reg_error;
-  assign alert_en_shadowed_33_we = addr_hit[88] & reg_we & !reg_error;
+  assign alert_en_shadowed_33_re = addr_hit[124] & reg_re & !reg_error;
+  assign alert_en_shadowed_33_we = addr_hit[124] & reg_we & !reg_error;
 
   assign alert_en_shadowed_33_wd = reg_wdata[0];
-  assign alert_en_shadowed_34_re = addr_hit[89] & reg_re & !reg_error;
-  assign alert_en_shadowed_34_we = addr_hit[89] & reg_we & !reg_error;
+  assign alert_en_shadowed_34_re = addr_hit[125] & reg_re & !reg_error;
+  assign alert_en_shadowed_34_we = addr_hit[125] & reg_we & !reg_error;
 
   assign alert_en_shadowed_34_wd = reg_wdata[0];
-  assign alert_en_shadowed_35_re = addr_hit[90] & reg_re & !reg_error;
-  assign alert_en_shadowed_35_we = addr_hit[90] & reg_we & !reg_error;
+  assign alert_en_shadowed_35_re = addr_hit[126] & reg_re & !reg_error;
+  assign alert_en_shadowed_35_we = addr_hit[126] & reg_we & !reg_error;
 
   assign alert_en_shadowed_35_wd = reg_wdata[0];
-  assign alert_en_shadowed_36_re = addr_hit[91] & reg_re & !reg_error;
-  assign alert_en_shadowed_36_we = addr_hit[91] & reg_we & !reg_error;
+  assign alert_en_shadowed_36_re = addr_hit[127] & reg_re & !reg_error;
+  assign alert_en_shadowed_36_we = addr_hit[127] & reg_we & !reg_error;
 
   assign alert_en_shadowed_36_wd = reg_wdata[0];
-  assign alert_en_shadowed_37_re = addr_hit[92] & reg_re & !reg_error;
-  assign alert_en_shadowed_37_we = addr_hit[92] & reg_we & !reg_error;
+  assign alert_en_shadowed_37_re = addr_hit[128] & reg_re & !reg_error;
+  assign alert_en_shadowed_37_we = addr_hit[128] & reg_we & !reg_error;
 
   assign alert_en_shadowed_37_wd = reg_wdata[0];
-  assign alert_en_shadowed_38_re = addr_hit[93] & reg_re & !reg_error;
-  assign alert_en_shadowed_38_we = addr_hit[93] & reg_we & !reg_error;
+  assign alert_en_shadowed_38_re = addr_hit[129] & reg_re & !reg_error;
+  assign alert_en_shadowed_38_we = addr_hit[129] & reg_we & !reg_error;
 
   assign alert_en_shadowed_38_wd = reg_wdata[0];
-  assign alert_en_shadowed_39_re = addr_hit[94] & reg_re & !reg_error;
-  assign alert_en_shadowed_39_we = addr_hit[94] & reg_we & !reg_error;
+  assign alert_en_shadowed_39_re = addr_hit[130] & reg_re & !reg_error;
+  assign alert_en_shadowed_39_we = addr_hit[130] & reg_we & !reg_error;
 
   assign alert_en_shadowed_39_wd = reg_wdata[0];
-  assign alert_en_shadowed_40_re = addr_hit[95] & reg_re & !reg_error;
-  assign alert_en_shadowed_40_we = addr_hit[95] & reg_we & !reg_error;
+  assign alert_en_shadowed_40_re = addr_hit[131] & reg_re & !reg_error;
+  assign alert_en_shadowed_40_we = addr_hit[131] & reg_we & !reg_error;
 
   assign alert_en_shadowed_40_wd = reg_wdata[0];
-  assign alert_en_shadowed_41_re = addr_hit[96] & reg_re & !reg_error;
-  assign alert_en_shadowed_41_we = addr_hit[96] & reg_we & !reg_error;
+  assign alert_en_shadowed_41_re = addr_hit[132] & reg_re & !reg_error;
+  assign alert_en_shadowed_41_we = addr_hit[132] & reg_we & !reg_error;
 
   assign alert_en_shadowed_41_wd = reg_wdata[0];
-  assign alert_en_shadowed_42_re = addr_hit[97] & reg_re & !reg_error;
-  assign alert_en_shadowed_42_we = addr_hit[97] & reg_we & !reg_error;
+  assign alert_en_shadowed_42_re = addr_hit[133] & reg_re & !reg_error;
+  assign alert_en_shadowed_42_we = addr_hit[133] & reg_we & !reg_error;
 
   assign alert_en_shadowed_42_wd = reg_wdata[0];
-  assign alert_en_shadowed_43_re = addr_hit[98] & reg_re & !reg_error;
-  assign alert_en_shadowed_43_we = addr_hit[98] & reg_we & !reg_error;
+  assign alert_en_shadowed_43_re = addr_hit[134] & reg_re & !reg_error;
+  assign alert_en_shadowed_43_we = addr_hit[134] & reg_we & !reg_error;
 
   assign alert_en_shadowed_43_wd = reg_wdata[0];
-  assign alert_en_shadowed_44_re = addr_hit[99] & reg_re & !reg_error;
-  assign alert_en_shadowed_44_we = addr_hit[99] & reg_we & !reg_error;
+  assign alert_en_shadowed_44_re = addr_hit[135] & reg_re & !reg_error;
+  assign alert_en_shadowed_44_we = addr_hit[135] & reg_we & !reg_error;
 
   assign alert_en_shadowed_44_wd = reg_wdata[0];
-  assign alert_en_shadowed_45_re = addr_hit[100] & reg_re & !reg_error;
-  assign alert_en_shadowed_45_we = addr_hit[100] & reg_we & !reg_error;
+  assign alert_en_shadowed_45_re = addr_hit[136] & reg_re & !reg_error;
+  assign alert_en_shadowed_45_we = addr_hit[136] & reg_we & !reg_error;
 
   assign alert_en_shadowed_45_wd = reg_wdata[0];
-  assign alert_en_shadowed_46_re = addr_hit[101] & reg_re & !reg_error;
-  assign alert_en_shadowed_46_we = addr_hit[101] & reg_we & !reg_error;
+  assign alert_en_shadowed_46_re = addr_hit[137] & reg_re & !reg_error;
+  assign alert_en_shadowed_46_we = addr_hit[137] & reg_we & !reg_error;
 
   assign alert_en_shadowed_46_wd = reg_wdata[0];
-  assign alert_en_shadowed_47_re = addr_hit[102] & reg_re & !reg_error;
-  assign alert_en_shadowed_47_we = addr_hit[102] & reg_we & !reg_error;
+  assign alert_en_shadowed_47_re = addr_hit[138] & reg_re & !reg_error;
+  assign alert_en_shadowed_47_we = addr_hit[138] & reg_we & !reg_error;
 
   assign alert_en_shadowed_47_wd = reg_wdata[0];
-  assign alert_en_shadowed_48_re = addr_hit[103] & reg_re & !reg_error;
-  assign alert_en_shadowed_48_we = addr_hit[103] & reg_we & !reg_error;
+  assign alert_en_shadowed_48_re = addr_hit[139] & reg_re & !reg_error;
+  assign alert_en_shadowed_48_we = addr_hit[139] & reg_we & !reg_error;
 
   assign alert_en_shadowed_48_wd = reg_wdata[0];
-  assign alert_class_shadowed_0_re = addr_hit[104] & reg_re & !reg_error;
-  assign alert_class_shadowed_0_we = addr_hit[104] & reg_we & !reg_error;
+  assign alert_en_shadowed_49_re = addr_hit[140] & reg_re & !reg_error;
+  assign alert_en_shadowed_49_we = addr_hit[140] & reg_we & !reg_error;
+
+  assign alert_en_shadowed_49_wd = reg_wdata[0];
+  assign alert_en_shadowed_50_re = addr_hit[141] & reg_re & !reg_error;
+  assign alert_en_shadowed_50_we = addr_hit[141] & reg_we & !reg_error;
+
+  assign alert_en_shadowed_50_wd = reg_wdata[0];
+  assign alert_en_shadowed_51_re = addr_hit[142] & reg_re & !reg_error;
+  assign alert_en_shadowed_51_we = addr_hit[142] & reg_we & !reg_error;
+
+  assign alert_en_shadowed_51_wd = reg_wdata[0];
+  assign alert_en_shadowed_52_re = addr_hit[143] & reg_re & !reg_error;
+  assign alert_en_shadowed_52_we = addr_hit[143] & reg_we & !reg_error;
+
+  assign alert_en_shadowed_52_wd = reg_wdata[0];
+  assign alert_en_shadowed_53_re = addr_hit[144] & reg_re & !reg_error;
+  assign alert_en_shadowed_53_we = addr_hit[144] & reg_we & !reg_error;
+
+  assign alert_en_shadowed_53_wd = reg_wdata[0];
+  assign alert_en_shadowed_54_re = addr_hit[145] & reg_re & !reg_error;
+  assign alert_en_shadowed_54_we = addr_hit[145] & reg_we & !reg_error;
+
+  assign alert_en_shadowed_54_wd = reg_wdata[0];
+  assign alert_en_shadowed_55_re = addr_hit[146] & reg_re & !reg_error;
+  assign alert_en_shadowed_55_we = addr_hit[146] & reg_we & !reg_error;
+
+  assign alert_en_shadowed_55_wd = reg_wdata[0];
+  assign alert_en_shadowed_56_re = addr_hit[147] & reg_re & !reg_error;
+  assign alert_en_shadowed_56_we = addr_hit[147] & reg_we & !reg_error;
+
+  assign alert_en_shadowed_56_wd = reg_wdata[0];
+  assign alert_en_shadowed_57_re = addr_hit[148] & reg_re & !reg_error;
+  assign alert_en_shadowed_57_we = addr_hit[148] & reg_we & !reg_error;
+
+  assign alert_en_shadowed_57_wd = reg_wdata[0];
+  assign alert_en_shadowed_58_re = addr_hit[149] & reg_re & !reg_error;
+  assign alert_en_shadowed_58_we = addr_hit[149] & reg_we & !reg_error;
+
+  assign alert_en_shadowed_58_wd = reg_wdata[0];
+  assign alert_en_shadowed_59_re = addr_hit[150] & reg_re & !reg_error;
+  assign alert_en_shadowed_59_we = addr_hit[150] & reg_we & !reg_error;
+
+  assign alert_en_shadowed_59_wd = reg_wdata[0];
+  assign alert_en_shadowed_60_re = addr_hit[151] & reg_re & !reg_error;
+  assign alert_en_shadowed_60_we = addr_hit[151] & reg_we & !reg_error;
+
+  assign alert_en_shadowed_60_wd = reg_wdata[0];
+  assign alert_en_shadowed_61_re = addr_hit[152] & reg_re & !reg_error;
+  assign alert_en_shadowed_61_we = addr_hit[152] & reg_we & !reg_error;
+
+  assign alert_en_shadowed_61_wd = reg_wdata[0];
+  assign alert_en_shadowed_62_re = addr_hit[153] & reg_re & !reg_error;
+  assign alert_en_shadowed_62_we = addr_hit[153] & reg_we & !reg_error;
+
+  assign alert_en_shadowed_62_wd = reg_wdata[0];
+  assign alert_en_shadowed_63_re = addr_hit[154] & reg_re & !reg_error;
+  assign alert_en_shadowed_63_we = addr_hit[154] & reg_we & !reg_error;
+
+  assign alert_en_shadowed_63_wd = reg_wdata[0];
+  assign alert_en_shadowed_64_re = addr_hit[155] & reg_re & !reg_error;
+  assign alert_en_shadowed_64_we = addr_hit[155] & reg_we & !reg_error;
+
+  assign alert_en_shadowed_64_wd = reg_wdata[0];
+  assign alert_en_shadowed_65_re = addr_hit[156] & reg_re & !reg_error;
+  assign alert_en_shadowed_65_we = addr_hit[156] & reg_we & !reg_error;
+
+  assign alert_en_shadowed_65_wd = reg_wdata[0];
+  assign alert_en_shadowed_66_re = addr_hit[157] & reg_re & !reg_error;
+  assign alert_en_shadowed_66_we = addr_hit[157] & reg_we & !reg_error;
+
+  assign alert_en_shadowed_66_wd = reg_wdata[0];
+  assign alert_en_shadowed_67_re = addr_hit[158] & reg_re & !reg_error;
+  assign alert_en_shadowed_67_we = addr_hit[158] & reg_we & !reg_error;
+
+  assign alert_en_shadowed_67_wd = reg_wdata[0];
+  assign alert_en_shadowed_68_re = addr_hit[159] & reg_re & !reg_error;
+  assign alert_en_shadowed_68_we = addr_hit[159] & reg_we & !reg_error;
+
+  assign alert_en_shadowed_68_wd = reg_wdata[0];
+  assign alert_en_shadowed_69_re = addr_hit[160] & reg_re & !reg_error;
+  assign alert_en_shadowed_69_we = addr_hit[160] & reg_we & !reg_error;
+
+  assign alert_en_shadowed_69_wd = reg_wdata[0];
+  assign alert_en_shadowed_70_re = addr_hit[161] & reg_re & !reg_error;
+  assign alert_en_shadowed_70_we = addr_hit[161] & reg_we & !reg_error;
+
+  assign alert_en_shadowed_70_wd = reg_wdata[0];
+  assign alert_en_shadowed_71_re = addr_hit[162] & reg_re & !reg_error;
+  assign alert_en_shadowed_71_we = addr_hit[162] & reg_we & !reg_error;
+
+  assign alert_en_shadowed_71_wd = reg_wdata[0];
+  assign alert_en_shadowed_72_re = addr_hit[163] & reg_re & !reg_error;
+  assign alert_en_shadowed_72_we = addr_hit[163] & reg_we & !reg_error;
+
+  assign alert_en_shadowed_72_wd = reg_wdata[0];
+  assign alert_en_shadowed_73_re = addr_hit[164] & reg_re & !reg_error;
+  assign alert_en_shadowed_73_we = addr_hit[164] & reg_we & !reg_error;
+
+  assign alert_en_shadowed_73_wd = reg_wdata[0];
+  assign alert_en_shadowed_74_re = addr_hit[165] & reg_re & !reg_error;
+  assign alert_en_shadowed_74_we = addr_hit[165] & reg_we & !reg_error;
+
+  assign alert_en_shadowed_74_wd = reg_wdata[0];
+  assign alert_en_shadowed_75_re = addr_hit[166] & reg_re & !reg_error;
+  assign alert_en_shadowed_75_we = addr_hit[166] & reg_we & !reg_error;
+
+  assign alert_en_shadowed_75_wd = reg_wdata[0];
+  assign alert_en_shadowed_76_re = addr_hit[167] & reg_re & !reg_error;
+  assign alert_en_shadowed_76_we = addr_hit[167] & reg_we & !reg_error;
+
+  assign alert_en_shadowed_76_wd = reg_wdata[0];
+  assign alert_en_shadowed_77_re = addr_hit[168] & reg_re & !reg_error;
+  assign alert_en_shadowed_77_we = addr_hit[168] & reg_we & !reg_error;
+
+  assign alert_en_shadowed_77_wd = reg_wdata[0];
+  assign alert_en_shadowed_78_re = addr_hit[169] & reg_re & !reg_error;
+  assign alert_en_shadowed_78_we = addr_hit[169] & reg_we & !reg_error;
+
+  assign alert_en_shadowed_78_wd = reg_wdata[0];
+  assign alert_en_shadowed_79_re = addr_hit[170] & reg_re & !reg_error;
+  assign alert_en_shadowed_79_we = addr_hit[170] & reg_we & !reg_error;
+
+  assign alert_en_shadowed_79_wd = reg_wdata[0];
+  assign alert_en_shadowed_80_re = addr_hit[171] & reg_re & !reg_error;
+  assign alert_en_shadowed_80_we = addr_hit[171] & reg_we & !reg_error;
+
+  assign alert_en_shadowed_80_wd = reg_wdata[0];
+  assign alert_en_shadowed_81_re = addr_hit[172] & reg_re & !reg_error;
+  assign alert_en_shadowed_81_we = addr_hit[172] & reg_we & !reg_error;
+
+  assign alert_en_shadowed_81_wd = reg_wdata[0];
+  assign alert_en_shadowed_82_re = addr_hit[173] & reg_re & !reg_error;
+  assign alert_en_shadowed_82_we = addr_hit[173] & reg_we & !reg_error;
+
+  assign alert_en_shadowed_82_wd = reg_wdata[0];
+  assign alert_en_shadowed_83_re = addr_hit[174] & reg_re & !reg_error;
+  assign alert_en_shadowed_83_we = addr_hit[174] & reg_we & !reg_error;
+
+  assign alert_en_shadowed_83_wd = reg_wdata[0];
+  assign alert_en_shadowed_84_re = addr_hit[175] & reg_re & !reg_error;
+  assign alert_en_shadowed_84_we = addr_hit[175] & reg_we & !reg_error;
+
+  assign alert_en_shadowed_84_wd = reg_wdata[0];
+  assign alert_class_shadowed_0_re = addr_hit[176] & reg_re & !reg_error;
+  assign alert_class_shadowed_0_we = addr_hit[176] & reg_we & !reg_error;
 
   assign alert_class_shadowed_0_wd = reg_wdata[1:0];
-  assign alert_class_shadowed_1_re = addr_hit[105] & reg_re & !reg_error;
-  assign alert_class_shadowed_1_we = addr_hit[105] & reg_we & !reg_error;
+  assign alert_class_shadowed_1_re = addr_hit[177] & reg_re & !reg_error;
+  assign alert_class_shadowed_1_we = addr_hit[177] & reg_we & !reg_error;
 
   assign alert_class_shadowed_1_wd = reg_wdata[1:0];
-  assign alert_class_shadowed_2_re = addr_hit[106] & reg_re & !reg_error;
-  assign alert_class_shadowed_2_we = addr_hit[106] & reg_we & !reg_error;
+  assign alert_class_shadowed_2_re = addr_hit[178] & reg_re & !reg_error;
+  assign alert_class_shadowed_2_we = addr_hit[178] & reg_we & !reg_error;
 
   assign alert_class_shadowed_2_wd = reg_wdata[1:0];
-  assign alert_class_shadowed_3_re = addr_hit[107] & reg_re & !reg_error;
-  assign alert_class_shadowed_3_we = addr_hit[107] & reg_we & !reg_error;
+  assign alert_class_shadowed_3_re = addr_hit[179] & reg_re & !reg_error;
+  assign alert_class_shadowed_3_we = addr_hit[179] & reg_we & !reg_error;
 
   assign alert_class_shadowed_3_wd = reg_wdata[1:0];
-  assign alert_class_shadowed_4_re = addr_hit[108] & reg_re & !reg_error;
-  assign alert_class_shadowed_4_we = addr_hit[108] & reg_we & !reg_error;
+  assign alert_class_shadowed_4_re = addr_hit[180] & reg_re & !reg_error;
+  assign alert_class_shadowed_4_we = addr_hit[180] & reg_we & !reg_error;
 
   assign alert_class_shadowed_4_wd = reg_wdata[1:0];
-  assign alert_class_shadowed_5_re = addr_hit[109] & reg_re & !reg_error;
-  assign alert_class_shadowed_5_we = addr_hit[109] & reg_we & !reg_error;
+  assign alert_class_shadowed_5_re = addr_hit[181] & reg_re & !reg_error;
+  assign alert_class_shadowed_5_we = addr_hit[181] & reg_we & !reg_error;
 
   assign alert_class_shadowed_5_wd = reg_wdata[1:0];
-  assign alert_class_shadowed_6_re = addr_hit[110] & reg_re & !reg_error;
-  assign alert_class_shadowed_6_we = addr_hit[110] & reg_we & !reg_error;
+  assign alert_class_shadowed_6_re = addr_hit[182] & reg_re & !reg_error;
+  assign alert_class_shadowed_6_we = addr_hit[182] & reg_we & !reg_error;
 
   assign alert_class_shadowed_6_wd = reg_wdata[1:0];
-  assign alert_class_shadowed_7_re = addr_hit[111] & reg_re & !reg_error;
-  assign alert_class_shadowed_7_we = addr_hit[111] & reg_we & !reg_error;
+  assign alert_class_shadowed_7_re = addr_hit[183] & reg_re & !reg_error;
+  assign alert_class_shadowed_7_we = addr_hit[183] & reg_we & !reg_error;
 
   assign alert_class_shadowed_7_wd = reg_wdata[1:0];
-  assign alert_class_shadowed_8_re = addr_hit[112] & reg_re & !reg_error;
-  assign alert_class_shadowed_8_we = addr_hit[112] & reg_we & !reg_error;
+  assign alert_class_shadowed_8_re = addr_hit[184] & reg_re & !reg_error;
+  assign alert_class_shadowed_8_we = addr_hit[184] & reg_we & !reg_error;
 
   assign alert_class_shadowed_8_wd = reg_wdata[1:0];
-  assign alert_class_shadowed_9_re = addr_hit[113] & reg_re & !reg_error;
-  assign alert_class_shadowed_9_we = addr_hit[113] & reg_we & !reg_error;
+  assign alert_class_shadowed_9_re = addr_hit[185] & reg_re & !reg_error;
+  assign alert_class_shadowed_9_we = addr_hit[185] & reg_we & !reg_error;
 
   assign alert_class_shadowed_9_wd = reg_wdata[1:0];
-  assign alert_class_shadowed_10_re = addr_hit[114] & reg_re & !reg_error;
-  assign alert_class_shadowed_10_we = addr_hit[114] & reg_we & !reg_error;
+  assign alert_class_shadowed_10_re = addr_hit[186] & reg_re & !reg_error;
+  assign alert_class_shadowed_10_we = addr_hit[186] & reg_we & !reg_error;
 
   assign alert_class_shadowed_10_wd = reg_wdata[1:0];
-  assign alert_class_shadowed_11_re = addr_hit[115] & reg_re & !reg_error;
-  assign alert_class_shadowed_11_we = addr_hit[115] & reg_we & !reg_error;
+  assign alert_class_shadowed_11_re = addr_hit[187] & reg_re & !reg_error;
+  assign alert_class_shadowed_11_we = addr_hit[187] & reg_we & !reg_error;
 
   assign alert_class_shadowed_11_wd = reg_wdata[1:0];
-  assign alert_class_shadowed_12_re = addr_hit[116] & reg_re & !reg_error;
-  assign alert_class_shadowed_12_we = addr_hit[116] & reg_we & !reg_error;
+  assign alert_class_shadowed_12_re = addr_hit[188] & reg_re & !reg_error;
+  assign alert_class_shadowed_12_we = addr_hit[188] & reg_we & !reg_error;
 
   assign alert_class_shadowed_12_wd = reg_wdata[1:0];
-  assign alert_class_shadowed_13_re = addr_hit[117] & reg_re & !reg_error;
-  assign alert_class_shadowed_13_we = addr_hit[117] & reg_we & !reg_error;
+  assign alert_class_shadowed_13_re = addr_hit[189] & reg_re & !reg_error;
+  assign alert_class_shadowed_13_we = addr_hit[189] & reg_we & !reg_error;
 
   assign alert_class_shadowed_13_wd = reg_wdata[1:0];
-  assign alert_class_shadowed_14_re = addr_hit[118] & reg_re & !reg_error;
-  assign alert_class_shadowed_14_we = addr_hit[118] & reg_we & !reg_error;
+  assign alert_class_shadowed_14_re = addr_hit[190] & reg_re & !reg_error;
+  assign alert_class_shadowed_14_we = addr_hit[190] & reg_we & !reg_error;
 
   assign alert_class_shadowed_14_wd = reg_wdata[1:0];
-  assign alert_class_shadowed_15_re = addr_hit[119] & reg_re & !reg_error;
-  assign alert_class_shadowed_15_we = addr_hit[119] & reg_we & !reg_error;
+  assign alert_class_shadowed_15_re = addr_hit[191] & reg_re & !reg_error;
+  assign alert_class_shadowed_15_we = addr_hit[191] & reg_we & !reg_error;
 
   assign alert_class_shadowed_15_wd = reg_wdata[1:0];
-  assign alert_class_shadowed_16_re = addr_hit[120] & reg_re & !reg_error;
-  assign alert_class_shadowed_16_we = addr_hit[120] & reg_we & !reg_error;
+  assign alert_class_shadowed_16_re = addr_hit[192] & reg_re & !reg_error;
+  assign alert_class_shadowed_16_we = addr_hit[192] & reg_we & !reg_error;
 
   assign alert_class_shadowed_16_wd = reg_wdata[1:0];
-  assign alert_class_shadowed_17_re = addr_hit[121] & reg_re & !reg_error;
-  assign alert_class_shadowed_17_we = addr_hit[121] & reg_we & !reg_error;
+  assign alert_class_shadowed_17_re = addr_hit[193] & reg_re & !reg_error;
+  assign alert_class_shadowed_17_we = addr_hit[193] & reg_we & !reg_error;
 
   assign alert_class_shadowed_17_wd = reg_wdata[1:0];
-  assign alert_class_shadowed_18_re = addr_hit[122] & reg_re & !reg_error;
-  assign alert_class_shadowed_18_we = addr_hit[122] & reg_we & !reg_error;
+  assign alert_class_shadowed_18_re = addr_hit[194] & reg_re & !reg_error;
+  assign alert_class_shadowed_18_we = addr_hit[194] & reg_we & !reg_error;
 
   assign alert_class_shadowed_18_wd = reg_wdata[1:0];
-  assign alert_class_shadowed_19_re = addr_hit[123] & reg_re & !reg_error;
-  assign alert_class_shadowed_19_we = addr_hit[123] & reg_we & !reg_error;
+  assign alert_class_shadowed_19_re = addr_hit[195] & reg_re & !reg_error;
+  assign alert_class_shadowed_19_we = addr_hit[195] & reg_we & !reg_error;
 
   assign alert_class_shadowed_19_wd = reg_wdata[1:0];
-  assign alert_class_shadowed_20_re = addr_hit[124] & reg_re & !reg_error;
-  assign alert_class_shadowed_20_we = addr_hit[124] & reg_we & !reg_error;
+  assign alert_class_shadowed_20_re = addr_hit[196] & reg_re & !reg_error;
+  assign alert_class_shadowed_20_we = addr_hit[196] & reg_we & !reg_error;
 
   assign alert_class_shadowed_20_wd = reg_wdata[1:0];
-  assign alert_class_shadowed_21_re = addr_hit[125] & reg_re & !reg_error;
-  assign alert_class_shadowed_21_we = addr_hit[125] & reg_we & !reg_error;
+  assign alert_class_shadowed_21_re = addr_hit[197] & reg_re & !reg_error;
+  assign alert_class_shadowed_21_we = addr_hit[197] & reg_we & !reg_error;
 
   assign alert_class_shadowed_21_wd = reg_wdata[1:0];
-  assign alert_class_shadowed_22_re = addr_hit[126] & reg_re & !reg_error;
-  assign alert_class_shadowed_22_we = addr_hit[126] & reg_we & !reg_error;
+  assign alert_class_shadowed_22_re = addr_hit[198] & reg_re & !reg_error;
+  assign alert_class_shadowed_22_we = addr_hit[198] & reg_we & !reg_error;
 
   assign alert_class_shadowed_22_wd = reg_wdata[1:0];
-  assign alert_class_shadowed_23_re = addr_hit[127] & reg_re & !reg_error;
-  assign alert_class_shadowed_23_we = addr_hit[127] & reg_we & !reg_error;
+  assign alert_class_shadowed_23_re = addr_hit[199] & reg_re & !reg_error;
+  assign alert_class_shadowed_23_we = addr_hit[199] & reg_we & !reg_error;
 
   assign alert_class_shadowed_23_wd = reg_wdata[1:0];
-  assign alert_class_shadowed_24_re = addr_hit[128] & reg_re & !reg_error;
-  assign alert_class_shadowed_24_we = addr_hit[128] & reg_we & !reg_error;
+  assign alert_class_shadowed_24_re = addr_hit[200] & reg_re & !reg_error;
+  assign alert_class_shadowed_24_we = addr_hit[200] & reg_we & !reg_error;
 
   assign alert_class_shadowed_24_wd = reg_wdata[1:0];
-  assign alert_class_shadowed_25_re = addr_hit[129] & reg_re & !reg_error;
-  assign alert_class_shadowed_25_we = addr_hit[129] & reg_we & !reg_error;
+  assign alert_class_shadowed_25_re = addr_hit[201] & reg_re & !reg_error;
+  assign alert_class_shadowed_25_we = addr_hit[201] & reg_we & !reg_error;
 
   assign alert_class_shadowed_25_wd = reg_wdata[1:0];
-  assign alert_class_shadowed_26_re = addr_hit[130] & reg_re & !reg_error;
-  assign alert_class_shadowed_26_we = addr_hit[130] & reg_we & !reg_error;
+  assign alert_class_shadowed_26_re = addr_hit[202] & reg_re & !reg_error;
+  assign alert_class_shadowed_26_we = addr_hit[202] & reg_we & !reg_error;
 
   assign alert_class_shadowed_26_wd = reg_wdata[1:0];
-  assign alert_class_shadowed_27_re = addr_hit[131] & reg_re & !reg_error;
-  assign alert_class_shadowed_27_we = addr_hit[131] & reg_we & !reg_error;
+  assign alert_class_shadowed_27_re = addr_hit[203] & reg_re & !reg_error;
+  assign alert_class_shadowed_27_we = addr_hit[203] & reg_we & !reg_error;
 
   assign alert_class_shadowed_27_wd = reg_wdata[1:0];
-  assign alert_class_shadowed_28_re = addr_hit[132] & reg_re & !reg_error;
-  assign alert_class_shadowed_28_we = addr_hit[132] & reg_we & !reg_error;
+  assign alert_class_shadowed_28_re = addr_hit[204] & reg_re & !reg_error;
+  assign alert_class_shadowed_28_we = addr_hit[204] & reg_we & !reg_error;
 
   assign alert_class_shadowed_28_wd = reg_wdata[1:0];
-  assign alert_class_shadowed_29_re = addr_hit[133] & reg_re & !reg_error;
-  assign alert_class_shadowed_29_we = addr_hit[133] & reg_we & !reg_error;
+  assign alert_class_shadowed_29_re = addr_hit[205] & reg_re & !reg_error;
+  assign alert_class_shadowed_29_we = addr_hit[205] & reg_we & !reg_error;
 
   assign alert_class_shadowed_29_wd = reg_wdata[1:0];
-  assign alert_class_shadowed_30_re = addr_hit[134] & reg_re & !reg_error;
-  assign alert_class_shadowed_30_we = addr_hit[134] & reg_we & !reg_error;
+  assign alert_class_shadowed_30_re = addr_hit[206] & reg_re & !reg_error;
+  assign alert_class_shadowed_30_we = addr_hit[206] & reg_we & !reg_error;
 
   assign alert_class_shadowed_30_wd = reg_wdata[1:0];
-  assign alert_class_shadowed_31_re = addr_hit[135] & reg_re & !reg_error;
-  assign alert_class_shadowed_31_we = addr_hit[135] & reg_we & !reg_error;
+  assign alert_class_shadowed_31_re = addr_hit[207] & reg_re & !reg_error;
+  assign alert_class_shadowed_31_we = addr_hit[207] & reg_we & !reg_error;
 
   assign alert_class_shadowed_31_wd = reg_wdata[1:0];
-  assign alert_class_shadowed_32_re = addr_hit[136] & reg_re & !reg_error;
-  assign alert_class_shadowed_32_we = addr_hit[136] & reg_we & !reg_error;
+  assign alert_class_shadowed_32_re = addr_hit[208] & reg_re & !reg_error;
+  assign alert_class_shadowed_32_we = addr_hit[208] & reg_we & !reg_error;
 
   assign alert_class_shadowed_32_wd = reg_wdata[1:0];
-  assign alert_class_shadowed_33_re = addr_hit[137] & reg_re & !reg_error;
-  assign alert_class_shadowed_33_we = addr_hit[137] & reg_we & !reg_error;
+  assign alert_class_shadowed_33_re = addr_hit[209] & reg_re & !reg_error;
+  assign alert_class_shadowed_33_we = addr_hit[209] & reg_we & !reg_error;
 
   assign alert_class_shadowed_33_wd = reg_wdata[1:0];
-  assign alert_class_shadowed_34_re = addr_hit[138] & reg_re & !reg_error;
-  assign alert_class_shadowed_34_we = addr_hit[138] & reg_we & !reg_error;
+  assign alert_class_shadowed_34_re = addr_hit[210] & reg_re & !reg_error;
+  assign alert_class_shadowed_34_we = addr_hit[210] & reg_we & !reg_error;
 
   assign alert_class_shadowed_34_wd = reg_wdata[1:0];
-  assign alert_class_shadowed_35_re = addr_hit[139] & reg_re & !reg_error;
-  assign alert_class_shadowed_35_we = addr_hit[139] & reg_we & !reg_error;
+  assign alert_class_shadowed_35_re = addr_hit[211] & reg_re & !reg_error;
+  assign alert_class_shadowed_35_we = addr_hit[211] & reg_we & !reg_error;
 
   assign alert_class_shadowed_35_wd = reg_wdata[1:0];
-  assign alert_class_shadowed_36_re = addr_hit[140] & reg_re & !reg_error;
-  assign alert_class_shadowed_36_we = addr_hit[140] & reg_we & !reg_error;
+  assign alert_class_shadowed_36_re = addr_hit[212] & reg_re & !reg_error;
+  assign alert_class_shadowed_36_we = addr_hit[212] & reg_we & !reg_error;
 
   assign alert_class_shadowed_36_wd = reg_wdata[1:0];
-  assign alert_class_shadowed_37_re = addr_hit[141] & reg_re & !reg_error;
-  assign alert_class_shadowed_37_we = addr_hit[141] & reg_we & !reg_error;
+  assign alert_class_shadowed_37_re = addr_hit[213] & reg_re & !reg_error;
+  assign alert_class_shadowed_37_we = addr_hit[213] & reg_we & !reg_error;
 
   assign alert_class_shadowed_37_wd = reg_wdata[1:0];
-  assign alert_class_shadowed_38_re = addr_hit[142] & reg_re & !reg_error;
-  assign alert_class_shadowed_38_we = addr_hit[142] & reg_we & !reg_error;
+  assign alert_class_shadowed_38_re = addr_hit[214] & reg_re & !reg_error;
+  assign alert_class_shadowed_38_we = addr_hit[214] & reg_we & !reg_error;
 
   assign alert_class_shadowed_38_wd = reg_wdata[1:0];
-  assign alert_class_shadowed_39_re = addr_hit[143] & reg_re & !reg_error;
-  assign alert_class_shadowed_39_we = addr_hit[143] & reg_we & !reg_error;
+  assign alert_class_shadowed_39_re = addr_hit[215] & reg_re & !reg_error;
+  assign alert_class_shadowed_39_we = addr_hit[215] & reg_we & !reg_error;
 
   assign alert_class_shadowed_39_wd = reg_wdata[1:0];
-  assign alert_class_shadowed_40_re = addr_hit[144] & reg_re & !reg_error;
-  assign alert_class_shadowed_40_we = addr_hit[144] & reg_we & !reg_error;
+  assign alert_class_shadowed_40_re = addr_hit[216] & reg_re & !reg_error;
+  assign alert_class_shadowed_40_we = addr_hit[216] & reg_we & !reg_error;
 
   assign alert_class_shadowed_40_wd = reg_wdata[1:0];
-  assign alert_class_shadowed_41_re = addr_hit[145] & reg_re & !reg_error;
-  assign alert_class_shadowed_41_we = addr_hit[145] & reg_we & !reg_error;
+  assign alert_class_shadowed_41_re = addr_hit[217] & reg_re & !reg_error;
+  assign alert_class_shadowed_41_we = addr_hit[217] & reg_we & !reg_error;
 
   assign alert_class_shadowed_41_wd = reg_wdata[1:0];
-  assign alert_class_shadowed_42_re = addr_hit[146] & reg_re & !reg_error;
-  assign alert_class_shadowed_42_we = addr_hit[146] & reg_we & !reg_error;
+  assign alert_class_shadowed_42_re = addr_hit[218] & reg_re & !reg_error;
+  assign alert_class_shadowed_42_we = addr_hit[218] & reg_we & !reg_error;
 
   assign alert_class_shadowed_42_wd = reg_wdata[1:0];
-  assign alert_class_shadowed_43_re = addr_hit[147] & reg_re & !reg_error;
-  assign alert_class_shadowed_43_we = addr_hit[147] & reg_we & !reg_error;
+  assign alert_class_shadowed_43_re = addr_hit[219] & reg_re & !reg_error;
+  assign alert_class_shadowed_43_we = addr_hit[219] & reg_we & !reg_error;
 
   assign alert_class_shadowed_43_wd = reg_wdata[1:0];
-  assign alert_class_shadowed_44_re = addr_hit[148] & reg_re & !reg_error;
-  assign alert_class_shadowed_44_we = addr_hit[148] & reg_we & !reg_error;
+  assign alert_class_shadowed_44_re = addr_hit[220] & reg_re & !reg_error;
+  assign alert_class_shadowed_44_we = addr_hit[220] & reg_we & !reg_error;
 
   assign alert_class_shadowed_44_wd = reg_wdata[1:0];
-  assign alert_class_shadowed_45_re = addr_hit[149] & reg_re & !reg_error;
-  assign alert_class_shadowed_45_we = addr_hit[149] & reg_we & !reg_error;
+  assign alert_class_shadowed_45_re = addr_hit[221] & reg_re & !reg_error;
+  assign alert_class_shadowed_45_we = addr_hit[221] & reg_we & !reg_error;
 
   assign alert_class_shadowed_45_wd = reg_wdata[1:0];
-  assign alert_class_shadowed_46_re = addr_hit[150] & reg_re & !reg_error;
-  assign alert_class_shadowed_46_we = addr_hit[150] & reg_we & !reg_error;
+  assign alert_class_shadowed_46_re = addr_hit[222] & reg_re & !reg_error;
+  assign alert_class_shadowed_46_we = addr_hit[222] & reg_we & !reg_error;
 
   assign alert_class_shadowed_46_wd = reg_wdata[1:0];
-  assign alert_class_shadowed_47_re = addr_hit[151] & reg_re & !reg_error;
-  assign alert_class_shadowed_47_we = addr_hit[151] & reg_we & !reg_error;
+  assign alert_class_shadowed_47_re = addr_hit[223] & reg_re & !reg_error;
+  assign alert_class_shadowed_47_we = addr_hit[223] & reg_we & !reg_error;
 
   assign alert_class_shadowed_47_wd = reg_wdata[1:0];
-  assign alert_class_shadowed_48_re = addr_hit[152] & reg_re & !reg_error;
-  assign alert_class_shadowed_48_we = addr_hit[152] & reg_we & !reg_error;
+  assign alert_class_shadowed_48_re = addr_hit[224] & reg_re & !reg_error;
+  assign alert_class_shadowed_48_we = addr_hit[224] & reg_we & !reg_error;
 
   assign alert_class_shadowed_48_wd = reg_wdata[1:0];
-  assign alert_cause_0_we = addr_hit[153] & reg_we & !reg_error;
+  assign alert_class_shadowed_49_re = addr_hit[225] & reg_re & !reg_error;
+  assign alert_class_shadowed_49_we = addr_hit[225] & reg_we & !reg_error;
+
+  assign alert_class_shadowed_49_wd = reg_wdata[1:0];
+  assign alert_class_shadowed_50_re = addr_hit[226] & reg_re & !reg_error;
+  assign alert_class_shadowed_50_we = addr_hit[226] & reg_we & !reg_error;
+
+  assign alert_class_shadowed_50_wd = reg_wdata[1:0];
+  assign alert_class_shadowed_51_re = addr_hit[227] & reg_re & !reg_error;
+  assign alert_class_shadowed_51_we = addr_hit[227] & reg_we & !reg_error;
+
+  assign alert_class_shadowed_51_wd = reg_wdata[1:0];
+  assign alert_class_shadowed_52_re = addr_hit[228] & reg_re & !reg_error;
+  assign alert_class_shadowed_52_we = addr_hit[228] & reg_we & !reg_error;
+
+  assign alert_class_shadowed_52_wd = reg_wdata[1:0];
+  assign alert_class_shadowed_53_re = addr_hit[229] & reg_re & !reg_error;
+  assign alert_class_shadowed_53_we = addr_hit[229] & reg_we & !reg_error;
+
+  assign alert_class_shadowed_53_wd = reg_wdata[1:0];
+  assign alert_class_shadowed_54_re = addr_hit[230] & reg_re & !reg_error;
+  assign alert_class_shadowed_54_we = addr_hit[230] & reg_we & !reg_error;
+
+  assign alert_class_shadowed_54_wd = reg_wdata[1:0];
+  assign alert_class_shadowed_55_re = addr_hit[231] & reg_re & !reg_error;
+  assign alert_class_shadowed_55_we = addr_hit[231] & reg_we & !reg_error;
+
+  assign alert_class_shadowed_55_wd = reg_wdata[1:0];
+  assign alert_class_shadowed_56_re = addr_hit[232] & reg_re & !reg_error;
+  assign alert_class_shadowed_56_we = addr_hit[232] & reg_we & !reg_error;
+
+  assign alert_class_shadowed_56_wd = reg_wdata[1:0];
+  assign alert_class_shadowed_57_re = addr_hit[233] & reg_re & !reg_error;
+  assign alert_class_shadowed_57_we = addr_hit[233] & reg_we & !reg_error;
+
+  assign alert_class_shadowed_57_wd = reg_wdata[1:0];
+  assign alert_class_shadowed_58_re = addr_hit[234] & reg_re & !reg_error;
+  assign alert_class_shadowed_58_we = addr_hit[234] & reg_we & !reg_error;
+
+  assign alert_class_shadowed_58_wd = reg_wdata[1:0];
+  assign alert_class_shadowed_59_re = addr_hit[235] & reg_re & !reg_error;
+  assign alert_class_shadowed_59_we = addr_hit[235] & reg_we & !reg_error;
+
+  assign alert_class_shadowed_59_wd = reg_wdata[1:0];
+  assign alert_class_shadowed_60_re = addr_hit[236] & reg_re & !reg_error;
+  assign alert_class_shadowed_60_we = addr_hit[236] & reg_we & !reg_error;
+
+  assign alert_class_shadowed_60_wd = reg_wdata[1:0];
+  assign alert_class_shadowed_61_re = addr_hit[237] & reg_re & !reg_error;
+  assign alert_class_shadowed_61_we = addr_hit[237] & reg_we & !reg_error;
+
+  assign alert_class_shadowed_61_wd = reg_wdata[1:0];
+  assign alert_class_shadowed_62_re = addr_hit[238] & reg_re & !reg_error;
+  assign alert_class_shadowed_62_we = addr_hit[238] & reg_we & !reg_error;
+
+  assign alert_class_shadowed_62_wd = reg_wdata[1:0];
+  assign alert_class_shadowed_63_re = addr_hit[239] & reg_re & !reg_error;
+  assign alert_class_shadowed_63_we = addr_hit[239] & reg_we & !reg_error;
+
+  assign alert_class_shadowed_63_wd = reg_wdata[1:0];
+  assign alert_class_shadowed_64_re = addr_hit[240] & reg_re & !reg_error;
+  assign alert_class_shadowed_64_we = addr_hit[240] & reg_we & !reg_error;
+
+  assign alert_class_shadowed_64_wd = reg_wdata[1:0];
+  assign alert_class_shadowed_65_re = addr_hit[241] & reg_re & !reg_error;
+  assign alert_class_shadowed_65_we = addr_hit[241] & reg_we & !reg_error;
+
+  assign alert_class_shadowed_65_wd = reg_wdata[1:0];
+  assign alert_class_shadowed_66_re = addr_hit[242] & reg_re & !reg_error;
+  assign alert_class_shadowed_66_we = addr_hit[242] & reg_we & !reg_error;
+
+  assign alert_class_shadowed_66_wd = reg_wdata[1:0];
+  assign alert_class_shadowed_67_re = addr_hit[243] & reg_re & !reg_error;
+  assign alert_class_shadowed_67_we = addr_hit[243] & reg_we & !reg_error;
+
+  assign alert_class_shadowed_67_wd = reg_wdata[1:0];
+  assign alert_class_shadowed_68_re = addr_hit[244] & reg_re & !reg_error;
+  assign alert_class_shadowed_68_we = addr_hit[244] & reg_we & !reg_error;
+
+  assign alert_class_shadowed_68_wd = reg_wdata[1:0];
+  assign alert_class_shadowed_69_re = addr_hit[245] & reg_re & !reg_error;
+  assign alert_class_shadowed_69_we = addr_hit[245] & reg_we & !reg_error;
+
+  assign alert_class_shadowed_69_wd = reg_wdata[1:0];
+  assign alert_class_shadowed_70_re = addr_hit[246] & reg_re & !reg_error;
+  assign alert_class_shadowed_70_we = addr_hit[246] & reg_we & !reg_error;
+
+  assign alert_class_shadowed_70_wd = reg_wdata[1:0];
+  assign alert_class_shadowed_71_re = addr_hit[247] & reg_re & !reg_error;
+  assign alert_class_shadowed_71_we = addr_hit[247] & reg_we & !reg_error;
+
+  assign alert_class_shadowed_71_wd = reg_wdata[1:0];
+  assign alert_class_shadowed_72_re = addr_hit[248] & reg_re & !reg_error;
+  assign alert_class_shadowed_72_we = addr_hit[248] & reg_we & !reg_error;
+
+  assign alert_class_shadowed_72_wd = reg_wdata[1:0];
+  assign alert_class_shadowed_73_re = addr_hit[249] & reg_re & !reg_error;
+  assign alert_class_shadowed_73_we = addr_hit[249] & reg_we & !reg_error;
+
+  assign alert_class_shadowed_73_wd = reg_wdata[1:0];
+  assign alert_class_shadowed_74_re = addr_hit[250] & reg_re & !reg_error;
+  assign alert_class_shadowed_74_we = addr_hit[250] & reg_we & !reg_error;
+
+  assign alert_class_shadowed_74_wd = reg_wdata[1:0];
+  assign alert_class_shadowed_75_re = addr_hit[251] & reg_re & !reg_error;
+  assign alert_class_shadowed_75_we = addr_hit[251] & reg_we & !reg_error;
+
+  assign alert_class_shadowed_75_wd = reg_wdata[1:0];
+  assign alert_class_shadowed_76_re = addr_hit[252] & reg_re & !reg_error;
+  assign alert_class_shadowed_76_we = addr_hit[252] & reg_we & !reg_error;
+
+  assign alert_class_shadowed_76_wd = reg_wdata[1:0];
+  assign alert_class_shadowed_77_re = addr_hit[253] & reg_re & !reg_error;
+  assign alert_class_shadowed_77_we = addr_hit[253] & reg_we & !reg_error;
+
+  assign alert_class_shadowed_77_wd = reg_wdata[1:0];
+  assign alert_class_shadowed_78_re = addr_hit[254] & reg_re & !reg_error;
+  assign alert_class_shadowed_78_we = addr_hit[254] & reg_we & !reg_error;
+
+  assign alert_class_shadowed_78_wd = reg_wdata[1:0];
+  assign alert_class_shadowed_79_re = addr_hit[255] & reg_re & !reg_error;
+  assign alert_class_shadowed_79_we = addr_hit[255] & reg_we & !reg_error;
+
+  assign alert_class_shadowed_79_wd = reg_wdata[1:0];
+  assign alert_class_shadowed_80_re = addr_hit[256] & reg_re & !reg_error;
+  assign alert_class_shadowed_80_we = addr_hit[256] & reg_we & !reg_error;
+
+  assign alert_class_shadowed_80_wd = reg_wdata[1:0];
+  assign alert_class_shadowed_81_re = addr_hit[257] & reg_re & !reg_error;
+  assign alert_class_shadowed_81_we = addr_hit[257] & reg_we & !reg_error;
+
+  assign alert_class_shadowed_81_wd = reg_wdata[1:0];
+  assign alert_class_shadowed_82_re = addr_hit[258] & reg_re & !reg_error;
+  assign alert_class_shadowed_82_we = addr_hit[258] & reg_we & !reg_error;
+
+  assign alert_class_shadowed_82_wd = reg_wdata[1:0];
+  assign alert_class_shadowed_83_re = addr_hit[259] & reg_re & !reg_error;
+  assign alert_class_shadowed_83_we = addr_hit[259] & reg_we & !reg_error;
+
+  assign alert_class_shadowed_83_wd = reg_wdata[1:0];
+  assign alert_class_shadowed_84_re = addr_hit[260] & reg_re & !reg_error;
+  assign alert_class_shadowed_84_we = addr_hit[260] & reg_we & !reg_error;
+
+  assign alert_class_shadowed_84_wd = reg_wdata[1:0];
+  assign alert_cause_0_we = addr_hit[261] & reg_we & !reg_error;
 
   assign alert_cause_0_wd = reg_wdata[0];
-  assign alert_cause_1_we = addr_hit[154] & reg_we & !reg_error;
+  assign alert_cause_1_we = addr_hit[262] & reg_we & !reg_error;
 
   assign alert_cause_1_wd = reg_wdata[0];
-  assign alert_cause_2_we = addr_hit[155] & reg_we & !reg_error;
+  assign alert_cause_2_we = addr_hit[263] & reg_we & !reg_error;
 
   assign alert_cause_2_wd = reg_wdata[0];
-  assign alert_cause_3_we = addr_hit[156] & reg_we & !reg_error;
+  assign alert_cause_3_we = addr_hit[264] & reg_we & !reg_error;
 
   assign alert_cause_3_wd = reg_wdata[0];
-  assign alert_cause_4_we = addr_hit[157] & reg_we & !reg_error;
+  assign alert_cause_4_we = addr_hit[265] & reg_we & !reg_error;
 
   assign alert_cause_4_wd = reg_wdata[0];
-  assign alert_cause_5_we = addr_hit[158] & reg_we & !reg_error;
+  assign alert_cause_5_we = addr_hit[266] & reg_we & !reg_error;
 
   assign alert_cause_5_wd = reg_wdata[0];
-  assign alert_cause_6_we = addr_hit[159] & reg_we & !reg_error;
+  assign alert_cause_6_we = addr_hit[267] & reg_we & !reg_error;
 
   assign alert_cause_6_wd = reg_wdata[0];
-  assign alert_cause_7_we = addr_hit[160] & reg_we & !reg_error;
+  assign alert_cause_7_we = addr_hit[268] & reg_we & !reg_error;
 
   assign alert_cause_7_wd = reg_wdata[0];
-  assign alert_cause_8_we = addr_hit[161] & reg_we & !reg_error;
+  assign alert_cause_8_we = addr_hit[269] & reg_we & !reg_error;
 
   assign alert_cause_8_wd = reg_wdata[0];
-  assign alert_cause_9_we = addr_hit[162] & reg_we & !reg_error;
+  assign alert_cause_9_we = addr_hit[270] & reg_we & !reg_error;
 
   assign alert_cause_9_wd = reg_wdata[0];
-  assign alert_cause_10_we = addr_hit[163] & reg_we & !reg_error;
+  assign alert_cause_10_we = addr_hit[271] & reg_we & !reg_error;
 
   assign alert_cause_10_wd = reg_wdata[0];
-  assign alert_cause_11_we = addr_hit[164] & reg_we & !reg_error;
+  assign alert_cause_11_we = addr_hit[272] & reg_we & !reg_error;
 
   assign alert_cause_11_wd = reg_wdata[0];
-  assign alert_cause_12_we = addr_hit[165] & reg_we & !reg_error;
+  assign alert_cause_12_we = addr_hit[273] & reg_we & !reg_error;
 
   assign alert_cause_12_wd = reg_wdata[0];
-  assign alert_cause_13_we = addr_hit[166] & reg_we & !reg_error;
+  assign alert_cause_13_we = addr_hit[274] & reg_we & !reg_error;
 
   assign alert_cause_13_wd = reg_wdata[0];
-  assign alert_cause_14_we = addr_hit[167] & reg_we & !reg_error;
+  assign alert_cause_14_we = addr_hit[275] & reg_we & !reg_error;
 
   assign alert_cause_14_wd = reg_wdata[0];
-  assign alert_cause_15_we = addr_hit[168] & reg_we & !reg_error;
+  assign alert_cause_15_we = addr_hit[276] & reg_we & !reg_error;
 
   assign alert_cause_15_wd = reg_wdata[0];
-  assign alert_cause_16_we = addr_hit[169] & reg_we & !reg_error;
+  assign alert_cause_16_we = addr_hit[277] & reg_we & !reg_error;
 
   assign alert_cause_16_wd = reg_wdata[0];
-  assign alert_cause_17_we = addr_hit[170] & reg_we & !reg_error;
+  assign alert_cause_17_we = addr_hit[278] & reg_we & !reg_error;
 
   assign alert_cause_17_wd = reg_wdata[0];
-  assign alert_cause_18_we = addr_hit[171] & reg_we & !reg_error;
+  assign alert_cause_18_we = addr_hit[279] & reg_we & !reg_error;
 
   assign alert_cause_18_wd = reg_wdata[0];
-  assign alert_cause_19_we = addr_hit[172] & reg_we & !reg_error;
+  assign alert_cause_19_we = addr_hit[280] & reg_we & !reg_error;
 
   assign alert_cause_19_wd = reg_wdata[0];
-  assign alert_cause_20_we = addr_hit[173] & reg_we & !reg_error;
+  assign alert_cause_20_we = addr_hit[281] & reg_we & !reg_error;
 
   assign alert_cause_20_wd = reg_wdata[0];
-  assign alert_cause_21_we = addr_hit[174] & reg_we & !reg_error;
+  assign alert_cause_21_we = addr_hit[282] & reg_we & !reg_error;
 
   assign alert_cause_21_wd = reg_wdata[0];
-  assign alert_cause_22_we = addr_hit[175] & reg_we & !reg_error;
+  assign alert_cause_22_we = addr_hit[283] & reg_we & !reg_error;
 
   assign alert_cause_22_wd = reg_wdata[0];
-  assign alert_cause_23_we = addr_hit[176] & reg_we & !reg_error;
+  assign alert_cause_23_we = addr_hit[284] & reg_we & !reg_error;
 
   assign alert_cause_23_wd = reg_wdata[0];
-  assign alert_cause_24_we = addr_hit[177] & reg_we & !reg_error;
+  assign alert_cause_24_we = addr_hit[285] & reg_we & !reg_error;
 
   assign alert_cause_24_wd = reg_wdata[0];
-  assign alert_cause_25_we = addr_hit[178] & reg_we & !reg_error;
+  assign alert_cause_25_we = addr_hit[286] & reg_we & !reg_error;
 
   assign alert_cause_25_wd = reg_wdata[0];
-  assign alert_cause_26_we = addr_hit[179] & reg_we & !reg_error;
+  assign alert_cause_26_we = addr_hit[287] & reg_we & !reg_error;
 
   assign alert_cause_26_wd = reg_wdata[0];
-  assign alert_cause_27_we = addr_hit[180] & reg_we & !reg_error;
+  assign alert_cause_27_we = addr_hit[288] & reg_we & !reg_error;
 
   assign alert_cause_27_wd = reg_wdata[0];
-  assign alert_cause_28_we = addr_hit[181] & reg_we & !reg_error;
+  assign alert_cause_28_we = addr_hit[289] & reg_we & !reg_error;
 
   assign alert_cause_28_wd = reg_wdata[0];
-  assign alert_cause_29_we = addr_hit[182] & reg_we & !reg_error;
+  assign alert_cause_29_we = addr_hit[290] & reg_we & !reg_error;
 
   assign alert_cause_29_wd = reg_wdata[0];
-  assign alert_cause_30_we = addr_hit[183] & reg_we & !reg_error;
+  assign alert_cause_30_we = addr_hit[291] & reg_we & !reg_error;
 
   assign alert_cause_30_wd = reg_wdata[0];
-  assign alert_cause_31_we = addr_hit[184] & reg_we & !reg_error;
+  assign alert_cause_31_we = addr_hit[292] & reg_we & !reg_error;
 
   assign alert_cause_31_wd = reg_wdata[0];
-  assign alert_cause_32_we = addr_hit[185] & reg_we & !reg_error;
+  assign alert_cause_32_we = addr_hit[293] & reg_we & !reg_error;
 
   assign alert_cause_32_wd = reg_wdata[0];
-  assign alert_cause_33_we = addr_hit[186] & reg_we & !reg_error;
+  assign alert_cause_33_we = addr_hit[294] & reg_we & !reg_error;
 
   assign alert_cause_33_wd = reg_wdata[0];
-  assign alert_cause_34_we = addr_hit[187] & reg_we & !reg_error;
+  assign alert_cause_34_we = addr_hit[295] & reg_we & !reg_error;
 
   assign alert_cause_34_wd = reg_wdata[0];
-  assign alert_cause_35_we = addr_hit[188] & reg_we & !reg_error;
+  assign alert_cause_35_we = addr_hit[296] & reg_we & !reg_error;
 
   assign alert_cause_35_wd = reg_wdata[0];
-  assign alert_cause_36_we = addr_hit[189] & reg_we & !reg_error;
+  assign alert_cause_36_we = addr_hit[297] & reg_we & !reg_error;
 
   assign alert_cause_36_wd = reg_wdata[0];
-  assign alert_cause_37_we = addr_hit[190] & reg_we & !reg_error;
+  assign alert_cause_37_we = addr_hit[298] & reg_we & !reg_error;
 
   assign alert_cause_37_wd = reg_wdata[0];
-  assign alert_cause_38_we = addr_hit[191] & reg_we & !reg_error;
+  assign alert_cause_38_we = addr_hit[299] & reg_we & !reg_error;
 
   assign alert_cause_38_wd = reg_wdata[0];
-  assign alert_cause_39_we = addr_hit[192] & reg_we & !reg_error;
+  assign alert_cause_39_we = addr_hit[300] & reg_we & !reg_error;
 
   assign alert_cause_39_wd = reg_wdata[0];
-  assign alert_cause_40_we = addr_hit[193] & reg_we & !reg_error;
+  assign alert_cause_40_we = addr_hit[301] & reg_we & !reg_error;
 
   assign alert_cause_40_wd = reg_wdata[0];
-  assign alert_cause_41_we = addr_hit[194] & reg_we & !reg_error;
+  assign alert_cause_41_we = addr_hit[302] & reg_we & !reg_error;
 
   assign alert_cause_41_wd = reg_wdata[0];
-  assign alert_cause_42_we = addr_hit[195] & reg_we & !reg_error;
+  assign alert_cause_42_we = addr_hit[303] & reg_we & !reg_error;
 
   assign alert_cause_42_wd = reg_wdata[0];
-  assign alert_cause_43_we = addr_hit[196] & reg_we & !reg_error;
+  assign alert_cause_43_we = addr_hit[304] & reg_we & !reg_error;
 
   assign alert_cause_43_wd = reg_wdata[0];
-  assign alert_cause_44_we = addr_hit[197] & reg_we & !reg_error;
+  assign alert_cause_44_we = addr_hit[305] & reg_we & !reg_error;
 
   assign alert_cause_44_wd = reg_wdata[0];
-  assign alert_cause_45_we = addr_hit[198] & reg_we & !reg_error;
+  assign alert_cause_45_we = addr_hit[306] & reg_we & !reg_error;
 
   assign alert_cause_45_wd = reg_wdata[0];
-  assign alert_cause_46_we = addr_hit[199] & reg_we & !reg_error;
+  assign alert_cause_46_we = addr_hit[307] & reg_we & !reg_error;
 
   assign alert_cause_46_wd = reg_wdata[0];
-  assign alert_cause_47_we = addr_hit[200] & reg_we & !reg_error;
+  assign alert_cause_47_we = addr_hit[308] & reg_we & !reg_error;
 
   assign alert_cause_47_wd = reg_wdata[0];
-  assign alert_cause_48_we = addr_hit[201] & reg_we & !reg_error;
+  assign alert_cause_48_we = addr_hit[309] & reg_we & !reg_error;
 
   assign alert_cause_48_wd = reg_wdata[0];
-  assign loc_alert_regwen_0_we = addr_hit[202] & reg_we & !reg_error;
+  assign alert_cause_49_we = addr_hit[310] & reg_we & !reg_error;
+
+  assign alert_cause_49_wd = reg_wdata[0];
+  assign alert_cause_50_we = addr_hit[311] & reg_we & !reg_error;
+
+  assign alert_cause_50_wd = reg_wdata[0];
+  assign alert_cause_51_we = addr_hit[312] & reg_we & !reg_error;
+
+  assign alert_cause_51_wd = reg_wdata[0];
+  assign alert_cause_52_we = addr_hit[313] & reg_we & !reg_error;
+
+  assign alert_cause_52_wd = reg_wdata[0];
+  assign alert_cause_53_we = addr_hit[314] & reg_we & !reg_error;
+
+  assign alert_cause_53_wd = reg_wdata[0];
+  assign alert_cause_54_we = addr_hit[315] & reg_we & !reg_error;
+
+  assign alert_cause_54_wd = reg_wdata[0];
+  assign alert_cause_55_we = addr_hit[316] & reg_we & !reg_error;
+
+  assign alert_cause_55_wd = reg_wdata[0];
+  assign alert_cause_56_we = addr_hit[317] & reg_we & !reg_error;
+
+  assign alert_cause_56_wd = reg_wdata[0];
+  assign alert_cause_57_we = addr_hit[318] & reg_we & !reg_error;
+
+  assign alert_cause_57_wd = reg_wdata[0];
+  assign alert_cause_58_we = addr_hit[319] & reg_we & !reg_error;
+
+  assign alert_cause_58_wd = reg_wdata[0];
+  assign alert_cause_59_we = addr_hit[320] & reg_we & !reg_error;
+
+  assign alert_cause_59_wd = reg_wdata[0];
+  assign alert_cause_60_we = addr_hit[321] & reg_we & !reg_error;
+
+  assign alert_cause_60_wd = reg_wdata[0];
+  assign alert_cause_61_we = addr_hit[322] & reg_we & !reg_error;
+
+  assign alert_cause_61_wd = reg_wdata[0];
+  assign alert_cause_62_we = addr_hit[323] & reg_we & !reg_error;
+
+  assign alert_cause_62_wd = reg_wdata[0];
+  assign alert_cause_63_we = addr_hit[324] & reg_we & !reg_error;
+
+  assign alert_cause_63_wd = reg_wdata[0];
+  assign alert_cause_64_we = addr_hit[325] & reg_we & !reg_error;
+
+  assign alert_cause_64_wd = reg_wdata[0];
+  assign alert_cause_65_we = addr_hit[326] & reg_we & !reg_error;
+
+  assign alert_cause_65_wd = reg_wdata[0];
+  assign alert_cause_66_we = addr_hit[327] & reg_we & !reg_error;
+
+  assign alert_cause_66_wd = reg_wdata[0];
+  assign alert_cause_67_we = addr_hit[328] & reg_we & !reg_error;
+
+  assign alert_cause_67_wd = reg_wdata[0];
+  assign alert_cause_68_we = addr_hit[329] & reg_we & !reg_error;
+
+  assign alert_cause_68_wd = reg_wdata[0];
+  assign alert_cause_69_we = addr_hit[330] & reg_we & !reg_error;
+
+  assign alert_cause_69_wd = reg_wdata[0];
+  assign alert_cause_70_we = addr_hit[331] & reg_we & !reg_error;
+
+  assign alert_cause_70_wd = reg_wdata[0];
+  assign alert_cause_71_we = addr_hit[332] & reg_we & !reg_error;
+
+  assign alert_cause_71_wd = reg_wdata[0];
+  assign alert_cause_72_we = addr_hit[333] & reg_we & !reg_error;
+
+  assign alert_cause_72_wd = reg_wdata[0];
+  assign alert_cause_73_we = addr_hit[334] & reg_we & !reg_error;
+
+  assign alert_cause_73_wd = reg_wdata[0];
+  assign alert_cause_74_we = addr_hit[335] & reg_we & !reg_error;
+
+  assign alert_cause_74_wd = reg_wdata[0];
+  assign alert_cause_75_we = addr_hit[336] & reg_we & !reg_error;
+
+  assign alert_cause_75_wd = reg_wdata[0];
+  assign alert_cause_76_we = addr_hit[337] & reg_we & !reg_error;
+
+  assign alert_cause_76_wd = reg_wdata[0];
+  assign alert_cause_77_we = addr_hit[338] & reg_we & !reg_error;
+
+  assign alert_cause_77_wd = reg_wdata[0];
+  assign alert_cause_78_we = addr_hit[339] & reg_we & !reg_error;
+
+  assign alert_cause_78_wd = reg_wdata[0];
+  assign alert_cause_79_we = addr_hit[340] & reg_we & !reg_error;
+
+  assign alert_cause_79_wd = reg_wdata[0];
+  assign alert_cause_80_we = addr_hit[341] & reg_we & !reg_error;
+
+  assign alert_cause_80_wd = reg_wdata[0];
+  assign alert_cause_81_we = addr_hit[342] & reg_we & !reg_error;
+
+  assign alert_cause_81_wd = reg_wdata[0];
+  assign alert_cause_82_we = addr_hit[343] & reg_we & !reg_error;
+
+  assign alert_cause_82_wd = reg_wdata[0];
+  assign alert_cause_83_we = addr_hit[344] & reg_we & !reg_error;
+
+  assign alert_cause_83_wd = reg_wdata[0];
+  assign alert_cause_84_we = addr_hit[345] & reg_we & !reg_error;
+
+  assign alert_cause_84_wd = reg_wdata[0];
+  assign loc_alert_regwen_0_we = addr_hit[346] & reg_we & !reg_error;
 
   assign loc_alert_regwen_0_wd = reg_wdata[0];
-  assign loc_alert_regwen_1_we = addr_hit[203] & reg_we & !reg_error;
+  assign loc_alert_regwen_1_we = addr_hit[347] & reg_we & !reg_error;
 
   assign loc_alert_regwen_1_wd = reg_wdata[0];
-  assign loc_alert_regwen_2_we = addr_hit[204] & reg_we & !reg_error;
+  assign loc_alert_regwen_2_we = addr_hit[348] & reg_we & !reg_error;
 
   assign loc_alert_regwen_2_wd = reg_wdata[0];
-  assign loc_alert_regwen_3_we = addr_hit[205] & reg_we & !reg_error;
+  assign loc_alert_regwen_3_we = addr_hit[349] & reg_we & !reg_error;
 
   assign loc_alert_regwen_3_wd = reg_wdata[0];
-  assign loc_alert_regwen_4_we = addr_hit[206] & reg_we & !reg_error;
+  assign loc_alert_regwen_4_we = addr_hit[350] & reg_we & !reg_error;
 
   assign loc_alert_regwen_4_wd = reg_wdata[0];
-  assign loc_alert_regwen_5_we = addr_hit[207] & reg_we & !reg_error;
+  assign loc_alert_regwen_5_we = addr_hit[351] & reg_we & !reg_error;
 
   assign loc_alert_regwen_5_wd = reg_wdata[0];
-  assign loc_alert_regwen_6_we = addr_hit[208] & reg_we & !reg_error;
+  assign loc_alert_regwen_6_we = addr_hit[352] & reg_we & !reg_error;
 
   assign loc_alert_regwen_6_wd = reg_wdata[0];
-  assign loc_alert_en_shadowed_0_re = addr_hit[209] & reg_re & !reg_error;
-  assign loc_alert_en_shadowed_0_we = addr_hit[209] & reg_we & !reg_error;
+  assign loc_alert_en_shadowed_0_re = addr_hit[353] & reg_re & !reg_error;
+  assign loc_alert_en_shadowed_0_we = addr_hit[353] & reg_we & !reg_error;
 
   assign loc_alert_en_shadowed_0_wd = reg_wdata[0];
-  assign loc_alert_en_shadowed_1_re = addr_hit[210] & reg_re & !reg_error;
-  assign loc_alert_en_shadowed_1_we = addr_hit[210] & reg_we & !reg_error;
+  assign loc_alert_en_shadowed_1_re = addr_hit[354] & reg_re & !reg_error;
+  assign loc_alert_en_shadowed_1_we = addr_hit[354] & reg_we & !reg_error;
 
   assign loc_alert_en_shadowed_1_wd = reg_wdata[0];
-  assign loc_alert_en_shadowed_2_re = addr_hit[211] & reg_re & !reg_error;
-  assign loc_alert_en_shadowed_2_we = addr_hit[211] & reg_we & !reg_error;
+  assign loc_alert_en_shadowed_2_re = addr_hit[355] & reg_re & !reg_error;
+  assign loc_alert_en_shadowed_2_we = addr_hit[355] & reg_we & !reg_error;
 
   assign loc_alert_en_shadowed_2_wd = reg_wdata[0];
-  assign loc_alert_en_shadowed_3_re = addr_hit[212] & reg_re & !reg_error;
-  assign loc_alert_en_shadowed_3_we = addr_hit[212] & reg_we & !reg_error;
+  assign loc_alert_en_shadowed_3_re = addr_hit[356] & reg_re & !reg_error;
+  assign loc_alert_en_shadowed_3_we = addr_hit[356] & reg_we & !reg_error;
 
   assign loc_alert_en_shadowed_3_wd = reg_wdata[0];
-  assign loc_alert_en_shadowed_4_re = addr_hit[213] & reg_re & !reg_error;
-  assign loc_alert_en_shadowed_4_we = addr_hit[213] & reg_we & !reg_error;
+  assign loc_alert_en_shadowed_4_re = addr_hit[357] & reg_re & !reg_error;
+  assign loc_alert_en_shadowed_4_we = addr_hit[357] & reg_we & !reg_error;
 
   assign loc_alert_en_shadowed_4_wd = reg_wdata[0];
-  assign loc_alert_en_shadowed_5_re = addr_hit[214] & reg_re & !reg_error;
-  assign loc_alert_en_shadowed_5_we = addr_hit[214] & reg_we & !reg_error;
+  assign loc_alert_en_shadowed_5_re = addr_hit[358] & reg_re & !reg_error;
+  assign loc_alert_en_shadowed_5_we = addr_hit[358] & reg_we & !reg_error;
 
   assign loc_alert_en_shadowed_5_wd = reg_wdata[0];
-  assign loc_alert_en_shadowed_6_re = addr_hit[215] & reg_re & !reg_error;
-  assign loc_alert_en_shadowed_6_we = addr_hit[215] & reg_we & !reg_error;
+  assign loc_alert_en_shadowed_6_re = addr_hit[359] & reg_re & !reg_error;
+  assign loc_alert_en_shadowed_6_we = addr_hit[359] & reg_we & !reg_error;
 
   assign loc_alert_en_shadowed_6_wd = reg_wdata[0];
-  assign loc_alert_class_shadowed_0_re = addr_hit[216] & reg_re & !reg_error;
-  assign loc_alert_class_shadowed_0_we = addr_hit[216] & reg_we & !reg_error;
+  assign loc_alert_class_shadowed_0_re = addr_hit[360] & reg_re & !reg_error;
+  assign loc_alert_class_shadowed_0_we = addr_hit[360] & reg_we & !reg_error;
 
   assign loc_alert_class_shadowed_0_wd = reg_wdata[1:0];
-  assign loc_alert_class_shadowed_1_re = addr_hit[217] & reg_re & !reg_error;
-  assign loc_alert_class_shadowed_1_we = addr_hit[217] & reg_we & !reg_error;
+  assign loc_alert_class_shadowed_1_re = addr_hit[361] & reg_re & !reg_error;
+  assign loc_alert_class_shadowed_1_we = addr_hit[361] & reg_we & !reg_error;
 
   assign loc_alert_class_shadowed_1_wd = reg_wdata[1:0];
-  assign loc_alert_class_shadowed_2_re = addr_hit[218] & reg_re & !reg_error;
-  assign loc_alert_class_shadowed_2_we = addr_hit[218] & reg_we & !reg_error;
+  assign loc_alert_class_shadowed_2_re = addr_hit[362] & reg_re & !reg_error;
+  assign loc_alert_class_shadowed_2_we = addr_hit[362] & reg_we & !reg_error;
 
   assign loc_alert_class_shadowed_2_wd = reg_wdata[1:0];
-  assign loc_alert_class_shadowed_3_re = addr_hit[219] & reg_re & !reg_error;
-  assign loc_alert_class_shadowed_3_we = addr_hit[219] & reg_we & !reg_error;
+  assign loc_alert_class_shadowed_3_re = addr_hit[363] & reg_re & !reg_error;
+  assign loc_alert_class_shadowed_3_we = addr_hit[363] & reg_we & !reg_error;
 
   assign loc_alert_class_shadowed_3_wd = reg_wdata[1:0];
-  assign loc_alert_class_shadowed_4_re = addr_hit[220] & reg_re & !reg_error;
-  assign loc_alert_class_shadowed_4_we = addr_hit[220] & reg_we & !reg_error;
+  assign loc_alert_class_shadowed_4_re = addr_hit[364] & reg_re & !reg_error;
+  assign loc_alert_class_shadowed_4_we = addr_hit[364] & reg_we & !reg_error;
 
   assign loc_alert_class_shadowed_4_wd = reg_wdata[1:0];
-  assign loc_alert_class_shadowed_5_re = addr_hit[221] & reg_re & !reg_error;
-  assign loc_alert_class_shadowed_5_we = addr_hit[221] & reg_we & !reg_error;
+  assign loc_alert_class_shadowed_5_re = addr_hit[365] & reg_re & !reg_error;
+  assign loc_alert_class_shadowed_5_we = addr_hit[365] & reg_we & !reg_error;
 
   assign loc_alert_class_shadowed_5_wd = reg_wdata[1:0];
-  assign loc_alert_class_shadowed_6_re = addr_hit[222] & reg_re & !reg_error;
-  assign loc_alert_class_shadowed_6_we = addr_hit[222] & reg_we & !reg_error;
+  assign loc_alert_class_shadowed_6_re = addr_hit[366] & reg_re & !reg_error;
+  assign loc_alert_class_shadowed_6_we = addr_hit[366] & reg_we & !reg_error;
 
   assign loc_alert_class_shadowed_6_wd = reg_wdata[1:0];
-  assign loc_alert_cause_0_we = addr_hit[223] & reg_we & !reg_error;
+  assign loc_alert_cause_0_we = addr_hit[367] & reg_we & !reg_error;
 
   assign loc_alert_cause_0_wd = reg_wdata[0];
-  assign loc_alert_cause_1_we = addr_hit[224] & reg_we & !reg_error;
+  assign loc_alert_cause_1_we = addr_hit[368] & reg_we & !reg_error;
 
   assign loc_alert_cause_1_wd = reg_wdata[0];
-  assign loc_alert_cause_2_we = addr_hit[225] & reg_we & !reg_error;
+  assign loc_alert_cause_2_we = addr_hit[369] & reg_we & !reg_error;
 
   assign loc_alert_cause_2_wd = reg_wdata[0];
-  assign loc_alert_cause_3_we = addr_hit[226] & reg_we & !reg_error;
+  assign loc_alert_cause_3_we = addr_hit[370] & reg_we & !reg_error;
 
   assign loc_alert_cause_3_wd = reg_wdata[0];
-  assign loc_alert_cause_4_we = addr_hit[227] & reg_we & !reg_error;
+  assign loc_alert_cause_4_we = addr_hit[371] & reg_we & !reg_error;
 
   assign loc_alert_cause_4_wd = reg_wdata[0];
-  assign loc_alert_cause_5_we = addr_hit[228] & reg_we & !reg_error;
+  assign loc_alert_cause_5_we = addr_hit[372] & reg_we & !reg_error;
 
   assign loc_alert_cause_5_wd = reg_wdata[0];
-  assign loc_alert_cause_6_we = addr_hit[229] & reg_we & !reg_error;
+  assign loc_alert_cause_6_we = addr_hit[373] & reg_we & !reg_error;
 
   assign loc_alert_cause_6_wd = reg_wdata[0];
-  assign classa_regwen_we = addr_hit[230] & reg_we & !reg_error;
+  assign classa_regwen_we = addr_hit[374] & reg_we & !reg_error;
 
   assign classa_regwen_wd = reg_wdata[0];
-  assign classa_ctrl_shadowed_re = addr_hit[231] & reg_re & !reg_error;
-  assign classa_ctrl_shadowed_we = addr_hit[231] & reg_we & !reg_error;
+  assign classa_ctrl_shadowed_re = addr_hit[375] & reg_re & !reg_error;
+  assign classa_ctrl_shadowed_we = addr_hit[375] & reg_we & !reg_error;
 
   assign classa_ctrl_shadowed_en_wd = reg_wdata[0];
 
@@ -14465,49 +20945,49 @@ module alert_handler_reg_top (
   assign classa_ctrl_shadowed_map_e2_wd = reg_wdata[11:10];
 
   assign classa_ctrl_shadowed_map_e3_wd = reg_wdata[13:12];
-  assign classa_clr_regwen_we = addr_hit[232] & reg_we & !reg_error;
+  assign classa_clr_regwen_we = addr_hit[376] & reg_we & !reg_error;
 
   assign classa_clr_regwen_wd = reg_wdata[0];
-  assign classa_clr_shadowed_re = addr_hit[233] & reg_re & !reg_error;
-  assign classa_clr_shadowed_we = addr_hit[233] & reg_we & !reg_error;
+  assign classa_clr_shadowed_re = addr_hit[377] & reg_re & !reg_error;
+  assign classa_clr_shadowed_we = addr_hit[377] & reg_we & !reg_error;
 
   assign classa_clr_shadowed_wd = reg_wdata[0];
-  assign classa_accum_cnt_re = addr_hit[234] & reg_re & !reg_error;
-  assign classa_accum_thresh_shadowed_re = addr_hit[235] & reg_re & !reg_error;
-  assign classa_accum_thresh_shadowed_we = addr_hit[235] & reg_we & !reg_error;
+  assign classa_accum_cnt_re = addr_hit[378] & reg_re & !reg_error;
+  assign classa_accum_thresh_shadowed_re = addr_hit[379] & reg_re & !reg_error;
+  assign classa_accum_thresh_shadowed_we = addr_hit[379] & reg_we & !reg_error;
 
   assign classa_accum_thresh_shadowed_wd = reg_wdata[15:0];
-  assign classa_timeout_cyc_shadowed_re = addr_hit[236] & reg_re & !reg_error;
-  assign classa_timeout_cyc_shadowed_we = addr_hit[236] & reg_we & !reg_error;
+  assign classa_timeout_cyc_shadowed_re = addr_hit[380] & reg_re & !reg_error;
+  assign classa_timeout_cyc_shadowed_we = addr_hit[380] & reg_we & !reg_error;
 
   assign classa_timeout_cyc_shadowed_wd = reg_wdata[31:0];
-  assign classa_crashdump_trigger_shadowed_re = addr_hit[237] & reg_re & !reg_error;
-  assign classa_crashdump_trigger_shadowed_we = addr_hit[237] & reg_we & !reg_error;
+  assign classa_crashdump_trigger_shadowed_re = addr_hit[381] & reg_re & !reg_error;
+  assign classa_crashdump_trigger_shadowed_we = addr_hit[381] & reg_we & !reg_error;
 
   assign classa_crashdump_trigger_shadowed_wd = reg_wdata[1:0];
-  assign classa_phase0_cyc_shadowed_re = addr_hit[238] & reg_re & !reg_error;
-  assign classa_phase0_cyc_shadowed_we = addr_hit[238] & reg_we & !reg_error;
+  assign classa_phase0_cyc_shadowed_re = addr_hit[382] & reg_re & !reg_error;
+  assign classa_phase0_cyc_shadowed_we = addr_hit[382] & reg_we & !reg_error;
 
   assign classa_phase0_cyc_shadowed_wd = reg_wdata[31:0];
-  assign classa_phase1_cyc_shadowed_re = addr_hit[239] & reg_re & !reg_error;
-  assign classa_phase1_cyc_shadowed_we = addr_hit[239] & reg_we & !reg_error;
+  assign classa_phase1_cyc_shadowed_re = addr_hit[383] & reg_re & !reg_error;
+  assign classa_phase1_cyc_shadowed_we = addr_hit[383] & reg_we & !reg_error;
 
   assign classa_phase1_cyc_shadowed_wd = reg_wdata[31:0];
-  assign classa_phase2_cyc_shadowed_re = addr_hit[240] & reg_re & !reg_error;
-  assign classa_phase2_cyc_shadowed_we = addr_hit[240] & reg_we & !reg_error;
+  assign classa_phase2_cyc_shadowed_re = addr_hit[384] & reg_re & !reg_error;
+  assign classa_phase2_cyc_shadowed_we = addr_hit[384] & reg_we & !reg_error;
 
   assign classa_phase2_cyc_shadowed_wd = reg_wdata[31:0];
-  assign classa_phase3_cyc_shadowed_re = addr_hit[241] & reg_re & !reg_error;
-  assign classa_phase3_cyc_shadowed_we = addr_hit[241] & reg_we & !reg_error;
+  assign classa_phase3_cyc_shadowed_re = addr_hit[385] & reg_re & !reg_error;
+  assign classa_phase3_cyc_shadowed_we = addr_hit[385] & reg_we & !reg_error;
 
   assign classa_phase3_cyc_shadowed_wd = reg_wdata[31:0];
-  assign classa_esc_cnt_re = addr_hit[242] & reg_re & !reg_error;
-  assign classa_state_re = addr_hit[243] & reg_re & !reg_error;
-  assign classb_regwen_we = addr_hit[244] & reg_we & !reg_error;
+  assign classa_esc_cnt_re = addr_hit[386] & reg_re & !reg_error;
+  assign classa_state_re = addr_hit[387] & reg_re & !reg_error;
+  assign classb_regwen_we = addr_hit[388] & reg_we & !reg_error;
 
   assign classb_regwen_wd = reg_wdata[0];
-  assign classb_ctrl_shadowed_re = addr_hit[245] & reg_re & !reg_error;
-  assign classb_ctrl_shadowed_we = addr_hit[245] & reg_we & !reg_error;
+  assign classb_ctrl_shadowed_re = addr_hit[389] & reg_re & !reg_error;
+  assign classb_ctrl_shadowed_we = addr_hit[389] & reg_we & !reg_error;
 
   assign classb_ctrl_shadowed_en_wd = reg_wdata[0];
 
@@ -14528,49 +21008,49 @@ module alert_handler_reg_top (
   assign classb_ctrl_shadowed_map_e2_wd = reg_wdata[11:10];
 
   assign classb_ctrl_shadowed_map_e3_wd = reg_wdata[13:12];
-  assign classb_clr_regwen_we = addr_hit[246] & reg_we & !reg_error;
+  assign classb_clr_regwen_we = addr_hit[390] & reg_we & !reg_error;
 
   assign classb_clr_regwen_wd = reg_wdata[0];
-  assign classb_clr_shadowed_re = addr_hit[247] & reg_re & !reg_error;
-  assign classb_clr_shadowed_we = addr_hit[247] & reg_we & !reg_error;
+  assign classb_clr_shadowed_re = addr_hit[391] & reg_re & !reg_error;
+  assign classb_clr_shadowed_we = addr_hit[391] & reg_we & !reg_error;
 
   assign classb_clr_shadowed_wd = reg_wdata[0];
-  assign classb_accum_cnt_re = addr_hit[248] & reg_re & !reg_error;
-  assign classb_accum_thresh_shadowed_re = addr_hit[249] & reg_re & !reg_error;
-  assign classb_accum_thresh_shadowed_we = addr_hit[249] & reg_we & !reg_error;
+  assign classb_accum_cnt_re = addr_hit[392] & reg_re & !reg_error;
+  assign classb_accum_thresh_shadowed_re = addr_hit[393] & reg_re & !reg_error;
+  assign classb_accum_thresh_shadowed_we = addr_hit[393] & reg_we & !reg_error;
 
   assign classb_accum_thresh_shadowed_wd = reg_wdata[15:0];
-  assign classb_timeout_cyc_shadowed_re = addr_hit[250] & reg_re & !reg_error;
-  assign classb_timeout_cyc_shadowed_we = addr_hit[250] & reg_we & !reg_error;
+  assign classb_timeout_cyc_shadowed_re = addr_hit[394] & reg_re & !reg_error;
+  assign classb_timeout_cyc_shadowed_we = addr_hit[394] & reg_we & !reg_error;
 
   assign classb_timeout_cyc_shadowed_wd = reg_wdata[31:0];
-  assign classb_crashdump_trigger_shadowed_re = addr_hit[251] & reg_re & !reg_error;
-  assign classb_crashdump_trigger_shadowed_we = addr_hit[251] & reg_we & !reg_error;
+  assign classb_crashdump_trigger_shadowed_re = addr_hit[395] & reg_re & !reg_error;
+  assign classb_crashdump_trigger_shadowed_we = addr_hit[395] & reg_we & !reg_error;
 
   assign classb_crashdump_trigger_shadowed_wd = reg_wdata[1:0];
-  assign classb_phase0_cyc_shadowed_re = addr_hit[252] & reg_re & !reg_error;
-  assign classb_phase0_cyc_shadowed_we = addr_hit[252] & reg_we & !reg_error;
+  assign classb_phase0_cyc_shadowed_re = addr_hit[396] & reg_re & !reg_error;
+  assign classb_phase0_cyc_shadowed_we = addr_hit[396] & reg_we & !reg_error;
 
   assign classb_phase0_cyc_shadowed_wd = reg_wdata[31:0];
-  assign classb_phase1_cyc_shadowed_re = addr_hit[253] & reg_re & !reg_error;
-  assign classb_phase1_cyc_shadowed_we = addr_hit[253] & reg_we & !reg_error;
+  assign classb_phase1_cyc_shadowed_re = addr_hit[397] & reg_re & !reg_error;
+  assign classb_phase1_cyc_shadowed_we = addr_hit[397] & reg_we & !reg_error;
 
   assign classb_phase1_cyc_shadowed_wd = reg_wdata[31:0];
-  assign classb_phase2_cyc_shadowed_re = addr_hit[254] & reg_re & !reg_error;
-  assign classb_phase2_cyc_shadowed_we = addr_hit[254] & reg_we & !reg_error;
+  assign classb_phase2_cyc_shadowed_re = addr_hit[398] & reg_re & !reg_error;
+  assign classb_phase2_cyc_shadowed_we = addr_hit[398] & reg_we & !reg_error;
 
   assign classb_phase2_cyc_shadowed_wd = reg_wdata[31:0];
-  assign classb_phase3_cyc_shadowed_re = addr_hit[255] & reg_re & !reg_error;
-  assign classb_phase3_cyc_shadowed_we = addr_hit[255] & reg_we & !reg_error;
+  assign classb_phase3_cyc_shadowed_re = addr_hit[399] & reg_re & !reg_error;
+  assign classb_phase3_cyc_shadowed_we = addr_hit[399] & reg_we & !reg_error;
 
   assign classb_phase3_cyc_shadowed_wd = reg_wdata[31:0];
-  assign classb_esc_cnt_re = addr_hit[256] & reg_re & !reg_error;
-  assign classb_state_re = addr_hit[257] & reg_re & !reg_error;
-  assign classc_regwen_we = addr_hit[258] & reg_we & !reg_error;
+  assign classb_esc_cnt_re = addr_hit[400] & reg_re & !reg_error;
+  assign classb_state_re = addr_hit[401] & reg_re & !reg_error;
+  assign classc_regwen_we = addr_hit[402] & reg_we & !reg_error;
 
   assign classc_regwen_wd = reg_wdata[0];
-  assign classc_ctrl_shadowed_re = addr_hit[259] & reg_re & !reg_error;
-  assign classc_ctrl_shadowed_we = addr_hit[259] & reg_we & !reg_error;
+  assign classc_ctrl_shadowed_re = addr_hit[403] & reg_re & !reg_error;
+  assign classc_ctrl_shadowed_we = addr_hit[403] & reg_we & !reg_error;
 
   assign classc_ctrl_shadowed_en_wd = reg_wdata[0];
 
@@ -14591,49 +21071,49 @@ module alert_handler_reg_top (
   assign classc_ctrl_shadowed_map_e2_wd = reg_wdata[11:10];
 
   assign classc_ctrl_shadowed_map_e3_wd = reg_wdata[13:12];
-  assign classc_clr_regwen_we = addr_hit[260] & reg_we & !reg_error;
+  assign classc_clr_regwen_we = addr_hit[404] & reg_we & !reg_error;
 
   assign classc_clr_regwen_wd = reg_wdata[0];
-  assign classc_clr_shadowed_re = addr_hit[261] & reg_re & !reg_error;
-  assign classc_clr_shadowed_we = addr_hit[261] & reg_we & !reg_error;
+  assign classc_clr_shadowed_re = addr_hit[405] & reg_re & !reg_error;
+  assign classc_clr_shadowed_we = addr_hit[405] & reg_we & !reg_error;
 
   assign classc_clr_shadowed_wd = reg_wdata[0];
-  assign classc_accum_cnt_re = addr_hit[262] & reg_re & !reg_error;
-  assign classc_accum_thresh_shadowed_re = addr_hit[263] & reg_re & !reg_error;
-  assign classc_accum_thresh_shadowed_we = addr_hit[263] & reg_we & !reg_error;
+  assign classc_accum_cnt_re = addr_hit[406] & reg_re & !reg_error;
+  assign classc_accum_thresh_shadowed_re = addr_hit[407] & reg_re & !reg_error;
+  assign classc_accum_thresh_shadowed_we = addr_hit[407] & reg_we & !reg_error;
 
   assign classc_accum_thresh_shadowed_wd = reg_wdata[15:0];
-  assign classc_timeout_cyc_shadowed_re = addr_hit[264] & reg_re & !reg_error;
-  assign classc_timeout_cyc_shadowed_we = addr_hit[264] & reg_we & !reg_error;
+  assign classc_timeout_cyc_shadowed_re = addr_hit[408] & reg_re & !reg_error;
+  assign classc_timeout_cyc_shadowed_we = addr_hit[408] & reg_we & !reg_error;
 
   assign classc_timeout_cyc_shadowed_wd = reg_wdata[31:0];
-  assign classc_crashdump_trigger_shadowed_re = addr_hit[265] & reg_re & !reg_error;
-  assign classc_crashdump_trigger_shadowed_we = addr_hit[265] & reg_we & !reg_error;
+  assign classc_crashdump_trigger_shadowed_re = addr_hit[409] & reg_re & !reg_error;
+  assign classc_crashdump_trigger_shadowed_we = addr_hit[409] & reg_we & !reg_error;
 
   assign classc_crashdump_trigger_shadowed_wd = reg_wdata[1:0];
-  assign classc_phase0_cyc_shadowed_re = addr_hit[266] & reg_re & !reg_error;
-  assign classc_phase0_cyc_shadowed_we = addr_hit[266] & reg_we & !reg_error;
+  assign classc_phase0_cyc_shadowed_re = addr_hit[410] & reg_re & !reg_error;
+  assign classc_phase0_cyc_shadowed_we = addr_hit[410] & reg_we & !reg_error;
 
   assign classc_phase0_cyc_shadowed_wd = reg_wdata[31:0];
-  assign classc_phase1_cyc_shadowed_re = addr_hit[267] & reg_re & !reg_error;
-  assign classc_phase1_cyc_shadowed_we = addr_hit[267] & reg_we & !reg_error;
+  assign classc_phase1_cyc_shadowed_re = addr_hit[411] & reg_re & !reg_error;
+  assign classc_phase1_cyc_shadowed_we = addr_hit[411] & reg_we & !reg_error;
 
   assign classc_phase1_cyc_shadowed_wd = reg_wdata[31:0];
-  assign classc_phase2_cyc_shadowed_re = addr_hit[268] & reg_re & !reg_error;
-  assign classc_phase2_cyc_shadowed_we = addr_hit[268] & reg_we & !reg_error;
+  assign classc_phase2_cyc_shadowed_re = addr_hit[412] & reg_re & !reg_error;
+  assign classc_phase2_cyc_shadowed_we = addr_hit[412] & reg_we & !reg_error;
 
   assign classc_phase2_cyc_shadowed_wd = reg_wdata[31:0];
-  assign classc_phase3_cyc_shadowed_re = addr_hit[269] & reg_re & !reg_error;
-  assign classc_phase3_cyc_shadowed_we = addr_hit[269] & reg_we & !reg_error;
+  assign classc_phase3_cyc_shadowed_re = addr_hit[413] & reg_re & !reg_error;
+  assign classc_phase3_cyc_shadowed_we = addr_hit[413] & reg_we & !reg_error;
 
   assign classc_phase3_cyc_shadowed_wd = reg_wdata[31:0];
-  assign classc_esc_cnt_re = addr_hit[270] & reg_re & !reg_error;
-  assign classc_state_re = addr_hit[271] & reg_re & !reg_error;
-  assign classd_regwen_we = addr_hit[272] & reg_we & !reg_error;
+  assign classc_esc_cnt_re = addr_hit[414] & reg_re & !reg_error;
+  assign classc_state_re = addr_hit[415] & reg_re & !reg_error;
+  assign classd_regwen_we = addr_hit[416] & reg_we & !reg_error;
 
   assign classd_regwen_wd = reg_wdata[0];
-  assign classd_ctrl_shadowed_re = addr_hit[273] & reg_re & !reg_error;
-  assign classd_ctrl_shadowed_we = addr_hit[273] & reg_we & !reg_error;
+  assign classd_ctrl_shadowed_re = addr_hit[417] & reg_re & !reg_error;
+  assign classd_ctrl_shadowed_we = addr_hit[417] & reg_we & !reg_error;
 
   assign classd_ctrl_shadowed_en_wd = reg_wdata[0];
 
@@ -14654,44 +21134,44 @@ module alert_handler_reg_top (
   assign classd_ctrl_shadowed_map_e2_wd = reg_wdata[11:10];
 
   assign classd_ctrl_shadowed_map_e3_wd = reg_wdata[13:12];
-  assign classd_clr_regwen_we = addr_hit[274] & reg_we & !reg_error;
+  assign classd_clr_regwen_we = addr_hit[418] & reg_we & !reg_error;
 
   assign classd_clr_regwen_wd = reg_wdata[0];
-  assign classd_clr_shadowed_re = addr_hit[275] & reg_re & !reg_error;
-  assign classd_clr_shadowed_we = addr_hit[275] & reg_we & !reg_error;
+  assign classd_clr_shadowed_re = addr_hit[419] & reg_re & !reg_error;
+  assign classd_clr_shadowed_we = addr_hit[419] & reg_we & !reg_error;
 
   assign classd_clr_shadowed_wd = reg_wdata[0];
-  assign classd_accum_cnt_re = addr_hit[276] & reg_re & !reg_error;
-  assign classd_accum_thresh_shadowed_re = addr_hit[277] & reg_re & !reg_error;
-  assign classd_accum_thresh_shadowed_we = addr_hit[277] & reg_we & !reg_error;
+  assign classd_accum_cnt_re = addr_hit[420] & reg_re & !reg_error;
+  assign classd_accum_thresh_shadowed_re = addr_hit[421] & reg_re & !reg_error;
+  assign classd_accum_thresh_shadowed_we = addr_hit[421] & reg_we & !reg_error;
 
   assign classd_accum_thresh_shadowed_wd = reg_wdata[15:0];
-  assign classd_timeout_cyc_shadowed_re = addr_hit[278] & reg_re & !reg_error;
-  assign classd_timeout_cyc_shadowed_we = addr_hit[278] & reg_we & !reg_error;
+  assign classd_timeout_cyc_shadowed_re = addr_hit[422] & reg_re & !reg_error;
+  assign classd_timeout_cyc_shadowed_we = addr_hit[422] & reg_we & !reg_error;
 
   assign classd_timeout_cyc_shadowed_wd = reg_wdata[31:0];
-  assign classd_crashdump_trigger_shadowed_re = addr_hit[279] & reg_re & !reg_error;
-  assign classd_crashdump_trigger_shadowed_we = addr_hit[279] & reg_we & !reg_error;
+  assign classd_crashdump_trigger_shadowed_re = addr_hit[423] & reg_re & !reg_error;
+  assign classd_crashdump_trigger_shadowed_we = addr_hit[423] & reg_we & !reg_error;
 
   assign classd_crashdump_trigger_shadowed_wd = reg_wdata[1:0];
-  assign classd_phase0_cyc_shadowed_re = addr_hit[280] & reg_re & !reg_error;
-  assign classd_phase0_cyc_shadowed_we = addr_hit[280] & reg_we & !reg_error;
+  assign classd_phase0_cyc_shadowed_re = addr_hit[424] & reg_re & !reg_error;
+  assign classd_phase0_cyc_shadowed_we = addr_hit[424] & reg_we & !reg_error;
 
   assign classd_phase0_cyc_shadowed_wd = reg_wdata[31:0];
-  assign classd_phase1_cyc_shadowed_re = addr_hit[281] & reg_re & !reg_error;
-  assign classd_phase1_cyc_shadowed_we = addr_hit[281] & reg_we & !reg_error;
+  assign classd_phase1_cyc_shadowed_re = addr_hit[425] & reg_re & !reg_error;
+  assign classd_phase1_cyc_shadowed_we = addr_hit[425] & reg_we & !reg_error;
 
   assign classd_phase1_cyc_shadowed_wd = reg_wdata[31:0];
-  assign classd_phase2_cyc_shadowed_re = addr_hit[282] & reg_re & !reg_error;
-  assign classd_phase2_cyc_shadowed_we = addr_hit[282] & reg_we & !reg_error;
+  assign classd_phase2_cyc_shadowed_re = addr_hit[426] & reg_re & !reg_error;
+  assign classd_phase2_cyc_shadowed_we = addr_hit[426] & reg_we & !reg_error;
 
   assign classd_phase2_cyc_shadowed_wd = reg_wdata[31:0];
-  assign classd_phase3_cyc_shadowed_re = addr_hit[283] & reg_re & !reg_error;
-  assign classd_phase3_cyc_shadowed_we = addr_hit[283] & reg_we & !reg_error;
+  assign classd_phase3_cyc_shadowed_re = addr_hit[427] & reg_re & !reg_error;
+  assign classd_phase3_cyc_shadowed_we = addr_hit[427] & reg_we & !reg_error;
 
   assign classd_phase3_cyc_shadowed_wd = reg_wdata[31:0];
-  assign classd_esc_cnt_re = addr_hit[284] & reg_re & !reg_error;
-  assign classd_state_re = addr_hit[285] & reg_re & !reg_error;
+  assign classd_esc_cnt_re = addr_hit[428] & reg_re & !reg_error;
+  assign classd_state_re = addr_hit[429] & reg_re & !reg_error;
 
   // Assign write-enables to checker logic vector.
   always_comb begin
@@ -14750,237 +21230,381 @@ module alert_handler_reg_top (
     reg_we_check[52] = alert_regwen_46_we;
     reg_we_check[53] = alert_regwen_47_we;
     reg_we_check[54] = alert_regwen_48_we;
-    reg_we_check[55] = alert_en_shadowed_0_gated_we;
-    reg_we_check[56] = alert_en_shadowed_1_gated_we;
-    reg_we_check[57] = alert_en_shadowed_2_gated_we;
-    reg_we_check[58] = alert_en_shadowed_3_gated_we;
-    reg_we_check[59] = alert_en_shadowed_4_gated_we;
-    reg_we_check[60] = alert_en_shadowed_5_gated_we;
-    reg_we_check[61] = alert_en_shadowed_6_gated_we;
-    reg_we_check[62] = alert_en_shadowed_7_gated_we;
-    reg_we_check[63] = alert_en_shadowed_8_gated_we;
-    reg_we_check[64] = alert_en_shadowed_9_gated_we;
-    reg_we_check[65] = alert_en_shadowed_10_gated_we;
-    reg_we_check[66] = alert_en_shadowed_11_gated_we;
-    reg_we_check[67] = alert_en_shadowed_12_gated_we;
-    reg_we_check[68] = alert_en_shadowed_13_gated_we;
-    reg_we_check[69] = alert_en_shadowed_14_gated_we;
-    reg_we_check[70] = alert_en_shadowed_15_gated_we;
-    reg_we_check[71] = alert_en_shadowed_16_gated_we;
-    reg_we_check[72] = alert_en_shadowed_17_gated_we;
-    reg_we_check[73] = alert_en_shadowed_18_gated_we;
-    reg_we_check[74] = alert_en_shadowed_19_gated_we;
-    reg_we_check[75] = alert_en_shadowed_20_gated_we;
-    reg_we_check[76] = alert_en_shadowed_21_gated_we;
-    reg_we_check[77] = alert_en_shadowed_22_gated_we;
-    reg_we_check[78] = alert_en_shadowed_23_gated_we;
-    reg_we_check[79] = alert_en_shadowed_24_gated_we;
-    reg_we_check[80] = alert_en_shadowed_25_gated_we;
-    reg_we_check[81] = alert_en_shadowed_26_gated_we;
-    reg_we_check[82] = alert_en_shadowed_27_gated_we;
-    reg_we_check[83] = alert_en_shadowed_28_gated_we;
-    reg_we_check[84] = alert_en_shadowed_29_gated_we;
-    reg_we_check[85] = alert_en_shadowed_30_gated_we;
-    reg_we_check[86] = alert_en_shadowed_31_gated_we;
-    reg_we_check[87] = alert_en_shadowed_32_gated_we;
-    reg_we_check[88] = alert_en_shadowed_33_gated_we;
-    reg_we_check[89] = alert_en_shadowed_34_gated_we;
-    reg_we_check[90] = alert_en_shadowed_35_gated_we;
-    reg_we_check[91] = alert_en_shadowed_36_gated_we;
-    reg_we_check[92] = alert_en_shadowed_37_gated_we;
-    reg_we_check[93] = alert_en_shadowed_38_gated_we;
-    reg_we_check[94] = alert_en_shadowed_39_gated_we;
-    reg_we_check[95] = alert_en_shadowed_40_gated_we;
-    reg_we_check[96] = alert_en_shadowed_41_gated_we;
-    reg_we_check[97] = alert_en_shadowed_42_gated_we;
-    reg_we_check[98] = alert_en_shadowed_43_gated_we;
-    reg_we_check[99] = alert_en_shadowed_44_gated_we;
-    reg_we_check[100] = alert_en_shadowed_45_gated_we;
-    reg_we_check[101] = alert_en_shadowed_46_gated_we;
-    reg_we_check[102] = alert_en_shadowed_47_gated_we;
-    reg_we_check[103] = alert_en_shadowed_48_gated_we;
-    reg_we_check[104] = alert_class_shadowed_0_gated_we;
-    reg_we_check[105] = alert_class_shadowed_1_gated_we;
-    reg_we_check[106] = alert_class_shadowed_2_gated_we;
-    reg_we_check[107] = alert_class_shadowed_3_gated_we;
-    reg_we_check[108] = alert_class_shadowed_4_gated_we;
-    reg_we_check[109] = alert_class_shadowed_5_gated_we;
-    reg_we_check[110] = alert_class_shadowed_6_gated_we;
-    reg_we_check[111] = alert_class_shadowed_7_gated_we;
-    reg_we_check[112] = alert_class_shadowed_8_gated_we;
-    reg_we_check[113] = alert_class_shadowed_9_gated_we;
-    reg_we_check[114] = alert_class_shadowed_10_gated_we;
-    reg_we_check[115] = alert_class_shadowed_11_gated_we;
-    reg_we_check[116] = alert_class_shadowed_12_gated_we;
-    reg_we_check[117] = alert_class_shadowed_13_gated_we;
-    reg_we_check[118] = alert_class_shadowed_14_gated_we;
-    reg_we_check[119] = alert_class_shadowed_15_gated_we;
-    reg_we_check[120] = alert_class_shadowed_16_gated_we;
-    reg_we_check[121] = alert_class_shadowed_17_gated_we;
-    reg_we_check[122] = alert_class_shadowed_18_gated_we;
-    reg_we_check[123] = alert_class_shadowed_19_gated_we;
-    reg_we_check[124] = alert_class_shadowed_20_gated_we;
-    reg_we_check[125] = alert_class_shadowed_21_gated_we;
-    reg_we_check[126] = alert_class_shadowed_22_gated_we;
-    reg_we_check[127] = alert_class_shadowed_23_gated_we;
-    reg_we_check[128] = alert_class_shadowed_24_gated_we;
-    reg_we_check[129] = alert_class_shadowed_25_gated_we;
-    reg_we_check[130] = alert_class_shadowed_26_gated_we;
-    reg_we_check[131] = alert_class_shadowed_27_gated_we;
-    reg_we_check[132] = alert_class_shadowed_28_gated_we;
-    reg_we_check[133] = alert_class_shadowed_29_gated_we;
-    reg_we_check[134] = alert_class_shadowed_30_gated_we;
-    reg_we_check[135] = alert_class_shadowed_31_gated_we;
-    reg_we_check[136] = alert_class_shadowed_32_gated_we;
-    reg_we_check[137] = alert_class_shadowed_33_gated_we;
-    reg_we_check[138] = alert_class_shadowed_34_gated_we;
-    reg_we_check[139] = alert_class_shadowed_35_gated_we;
-    reg_we_check[140] = alert_class_shadowed_36_gated_we;
-    reg_we_check[141] = alert_class_shadowed_37_gated_we;
-    reg_we_check[142] = alert_class_shadowed_38_gated_we;
-    reg_we_check[143] = alert_class_shadowed_39_gated_we;
-    reg_we_check[144] = alert_class_shadowed_40_gated_we;
-    reg_we_check[145] = alert_class_shadowed_41_gated_we;
-    reg_we_check[146] = alert_class_shadowed_42_gated_we;
-    reg_we_check[147] = alert_class_shadowed_43_gated_we;
-    reg_we_check[148] = alert_class_shadowed_44_gated_we;
-    reg_we_check[149] = alert_class_shadowed_45_gated_we;
-    reg_we_check[150] = alert_class_shadowed_46_gated_we;
-    reg_we_check[151] = alert_class_shadowed_47_gated_we;
-    reg_we_check[152] = alert_class_shadowed_48_gated_we;
-    reg_we_check[153] = alert_cause_0_we;
-    reg_we_check[154] = alert_cause_1_we;
-    reg_we_check[155] = alert_cause_2_we;
-    reg_we_check[156] = alert_cause_3_we;
-    reg_we_check[157] = alert_cause_4_we;
-    reg_we_check[158] = alert_cause_5_we;
-    reg_we_check[159] = alert_cause_6_we;
-    reg_we_check[160] = alert_cause_7_we;
-    reg_we_check[161] = alert_cause_8_we;
-    reg_we_check[162] = alert_cause_9_we;
-    reg_we_check[163] = alert_cause_10_we;
-    reg_we_check[164] = alert_cause_11_we;
-    reg_we_check[165] = alert_cause_12_we;
-    reg_we_check[166] = alert_cause_13_we;
-    reg_we_check[167] = alert_cause_14_we;
-    reg_we_check[168] = alert_cause_15_we;
-    reg_we_check[169] = alert_cause_16_we;
-    reg_we_check[170] = alert_cause_17_we;
-    reg_we_check[171] = alert_cause_18_we;
-    reg_we_check[172] = alert_cause_19_we;
-    reg_we_check[173] = alert_cause_20_we;
-    reg_we_check[174] = alert_cause_21_we;
-    reg_we_check[175] = alert_cause_22_we;
-    reg_we_check[176] = alert_cause_23_we;
-    reg_we_check[177] = alert_cause_24_we;
-    reg_we_check[178] = alert_cause_25_we;
-    reg_we_check[179] = alert_cause_26_we;
-    reg_we_check[180] = alert_cause_27_we;
-    reg_we_check[181] = alert_cause_28_we;
-    reg_we_check[182] = alert_cause_29_we;
-    reg_we_check[183] = alert_cause_30_we;
-    reg_we_check[184] = alert_cause_31_we;
-    reg_we_check[185] = alert_cause_32_we;
-    reg_we_check[186] = alert_cause_33_we;
-    reg_we_check[187] = alert_cause_34_we;
-    reg_we_check[188] = alert_cause_35_we;
-    reg_we_check[189] = alert_cause_36_we;
-    reg_we_check[190] = alert_cause_37_we;
-    reg_we_check[191] = alert_cause_38_we;
-    reg_we_check[192] = alert_cause_39_we;
-    reg_we_check[193] = alert_cause_40_we;
-    reg_we_check[194] = alert_cause_41_we;
-    reg_we_check[195] = alert_cause_42_we;
-    reg_we_check[196] = alert_cause_43_we;
-    reg_we_check[197] = alert_cause_44_we;
-    reg_we_check[198] = alert_cause_45_we;
-    reg_we_check[199] = alert_cause_46_we;
-    reg_we_check[200] = alert_cause_47_we;
-    reg_we_check[201] = alert_cause_48_we;
-    reg_we_check[202] = loc_alert_regwen_0_we;
-    reg_we_check[203] = loc_alert_regwen_1_we;
-    reg_we_check[204] = loc_alert_regwen_2_we;
-    reg_we_check[205] = loc_alert_regwen_3_we;
-    reg_we_check[206] = loc_alert_regwen_4_we;
-    reg_we_check[207] = loc_alert_regwen_5_we;
-    reg_we_check[208] = loc_alert_regwen_6_we;
-    reg_we_check[209] = loc_alert_en_shadowed_0_gated_we;
-    reg_we_check[210] = loc_alert_en_shadowed_1_gated_we;
-    reg_we_check[211] = loc_alert_en_shadowed_2_gated_we;
-    reg_we_check[212] = loc_alert_en_shadowed_3_gated_we;
-    reg_we_check[213] = loc_alert_en_shadowed_4_gated_we;
-    reg_we_check[214] = loc_alert_en_shadowed_5_gated_we;
-    reg_we_check[215] = loc_alert_en_shadowed_6_gated_we;
-    reg_we_check[216] = loc_alert_class_shadowed_0_gated_we;
-    reg_we_check[217] = loc_alert_class_shadowed_1_gated_we;
-    reg_we_check[218] = loc_alert_class_shadowed_2_gated_we;
-    reg_we_check[219] = loc_alert_class_shadowed_3_gated_we;
-    reg_we_check[220] = loc_alert_class_shadowed_4_gated_we;
-    reg_we_check[221] = loc_alert_class_shadowed_5_gated_we;
-    reg_we_check[222] = loc_alert_class_shadowed_6_gated_we;
-    reg_we_check[223] = loc_alert_cause_0_we;
-    reg_we_check[224] = loc_alert_cause_1_we;
-    reg_we_check[225] = loc_alert_cause_2_we;
-    reg_we_check[226] = loc_alert_cause_3_we;
-    reg_we_check[227] = loc_alert_cause_4_we;
-    reg_we_check[228] = loc_alert_cause_5_we;
-    reg_we_check[229] = loc_alert_cause_6_we;
-    reg_we_check[230] = classa_regwen_we;
-    reg_we_check[231] = classa_ctrl_shadowed_gated_we;
-    reg_we_check[232] = classa_clr_regwen_we;
-    reg_we_check[233] = classa_clr_shadowed_gated_we;
-    reg_we_check[234] = 1'b0;
-    reg_we_check[235] = classa_accum_thresh_shadowed_gated_we;
-    reg_we_check[236] = classa_timeout_cyc_shadowed_gated_we;
-    reg_we_check[237] = classa_crashdump_trigger_shadowed_gated_we;
-    reg_we_check[238] = classa_phase0_cyc_shadowed_gated_we;
-    reg_we_check[239] = classa_phase1_cyc_shadowed_gated_we;
-    reg_we_check[240] = classa_phase2_cyc_shadowed_gated_we;
-    reg_we_check[241] = classa_phase3_cyc_shadowed_gated_we;
-    reg_we_check[242] = 1'b0;
-    reg_we_check[243] = 1'b0;
-    reg_we_check[244] = classb_regwen_we;
-    reg_we_check[245] = classb_ctrl_shadowed_gated_we;
-    reg_we_check[246] = classb_clr_regwen_we;
-    reg_we_check[247] = classb_clr_shadowed_gated_we;
-    reg_we_check[248] = 1'b0;
-    reg_we_check[249] = classb_accum_thresh_shadowed_gated_we;
-    reg_we_check[250] = classb_timeout_cyc_shadowed_gated_we;
-    reg_we_check[251] = classb_crashdump_trigger_shadowed_gated_we;
-    reg_we_check[252] = classb_phase0_cyc_shadowed_gated_we;
-    reg_we_check[253] = classb_phase1_cyc_shadowed_gated_we;
-    reg_we_check[254] = classb_phase2_cyc_shadowed_gated_we;
-    reg_we_check[255] = classb_phase3_cyc_shadowed_gated_we;
-    reg_we_check[256] = 1'b0;
-    reg_we_check[257] = 1'b0;
-    reg_we_check[258] = classc_regwen_we;
-    reg_we_check[259] = classc_ctrl_shadowed_gated_we;
-    reg_we_check[260] = classc_clr_regwen_we;
-    reg_we_check[261] = classc_clr_shadowed_gated_we;
-    reg_we_check[262] = 1'b0;
-    reg_we_check[263] = classc_accum_thresh_shadowed_gated_we;
-    reg_we_check[264] = classc_timeout_cyc_shadowed_gated_we;
-    reg_we_check[265] = classc_crashdump_trigger_shadowed_gated_we;
-    reg_we_check[266] = classc_phase0_cyc_shadowed_gated_we;
-    reg_we_check[267] = classc_phase1_cyc_shadowed_gated_we;
-    reg_we_check[268] = classc_phase2_cyc_shadowed_gated_we;
-    reg_we_check[269] = classc_phase3_cyc_shadowed_gated_we;
-    reg_we_check[270] = 1'b0;
-    reg_we_check[271] = 1'b0;
-    reg_we_check[272] = classd_regwen_we;
-    reg_we_check[273] = classd_ctrl_shadowed_gated_we;
-    reg_we_check[274] = classd_clr_regwen_we;
-    reg_we_check[275] = classd_clr_shadowed_gated_we;
-    reg_we_check[276] = 1'b0;
-    reg_we_check[277] = classd_accum_thresh_shadowed_gated_we;
-    reg_we_check[278] = classd_timeout_cyc_shadowed_gated_we;
-    reg_we_check[279] = classd_crashdump_trigger_shadowed_gated_we;
-    reg_we_check[280] = classd_phase0_cyc_shadowed_gated_we;
-    reg_we_check[281] = classd_phase1_cyc_shadowed_gated_we;
-    reg_we_check[282] = classd_phase2_cyc_shadowed_gated_we;
-    reg_we_check[283] = classd_phase3_cyc_shadowed_gated_we;
-    reg_we_check[284] = 1'b0;
-    reg_we_check[285] = 1'b0;
+    reg_we_check[55] = alert_regwen_49_we;
+    reg_we_check[56] = alert_regwen_50_we;
+    reg_we_check[57] = alert_regwen_51_we;
+    reg_we_check[58] = alert_regwen_52_we;
+    reg_we_check[59] = alert_regwen_53_we;
+    reg_we_check[60] = alert_regwen_54_we;
+    reg_we_check[61] = alert_regwen_55_we;
+    reg_we_check[62] = alert_regwen_56_we;
+    reg_we_check[63] = alert_regwen_57_we;
+    reg_we_check[64] = alert_regwen_58_we;
+    reg_we_check[65] = alert_regwen_59_we;
+    reg_we_check[66] = alert_regwen_60_we;
+    reg_we_check[67] = alert_regwen_61_we;
+    reg_we_check[68] = alert_regwen_62_we;
+    reg_we_check[69] = alert_regwen_63_we;
+    reg_we_check[70] = alert_regwen_64_we;
+    reg_we_check[71] = alert_regwen_65_we;
+    reg_we_check[72] = alert_regwen_66_we;
+    reg_we_check[73] = alert_regwen_67_we;
+    reg_we_check[74] = alert_regwen_68_we;
+    reg_we_check[75] = alert_regwen_69_we;
+    reg_we_check[76] = alert_regwen_70_we;
+    reg_we_check[77] = alert_regwen_71_we;
+    reg_we_check[78] = alert_regwen_72_we;
+    reg_we_check[79] = alert_regwen_73_we;
+    reg_we_check[80] = alert_regwen_74_we;
+    reg_we_check[81] = alert_regwen_75_we;
+    reg_we_check[82] = alert_regwen_76_we;
+    reg_we_check[83] = alert_regwen_77_we;
+    reg_we_check[84] = alert_regwen_78_we;
+    reg_we_check[85] = alert_regwen_79_we;
+    reg_we_check[86] = alert_regwen_80_we;
+    reg_we_check[87] = alert_regwen_81_we;
+    reg_we_check[88] = alert_regwen_82_we;
+    reg_we_check[89] = alert_regwen_83_we;
+    reg_we_check[90] = alert_regwen_84_we;
+    reg_we_check[91] = alert_en_shadowed_0_gated_we;
+    reg_we_check[92] = alert_en_shadowed_1_gated_we;
+    reg_we_check[93] = alert_en_shadowed_2_gated_we;
+    reg_we_check[94] = alert_en_shadowed_3_gated_we;
+    reg_we_check[95] = alert_en_shadowed_4_gated_we;
+    reg_we_check[96] = alert_en_shadowed_5_gated_we;
+    reg_we_check[97] = alert_en_shadowed_6_gated_we;
+    reg_we_check[98] = alert_en_shadowed_7_gated_we;
+    reg_we_check[99] = alert_en_shadowed_8_gated_we;
+    reg_we_check[100] = alert_en_shadowed_9_gated_we;
+    reg_we_check[101] = alert_en_shadowed_10_gated_we;
+    reg_we_check[102] = alert_en_shadowed_11_gated_we;
+    reg_we_check[103] = alert_en_shadowed_12_gated_we;
+    reg_we_check[104] = alert_en_shadowed_13_gated_we;
+    reg_we_check[105] = alert_en_shadowed_14_gated_we;
+    reg_we_check[106] = alert_en_shadowed_15_gated_we;
+    reg_we_check[107] = alert_en_shadowed_16_gated_we;
+    reg_we_check[108] = alert_en_shadowed_17_gated_we;
+    reg_we_check[109] = alert_en_shadowed_18_gated_we;
+    reg_we_check[110] = alert_en_shadowed_19_gated_we;
+    reg_we_check[111] = alert_en_shadowed_20_gated_we;
+    reg_we_check[112] = alert_en_shadowed_21_gated_we;
+    reg_we_check[113] = alert_en_shadowed_22_gated_we;
+    reg_we_check[114] = alert_en_shadowed_23_gated_we;
+    reg_we_check[115] = alert_en_shadowed_24_gated_we;
+    reg_we_check[116] = alert_en_shadowed_25_gated_we;
+    reg_we_check[117] = alert_en_shadowed_26_gated_we;
+    reg_we_check[118] = alert_en_shadowed_27_gated_we;
+    reg_we_check[119] = alert_en_shadowed_28_gated_we;
+    reg_we_check[120] = alert_en_shadowed_29_gated_we;
+    reg_we_check[121] = alert_en_shadowed_30_gated_we;
+    reg_we_check[122] = alert_en_shadowed_31_gated_we;
+    reg_we_check[123] = alert_en_shadowed_32_gated_we;
+    reg_we_check[124] = alert_en_shadowed_33_gated_we;
+    reg_we_check[125] = alert_en_shadowed_34_gated_we;
+    reg_we_check[126] = alert_en_shadowed_35_gated_we;
+    reg_we_check[127] = alert_en_shadowed_36_gated_we;
+    reg_we_check[128] = alert_en_shadowed_37_gated_we;
+    reg_we_check[129] = alert_en_shadowed_38_gated_we;
+    reg_we_check[130] = alert_en_shadowed_39_gated_we;
+    reg_we_check[131] = alert_en_shadowed_40_gated_we;
+    reg_we_check[132] = alert_en_shadowed_41_gated_we;
+    reg_we_check[133] = alert_en_shadowed_42_gated_we;
+    reg_we_check[134] = alert_en_shadowed_43_gated_we;
+    reg_we_check[135] = alert_en_shadowed_44_gated_we;
+    reg_we_check[136] = alert_en_shadowed_45_gated_we;
+    reg_we_check[137] = alert_en_shadowed_46_gated_we;
+    reg_we_check[138] = alert_en_shadowed_47_gated_we;
+    reg_we_check[139] = alert_en_shadowed_48_gated_we;
+    reg_we_check[140] = alert_en_shadowed_49_gated_we;
+    reg_we_check[141] = alert_en_shadowed_50_gated_we;
+    reg_we_check[142] = alert_en_shadowed_51_gated_we;
+    reg_we_check[143] = alert_en_shadowed_52_gated_we;
+    reg_we_check[144] = alert_en_shadowed_53_gated_we;
+    reg_we_check[145] = alert_en_shadowed_54_gated_we;
+    reg_we_check[146] = alert_en_shadowed_55_gated_we;
+    reg_we_check[147] = alert_en_shadowed_56_gated_we;
+    reg_we_check[148] = alert_en_shadowed_57_gated_we;
+    reg_we_check[149] = alert_en_shadowed_58_gated_we;
+    reg_we_check[150] = alert_en_shadowed_59_gated_we;
+    reg_we_check[151] = alert_en_shadowed_60_gated_we;
+    reg_we_check[152] = alert_en_shadowed_61_gated_we;
+    reg_we_check[153] = alert_en_shadowed_62_gated_we;
+    reg_we_check[154] = alert_en_shadowed_63_gated_we;
+    reg_we_check[155] = alert_en_shadowed_64_gated_we;
+    reg_we_check[156] = alert_en_shadowed_65_gated_we;
+    reg_we_check[157] = alert_en_shadowed_66_gated_we;
+    reg_we_check[158] = alert_en_shadowed_67_gated_we;
+    reg_we_check[159] = alert_en_shadowed_68_gated_we;
+    reg_we_check[160] = alert_en_shadowed_69_gated_we;
+    reg_we_check[161] = alert_en_shadowed_70_gated_we;
+    reg_we_check[162] = alert_en_shadowed_71_gated_we;
+    reg_we_check[163] = alert_en_shadowed_72_gated_we;
+    reg_we_check[164] = alert_en_shadowed_73_gated_we;
+    reg_we_check[165] = alert_en_shadowed_74_gated_we;
+    reg_we_check[166] = alert_en_shadowed_75_gated_we;
+    reg_we_check[167] = alert_en_shadowed_76_gated_we;
+    reg_we_check[168] = alert_en_shadowed_77_gated_we;
+    reg_we_check[169] = alert_en_shadowed_78_gated_we;
+    reg_we_check[170] = alert_en_shadowed_79_gated_we;
+    reg_we_check[171] = alert_en_shadowed_80_gated_we;
+    reg_we_check[172] = alert_en_shadowed_81_gated_we;
+    reg_we_check[173] = alert_en_shadowed_82_gated_we;
+    reg_we_check[174] = alert_en_shadowed_83_gated_we;
+    reg_we_check[175] = alert_en_shadowed_84_gated_we;
+    reg_we_check[176] = alert_class_shadowed_0_gated_we;
+    reg_we_check[177] = alert_class_shadowed_1_gated_we;
+    reg_we_check[178] = alert_class_shadowed_2_gated_we;
+    reg_we_check[179] = alert_class_shadowed_3_gated_we;
+    reg_we_check[180] = alert_class_shadowed_4_gated_we;
+    reg_we_check[181] = alert_class_shadowed_5_gated_we;
+    reg_we_check[182] = alert_class_shadowed_6_gated_we;
+    reg_we_check[183] = alert_class_shadowed_7_gated_we;
+    reg_we_check[184] = alert_class_shadowed_8_gated_we;
+    reg_we_check[185] = alert_class_shadowed_9_gated_we;
+    reg_we_check[186] = alert_class_shadowed_10_gated_we;
+    reg_we_check[187] = alert_class_shadowed_11_gated_we;
+    reg_we_check[188] = alert_class_shadowed_12_gated_we;
+    reg_we_check[189] = alert_class_shadowed_13_gated_we;
+    reg_we_check[190] = alert_class_shadowed_14_gated_we;
+    reg_we_check[191] = alert_class_shadowed_15_gated_we;
+    reg_we_check[192] = alert_class_shadowed_16_gated_we;
+    reg_we_check[193] = alert_class_shadowed_17_gated_we;
+    reg_we_check[194] = alert_class_shadowed_18_gated_we;
+    reg_we_check[195] = alert_class_shadowed_19_gated_we;
+    reg_we_check[196] = alert_class_shadowed_20_gated_we;
+    reg_we_check[197] = alert_class_shadowed_21_gated_we;
+    reg_we_check[198] = alert_class_shadowed_22_gated_we;
+    reg_we_check[199] = alert_class_shadowed_23_gated_we;
+    reg_we_check[200] = alert_class_shadowed_24_gated_we;
+    reg_we_check[201] = alert_class_shadowed_25_gated_we;
+    reg_we_check[202] = alert_class_shadowed_26_gated_we;
+    reg_we_check[203] = alert_class_shadowed_27_gated_we;
+    reg_we_check[204] = alert_class_shadowed_28_gated_we;
+    reg_we_check[205] = alert_class_shadowed_29_gated_we;
+    reg_we_check[206] = alert_class_shadowed_30_gated_we;
+    reg_we_check[207] = alert_class_shadowed_31_gated_we;
+    reg_we_check[208] = alert_class_shadowed_32_gated_we;
+    reg_we_check[209] = alert_class_shadowed_33_gated_we;
+    reg_we_check[210] = alert_class_shadowed_34_gated_we;
+    reg_we_check[211] = alert_class_shadowed_35_gated_we;
+    reg_we_check[212] = alert_class_shadowed_36_gated_we;
+    reg_we_check[213] = alert_class_shadowed_37_gated_we;
+    reg_we_check[214] = alert_class_shadowed_38_gated_we;
+    reg_we_check[215] = alert_class_shadowed_39_gated_we;
+    reg_we_check[216] = alert_class_shadowed_40_gated_we;
+    reg_we_check[217] = alert_class_shadowed_41_gated_we;
+    reg_we_check[218] = alert_class_shadowed_42_gated_we;
+    reg_we_check[219] = alert_class_shadowed_43_gated_we;
+    reg_we_check[220] = alert_class_shadowed_44_gated_we;
+    reg_we_check[221] = alert_class_shadowed_45_gated_we;
+    reg_we_check[222] = alert_class_shadowed_46_gated_we;
+    reg_we_check[223] = alert_class_shadowed_47_gated_we;
+    reg_we_check[224] = alert_class_shadowed_48_gated_we;
+    reg_we_check[225] = alert_class_shadowed_49_gated_we;
+    reg_we_check[226] = alert_class_shadowed_50_gated_we;
+    reg_we_check[227] = alert_class_shadowed_51_gated_we;
+    reg_we_check[228] = alert_class_shadowed_52_gated_we;
+    reg_we_check[229] = alert_class_shadowed_53_gated_we;
+    reg_we_check[230] = alert_class_shadowed_54_gated_we;
+    reg_we_check[231] = alert_class_shadowed_55_gated_we;
+    reg_we_check[232] = alert_class_shadowed_56_gated_we;
+    reg_we_check[233] = alert_class_shadowed_57_gated_we;
+    reg_we_check[234] = alert_class_shadowed_58_gated_we;
+    reg_we_check[235] = alert_class_shadowed_59_gated_we;
+    reg_we_check[236] = alert_class_shadowed_60_gated_we;
+    reg_we_check[237] = alert_class_shadowed_61_gated_we;
+    reg_we_check[238] = alert_class_shadowed_62_gated_we;
+    reg_we_check[239] = alert_class_shadowed_63_gated_we;
+    reg_we_check[240] = alert_class_shadowed_64_gated_we;
+    reg_we_check[241] = alert_class_shadowed_65_gated_we;
+    reg_we_check[242] = alert_class_shadowed_66_gated_we;
+    reg_we_check[243] = alert_class_shadowed_67_gated_we;
+    reg_we_check[244] = alert_class_shadowed_68_gated_we;
+    reg_we_check[245] = alert_class_shadowed_69_gated_we;
+    reg_we_check[246] = alert_class_shadowed_70_gated_we;
+    reg_we_check[247] = alert_class_shadowed_71_gated_we;
+    reg_we_check[248] = alert_class_shadowed_72_gated_we;
+    reg_we_check[249] = alert_class_shadowed_73_gated_we;
+    reg_we_check[250] = alert_class_shadowed_74_gated_we;
+    reg_we_check[251] = alert_class_shadowed_75_gated_we;
+    reg_we_check[252] = alert_class_shadowed_76_gated_we;
+    reg_we_check[253] = alert_class_shadowed_77_gated_we;
+    reg_we_check[254] = alert_class_shadowed_78_gated_we;
+    reg_we_check[255] = alert_class_shadowed_79_gated_we;
+    reg_we_check[256] = alert_class_shadowed_80_gated_we;
+    reg_we_check[257] = alert_class_shadowed_81_gated_we;
+    reg_we_check[258] = alert_class_shadowed_82_gated_we;
+    reg_we_check[259] = alert_class_shadowed_83_gated_we;
+    reg_we_check[260] = alert_class_shadowed_84_gated_we;
+    reg_we_check[261] = alert_cause_0_we;
+    reg_we_check[262] = alert_cause_1_we;
+    reg_we_check[263] = alert_cause_2_we;
+    reg_we_check[264] = alert_cause_3_we;
+    reg_we_check[265] = alert_cause_4_we;
+    reg_we_check[266] = alert_cause_5_we;
+    reg_we_check[267] = alert_cause_6_we;
+    reg_we_check[268] = alert_cause_7_we;
+    reg_we_check[269] = alert_cause_8_we;
+    reg_we_check[270] = alert_cause_9_we;
+    reg_we_check[271] = alert_cause_10_we;
+    reg_we_check[272] = alert_cause_11_we;
+    reg_we_check[273] = alert_cause_12_we;
+    reg_we_check[274] = alert_cause_13_we;
+    reg_we_check[275] = alert_cause_14_we;
+    reg_we_check[276] = alert_cause_15_we;
+    reg_we_check[277] = alert_cause_16_we;
+    reg_we_check[278] = alert_cause_17_we;
+    reg_we_check[279] = alert_cause_18_we;
+    reg_we_check[280] = alert_cause_19_we;
+    reg_we_check[281] = alert_cause_20_we;
+    reg_we_check[282] = alert_cause_21_we;
+    reg_we_check[283] = alert_cause_22_we;
+    reg_we_check[284] = alert_cause_23_we;
+    reg_we_check[285] = alert_cause_24_we;
+    reg_we_check[286] = alert_cause_25_we;
+    reg_we_check[287] = alert_cause_26_we;
+    reg_we_check[288] = alert_cause_27_we;
+    reg_we_check[289] = alert_cause_28_we;
+    reg_we_check[290] = alert_cause_29_we;
+    reg_we_check[291] = alert_cause_30_we;
+    reg_we_check[292] = alert_cause_31_we;
+    reg_we_check[293] = alert_cause_32_we;
+    reg_we_check[294] = alert_cause_33_we;
+    reg_we_check[295] = alert_cause_34_we;
+    reg_we_check[296] = alert_cause_35_we;
+    reg_we_check[297] = alert_cause_36_we;
+    reg_we_check[298] = alert_cause_37_we;
+    reg_we_check[299] = alert_cause_38_we;
+    reg_we_check[300] = alert_cause_39_we;
+    reg_we_check[301] = alert_cause_40_we;
+    reg_we_check[302] = alert_cause_41_we;
+    reg_we_check[303] = alert_cause_42_we;
+    reg_we_check[304] = alert_cause_43_we;
+    reg_we_check[305] = alert_cause_44_we;
+    reg_we_check[306] = alert_cause_45_we;
+    reg_we_check[307] = alert_cause_46_we;
+    reg_we_check[308] = alert_cause_47_we;
+    reg_we_check[309] = alert_cause_48_we;
+    reg_we_check[310] = alert_cause_49_we;
+    reg_we_check[311] = alert_cause_50_we;
+    reg_we_check[312] = alert_cause_51_we;
+    reg_we_check[313] = alert_cause_52_we;
+    reg_we_check[314] = alert_cause_53_we;
+    reg_we_check[315] = alert_cause_54_we;
+    reg_we_check[316] = alert_cause_55_we;
+    reg_we_check[317] = alert_cause_56_we;
+    reg_we_check[318] = alert_cause_57_we;
+    reg_we_check[319] = alert_cause_58_we;
+    reg_we_check[320] = alert_cause_59_we;
+    reg_we_check[321] = alert_cause_60_we;
+    reg_we_check[322] = alert_cause_61_we;
+    reg_we_check[323] = alert_cause_62_we;
+    reg_we_check[324] = alert_cause_63_we;
+    reg_we_check[325] = alert_cause_64_we;
+    reg_we_check[326] = alert_cause_65_we;
+    reg_we_check[327] = alert_cause_66_we;
+    reg_we_check[328] = alert_cause_67_we;
+    reg_we_check[329] = alert_cause_68_we;
+    reg_we_check[330] = alert_cause_69_we;
+    reg_we_check[331] = alert_cause_70_we;
+    reg_we_check[332] = alert_cause_71_we;
+    reg_we_check[333] = alert_cause_72_we;
+    reg_we_check[334] = alert_cause_73_we;
+    reg_we_check[335] = alert_cause_74_we;
+    reg_we_check[336] = alert_cause_75_we;
+    reg_we_check[337] = alert_cause_76_we;
+    reg_we_check[338] = alert_cause_77_we;
+    reg_we_check[339] = alert_cause_78_we;
+    reg_we_check[340] = alert_cause_79_we;
+    reg_we_check[341] = alert_cause_80_we;
+    reg_we_check[342] = alert_cause_81_we;
+    reg_we_check[343] = alert_cause_82_we;
+    reg_we_check[344] = alert_cause_83_we;
+    reg_we_check[345] = alert_cause_84_we;
+    reg_we_check[346] = loc_alert_regwen_0_we;
+    reg_we_check[347] = loc_alert_regwen_1_we;
+    reg_we_check[348] = loc_alert_regwen_2_we;
+    reg_we_check[349] = loc_alert_regwen_3_we;
+    reg_we_check[350] = loc_alert_regwen_4_we;
+    reg_we_check[351] = loc_alert_regwen_5_we;
+    reg_we_check[352] = loc_alert_regwen_6_we;
+    reg_we_check[353] = loc_alert_en_shadowed_0_gated_we;
+    reg_we_check[354] = loc_alert_en_shadowed_1_gated_we;
+    reg_we_check[355] = loc_alert_en_shadowed_2_gated_we;
+    reg_we_check[356] = loc_alert_en_shadowed_3_gated_we;
+    reg_we_check[357] = loc_alert_en_shadowed_4_gated_we;
+    reg_we_check[358] = loc_alert_en_shadowed_5_gated_we;
+    reg_we_check[359] = loc_alert_en_shadowed_6_gated_we;
+    reg_we_check[360] = loc_alert_class_shadowed_0_gated_we;
+    reg_we_check[361] = loc_alert_class_shadowed_1_gated_we;
+    reg_we_check[362] = loc_alert_class_shadowed_2_gated_we;
+    reg_we_check[363] = loc_alert_class_shadowed_3_gated_we;
+    reg_we_check[364] = loc_alert_class_shadowed_4_gated_we;
+    reg_we_check[365] = loc_alert_class_shadowed_5_gated_we;
+    reg_we_check[366] = loc_alert_class_shadowed_6_gated_we;
+    reg_we_check[367] = loc_alert_cause_0_we;
+    reg_we_check[368] = loc_alert_cause_1_we;
+    reg_we_check[369] = loc_alert_cause_2_we;
+    reg_we_check[370] = loc_alert_cause_3_we;
+    reg_we_check[371] = loc_alert_cause_4_we;
+    reg_we_check[372] = loc_alert_cause_5_we;
+    reg_we_check[373] = loc_alert_cause_6_we;
+    reg_we_check[374] = classa_regwen_we;
+    reg_we_check[375] = classa_ctrl_shadowed_gated_we;
+    reg_we_check[376] = classa_clr_regwen_we;
+    reg_we_check[377] = classa_clr_shadowed_gated_we;
+    reg_we_check[378] = 1'b0;
+    reg_we_check[379] = classa_accum_thresh_shadowed_gated_we;
+    reg_we_check[380] = classa_timeout_cyc_shadowed_gated_we;
+    reg_we_check[381] = classa_crashdump_trigger_shadowed_gated_we;
+    reg_we_check[382] = classa_phase0_cyc_shadowed_gated_we;
+    reg_we_check[383] = classa_phase1_cyc_shadowed_gated_we;
+    reg_we_check[384] = classa_phase2_cyc_shadowed_gated_we;
+    reg_we_check[385] = classa_phase3_cyc_shadowed_gated_we;
+    reg_we_check[386] = 1'b0;
+    reg_we_check[387] = 1'b0;
+    reg_we_check[388] = classb_regwen_we;
+    reg_we_check[389] = classb_ctrl_shadowed_gated_we;
+    reg_we_check[390] = classb_clr_regwen_we;
+    reg_we_check[391] = classb_clr_shadowed_gated_we;
+    reg_we_check[392] = 1'b0;
+    reg_we_check[393] = classb_accum_thresh_shadowed_gated_we;
+    reg_we_check[394] = classb_timeout_cyc_shadowed_gated_we;
+    reg_we_check[395] = classb_crashdump_trigger_shadowed_gated_we;
+    reg_we_check[396] = classb_phase0_cyc_shadowed_gated_we;
+    reg_we_check[397] = classb_phase1_cyc_shadowed_gated_we;
+    reg_we_check[398] = classb_phase2_cyc_shadowed_gated_we;
+    reg_we_check[399] = classb_phase3_cyc_shadowed_gated_we;
+    reg_we_check[400] = 1'b0;
+    reg_we_check[401] = 1'b0;
+    reg_we_check[402] = classc_regwen_we;
+    reg_we_check[403] = classc_ctrl_shadowed_gated_we;
+    reg_we_check[404] = classc_clr_regwen_we;
+    reg_we_check[405] = classc_clr_shadowed_gated_we;
+    reg_we_check[406] = 1'b0;
+    reg_we_check[407] = classc_accum_thresh_shadowed_gated_we;
+    reg_we_check[408] = classc_timeout_cyc_shadowed_gated_we;
+    reg_we_check[409] = classc_crashdump_trigger_shadowed_gated_we;
+    reg_we_check[410] = classc_phase0_cyc_shadowed_gated_we;
+    reg_we_check[411] = classc_phase1_cyc_shadowed_gated_we;
+    reg_we_check[412] = classc_phase2_cyc_shadowed_gated_we;
+    reg_we_check[413] = classc_phase3_cyc_shadowed_gated_we;
+    reg_we_check[414] = 1'b0;
+    reg_we_check[415] = 1'b0;
+    reg_we_check[416] = classd_regwen_we;
+    reg_we_check[417] = classd_ctrl_shadowed_gated_we;
+    reg_we_check[418] = classd_clr_regwen_we;
+    reg_we_check[419] = classd_clr_shadowed_gated_we;
+    reg_we_check[420] = 1'b0;
+    reg_we_check[421] = classd_accum_thresh_shadowed_gated_we;
+    reg_we_check[422] = classd_timeout_cyc_shadowed_gated_we;
+    reg_we_check[423] = classd_crashdump_trigger_shadowed_gated_we;
+    reg_we_check[424] = classd_phase0_cyc_shadowed_gated_we;
+    reg_we_check[425] = classd_phase1_cyc_shadowed_gated_we;
+    reg_we_check[426] = classd_phase2_cyc_shadowed_gated_we;
+    reg_we_check[427] = classd_phase3_cyc_shadowed_gated_we;
+    reg_we_check[428] = 1'b0;
+    reg_we_check[429] = 1'b0;
   end
 
   // Read data return
@@ -15217,710 +21841,1286 @@ module alert_handler_reg_top (
       end
 
       addr_hit[55]: begin
-        reg_rdata_next[0] = alert_en_shadowed_0_qs;
+        reg_rdata_next[0] = alert_regwen_49_qs;
       end
 
       addr_hit[56]: begin
-        reg_rdata_next[0] = alert_en_shadowed_1_qs;
+        reg_rdata_next[0] = alert_regwen_50_qs;
       end
 
       addr_hit[57]: begin
-        reg_rdata_next[0] = alert_en_shadowed_2_qs;
+        reg_rdata_next[0] = alert_regwen_51_qs;
       end
 
       addr_hit[58]: begin
-        reg_rdata_next[0] = alert_en_shadowed_3_qs;
+        reg_rdata_next[0] = alert_regwen_52_qs;
       end
 
       addr_hit[59]: begin
-        reg_rdata_next[0] = alert_en_shadowed_4_qs;
+        reg_rdata_next[0] = alert_regwen_53_qs;
       end
 
       addr_hit[60]: begin
-        reg_rdata_next[0] = alert_en_shadowed_5_qs;
+        reg_rdata_next[0] = alert_regwen_54_qs;
       end
 
       addr_hit[61]: begin
-        reg_rdata_next[0] = alert_en_shadowed_6_qs;
+        reg_rdata_next[0] = alert_regwen_55_qs;
       end
 
       addr_hit[62]: begin
-        reg_rdata_next[0] = alert_en_shadowed_7_qs;
+        reg_rdata_next[0] = alert_regwen_56_qs;
       end
 
       addr_hit[63]: begin
-        reg_rdata_next[0] = alert_en_shadowed_8_qs;
+        reg_rdata_next[0] = alert_regwen_57_qs;
       end
 
       addr_hit[64]: begin
-        reg_rdata_next[0] = alert_en_shadowed_9_qs;
+        reg_rdata_next[0] = alert_regwen_58_qs;
       end
 
       addr_hit[65]: begin
-        reg_rdata_next[0] = alert_en_shadowed_10_qs;
+        reg_rdata_next[0] = alert_regwen_59_qs;
       end
 
       addr_hit[66]: begin
-        reg_rdata_next[0] = alert_en_shadowed_11_qs;
+        reg_rdata_next[0] = alert_regwen_60_qs;
       end
 
       addr_hit[67]: begin
-        reg_rdata_next[0] = alert_en_shadowed_12_qs;
+        reg_rdata_next[0] = alert_regwen_61_qs;
       end
 
       addr_hit[68]: begin
-        reg_rdata_next[0] = alert_en_shadowed_13_qs;
+        reg_rdata_next[0] = alert_regwen_62_qs;
       end
 
       addr_hit[69]: begin
-        reg_rdata_next[0] = alert_en_shadowed_14_qs;
+        reg_rdata_next[0] = alert_regwen_63_qs;
       end
 
       addr_hit[70]: begin
-        reg_rdata_next[0] = alert_en_shadowed_15_qs;
+        reg_rdata_next[0] = alert_regwen_64_qs;
       end
 
       addr_hit[71]: begin
-        reg_rdata_next[0] = alert_en_shadowed_16_qs;
+        reg_rdata_next[0] = alert_regwen_65_qs;
       end
 
       addr_hit[72]: begin
-        reg_rdata_next[0] = alert_en_shadowed_17_qs;
+        reg_rdata_next[0] = alert_regwen_66_qs;
       end
 
       addr_hit[73]: begin
-        reg_rdata_next[0] = alert_en_shadowed_18_qs;
+        reg_rdata_next[0] = alert_regwen_67_qs;
       end
 
       addr_hit[74]: begin
-        reg_rdata_next[0] = alert_en_shadowed_19_qs;
+        reg_rdata_next[0] = alert_regwen_68_qs;
       end
 
       addr_hit[75]: begin
-        reg_rdata_next[0] = alert_en_shadowed_20_qs;
+        reg_rdata_next[0] = alert_regwen_69_qs;
       end
 
       addr_hit[76]: begin
-        reg_rdata_next[0] = alert_en_shadowed_21_qs;
+        reg_rdata_next[0] = alert_regwen_70_qs;
       end
 
       addr_hit[77]: begin
-        reg_rdata_next[0] = alert_en_shadowed_22_qs;
+        reg_rdata_next[0] = alert_regwen_71_qs;
       end
 
       addr_hit[78]: begin
-        reg_rdata_next[0] = alert_en_shadowed_23_qs;
+        reg_rdata_next[0] = alert_regwen_72_qs;
       end
 
       addr_hit[79]: begin
-        reg_rdata_next[0] = alert_en_shadowed_24_qs;
+        reg_rdata_next[0] = alert_regwen_73_qs;
       end
 
       addr_hit[80]: begin
-        reg_rdata_next[0] = alert_en_shadowed_25_qs;
+        reg_rdata_next[0] = alert_regwen_74_qs;
       end
 
       addr_hit[81]: begin
-        reg_rdata_next[0] = alert_en_shadowed_26_qs;
+        reg_rdata_next[0] = alert_regwen_75_qs;
       end
 
       addr_hit[82]: begin
-        reg_rdata_next[0] = alert_en_shadowed_27_qs;
+        reg_rdata_next[0] = alert_regwen_76_qs;
       end
 
       addr_hit[83]: begin
-        reg_rdata_next[0] = alert_en_shadowed_28_qs;
+        reg_rdata_next[0] = alert_regwen_77_qs;
       end
 
       addr_hit[84]: begin
-        reg_rdata_next[0] = alert_en_shadowed_29_qs;
+        reg_rdata_next[0] = alert_regwen_78_qs;
       end
 
       addr_hit[85]: begin
-        reg_rdata_next[0] = alert_en_shadowed_30_qs;
+        reg_rdata_next[0] = alert_regwen_79_qs;
       end
 
       addr_hit[86]: begin
-        reg_rdata_next[0] = alert_en_shadowed_31_qs;
+        reg_rdata_next[0] = alert_regwen_80_qs;
       end
 
       addr_hit[87]: begin
-        reg_rdata_next[0] = alert_en_shadowed_32_qs;
+        reg_rdata_next[0] = alert_regwen_81_qs;
       end
 
       addr_hit[88]: begin
-        reg_rdata_next[0] = alert_en_shadowed_33_qs;
+        reg_rdata_next[0] = alert_regwen_82_qs;
       end
 
       addr_hit[89]: begin
-        reg_rdata_next[0] = alert_en_shadowed_34_qs;
+        reg_rdata_next[0] = alert_regwen_83_qs;
       end
 
       addr_hit[90]: begin
-        reg_rdata_next[0] = alert_en_shadowed_35_qs;
+        reg_rdata_next[0] = alert_regwen_84_qs;
       end
 
       addr_hit[91]: begin
-        reg_rdata_next[0] = alert_en_shadowed_36_qs;
+        reg_rdata_next[0] = alert_en_shadowed_0_qs;
       end
 
       addr_hit[92]: begin
-        reg_rdata_next[0] = alert_en_shadowed_37_qs;
+        reg_rdata_next[0] = alert_en_shadowed_1_qs;
       end
 
       addr_hit[93]: begin
-        reg_rdata_next[0] = alert_en_shadowed_38_qs;
+        reg_rdata_next[0] = alert_en_shadowed_2_qs;
       end
 
       addr_hit[94]: begin
-        reg_rdata_next[0] = alert_en_shadowed_39_qs;
+        reg_rdata_next[0] = alert_en_shadowed_3_qs;
       end
 
       addr_hit[95]: begin
-        reg_rdata_next[0] = alert_en_shadowed_40_qs;
+        reg_rdata_next[0] = alert_en_shadowed_4_qs;
       end
 
       addr_hit[96]: begin
-        reg_rdata_next[0] = alert_en_shadowed_41_qs;
+        reg_rdata_next[0] = alert_en_shadowed_5_qs;
       end
 
       addr_hit[97]: begin
-        reg_rdata_next[0] = alert_en_shadowed_42_qs;
+        reg_rdata_next[0] = alert_en_shadowed_6_qs;
       end
 
       addr_hit[98]: begin
-        reg_rdata_next[0] = alert_en_shadowed_43_qs;
+        reg_rdata_next[0] = alert_en_shadowed_7_qs;
       end
 
       addr_hit[99]: begin
-        reg_rdata_next[0] = alert_en_shadowed_44_qs;
+        reg_rdata_next[0] = alert_en_shadowed_8_qs;
       end
 
       addr_hit[100]: begin
-        reg_rdata_next[0] = alert_en_shadowed_45_qs;
+        reg_rdata_next[0] = alert_en_shadowed_9_qs;
       end
 
       addr_hit[101]: begin
-        reg_rdata_next[0] = alert_en_shadowed_46_qs;
+        reg_rdata_next[0] = alert_en_shadowed_10_qs;
       end
 
       addr_hit[102]: begin
-        reg_rdata_next[0] = alert_en_shadowed_47_qs;
+        reg_rdata_next[0] = alert_en_shadowed_11_qs;
       end
 
       addr_hit[103]: begin
-        reg_rdata_next[0] = alert_en_shadowed_48_qs;
+        reg_rdata_next[0] = alert_en_shadowed_12_qs;
       end
 
       addr_hit[104]: begin
-        reg_rdata_next[1:0] = alert_class_shadowed_0_qs;
+        reg_rdata_next[0] = alert_en_shadowed_13_qs;
       end
 
       addr_hit[105]: begin
-        reg_rdata_next[1:0] = alert_class_shadowed_1_qs;
+        reg_rdata_next[0] = alert_en_shadowed_14_qs;
       end
 
       addr_hit[106]: begin
-        reg_rdata_next[1:0] = alert_class_shadowed_2_qs;
+        reg_rdata_next[0] = alert_en_shadowed_15_qs;
       end
 
       addr_hit[107]: begin
-        reg_rdata_next[1:0] = alert_class_shadowed_3_qs;
+        reg_rdata_next[0] = alert_en_shadowed_16_qs;
       end
 
       addr_hit[108]: begin
-        reg_rdata_next[1:0] = alert_class_shadowed_4_qs;
+        reg_rdata_next[0] = alert_en_shadowed_17_qs;
       end
 
       addr_hit[109]: begin
-        reg_rdata_next[1:0] = alert_class_shadowed_5_qs;
+        reg_rdata_next[0] = alert_en_shadowed_18_qs;
       end
 
       addr_hit[110]: begin
-        reg_rdata_next[1:0] = alert_class_shadowed_6_qs;
+        reg_rdata_next[0] = alert_en_shadowed_19_qs;
       end
 
       addr_hit[111]: begin
-        reg_rdata_next[1:0] = alert_class_shadowed_7_qs;
+        reg_rdata_next[0] = alert_en_shadowed_20_qs;
       end
 
       addr_hit[112]: begin
-        reg_rdata_next[1:0] = alert_class_shadowed_8_qs;
+        reg_rdata_next[0] = alert_en_shadowed_21_qs;
       end
 
       addr_hit[113]: begin
-        reg_rdata_next[1:0] = alert_class_shadowed_9_qs;
+        reg_rdata_next[0] = alert_en_shadowed_22_qs;
       end
 
       addr_hit[114]: begin
-        reg_rdata_next[1:0] = alert_class_shadowed_10_qs;
+        reg_rdata_next[0] = alert_en_shadowed_23_qs;
       end
 
       addr_hit[115]: begin
-        reg_rdata_next[1:0] = alert_class_shadowed_11_qs;
+        reg_rdata_next[0] = alert_en_shadowed_24_qs;
       end
 
       addr_hit[116]: begin
-        reg_rdata_next[1:0] = alert_class_shadowed_12_qs;
+        reg_rdata_next[0] = alert_en_shadowed_25_qs;
       end
 
       addr_hit[117]: begin
-        reg_rdata_next[1:0] = alert_class_shadowed_13_qs;
+        reg_rdata_next[0] = alert_en_shadowed_26_qs;
       end
 
       addr_hit[118]: begin
-        reg_rdata_next[1:0] = alert_class_shadowed_14_qs;
+        reg_rdata_next[0] = alert_en_shadowed_27_qs;
       end
 
       addr_hit[119]: begin
-        reg_rdata_next[1:0] = alert_class_shadowed_15_qs;
+        reg_rdata_next[0] = alert_en_shadowed_28_qs;
       end
 
       addr_hit[120]: begin
-        reg_rdata_next[1:0] = alert_class_shadowed_16_qs;
+        reg_rdata_next[0] = alert_en_shadowed_29_qs;
       end
 
       addr_hit[121]: begin
-        reg_rdata_next[1:0] = alert_class_shadowed_17_qs;
+        reg_rdata_next[0] = alert_en_shadowed_30_qs;
       end
 
       addr_hit[122]: begin
-        reg_rdata_next[1:0] = alert_class_shadowed_18_qs;
+        reg_rdata_next[0] = alert_en_shadowed_31_qs;
       end
 
       addr_hit[123]: begin
-        reg_rdata_next[1:0] = alert_class_shadowed_19_qs;
+        reg_rdata_next[0] = alert_en_shadowed_32_qs;
       end
 
       addr_hit[124]: begin
-        reg_rdata_next[1:0] = alert_class_shadowed_20_qs;
+        reg_rdata_next[0] = alert_en_shadowed_33_qs;
       end
 
       addr_hit[125]: begin
-        reg_rdata_next[1:0] = alert_class_shadowed_21_qs;
+        reg_rdata_next[0] = alert_en_shadowed_34_qs;
       end
 
       addr_hit[126]: begin
-        reg_rdata_next[1:0] = alert_class_shadowed_22_qs;
+        reg_rdata_next[0] = alert_en_shadowed_35_qs;
       end
 
       addr_hit[127]: begin
-        reg_rdata_next[1:0] = alert_class_shadowed_23_qs;
+        reg_rdata_next[0] = alert_en_shadowed_36_qs;
       end
 
       addr_hit[128]: begin
-        reg_rdata_next[1:0] = alert_class_shadowed_24_qs;
+        reg_rdata_next[0] = alert_en_shadowed_37_qs;
       end
 
       addr_hit[129]: begin
-        reg_rdata_next[1:0] = alert_class_shadowed_25_qs;
+        reg_rdata_next[0] = alert_en_shadowed_38_qs;
       end
 
       addr_hit[130]: begin
-        reg_rdata_next[1:0] = alert_class_shadowed_26_qs;
+        reg_rdata_next[0] = alert_en_shadowed_39_qs;
       end
 
       addr_hit[131]: begin
-        reg_rdata_next[1:0] = alert_class_shadowed_27_qs;
+        reg_rdata_next[0] = alert_en_shadowed_40_qs;
       end
 
       addr_hit[132]: begin
-        reg_rdata_next[1:0] = alert_class_shadowed_28_qs;
+        reg_rdata_next[0] = alert_en_shadowed_41_qs;
       end
 
       addr_hit[133]: begin
-        reg_rdata_next[1:0] = alert_class_shadowed_29_qs;
+        reg_rdata_next[0] = alert_en_shadowed_42_qs;
       end
 
       addr_hit[134]: begin
-        reg_rdata_next[1:0] = alert_class_shadowed_30_qs;
+        reg_rdata_next[0] = alert_en_shadowed_43_qs;
       end
 
       addr_hit[135]: begin
-        reg_rdata_next[1:0] = alert_class_shadowed_31_qs;
+        reg_rdata_next[0] = alert_en_shadowed_44_qs;
       end
 
       addr_hit[136]: begin
-        reg_rdata_next[1:0] = alert_class_shadowed_32_qs;
+        reg_rdata_next[0] = alert_en_shadowed_45_qs;
       end
 
       addr_hit[137]: begin
-        reg_rdata_next[1:0] = alert_class_shadowed_33_qs;
+        reg_rdata_next[0] = alert_en_shadowed_46_qs;
       end
 
       addr_hit[138]: begin
-        reg_rdata_next[1:0] = alert_class_shadowed_34_qs;
+        reg_rdata_next[0] = alert_en_shadowed_47_qs;
       end
 
       addr_hit[139]: begin
-        reg_rdata_next[1:0] = alert_class_shadowed_35_qs;
+        reg_rdata_next[0] = alert_en_shadowed_48_qs;
       end
 
       addr_hit[140]: begin
-        reg_rdata_next[1:0] = alert_class_shadowed_36_qs;
+        reg_rdata_next[0] = alert_en_shadowed_49_qs;
       end
 
       addr_hit[141]: begin
-        reg_rdata_next[1:0] = alert_class_shadowed_37_qs;
+        reg_rdata_next[0] = alert_en_shadowed_50_qs;
       end
 
       addr_hit[142]: begin
-        reg_rdata_next[1:0] = alert_class_shadowed_38_qs;
+        reg_rdata_next[0] = alert_en_shadowed_51_qs;
       end
 
       addr_hit[143]: begin
-        reg_rdata_next[1:0] = alert_class_shadowed_39_qs;
+        reg_rdata_next[0] = alert_en_shadowed_52_qs;
       end
 
       addr_hit[144]: begin
-        reg_rdata_next[1:0] = alert_class_shadowed_40_qs;
+        reg_rdata_next[0] = alert_en_shadowed_53_qs;
       end
 
       addr_hit[145]: begin
-        reg_rdata_next[1:0] = alert_class_shadowed_41_qs;
+        reg_rdata_next[0] = alert_en_shadowed_54_qs;
       end
 
       addr_hit[146]: begin
-        reg_rdata_next[1:0] = alert_class_shadowed_42_qs;
+        reg_rdata_next[0] = alert_en_shadowed_55_qs;
       end
 
       addr_hit[147]: begin
-        reg_rdata_next[1:0] = alert_class_shadowed_43_qs;
+        reg_rdata_next[0] = alert_en_shadowed_56_qs;
       end
 
       addr_hit[148]: begin
-        reg_rdata_next[1:0] = alert_class_shadowed_44_qs;
+        reg_rdata_next[0] = alert_en_shadowed_57_qs;
       end
 
       addr_hit[149]: begin
-        reg_rdata_next[1:0] = alert_class_shadowed_45_qs;
+        reg_rdata_next[0] = alert_en_shadowed_58_qs;
       end
 
       addr_hit[150]: begin
-        reg_rdata_next[1:0] = alert_class_shadowed_46_qs;
+        reg_rdata_next[0] = alert_en_shadowed_59_qs;
       end
 
       addr_hit[151]: begin
-        reg_rdata_next[1:0] = alert_class_shadowed_47_qs;
+        reg_rdata_next[0] = alert_en_shadowed_60_qs;
       end
 
       addr_hit[152]: begin
-        reg_rdata_next[1:0] = alert_class_shadowed_48_qs;
+        reg_rdata_next[0] = alert_en_shadowed_61_qs;
       end
 
       addr_hit[153]: begin
-        reg_rdata_next[0] = alert_cause_0_qs;
+        reg_rdata_next[0] = alert_en_shadowed_62_qs;
       end
 
       addr_hit[154]: begin
-        reg_rdata_next[0] = alert_cause_1_qs;
+        reg_rdata_next[0] = alert_en_shadowed_63_qs;
       end
 
       addr_hit[155]: begin
-        reg_rdata_next[0] = alert_cause_2_qs;
+        reg_rdata_next[0] = alert_en_shadowed_64_qs;
       end
 
       addr_hit[156]: begin
-        reg_rdata_next[0] = alert_cause_3_qs;
+        reg_rdata_next[0] = alert_en_shadowed_65_qs;
       end
 
       addr_hit[157]: begin
-        reg_rdata_next[0] = alert_cause_4_qs;
+        reg_rdata_next[0] = alert_en_shadowed_66_qs;
       end
 
       addr_hit[158]: begin
-        reg_rdata_next[0] = alert_cause_5_qs;
+        reg_rdata_next[0] = alert_en_shadowed_67_qs;
       end
 
       addr_hit[159]: begin
-        reg_rdata_next[0] = alert_cause_6_qs;
+        reg_rdata_next[0] = alert_en_shadowed_68_qs;
       end
 
       addr_hit[160]: begin
-        reg_rdata_next[0] = alert_cause_7_qs;
+        reg_rdata_next[0] = alert_en_shadowed_69_qs;
       end
 
       addr_hit[161]: begin
-        reg_rdata_next[0] = alert_cause_8_qs;
+        reg_rdata_next[0] = alert_en_shadowed_70_qs;
       end
 
       addr_hit[162]: begin
-        reg_rdata_next[0] = alert_cause_9_qs;
+        reg_rdata_next[0] = alert_en_shadowed_71_qs;
       end
 
       addr_hit[163]: begin
-        reg_rdata_next[0] = alert_cause_10_qs;
+        reg_rdata_next[0] = alert_en_shadowed_72_qs;
       end
 
       addr_hit[164]: begin
-        reg_rdata_next[0] = alert_cause_11_qs;
+        reg_rdata_next[0] = alert_en_shadowed_73_qs;
       end
 
       addr_hit[165]: begin
-        reg_rdata_next[0] = alert_cause_12_qs;
+        reg_rdata_next[0] = alert_en_shadowed_74_qs;
       end
 
       addr_hit[166]: begin
-        reg_rdata_next[0] = alert_cause_13_qs;
+        reg_rdata_next[0] = alert_en_shadowed_75_qs;
       end
 
       addr_hit[167]: begin
-        reg_rdata_next[0] = alert_cause_14_qs;
+        reg_rdata_next[0] = alert_en_shadowed_76_qs;
       end
 
       addr_hit[168]: begin
-        reg_rdata_next[0] = alert_cause_15_qs;
+        reg_rdata_next[0] = alert_en_shadowed_77_qs;
       end
 
       addr_hit[169]: begin
-        reg_rdata_next[0] = alert_cause_16_qs;
+        reg_rdata_next[0] = alert_en_shadowed_78_qs;
       end
 
       addr_hit[170]: begin
-        reg_rdata_next[0] = alert_cause_17_qs;
+        reg_rdata_next[0] = alert_en_shadowed_79_qs;
       end
 
       addr_hit[171]: begin
-        reg_rdata_next[0] = alert_cause_18_qs;
+        reg_rdata_next[0] = alert_en_shadowed_80_qs;
       end
 
       addr_hit[172]: begin
-        reg_rdata_next[0] = alert_cause_19_qs;
+        reg_rdata_next[0] = alert_en_shadowed_81_qs;
       end
 
       addr_hit[173]: begin
-        reg_rdata_next[0] = alert_cause_20_qs;
+        reg_rdata_next[0] = alert_en_shadowed_82_qs;
       end
 
       addr_hit[174]: begin
-        reg_rdata_next[0] = alert_cause_21_qs;
+        reg_rdata_next[0] = alert_en_shadowed_83_qs;
       end
 
       addr_hit[175]: begin
-        reg_rdata_next[0] = alert_cause_22_qs;
+        reg_rdata_next[0] = alert_en_shadowed_84_qs;
       end
 
       addr_hit[176]: begin
-        reg_rdata_next[0] = alert_cause_23_qs;
+        reg_rdata_next[1:0] = alert_class_shadowed_0_qs;
       end
 
       addr_hit[177]: begin
-        reg_rdata_next[0] = alert_cause_24_qs;
+        reg_rdata_next[1:0] = alert_class_shadowed_1_qs;
       end
 
       addr_hit[178]: begin
-        reg_rdata_next[0] = alert_cause_25_qs;
+        reg_rdata_next[1:0] = alert_class_shadowed_2_qs;
       end
 
       addr_hit[179]: begin
-        reg_rdata_next[0] = alert_cause_26_qs;
+        reg_rdata_next[1:0] = alert_class_shadowed_3_qs;
       end
 
       addr_hit[180]: begin
-        reg_rdata_next[0] = alert_cause_27_qs;
+        reg_rdata_next[1:0] = alert_class_shadowed_4_qs;
       end
 
       addr_hit[181]: begin
-        reg_rdata_next[0] = alert_cause_28_qs;
+        reg_rdata_next[1:0] = alert_class_shadowed_5_qs;
       end
 
       addr_hit[182]: begin
-        reg_rdata_next[0] = alert_cause_29_qs;
+        reg_rdata_next[1:0] = alert_class_shadowed_6_qs;
       end
 
       addr_hit[183]: begin
-        reg_rdata_next[0] = alert_cause_30_qs;
+        reg_rdata_next[1:0] = alert_class_shadowed_7_qs;
       end
 
       addr_hit[184]: begin
-        reg_rdata_next[0] = alert_cause_31_qs;
+        reg_rdata_next[1:0] = alert_class_shadowed_8_qs;
       end
 
       addr_hit[185]: begin
-        reg_rdata_next[0] = alert_cause_32_qs;
+        reg_rdata_next[1:0] = alert_class_shadowed_9_qs;
       end
 
       addr_hit[186]: begin
-        reg_rdata_next[0] = alert_cause_33_qs;
+        reg_rdata_next[1:0] = alert_class_shadowed_10_qs;
       end
 
       addr_hit[187]: begin
-        reg_rdata_next[0] = alert_cause_34_qs;
+        reg_rdata_next[1:0] = alert_class_shadowed_11_qs;
       end
 
       addr_hit[188]: begin
-        reg_rdata_next[0] = alert_cause_35_qs;
+        reg_rdata_next[1:0] = alert_class_shadowed_12_qs;
       end
 
       addr_hit[189]: begin
-        reg_rdata_next[0] = alert_cause_36_qs;
+        reg_rdata_next[1:0] = alert_class_shadowed_13_qs;
       end
 
       addr_hit[190]: begin
-        reg_rdata_next[0] = alert_cause_37_qs;
+        reg_rdata_next[1:0] = alert_class_shadowed_14_qs;
       end
 
       addr_hit[191]: begin
-        reg_rdata_next[0] = alert_cause_38_qs;
+        reg_rdata_next[1:0] = alert_class_shadowed_15_qs;
       end
 
       addr_hit[192]: begin
-        reg_rdata_next[0] = alert_cause_39_qs;
+        reg_rdata_next[1:0] = alert_class_shadowed_16_qs;
       end
 
       addr_hit[193]: begin
-        reg_rdata_next[0] = alert_cause_40_qs;
+        reg_rdata_next[1:0] = alert_class_shadowed_17_qs;
       end
 
       addr_hit[194]: begin
-        reg_rdata_next[0] = alert_cause_41_qs;
+        reg_rdata_next[1:0] = alert_class_shadowed_18_qs;
       end
 
       addr_hit[195]: begin
-        reg_rdata_next[0] = alert_cause_42_qs;
+        reg_rdata_next[1:0] = alert_class_shadowed_19_qs;
       end
 
       addr_hit[196]: begin
-        reg_rdata_next[0] = alert_cause_43_qs;
+        reg_rdata_next[1:0] = alert_class_shadowed_20_qs;
       end
 
       addr_hit[197]: begin
-        reg_rdata_next[0] = alert_cause_44_qs;
+        reg_rdata_next[1:0] = alert_class_shadowed_21_qs;
       end
 
       addr_hit[198]: begin
-        reg_rdata_next[0] = alert_cause_45_qs;
+        reg_rdata_next[1:0] = alert_class_shadowed_22_qs;
       end
 
       addr_hit[199]: begin
-        reg_rdata_next[0] = alert_cause_46_qs;
+        reg_rdata_next[1:0] = alert_class_shadowed_23_qs;
       end
 
       addr_hit[200]: begin
-        reg_rdata_next[0] = alert_cause_47_qs;
+        reg_rdata_next[1:0] = alert_class_shadowed_24_qs;
       end
 
       addr_hit[201]: begin
-        reg_rdata_next[0] = alert_cause_48_qs;
+        reg_rdata_next[1:0] = alert_class_shadowed_25_qs;
       end
 
       addr_hit[202]: begin
-        reg_rdata_next[0] = loc_alert_regwen_0_qs;
+        reg_rdata_next[1:0] = alert_class_shadowed_26_qs;
       end
 
       addr_hit[203]: begin
-        reg_rdata_next[0] = loc_alert_regwen_1_qs;
+        reg_rdata_next[1:0] = alert_class_shadowed_27_qs;
       end
 
       addr_hit[204]: begin
-        reg_rdata_next[0] = loc_alert_regwen_2_qs;
+        reg_rdata_next[1:0] = alert_class_shadowed_28_qs;
       end
 
       addr_hit[205]: begin
-        reg_rdata_next[0] = loc_alert_regwen_3_qs;
+        reg_rdata_next[1:0] = alert_class_shadowed_29_qs;
       end
 
       addr_hit[206]: begin
-        reg_rdata_next[0] = loc_alert_regwen_4_qs;
+        reg_rdata_next[1:0] = alert_class_shadowed_30_qs;
       end
 
       addr_hit[207]: begin
-        reg_rdata_next[0] = loc_alert_regwen_5_qs;
+        reg_rdata_next[1:0] = alert_class_shadowed_31_qs;
       end
 
       addr_hit[208]: begin
-        reg_rdata_next[0] = loc_alert_regwen_6_qs;
+        reg_rdata_next[1:0] = alert_class_shadowed_32_qs;
       end
 
       addr_hit[209]: begin
-        reg_rdata_next[0] = loc_alert_en_shadowed_0_qs;
+        reg_rdata_next[1:0] = alert_class_shadowed_33_qs;
       end
 
       addr_hit[210]: begin
-        reg_rdata_next[0] = loc_alert_en_shadowed_1_qs;
+        reg_rdata_next[1:0] = alert_class_shadowed_34_qs;
       end
 
       addr_hit[211]: begin
-        reg_rdata_next[0] = loc_alert_en_shadowed_2_qs;
+        reg_rdata_next[1:0] = alert_class_shadowed_35_qs;
       end
 
       addr_hit[212]: begin
-        reg_rdata_next[0] = loc_alert_en_shadowed_3_qs;
+        reg_rdata_next[1:0] = alert_class_shadowed_36_qs;
       end
 
       addr_hit[213]: begin
-        reg_rdata_next[0] = loc_alert_en_shadowed_4_qs;
+        reg_rdata_next[1:0] = alert_class_shadowed_37_qs;
       end
 
       addr_hit[214]: begin
-        reg_rdata_next[0] = loc_alert_en_shadowed_5_qs;
+        reg_rdata_next[1:0] = alert_class_shadowed_38_qs;
       end
 
       addr_hit[215]: begin
-        reg_rdata_next[0] = loc_alert_en_shadowed_6_qs;
+        reg_rdata_next[1:0] = alert_class_shadowed_39_qs;
       end
 
       addr_hit[216]: begin
-        reg_rdata_next[1:0] = loc_alert_class_shadowed_0_qs;
+        reg_rdata_next[1:0] = alert_class_shadowed_40_qs;
       end
 
       addr_hit[217]: begin
-        reg_rdata_next[1:0] = loc_alert_class_shadowed_1_qs;
+        reg_rdata_next[1:0] = alert_class_shadowed_41_qs;
       end
 
       addr_hit[218]: begin
-        reg_rdata_next[1:0] = loc_alert_class_shadowed_2_qs;
+        reg_rdata_next[1:0] = alert_class_shadowed_42_qs;
       end
 
       addr_hit[219]: begin
-        reg_rdata_next[1:0] = loc_alert_class_shadowed_3_qs;
+        reg_rdata_next[1:0] = alert_class_shadowed_43_qs;
       end
 
       addr_hit[220]: begin
-        reg_rdata_next[1:0] = loc_alert_class_shadowed_4_qs;
+        reg_rdata_next[1:0] = alert_class_shadowed_44_qs;
       end
 
       addr_hit[221]: begin
-        reg_rdata_next[1:0] = loc_alert_class_shadowed_5_qs;
+        reg_rdata_next[1:0] = alert_class_shadowed_45_qs;
       end
 
       addr_hit[222]: begin
-        reg_rdata_next[1:0] = loc_alert_class_shadowed_6_qs;
+        reg_rdata_next[1:0] = alert_class_shadowed_46_qs;
       end
 
       addr_hit[223]: begin
-        reg_rdata_next[0] = loc_alert_cause_0_qs;
+        reg_rdata_next[1:0] = alert_class_shadowed_47_qs;
       end
 
       addr_hit[224]: begin
-        reg_rdata_next[0] = loc_alert_cause_1_qs;
+        reg_rdata_next[1:0] = alert_class_shadowed_48_qs;
       end
 
       addr_hit[225]: begin
-        reg_rdata_next[0] = loc_alert_cause_2_qs;
+        reg_rdata_next[1:0] = alert_class_shadowed_49_qs;
       end
 
       addr_hit[226]: begin
-        reg_rdata_next[0] = loc_alert_cause_3_qs;
+        reg_rdata_next[1:0] = alert_class_shadowed_50_qs;
       end
 
       addr_hit[227]: begin
-        reg_rdata_next[0] = loc_alert_cause_4_qs;
+        reg_rdata_next[1:0] = alert_class_shadowed_51_qs;
       end
 
       addr_hit[228]: begin
-        reg_rdata_next[0] = loc_alert_cause_5_qs;
+        reg_rdata_next[1:0] = alert_class_shadowed_52_qs;
       end
 
       addr_hit[229]: begin
-        reg_rdata_next[0] = loc_alert_cause_6_qs;
+        reg_rdata_next[1:0] = alert_class_shadowed_53_qs;
       end
 
       addr_hit[230]: begin
-        reg_rdata_next[0] = classa_regwen_qs;
+        reg_rdata_next[1:0] = alert_class_shadowed_54_qs;
       end
 
       addr_hit[231]: begin
+        reg_rdata_next[1:0] = alert_class_shadowed_55_qs;
+      end
+
+      addr_hit[232]: begin
+        reg_rdata_next[1:0] = alert_class_shadowed_56_qs;
+      end
+
+      addr_hit[233]: begin
+        reg_rdata_next[1:0] = alert_class_shadowed_57_qs;
+      end
+
+      addr_hit[234]: begin
+        reg_rdata_next[1:0] = alert_class_shadowed_58_qs;
+      end
+
+      addr_hit[235]: begin
+        reg_rdata_next[1:0] = alert_class_shadowed_59_qs;
+      end
+
+      addr_hit[236]: begin
+        reg_rdata_next[1:0] = alert_class_shadowed_60_qs;
+      end
+
+      addr_hit[237]: begin
+        reg_rdata_next[1:0] = alert_class_shadowed_61_qs;
+      end
+
+      addr_hit[238]: begin
+        reg_rdata_next[1:0] = alert_class_shadowed_62_qs;
+      end
+
+      addr_hit[239]: begin
+        reg_rdata_next[1:0] = alert_class_shadowed_63_qs;
+      end
+
+      addr_hit[240]: begin
+        reg_rdata_next[1:0] = alert_class_shadowed_64_qs;
+      end
+
+      addr_hit[241]: begin
+        reg_rdata_next[1:0] = alert_class_shadowed_65_qs;
+      end
+
+      addr_hit[242]: begin
+        reg_rdata_next[1:0] = alert_class_shadowed_66_qs;
+      end
+
+      addr_hit[243]: begin
+        reg_rdata_next[1:0] = alert_class_shadowed_67_qs;
+      end
+
+      addr_hit[244]: begin
+        reg_rdata_next[1:0] = alert_class_shadowed_68_qs;
+      end
+
+      addr_hit[245]: begin
+        reg_rdata_next[1:0] = alert_class_shadowed_69_qs;
+      end
+
+      addr_hit[246]: begin
+        reg_rdata_next[1:0] = alert_class_shadowed_70_qs;
+      end
+
+      addr_hit[247]: begin
+        reg_rdata_next[1:0] = alert_class_shadowed_71_qs;
+      end
+
+      addr_hit[248]: begin
+        reg_rdata_next[1:0] = alert_class_shadowed_72_qs;
+      end
+
+      addr_hit[249]: begin
+        reg_rdata_next[1:0] = alert_class_shadowed_73_qs;
+      end
+
+      addr_hit[250]: begin
+        reg_rdata_next[1:0] = alert_class_shadowed_74_qs;
+      end
+
+      addr_hit[251]: begin
+        reg_rdata_next[1:0] = alert_class_shadowed_75_qs;
+      end
+
+      addr_hit[252]: begin
+        reg_rdata_next[1:0] = alert_class_shadowed_76_qs;
+      end
+
+      addr_hit[253]: begin
+        reg_rdata_next[1:0] = alert_class_shadowed_77_qs;
+      end
+
+      addr_hit[254]: begin
+        reg_rdata_next[1:0] = alert_class_shadowed_78_qs;
+      end
+
+      addr_hit[255]: begin
+        reg_rdata_next[1:0] = alert_class_shadowed_79_qs;
+      end
+
+      addr_hit[256]: begin
+        reg_rdata_next[1:0] = alert_class_shadowed_80_qs;
+      end
+
+      addr_hit[257]: begin
+        reg_rdata_next[1:0] = alert_class_shadowed_81_qs;
+      end
+
+      addr_hit[258]: begin
+        reg_rdata_next[1:0] = alert_class_shadowed_82_qs;
+      end
+
+      addr_hit[259]: begin
+        reg_rdata_next[1:0] = alert_class_shadowed_83_qs;
+      end
+
+      addr_hit[260]: begin
+        reg_rdata_next[1:0] = alert_class_shadowed_84_qs;
+      end
+
+      addr_hit[261]: begin
+        reg_rdata_next[0] = alert_cause_0_qs;
+      end
+
+      addr_hit[262]: begin
+        reg_rdata_next[0] = alert_cause_1_qs;
+      end
+
+      addr_hit[263]: begin
+        reg_rdata_next[0] = alert_cause_2_qs;
+      end
+
+      addr_hit[264]: begin
+        reg_rdata_next[0] = alert_cause_3_qs;
+      end
+
+      addr_hit[265]: begin
+        reg_rdata_next[0] = alert_cause_4_qs;
+      end
+
+      addr_hit[266]: begin
+        reg_rdata_next[0] = alert_cause_5_qs;
+      end
+
+      addr_hit[267]: begin
+        reg_rdata_next[0] = alert_cause_6_qs;
+      end
+
+      addr_hit[268]: begin
+        reg_rdata_next[0] = alert_cause_7_qs;
+      end
+
+      addr_hit[269]: begin
+        reg_rdata_next[0] = alert_cause_8_qs;
+      end
+
+      addr_hit[270]: begin
+        reg_rdata_next[0] = alert_cause_9_qs;
+      end
+
+      addr_hit[271]: begin
+        reg_rdata_next[0] = alert_cause_10_qs;
+      end
+
+      addr_hit[272]: begin
+        reg_rdata_next[0] = alert_cause_11_qs;
+      end
+
+      addr_hit[273]: begin
+        reg_rdata_next[0] = alert_cause_12_qs;
+      end
+
+      addr_hit[274]: begin
+        reg_rdata_next[0] = alert_cause_13_qs;
+      end
+
+      addr_hit[275]: begin
+        reg_rdata_next[0] = alert_cause_14_qs;
+      end
+
+      addr_hit[276]: begin
+        reg_rdata_next[0] = alert_cause_15_qs;
+      end
+
+      addr_hit[277]: begin
+        reg_rdata_next[0] = alert_cause_16_qs;
+      end
+
+      addr_hit[278]: begin
+        reg_rdata_next[0] = alert_cause_17_qs;
+      end
+
+      addr_hit[279]: begin
+        reg_rdata_next[0] = alert_cause_18_qs;
+      end
+
+      addr_hit[280]: begin
+        reg_rdata_next[0] = alert_cause_19_qs;
+      end
+
+      addr_hit[281]: begin
+        reg_rdata_next[0] = alert_cause_20_qs;
+      end
+
+      addr_hit[282]: begin
+        reg_rdata_next[0] = alert_cause_21_qs;
+      end
+
+      addr_hit[283]: begin
+        reg_rdata_next[0] = alert_cause_22_qs;
+      end
+
+      addr_hit[284]: begin
+        reg_rdata_next[0] = alert_cause_23_qs;
+      end
+
+      addr_hit[285]: begin
+        reg_rdata_next[0] = alert_cause_24_qs;
+      end
+
+      addr_hit[286]: begin
+        reg_rdata_next[0] = alert_cause_25_qs;
+      end
+
+      addr_hit[287]: begin
+        reg_rdata_next[0] = alert_cause_26_qs;
+      end
+
+      addr_hit[288]: begin
+        reg_rdata_next[0] = alert_cause_27_qs;
+      end
+
+      addr_hit[289]: begin
+        reg_rdata_next[0] = alert_cause_28_qs;
+      end
+
+      addr_hit[290]: begin
+        reg_rdata_next[0] = alert_cause_29_qs;
+      end
+
+      addr_hit[291]: begin
+        reg_rdata_next[0] = alert_cause_30_qs;
+      end
+
+      addr_hit[292]: begin
+        reg_rdata_next[0] = alert_cause_31_qs;
+      end
+
+      addr_hit[293]: begin
+        reg_rdata_next[0] = alert_cause_32_qs;
+      end
+
+      addr_hit[294]: begin
+        reg_rdata_next[0] = alert_cause_33_qs;
+      end
+
+      addr_hit[295]: begin
+        reg_rdata_next[0] = alert_cause_34_qs;
+      end
+
+      addr_hit[296]: begin
+        reg_rdata_next[0] = alert_cause_35_qs;
+      end
+
+      addr_hit[297]: begin
+        reg_rdata_next[0] = alert_cause_36_qs;
+      end
+
+      addr_hit[298]: begin
+        reg_rdata_next[0] = alert_cause_37_qs;
+      end
+
+      addr_hit[299]: begin
+        reg_rdata_next[0] = alert_cause_38_qs;
+      end
+
+      addr_hit[300]: begin
+        reg_rdata_next[0] = alert_cause_39_qs;
+      end
+
+      addr_hit[301]: begin
+        reg_rdata_next[0] = alert_cause_40_qs;
+      end
+
+      addr_hit[302]: begin
+        reg_rdata_next[0] = alert_cause_41_qs;
+      end
+
+      addr_hit[303]: begin
+        reg_rdata_next[0] = alert_cause_42_qs;
+      end
+
+      addr_hit[304]: begin
+        reg_rdata_next[0] = alert_cause_43_qs;
+      end
+
+      addr_hit[305]: begin
+        reg_rdata_next[0] = alert_cause_44_qs;
+      end
+
+      addr_hit[306]: begin
+        reg_rdata_next[0] = alert_cause_45_qs;
+      end
+
+      addr_hit[307]: begin
+        reg_rdata_next[0] = alert_cause_46_qs;
+      end
+
+      addr_hit[308]: begin
+        reg_rdata_next[0] = alert_cause_47_qs;
+      end
+
+      addr_hit[309]: begin
+        reg_rdata_next[0] = alert_cause_48_qs;
+      end
+
+      addr_hit[310]: begin
+        reg_rdata_next[0] = alert_cause_49_qs;
+      end
+
+      addr_hit[311]: begin
+        reg_rdata_next[0] = alert_cause_50_qs;
+      end
+
+      addr_hit[312]: begin
+        reg_rdata_next[0] = alert_cause_51_qs;
+      end
+
+      addr_hit[313]: begin
+        reg_rdata_next[0] = alert_cause_52_qs;
+      end
+
+      addr_hit[314]: begin
+        reg_rdata_next[0] = alert_cause_53_qs;
+      end
+
+      addr_hit[315]: begin
+        reg_rdata_next[0] = alert_cause_54_qs;
+      end
+
+      addr_hit[316]: begin
+        reg_rdata_next[0] = alert_cause_55_qs;
+      end
+
+      addr_hit[317]: begin
+        reg_rdata_next[0] = alert_cause_56_qs;
+      end
+
+      addr_hit[318]: begin
+        reg_rdata_next[0] = alert_cause_57_qs;
+      end
+
+      addr_hit[319]: begin
+        reg_rdata_next[0] = alert_cause_58_qs;
+      end
+
+      addr_hit[320]: begin
+        reg_rdata_next[0] = alert_cause_59_qs;
+      end
+
+      addr_hit[321]: begin
+        reg_rdata_next[0] = alert_cause_60_qs;
+      end
+
+      addr_hit[322]: begin
+        reg_rdata_next[0] = alert_cause_61_qs;
+      end
+
+      addr_hit[323]: begin
+        reg_rdata_next[0] = alert_cause_62_qs;
+      end
+
+      addr_hit[324]: begin
+        reg_rdata_next[0] = alert_cause_63_qs;
+      end
+
+      addr_hit[325]: begin
+        reg_rdata_next[0] = alert_cause_64_qs;
+      end
+
+      addr_hit[326]: begin
+        reg_rdata_next[0] = alert_cause_65_qs;
+      end
+
+      addr_hit[327]: begin
+        reg_rdata_next[0] = alert_cause_66_qs;
+      end
+
+      addr_hit[328]: begin
+        reg_rdata_next[0] = alert_cause_67_qs;
+      end
+
+      addr_hit[329]: begin
+        reg_rdata_next[0] = alert_cause_68_qs;
+      end
+
+      addr_hit[330]: begin
+        reg_rdata_next[0] = alert_cause_69_qs;
+      end
+
+      addr_hit[331]: begin
+        reg_rdata_next[0] = alert_cause_70_qs;
+      end
+
+      addr_hit[332]: begin
+        reg_rdata_next[0] = alert_cause_71_qs;
+      end
+
+      addr_hit[333]: begin
+        reg_rdata_next[0] = alert_cause_72_qs;
+      end
+
+      addr_hit[334]: begin
+        reg_rdata_next[0] = alert_cause_73_qs;
+      end
+
+      addr_hit[335]: begin
+        reg_rdata_next[0] = alert_cause_74_qs;
+      end
+
+      addr_hit[336]: begin
+        reg_rdata_next[0] = alert_cause_75_qs;
+      end
+
+      addr_hit[337]: begin
+        reg_rdata_next[0] = alert_cause_76_qs;
+      end
+
+      addr_hit[338]: begin
+        reg_rdata_next[0] = alert_cause_77_qs;
+      end
+
+      addr_hit[339]: begin
+        reg_rdata_next[0] = alert_cause_78_qs;
+      end
+
+      addr_hit[340]: begin
+        reg_rdata_next[0] = alert_cause_79_qs;
+      end
+
+      addr_hit[341]: begin
+        reg_rdata_next[0] = alert_cause_80_qs;
+      end
+
+      addr_hit[342]: begin
+        reg_rdata_next[0] = alert_cause_81_qs;
+      end
+
+      addr_hit[343]: begin
+        reg_rdata_next[0] = alert_cause_82_qs;
+      end
+
+      addr_hit[344]: begin
+        reg_rdata_next[0] = alert_cause_83_qs;
+      end
+
+      addr_hit[345]: begin
+        reg_rdata_next[0] = alert_cause_84_qs;
+      end
+
+      addr_hit[346]: begin
+        reg_rdata_next[0] = loc_alert_regwen_0_qs;
+      end
+
+      addr_hit[347]: begin
+        reg_rdata_next[0] = loc_alert_regwen_1_qs;
+      end
+
+      addr_hit[348]: begin
+        reg_rdata_next[0] = loc_alert_regwen_2_qs;
+      end
+
+      addr_hit[349]: begin
+        reg_rdata_next[0] = loc_alert_regwen_3_qs;
+      end
+
+      addr_hit[350]: begin
+        reg_rdata_next[0] = loc_alert_regwen_4_qs;
+      end
+
+      addr_hit[351]: begin
+        reg_rdata_next[0] = loc_alert_regwen_5_qs;
+      end
+
+      addr_hit[352]: begin
+        reg_rdata_next[0] = loc_alert_regwen_6_qs;
+      end
+
+      addr_hit[353]: begin
+        reg_rdata_next[0] = loc_alert_en_shadowed_0_qs;
+      end
+
+      addr_hit[354]: begin
+        reg_rdata_next[0] = loc_alert_en_shadowed_1_qs;
+      end
+
+      addr_hit[355]: begin
+        reg_rdata_next[0] = loc_alert_en_shadowed_2_qs;
+      end
+
+      addr_hit[356]: begin
+        reg_rdata_next[0] = loc_alert_en_shadowed_3_qs;
+      end
+
+      addr_hit[357]: begin
+        reg_rdata_next[0] = loc_alert_en_shadowed_4_qs;
+      end
+
+      addr_hit[358]: begin
+        reg_rdata_next[0] = loc_alert_en_shadowed_5_qs;
+      end
+
+      addr_hit[359]: begin
+        reg_rdata_next[0] = loc_alert_en_shadowed_6_qs;
+      end
+
+      addr_hit[360]: begin
+        reg_rdata_next[1:0] = loc_alert_class_shadowed_0_qs;
+      end
+
+      addr_hit[361]: begin
+        reg_rdata_next[1:0] = loc_alert_class_shadowed_1_qs;
+      end
+
+      addr_hit[362]: begin
+        reg_rdata_next[1:0] = loc_alert_class_shadowed_2_qs;
+      end
+
+      addr_hit[363]: begin
+        reg_rdata_next[1:0] = loc_alert_class_shadowed_3_qs;
+      end
+
+      addr_hit[364]: begin
+        reg_rdata_next[1:0] = loc_alert_class_shadowed_4_qs;
+      end
+
+      addr_hit[365]: begin
+        reg_rdata_next[1:0] = loc_alert_class_shadowed_5_qs;
+      end
+
+      addr_hit[366]: begin
+        reg_rdata_next[1:0] = loc_alert_class_shadowed_6_qs;
+      end
+
+      addr_hit[367]: begin
+        reg_rdata_next[0] = loc_alert_cause_0_qs;
+      end
+
+      addr_hit[368]: begin
+        reg_rdata_next[0] = loc_alert_cause_1_qs;
+      end
+
+      addr_hit[369]: begin
+        reg_rdata_next[0] = loc_alert_cause_2_qs;
+      end
+
+      addr_hit[370]: begin
+        reg_rdata_next[0] = loc_alert_cause_3_qs;
+      end
+
+      addr_hit[371]: begin
+        reg_rdata_next[0] = loc_alert_cause_4_qs;
+      end
+
+      addr_hit[372]: begin
+        reg_rdata_next[0] = loc_alert_cause_5_qs;
+      end
+
+      addr_hit[373]: begin
+        reg_rdata_next[0] = loc_alert_cause_6_qs;
+      end
+
+      addr_hit[374]: begin
+        reg_rdata_next[0] = classa_regwen_qs;
+      end
+
+      addr_hit[375]: begin
         reg_rdata_next[0] = classa_ctrl_shadowed_en_qs;
         reg_rdata_next[1] = classa_ctrl_shadowed_lock_qs;
         reg_rdata_next[2] = classa_ctrl_shadowed_en_e0_qs;
@@ -15933,59 +23133,59 @@ module alert_handler_reg_top (
         reg_rdata_next[13:12] = classa_ctrl_shadowed_map_e3_qs;
       end
 
-      addr_hit[232]: begin
+      addr_hit[376]: begin
         reg_rdata_next[0] = classa_clr_regwen_qs;
       end
 
-      addr_hit[233]: begin
+      addr_hit[377]: begin
         reg_rdata_next[0] = classa_clr_shadowed_qs;
       end
 
-      addr_hit[234]: begin
+      addr_hit[378]: begin
         reg_rdata_next[15:0] = classa_accum_cnt_qs;
       end
 
-      addr_hit[235]: begin
+      addr_hit[379]: begin
         reg_rdata_next[15:0] = classa_accum_thresh_shadowed_qs;
       end
 
-      addr_hit[236]: begin
+      addr_hit[380]: begin
         reg_rdata_next[31:0] = classa_timeout_cyc_shadowed_qs;
       end
 
-      addr_hit[237]: begin
+      addr_hit[381]: begin
         reg_rdata_next[1:0] = classa_crashdump_trigger_shadowed_qs;
       end
 
-      addr_hit[238]: begin
+      addr_hit[382]: begin
         reg_rdata_next[31:0] = classa_phase0_cyc_shadowed_qs;
       end
 
-      addr_hit[239]: begin
+      addr_hit[383]: begin
         reg_rdata_next[31:0] = classa_phase1_cyc_shadowed_qs;
       end
 
-      addr_hit[240]: begin
+      addr_hit[384]: begin
         reg_rdata_next[31:0] = classa_phase2_cyc_shadowed_qs;
       end
 
-      addr_hit[241]: begin
+      addr_hit[385]: begin
         reg_rdata_next[31:0] = classa_phase3_cyc_shadowed_qs;
       end
 
-      addr_hit[242]: begin
+      addr_hit[386]: begin
         reg_rdata_next[31:0] = classa_esc_cnt_qs;
       end
 
-      addr_hit[243]: begin
+      addr_hit[387]: begin
         reg_rdata_next[2:0] = classa_state_qs;
       end
 
-      addr_hit[244]: begin
+      addr_hit[388]: begin
         reg_rdata_next[0] = classb_regwen_qs;
       end
 
-      addr_hit[245]: begin
+      addr_hit[389]: begin
         reg_rdata_next[0] = classb_ctrl_shadowed_en_qs;
         reg_rdata_next[1] = classb_ctrl_shadowed_lock_qs;
         reg_rdata_next[2] = classb_ctrl_shadowed_en_e0_qs;
@@ -15998,59 +23198,59 @@ module alert_handler_reg_top (
         reg_rdata_next[13:12] = classb_ctrl_shadowed_map_e3_qs;
       end
 
-      addr_hit[246]: begin
+      addr_hit[390]: begin
         reg_rdata_next[0] = classb_clr_regwen_qs;
       end
 
-      addr_hit[247]: begin
+      addr_hit[391]: begin
         reg_rdata_next[0] = classb_clr_shadowed_qs;
       end
 
-      addr_hit[248]: begin
+      addr_hit[392]: begin
         reg_rdata_next[15:0] = classb_accum_cnt_qs;
       end
 
-      addr_hit[249]: begin
+      addr_hit[393]: begin
         reg_rdata_next[15:0] = classb_accum_thresh_shadowed_qs;
       end
 
-      addr_hit[250]: begin
+      addr_hit[394]: begin
         reg_rdata_next[31:0] = classb_timeout_cyc_shadowed_qs;
       end
 
-      addr_hit[251]: begin
+      addr_hit[395]: begin
         reg_rdata_next[1:0] = classb_crashdump_trigger_shadowed_qs;
       end
 
-      addr_hit[252]: begin
+      addr_hit[396]: begin
         reg_rdata_next[31:0] = classb_phase0_cyc_shadowed_qs;
       end
 
-      addr_hit[253]: begin
+      addr_hit[397]: begin
         reg_rdata_next[31:0] = classb_phase1_cyc_shadowed_qs;
       end
 
-      addr_hit[254]: begin
+      addr_hit[398]: begin
         reg_rdata_next[31:0] = classb_phase2_cyc_shadowed_qs;
       end
 
-      addr_hit[255]: begin
+      addr_hit[399]: begin
         reg_rdata_next[31:0] = classb_phase3_cyc_shadowed_qs;
       end
 
-      addr_hit[256]: begin
+      addr_hit[400]: begin
         reg_rdata_next[31:0] = classb_esc_cnt_qs;
       end
 
-      addr_hit[257]: begin
+      addr_hit[401]: begin
         reg_rdata_next[2:0] = classb_state_qs;
       end
 
-      addr_hit[258]: begin
+      addr_hit[402]: begin
         reg_rdata_next[0] = classc_regwen_qs;
       end
 
-      addr_hit[259]: begin
+      addr_hit[403]: begin
         reg_rdata_next[0] = classc_ctrl_shadowed_en_qs;
         reg_rdata_next[1] = classc_ctrl_shadowed_lock_qs;
         reg_rdata_next[2] = classc_ctrl_shadowed_en_e0_qs;
@@ -16063,59 +23263,59 @@ module alert_handler_reg_top (
         reg_rdata_next[13:12] = classc_ctrl_shadowed_map_e3_qs;
       end
 
-      addr_hit[260]: begin
+      addr_hit[404]: begin
         reg_rdata_next[0] = classc_clr_regwen_qs;
       end
 
-      addr_hit[261]: begin
+      addr_hit[405]: begin
         reg_rdata_next[0] = classc_clr_shadowed_qs;
       end
 
-      addr_hit[262]: begin
+      addr_hit[406]: begin
         reg_rdata_next[15:0] = classc_accum_cnt_qs;
       end
 
-      addr_hit[263]: begin
+      addr_hit[407]: begin
         reg_rdata_next[15:0] = classc_accum_thresh_shadowed_qs;
       end
 
-      addr_hit[264]: begin
+      addr_hit[408]: begin
         reg_rdata_next[31:0] = classc_timeout_cyc_shadowed_qs;
       end
 
-      addr_hit[265]: begin
+      addr_hit[409]: begin
         reg_rdata_next[1:0] = classc_crashdump_trigger_shadowed_qs;
       end
 
-      addr_hit[266]: begin
+      addr_hit[410]: begin
         reg_rdata_next[31:0] = classc_phase0_cyc_shadowed_qs;
       end
 
-      addr_hit[267]: begin
+      addr_hit[411]: begin
         reg_rdata_next[31:0] = classc_phase1_cyc_shadowed_qs;
       end
 
-      addr_hit[268]: begin
+      addr_hit[412]: begin
         reg_rdata_next[31:0] = classc_phase2_cyc_shadowed_qs;
       end
 
-      addr_hit[269]: begin
+      addr_hit[413]: begin
         reg_rdata_next[31:0] = classc_phase3_cyc_shadowed_qs;
       end
 
-      addr_hit[270]: begin
+      addr_hit[414]: begin
         reg_rdata_next[31:0] = classc_esc_cnt_qs;
       end
 
-      addr_hit[271]: begin
+      addr_hit[415]: begin
         reg_rdata_next[2:0] = classc_state_qs;
       end
 
-      addr_hit[272]: begin
+      addr_hit[416]: begin
         reg_rdata_next[0] = classd_regwen_qs;
       end
 
-      addr_hit[273]: begin
+      addr_hit[417]: begin
         reg_rdata_next[0] = classd_ctrl_shadowed_en_qs;
         reg_rdata_next[1] = classd_ctrl_shadowed_lock_qs;
         reg_rdata_next[2] = classd_ctrl_shadowed_en_e0_qs;
@@ -16128,51 +23328,51 @@ module alert_handler_reg_top (
         reg_rdata_next[13:12] = classd_ctrl_shadowed_map_e3_qs;
       end
 
-      addr_hit[274]: begin
+      addr_hit[418]: begin
         reg_rdata_next[0] = classd_clr_regwen_qs;
       end
 
-      addr_hit[275]: begin
+      addr_hit[419]: begin
         reg_rdata_next[0] = classd_clr_shadowed_qs;
       end
 
-      addr_hit[276]: begin
+      addr_hit[420]: begin
         reg_rdata_next[15:0] = classd_accum_cnt_qs;
       end
 
-      addr_hit[277]: begin
+      addr_hit[421]: begin
         reg_rdata_next[15:0] = classd_accum_thresh_shadowed_qs;
       end
 
-      addr_hit[278]: begin
+      addr_hit[422]: begin
         reg_rdata_next[31:0] = classd_timeout_cyc_shadowed_qs;
       end
 
-      addr_hit[279]: begin
+      addr_hit[423]: begin
         reg_rdata_next[1:0] = classd_crashdump_trigger_shadowed_qs;
       end
 
-      addr_hit[280]: begin
+      addr_hit[424]: begin
         reg_rdata_next[31:0] = classd_phase0_cyc_shadowed_qs;
       end
 
-      addr_hit[281]: begin
+      addr_hit[425]: begin
         reg_rdata_next[31:0] = classd_phase1_cyc_shadowed_qs;
       end
 
-      addr_hit[282]: begin
+      addr_hit[426]: begin
         reg_rdata_next[31:0] = classd_phase2_cyc_shadowed_qs;
       end
 
-      addr_hit[283]: begin
+      addr_hit[427]: begin
         reg_rdata_next[31:0] = classd_phase3_cyc_shadowed_qs;
       end
 
-      addr_hit[284]: begin
+      addr_hit[428]: begin
         reg_rdata_next[31:0] = classd_esc_cnt_qs;
       end
 
-      addr_hit[285]: begin
+      addr_hit[429]: begin
         reg_rdata_next[2:0] = classd_state_qs;
       end
 
@@ -16258,6 +23458,42 @@ module alert_handler_reg_top (
     alert_en_shadowed_46_storage_err,
     alert_en_shadowed_47_storage_err,
     alert_en_shadowed_48_storage_err,
+    alert_en_shadowed_49_storage_err,
+    alert_en_shadowed_50_storage_err,
+    alert_en_shadowed_51_storage_err,
+    alert_en_shadowed_52_storage_err,
+    alert_en_shadowed_53_storage_err,
+    alert_en_shadowed_54_storage_err,
+    alert_en_shadowed_55_storage_err,
+    alert_en_shadowed_56_storage_err,
+    alert_en_shadowed_57_storage_err,
+    alert_en_shadowed_58_storage_err,
+    alert_en_shadowed_59_storage_err,
+    alert_en_shadowed_60_storage_err,
+    alert_en_shadowed_61_storage_err,
+    alert_en_shadowed_62_storage_err,
+    alert_en_shadowed_63_storage_err,
+    alert_en_shadowed_64_storage_err,
+    alert_en_shadowed_65_storage_err,
+    alert_en_shadowed_66_storage_err,
+    alert_en_shadowed_67_storage_err,
+    alert_en_shadowed_68_storage_err,
+    alert_en_shadowed_69_storage_err,
+    alert_en_shadowed_70_storage_err,
+    alert_en_shadowed_71_storage_err,
+    alert_en_shadowed_72_storage_err,
+    alert_en_shadowed_73_storage_err,
+    alert_en_shadowed_74_storage_err,
+    alert_en_shadowed_75_storage_err,
+    alert_en_shadowed_76_storage_err,
+    alert_en_shadowed_77_storage_err,
+    alert_en_shadowed_78_storage_err,
+    alert_en_shadowed_79_storage_err,
+    alert_en_shadowed_80_storage_err,
+    alert_en_shadowed_81_storage_err,
+    alert_en_shadowed_82_storage_err,
+    alert_en_shadowed_83_storage_err,
+    alert_en_shadowed_84_storage_err,
     alert_class_shadowed_0_storage_err,
     alert_class_shadowed_1_storage_err,
     alert_class_shadowed_2_storage_err,
@@ -16307,6 +23543,42 @@ module alert_handler_reg_top (
     alert_class_shadowed_46_storage_err,
     alert_class_shadowed_47_storage_err,
     alert_class_shadowed_48_storage_err,
+    alert_class_shadowed_49_storage_err,
+    alert_class_shadowed_50_storage_err,
+    alert_class_shadowed_51_storage_err,
+    alert_class_shadowed_52_storage_err,
+    alert_class_shadowed_53_storage_err,
+    alert_class_shadowed_54_storage_err,
+    alert_class_shadowed_55_storage_err,
+    alert_class_shadowed_56_storage_err,
+    alert_class_shadowed_57_storage_err,
+    alert_class_shadowed_58_storage_err,
+    alert_class_shadowed_59_storage_err,
+    alert_class_shadowed_60_storage_err,
+    alert_class_shadowed_61_storage_err,
+    alert_class_shadowed_62_storage_err,
+    alert_class_shadowed_63_storage_err,
+    alert_class_shadowed_64_storage_err,
+    alert_class_shadowed_65_storage_err,
+    alert_class_shadowed_66_storage_err,
+    alert_class_shadowed_67_storage_err,
+    alert_class_shadowed_68_storage_err,
+    alert_class_shadowed_69_storage_err,
+    alert_class_shadowed_70_storage_err,
+    alert_class_shadowed_71_storage_err,
+    alert_class_shadowed_72_storage_err,
+    alert_class_shadowed_73_storage_err,
+    alert_class_shadowed_74_storage_err,
+    alert_class_shadowed_75_storage_err,
+    alert_class_shadowed_76_storage_err,
+    alert_class_shadowed_77_storage_err,
+    alert_class_shadowed_78_storage_err,
+    alert_class_shadowed_79_storage_err,
+    alert_class_shadowed_80_storage_err,
+    alert_class_shadowed_81_storage_err,
+    alert_class_shadowed_82_storage_err,
+    alert_class_shadowed_83_storage_err,
+    alert_class_shadowed_84_storage_err,
     loc_alert_en_shadowed_0_storage_err,
     loc_alert_en_shadowed_1_storage_err,
     loc_alert_en_shadowed_2_storage_err,
@@ -16446,6 +23718,42 @@ module alert_handler_reg_top (
     alert_en_shadowed_46_update_err,
     alert_en_shadowed_47_update_err,
     alert_en_shadowed_48_update_err,
+    alert_en_shadowed_49_update_err,
+    alert_en_shadowed_50_update_err,
+    alert_en_shadowed_51_update_err,
+    alert_en_shadowed_52_update_err,
+    alert_en_shadowed_53_update_err,
+    alert_en_shadowed_54_update_err,
+    alert_en_shadowed_55_update_err,
+    alert_en_shadowed_56_update_err,
+    alert_en_shadowed_57_update_err,
+    alert_en_shadowed_58_update_err,
+    alert_en_shadowed_59_update_err,
+    alert_en_shadowed_60_update_err,
+    alert_en_shadowed_61_update_err,
+    alert_en_shadowed_62_update_err,
+    alert_en_shadowed_63_update_err,
+    alert_en_shadowed_64_update_err,
+    alert_en_shadowed_65_update_err,
+    alert_en_shadowed_66_update_err,
+    alert_en_shadowed_67_update_err,
+    alert_en_shadowed_68_update_err,
+    alert_en_shadowed_69_update_err,
+    alert_en_shadowed_70_update_err,
+    alert_en_shadowed_71_update_err,
+    alert_en_shadowed_72_update_err,
+    alert_en_shadowed_73_update_err,
+    alert_en_shadowed_74_update_err,
+    alert_en_shadowed_75_update_err,
+    alert_en_shadowed_76_update_err,
+    alert_en_shadowed_77_update_err,
+    alert_en_shadowed_78_update_err,
+    alert_en_shadowed_79_update_err,
+    alert_en_shadowed_80_update_err,
+    alert_en_shadowed_81_update_err,
+    alert_en_shadowed_82_update_err,
+    alert_en_shadowed_83_update_err,
+    alert_en_shadowed_84_update_err,
     alert_class_shadowed_0_update_err,
     alert_class_shadowed_1_update_err,
     alert_class_shadowed_2_update_err,
@@ -16495,6 +23803,42 @@ module alert_handler_reg_top (
     alert_class_shadowed_46_update_err,
     alert_class_shadowed_47_update_err,
     alert_class_shadowed_48_update_err,
+    alert_class_shadowed_49_update_err,
+    alert_class_shadowed_50_update_err,
+    alert_class_shadowed_51_update_err,
+    alert_class_shadowed_52_update_err,
+    alert_class_shadowed_53_update_err,
+    alert_class_shadowed_54_update_err,
+    alert_class_shadowed_55_update_err,
+    alert_class_shadowed_56_update_err,
+    alert_class_shadowed_57_update_err,
+    alert_class_shadowed_58_update_err,
+    alert_class_shadowed_59_update_err,
+    alert_class_shadowed_60_update_err,
+    alert_class_shadowed_61_update_err,
+    alert_class_shadowed_62_update_err,
+    alert_class_shadowed_63_update_err,
+    alert_class_shadowed_64_update_err,
+    alert_class_shadowed_65_update_err,
+    alert_class_shadowed_66_update_err,
+    alert_class_shadowed_67_update_err,
+    alert_class_shadowed_68_update_err,
+    alert_class_shadowed_69_update_err,
+    alert_class_shadowed_70_update_err,
+    alert_class_shadowed_71_update_err,
+    alert_class_shadowed_72_update_err,
+    alert_class_shadowed_73_update_err,
+    alert_class_shadowed_74_update_err,
+    alert_class_shadowed_75_update_err,
+    alert_class_shadowed_76_update_err,
+    alert_class_shadowed_77_update_err,
+    alert_class_shadowed_78_update_err,
+    alert_class_shadowed_79_update_err,
+    alert_class_shadowed_80_update_err,
+    alert_class_shadowed_81_update_err,
+    alert_class_shadowed_82_update_err,
+    alert_class_shadowed_83_update_err,
+    alert_class_shadowed_84_update_err,
     loc_alert_en_shadowed_0_update_err,
     loc_alert_en_shadowed_1_update_err,
     loc_alert_en_shadowed_2_update_err,

@@ -2311,18 +2311,54 @@ package lowrisc_top_peppermint_pkg;
 
   // Enumeration of soc incoming alerts
   typedef enum int unsigned {
-    TopPeppermintIncomingAlertSocIdSocFatalAlert0 = 0,
-    TopPeppermintIncomingAlertSocIdSocFatalAlert1 = 1,
-    TopPeppermintIncomingAlertSocIdSocFatalAlert2 = 2,
-    TopPeppermintIncomingAlertSocIdSocFatalAlert3 = 3,
+    TopPeppermintIncomingAlertSocIdSocRecovAlert0 = 0,
+    TopPeppermintIncomingAlertSocIdSocRecovAlert1 = 1,
+    TopPeppermintIncomingAlertSocIdSocRecovAlert2 = 2,
+    TopPeppermintIncomingAlertSocIdSocRecovAlert3 = 3,
+    TopPeppermintIncomingAlertSocIdSocRecovAlert4 = 4,
+    TopPeppermintIncomingAlertSocIdSocRecovAlert5 = 5,
+    TopPeppermintIncomingAlertSocIdSocRecovAlert6 = 6,
+    TopPeppermintIncomingAlertSocIdSocRecovAlert7 = 7,
+    TopPeppermintIncomingAlertSocIdSocRecovAlert8 = 8,
+    TopPeppermintIncomingAlertSocIdSocRecovAlert9 = 9,
+    TopPeppermintIncomingAlertSocIdSocRecovAlert10 = 10,
+    TopPeppermintIncomingAlertSocIdSocRecovAlert11 = 11,
+    TopPeppermintIncomingAlertSocIdSocRecovAlert12 = 12,
+    TopPeppermintIncomingAlertSocIdSocRecovAlert13 = 13,
+    TopPeppermintIncomingAlertSocIdSocRecovAlert14 = 14,
+    TopPeppermintIncomingAlertSocIdSocRecovAlert15 = 15,
+    TopPeppermintIncomingAlertSocIdSocRecovAlert16 = 16,
+    TopPeppermintIncomingAlertSocIdSocRecovAlert17 = 17,
+    TopPeppermintIncomingAlertSocIdSocRecovAlert18 = 18,
+    TopPeppermintIncomingAlertSocIdSocRecovAlert19 = 19,
+    TopPeppermintIncomingAlertSocIdSocRecovAlert20 = 20,
+    TopPeppermintIncomingAlertSocIdSocRecovAlert21 = 21,
+    TopPeppermintIncomingAlertSocIdSocRecovAlert22 = 22,
+    TopPeppermintIncomingAlertSocIdSocRecovAlert23 = 23,
+    TopPeppermintIncomingAlertSocIdSocRecovAlert24 = 24,
+    TopPeppermintIncomingAlertSocIdSocRecovAlert25 = 25,
+    TopPeppermintIncomingAlertSocIdSocRecovAlert26 = 26,
+    TopPeppermintIncomingAlertSocIdSocRecovAlert27 = 27,
+    TopPeppermintIncomingAlertSocIdSocRecovAlert28 = 28,
+    TopPeppermintIncomingAlertSocIdSocRecovAlert29 = 29,
+    TopPeppermintIncomingAlertSocIdSocRecovAlert30 = 30,
+    TopPeppermintIncomingAlertSocIdSocRecovAlert31 = 31,
+    TopPeppermintIncomingAlertSocIdSocFatalAlert0 = 32,
+    TopPeppermintIncomingAlertSocIdSocFatalAlert1 = 33,
+    TopPeppermintIncomingAlertSocIdSocFatalAlert2 = 34,
+    TopPeppermintIncomingAlertSocIdSocFatalAlert3 = 35,
+    TopPeppermintIncomingAlertSocIdSocFatalAlert4 = 36,
+    TopPeppermintIncomingAlertSocIdSocFatalAlert5 = 37,
+    TopPeppermintIncomingAlertSocIdSocFatalAlert6 = 38,
+    TopPeppermintIncomingAlertSocIdSocFatalAlert7 = 39,
     TopPeppermintIncomingAlertSocIdCount
   } incoming_alert_soc_id_e;
 
   // Number of soc incoming alerts
-  parameter int unsigned NIncomingAlertsSoc = 4;
+  parameter int unsigned NIncomingAlertsSoc = 40;
 
   // Number of LPGs for incoming alert group soc
-  parameter int unsigned NIncomingLpgsSoc = 1;
+  parameter int unsigned NIncomingLpgsSoc = 8;
 
   // Enumeration of interrupts
   typedef enum int unsigned {

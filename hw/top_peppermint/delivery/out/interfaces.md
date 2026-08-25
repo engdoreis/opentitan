@@ -233,16 +233,55 @@ For an initial functional integration, tie these ports off as follows:
 
 These signals are synchronous to `clk_aon_i` and are reset with `rst_aon_ni`.
 
-Peppermint is currently configured to support four alerts from the SoC (`NIncomingAlertsSoc = 4`) from one SoC low-power group (LPG; `NIncomingLpgsSoc = 1`).
-All incoming SoC alert channels are currently mapped to SoC LPG 0.
+Peppermint is currently configured to support 40 alerts from the SoC (`NIncomingAlertsSoc = 40`) in eight SoC low-power groups (LPGs; `NIncomingLpgsSoc = 8`).
 Different values for these internal parameters can be requested from the supplier.
 
 Each channel must be driven by a [`prim_alert_sender`](https://github.com/lowRISC/opentitan/blob/master/hw/ip/prim/rtl/prim_alert_sender.sv) in the SoC, instantiated with `AsyncOn = 1` to match Peppermint's alert receivers.
 The alert protocol requires every channel to answer pings within a certain number of clock cycles, to detect hangups.
 An unanswered ping will result in an internal alert.
 
+### Recoverable and fatal channels
+
+The 40 channels are reserved for two alert severities:
+
+| Index | Channel | Intended severity |
+|---|---|---|
+| `0` to `31` | `soc_recov_alert_0` to `soc_recov_alert_31` | recoverable |
+| `32` to `39` | `soc_fatal_alert_0` to `soc_fatal_alert_7` | fatal |
+
+Different severity distributions can be requested from the supplier.
+
+The severity of each channel must match the value of the `IsFatal` parameter of the `prim_alert_sender` in the SoC that drives the channel: `IsFatal = 0` for a recoverable channel, `IsFatal = 1` for a fatal one.
+A sender with `IsFatal = 1` latches its alert request until it is reset and keeps repeating the alert handshake, so the channel alerts continuously once its condition has occurred.
+
+Peppermint instantiates the same alert receiver on every channel, so the severity has no hardware effect inside Peppermint.
+It instead constrains how Peppermint's firmware needs to configure the alert handler for the channel:
+- The `ALERT_CAUSE` bit of a fatal channel cannot be cleared, because the sender re-asserts the alert immediately after each clear.
+- The accumulation counter of the class that a fatal channel is assigned to saturates, so an accumulation threshold has no effect for that channel.
+  Assign fatal channels to a class that escalates on the first alert.
+
+Driving a fatal alert source into a recoverable channel, or the reverse, is therefore an SoC integration error that Peppermint cannot detect.
+
+### Low-power groups
+
 The low-power group (LPG) inputs tell the alert handler when alert senders in LPG `i` are clock-gated (`incoming_lpg_cg_en_soc_i[i] = MuBi4True`) or held in reset (`incoming_lpg_rst_en_soc_i[i] = MuBi4True`) as they then cannot return a ping.
 If the alert senders in an LPG are permanently clocked and out of reset, tie these signals to `MuBi4False`.
+
+All senders in one LPG therefore have to share their clock-gating and reset conditions.
+The channels are distributed over the eight SoC LPGs as follows:
+
+| LPG | Indices | Channels |
+|---|---|---|
+| 0 | `0` to `3`, `32`, `33` | `soc_recov_alert_0` to `soc_recov_alert_3`, `soc_fatal_alert_0`, `soc_fatal_alert_1` |
+| 1 | `4` to `7`, `34`, `35` | `soc_recov_alert_4` to `soc_recov_alert_7`, `soc_fatal_alert_2`, `soc_fatal_alert_3` |
+| 2 | `8` to `11`, `36`, `37` | `soc_recov_alert_8` to `soc_recov_alert_11`, `soc_fatal_alert_4`, `soc_fatal_alert_5` |
+| 3 | `12` to `15`, `38`, `39` | `soc_recov_alert_12` to `soc_recov_alert_15`, `soc_fatal_alert_6`, `soc_fatal_alert_7` |
+| 4 | `16` to `19` | `soc_recov_alert_16` to `soc_recov_alert_19` |
+| 5 | `20` to `23` | `soc_recov_alert_20` to `soc_recov_alert_23` |
+| 6 | `24` to `27` | `soc_recov_alert_24` to `soc_recov_alert_27` |
+| 7 | `28` to `31` | `soc_recov_alert_28` to `soc_recov_alert_31` |
+
+A different LPG configuration (different number of LPGs, and different mapping between alert channels and LPGs) can be requested from the supplier.
 
 
 ## Incoming interrupts from the SoC
