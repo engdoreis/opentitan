@@ -1,4 +1,4 @@
-# Peppermint Interfaces (Release Peppermint-1.0-M1-RC4)
+# Peppermint Interfaces (Release Peppermint-1.0-M1-RC5)
 
 This document describes the parameters and ports of `lowrisc_top_peppermint_wrapper`, which is Peppermint's intended integration boundary.
 
