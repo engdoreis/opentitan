@@ -26,6 +26,7 @@ module top_peppermint #(
   parameter int SramCtrlRetNumRamInst = 1,
   parameter bit SramCtrlRetInstrExec = 0,
   parameter int SramCtrlRetNumPrinceRoundsHalf = 3,
+  parameter int SramCtrlRetNumAddrScrRounds = 2,
   parameter bit SramCtrlRetEccCorrection = 0,
   // parameters for otp_macro
   parameter OtpMacroMemInitFile = "",
@@ -61,13 +62,12 @@ module top_peppermint #(
   // parameters for otbn
   parameter bit OtbnStub = 0,
   parameter otbn_pkg::regfile_e OtbnRegFile = otbn_pkg::RegFileFF,
-  parameter bit SecOtbnMuteUrnd = 0,
   parameter bit SecOtbnFixMaiOpSeq = 0,
+  parameter bit SecOtbnFixMacOpSeq = 0,
   parameter bit SecOtbnSkipUrndReseedAtStart = 0,
   parameter bit OtbnFeatStubMai = 0,
   // parameters for keymgr_dpe
   parameter bit KeymgrDpeKmacEnMasking = 1,
-  parameter int KeymgrDpeNumRomDigestInputs = 1,
   // parameters for csrng
   parameter aes_pkg::sbox_impl_e CsrngSBoxImpl = aes_pkg::SBoxImplCanright,
   // parameters for entropy_src
@@ -80,6 +80,7 @@ module top_peppermint #(
   parameter int SramCtrlMainNumRamInst = 1,
   parameter bit SramCtrlMainInstrExec = 1,
   parameter int SramCtrlMainNumPrinceRoundsHalf = 2,
+  parameter int SramCtrlMainNumAddrScrRounds = 2,
   parameter bit SramCtrlMainEccCorrection = 0,
   // parameters for rom_ctrl
   parameter RomCtrlBootRomInitFile = "",
@@ -277,12 +278,11 @@ module top_peppermint #(
   .KmacAppCfg(KmacAppCfg),
   .OtbnStub(OtbnStub),
   .OtbnRegFile(OtbnRegFile),
-  .SecOtbnMuteUrnd(SecOtbnMuteUrnd),
   .SecOtbnFixMaiOpSeq(SecOtbnFixMaiOpSeq),
+  .SecOtbnFixMacOpSeq(SecOtbnFixMacOpSeq),
   .SecOtbnSkipUrndReseedAtStart(SecOtbnSkipUrndReseedAtStart),
   .OtbnFeatStubMai(OtbnFeatStubMai),
   .KeymgrDpeKmacEnMasking(KeymgrDpeKmacEnMasking),
-  .KeymgrDpeNumRomDigestInputs(KeymgrDpeNumRomDigestInputs),
   .CsrngSBoxImpl(CsrngSBoxImpl),
   .EntropySrcRngBusWidth(EntropySrcRngBusWidth),
   .EntropySrcRngBusBitSelWidth(EntropySrcRngBusBitSelWidth),
@@ -292,6 +292,7 @@ module top_peppermint #(
   .SramCtrlMainNumRamInst(SramCtrlMainNumRamInst),
   .SramCtrlMainInstrExec(SramCtrlMainInstrExec),
   .SramCtrlMainNumPrinceRoundsHalf(SramCtrlMainNumPrinceRoundsHalf),
+  .SramCtrlMainNumAddrScrRounds(SramCtrlMainNumAddrScrRounds),
   .SramCtrlMainEccCorrection(SramCtrlMainEccCorrection),
   .RomCtrlBootRomInitFile(RomCtrlBootRomInitFile),
   .SecRomCtrlDisableScrambling(SecRomCtrlDisableScrambling),
@@ -433,6 +434,7 @@ module top_peppermint #(
   .SramCtrlRetNumRamInst(SramCtrlRetNumRamInst),
   .SramCtrlRetInstrExec(SramCtrlRetInstrExec),
   .SramCtrlRetNumPrinceRoundsHalf(SramCtrlRetNumPrinceRoundsHalf),
+  .SramCtrlRetNumAddrScrRounds(SramCtrlRetNumAddrScrRounds),
   .SramCtrlRetEccCorrection(SramCtrlRetEccCorrection)
   ) peppermint_pd_aon (
     .rst_aon_ni,

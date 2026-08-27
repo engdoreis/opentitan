@@ -1330,7 +1330,12 @@
       [
         {
           name: MemSizeRam
-          desc: Memory size of the RAM (in bytes).
+          desc:
+            '''
+            Memory size of the RAM (in bytes).
+            If address scrambling is enabled, this must be a power of 2 or a multiple of 16 KiB.
+            For details, check the SRAM scrambling primitive (prim_ram_1p_scr).
+            '''
           type: int
           name_top: MemSizeSramCtrlRetRam
           default: 8192
@@ -1370,6 +1375,15 @@
           local: "false"
           expose: "true"
           name_top: SramCtrlRetNumPrinceRoundsHalf
+        }
+        {
+          name: NumAddrScrRounds
+          desc: Number of address scrambling rounds. 0 disables address scrambling.
+          type: int
+          default: "2"
+          local: "false"
+          expose: "true"
+          name_top: SramCtrlRetNumAddrScrRounds
         }
         {
           name: Outstanding
@@ -3694,6 +3708,16 @@
           index: -1
         }
         {
+          name: keymgr_key
+          struct: hw_key_req
+          package: keymgr_pkg
+          type: uni
+          act: rcv
+          width: 1
+          inst_name: hmac
+          index: -1
+        }
+        {
           name: tl
           struct: tl
           package: tlul_pkg
@@ -4012,20 +4036,6 @@
           name_top: OtbnRegFile
         }
         {
-          name: SecMuteUrnd
-          desc:
-            '''
-            If enabled (1), URND is advanced only when data is needed.
-            Disabled (0) by default.
-            Useful for SCA measurements only.
-            '''
-          type: bit
-          default: "0"
-          local: "false"
-          expose: "true"
-          name_top: SecOtbnMuteUrnd
-        }
-        {
           name: SecFixMaiOpSeq
           desc:
             '''
@@ -4038,6 +4048,20 @@
           local: "false"
           expose: "true"
           name_top: SecOtbnFixMaiOpSeq
+        }
+        {
+          name: SecFixMacOpSeq
+          desc:
+            '''
+            If enabled (1), the BN MAC will not randomize the order in which the vector elements are processed for vectorized multiplication instructions.
+            Disabled (0) by default.
+            Useful for SCA measurements only.
+            '''
+          type: bit
+          default: "0"
+          local: "false"
+          expose: "true"
+          name_top: SecOtbnFixMacOpSeq
         }
         {
           name: SecSkipUrndReseedAtStart
@@ -4271,11 +4295,29 @@
           name_top: KeymgrDpeKmacEnMasking
         }
         {
+          name: NumInstHwSlot
+          desc: Number of instantiated HW slots
+          type: int
+          default: "4"
+          local: "true"
+          expose: "true"
+          name_top: KeymgrDpeNumInstHwSlot
+        }
+        {
+          name: NumBootStages
+          desc: Number of available boot stage
+          type: int
+          default: "3"
+          local: "true"
+          expose: "true"
+          name_top: KeymgrDpeNumBootStages
+        }
+        {
           name: NumRomDigestInputs
           desc: Number of digest inputs from ROM_CTRL
           type: int
           default: 1
-          local: "false"
+          local: "true"
           expose: "true"
           name_top: KeymgrDpeNumRomDigestInputs
         }
@@ -4321,6 +4363,16 @@
           end_idx: -1
           top_type: broadcast
           top_signame: keymgr_dpe_kmac_key
+          index: -1
+        }
+        {
+          name: hmac_key
+          struct: hw_key_req
+          package: keymgr_pkg
+          type: uni
+          act: req
+          width: 1
+          inst_name: keymgr_dpe
           index: -1
         }
         {
@@ -4439,8 +4491,8 @@
             desc: Number of digest inputs from ROM_CTRL
             param_type: int
             unpacked_dimensions: null
-            default: 2
-            local: false
+            default: 1
+            local: true
             expose: true
             name_top: KeymgrDpeNumRomDigestInputs
           }
@@ -5208,7 +5260,12 @@
       [
         {
           name: MemSizeRam
-          desc: Memory size of the RAM (in bytes).
+          desc:
+            '''
+            Memory size of the RAM (in bytes).
+            If address scrambling is enabled, this must be a power of 2 or a multiple of 16 KiB.
+            For details, check the SRAM scrambling primitive (prim_ram_1p_scr).
+            '''
           type: int
           name_top: MemSizeSramCtrlMainRam
           default: 196608
@@ -5248,6 +5305,15 @@
           local: "false"
           expose: "true"
           name_top: SramCtrlMainNumPrinceRoundsHalf
+        }
+        {
+          name: NumAddrScrRounds
+          desc: Number of address scrambling rounds. 0 disables address scrambling.
+          type: int
+          default: "2"
+          local: "false"
+          expose: "true"
+          name_top: SramCtrlMainNumAddrScrRounds
         }
         {
           name: Outstanding
@@ -14009,6 +14075,16 @@
         index: -1
       }
       {
+        name: keymgr_key
+        struct: hw_key_req
+        package: keymgr_pkg
+        type: uni
+        act: rcv
+        width: 1
+        inst_name: hmac
+        index: -1
+      }
+      {
         name: tl
         struct: tl
         package: tlul_pkg
@@ -14311,6 +14387,16 @@
         index: -1
       }
       {
+        name: hmac_key
+        struct: hw_key_req
+        package: keymgr_pkg
+        type: uni
+        act: req
+        width: 1
+        inst_name: keymgr_dpe
+        index: -1
+      }
+      {
         name: otbn_key
         struct: otbn_key_req
         package: keymgr_pkg
@@ -14426,8 +14512,8 @@
           desc: Number of digest inputs from ROM_CTRL
           param_type: int
           unpacked_dimensions: null
-          default: 2
-          local: false
+          default: 1
+          local: true
           expose: true
           name_top: KeymgrDpeNumRomDigestInputs
         }
@@ -18322,8 +18408,8 @@
           desc: Number of digest inputs from ROM_CTRL
           param_type: int
           unpacked_dimensions: null
-          default: 2
-          local: false
+          default: 1
+          local: true
           expose: true
           name_top: KeymgrDpeNumRomDigestInputs
         }

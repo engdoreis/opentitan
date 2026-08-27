@@ -1926,5 +1926,6 @@
     topname: peppermint
     uniquified_modules: {}
     module_instance_name: otp_ctrl
+    num_sram_key_req_slots: 4
   }
 }

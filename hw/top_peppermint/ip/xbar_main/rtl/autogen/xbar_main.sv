@@ -924,8 +924,9 @@ module xbar_main (
                   ~(ADDR_MASK_ROM_CTRL__REGS)) == ADDR_SPACE_ROM_CTRL__REGS) begin
       dev_sel_s1n_37 = 3'd2;
 
-    end else if (((tl_s1n_37_us_h2d.a_address < (ADDR_SPACE_SRAM_CTRL_MAIN__RAM + ADDR_SIZE_SRAM_CTRL_MAIN__RAM)) &&
-       (tl_s1n_37_us_h2d.a_address >= ADDR_SPACE_SRAM_CTRL_MAIN__RAM))) begin
+    end else if (
+      (tl_s1n_37_us_h2d.a_address < (ADDR_SPACE_SRAM_CTRL_MAIN__RAM + ADDR_SIZE_SRAM_CTRL_MAIN__RAM)) &&
+      (tl_s1n_37_us_h2d.a_address >= ADDR_SPACE_SRAM_CTRL_MAIN__RAM)) begin
       dev_sel_s1n_37 = 3'd3;
 end
   end
@@ -953,8 +954,9 @@ end
                   ~(ADDR_MASK_SRAM_CTRL_MAIN__REGS)) == ADDR_SPACE_SRAM_CTRL_MAIN__REGS) begin
       dev_sel_s1n_42 = 5'd4;
 
-    end else if (((tl_s1n_42_us_h2d.a_address < (ADDR_SPACE_SRAM_CTRL_MAIN__RAM + ADDR_SIZE_SRAM_CTRL_MAIN__RAM)) &&
-       (tl_s1n_42_us_h2d.a_address >= ADDR_SPACE_SRAM_CTRL_MAIN__RAM))) begin
+    end else if (
+      (tl_s1n_42_us_h2d.a_address < (ADDR_SPACE_SRAM_CTRL_MAIN__RAM + ADDR_SIZE_SRAM_CTRL_MAIN__RAM)) &&
+      (tl_s1n_42_us_h2d.a_address >= ADDR_SPACE_SRAM_CTRL_MAIN__RAM)) begin
       dev_sel_s1n_42 = 5'd5;
 
     end else if ((tl_s1n_42_us_h2d.a_address &
@@ -1078,8 +1080,9 @@ end
                   ~(ADDR_MASK_SRAM_CTRL_MAIN__REGS)) == ADDR_SPACE_SRAM_CTRL_MAIN__REGS) begin
       dev_sel_s1n_76 = 5'd3;
 
-    end else if (((tl_s1n_76_us_h2d.a_address < (ADDR_SPACE_SRAM_CTRL_MAIN__RAM + ADDR_SIZE_SRAM_CTRL_MAIN__RAM)) &&
-       (tl_s1n_76_us_h2d.a_address >= ADDR_SPACE_SRAM_CTRL_MAIN__RAM))) begin
+    end else if (
+      (tl_s1n_76_us_h2d.a_address < (ADDR_SPACE_SRAM_CTRL_MAIN__RAM + ADDR_SIZE_SRAM_CTRL_MAIN__RAM)) &&
+      (tl_s1n_76_us_h2d.a_address >= ADDR_SPACE_SRAM_CTRL_MAIN__RAM)) begin
       dev_sel_s1n_76 = 5'd4;
 
     end else if ((tl_s1n_76_us_h2d.a_address &
@@ -1183,8 +1186,9 @@ end
   always_comb begin
     // default steering to generate error response if address is not within the range
     dev_sel_s1n_77 = 2'd3;
-    if (((tl_s1n_77_us_h2d.a_address < (ADDR_SPACE_SRAM_CTRL_MAIN__RAM + ADDR_SIZE_SRAM_CTRL_MAIN__RAM)) &&
-       (tl_s1n_77_us_h2d.a_address >= ADDR_SPACE_SRAM_CTRL_MAIN__RAM))) begin
+    if (
+      (tl_s1n_77_us_h2d.a_address < (ADDR_SPACE_SRAM_CTRL_MAIN__RAM + ADDR_SIZE_SRAM_CTRL_MAIN__RAM)) &&
+      (tl_s1n_77_us_h2d.a_address >= ADDR_SPACE_SRAM_CTRL_MAIN__RAM)) begin
       dev_sel_s1n_77 = 2'd0;
 
     end else if ((tl_s1n_77_us_h2d.a_address &
@@ -1200,8 +1204,9 @@ end
   always_comb begin
     // default steering to generate error response if address is not within the range
     dev_sel_s1n_78 = 1'd1;
-    if (((tl_s1n_78_us_h2d.a_address < (ADDR_SPACE_SRAM_CTRL_MAIN__RAM + ADDR_SIZE_SRAM_CTRL_MAIN__RAM)) &&
-       (tl_s1n_78_us_h2d.a_address >= ADDR_SPACE_SRAM_CTRL_MAIN__RAM))) begin
+    if (
+      (tl_s1n_78_us_h2d.a_address < (ADDR_SPACE_SRAM_CTRL_MAIN__RAM + ADDR_SIZE_SRAM_CTRL_MAIN__RAM)) &&
+      (tl_s1n_78_us_h2d.a_address >= ADDR_SPACE_SRAM_CTRL_MAIN__RAM)) begin
       dev_sel_s1n_78 = 1'd0;
 end
   end
@@ -1209,8 +1214,9 @@ end
   always_comb begin
     // default steering to generate error response if address is not within the range
     dev_sel_s1n_79 = 1'd1;
-    if (((tl_s1n_79_us_h2d.a_address < (ADDR_SPACE_SRAM_CTRL_MAIN__RAM + ADDR_SIZE_SRAM_CTRL_MAIN__RAM)) &&
-       (tl_s1n_79_us_h2d.a_address >= ADDR_SPACE_SRAM_CTRL_MAIN__RAM))) begin
+    if (
+      (tl_s1n_79_us_h2d.a_address < (ADDR_SPACE_SRAM_CTRL_MAIN__RAM + ADDR_SIZE_SRAM_CTRL_MAIN__RAM)) &&
+      (tl_s1n_79_us_h2d.a_address >= ADDR_SPACE_SRAM_CTRL_MAIN__RAM)) begin
       dev_sel_s1n_79 = 1'd0;
 end
   end

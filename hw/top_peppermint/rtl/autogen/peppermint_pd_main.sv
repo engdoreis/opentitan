@@ -46,13 +46,12 @@ module peppermint_pd_main #(
   // parameters for otbn
   parameter bit OtbnStub = 0,
   parameter otbn_pkg::regfile_e OtbnRegFile = otbn_pkg::RegFileFF,
-  parameter bit SecOtbnMuteUrnd = 0,
   parameter bit SecOtbnFixMaiOpSeq = 0,
+  parameter bit SecOtbnFixMacOpSeq = 0,
   parameter bit SecOtbnSkipUrndReseedAtStart = 0,
   parameter bit OtbnFeatStubMai = 0,
   // parameters for keymgr_dpe
   parameter bit KeymgrDpeKmacEnMasking = 1,
-  parameter int KeymgrDpeNumRomDigestInputs = 1,
   // parameters for csrng
   parameter aes_pkg::sbox_impl_e CsrngSBoxImpl = aes_pkg::SBoxImplCanright,
   // parameters for entropy_src
@@ -65,6 +64,7 @@ module peppermint_pd_main #(
   parameter int SramCtrlMainNumRamInst = 1,
   parameter bit SramCtrlMainInstrExec = 1,
   parameter int SramCtrlMainNumPrinceRoundsHalf = 2,
+  parameter int SramCtrlMainNumAddrScrRounds = 2,
   parameter bit SramCtrlMainEccCorrection = 0,
   // parameters for rom_ctrl
   parameter RomCtrlBootRomInitFile = "",
@@ -206,6 +206,10 @@ module peppermint_pd_main #(
   // Local Parameters
   // local parameters for lc_ctrl
   localparam int LcCtrlNumRmaAckSigs = 1;
+  // local parameters for keymgr_dpe
+  localparam int KeymgrDpeNumInstHwSlot = 4;
+  localparam int KeymgrDpeNumBootStages = 3;
+  localparam int KeymgrDpeNumRomDigestInputs = 1;
   // local parameters for entropy_src
   localparam int EntropySrcEsFifoDepth = 3;
   localparam int unsigned EntropySrcDistrFifoDepth = 3;
@@ -814,6 +818,7 @@ module peppermint_pd_main #(
 
     // Inter-module signals
     .idle_o(),
+    .keymgr_key_i(keymgr_pkg::HW_KEY_REQ_DEFAULT),
     .tl_i(hmac_tl_req),
     .tl_o(hmac_tl_rsp)
   );
@@ -868,8 +873,8 @@ module peppermint_pd_main #(
     .Stub(OtbnStub),
     .RegFile(OtbnRegFile),
     .RndCnstUrndPrngSeed(RndCnstOtbnUrndPrngSeed),
-    .SecMuteUrnd(SecOtbnMuteUrnd),
     .SecFixMaiOpSeq(SecOtbnFixMaiOpSeq),
+    .SecFixMacOpSeq(SecOtbnFixMacOpSeq),
     .SecSkipUrndReseedAtStart(SecOtbnSkipUrndReseedAtStart),
     .FeatStubMai(OtbnFeatStubMai),
     .RndCnstBnMacUrndPerm(RndCnstOtbnBnMacUrndPerm),
@@ -928,6 +933,8 @@ module peppermint_pd_main #(
     .RndCnstKmacSeed(RndCnstKeymgrDpeKmacSeed),
     .RndCnstOtbnSeed(RndCnstKeymgrDpeOtbnSeed),
     .RndCnstNoneSeed(RndCnstKeymgrDpeNoneSeed),
+    .NumInstHwSlot(KeymgrDpeNumInstHwSlot),
+    .NumBootStages(KeymgrDpeNumBootStages),
     .NumRomDigestInputs(KeymgrDpeNumRomDigestInputs)
   ) u_keymgr_dpe (
     // Clock and reset connections
@@ -950,6 +957,7 @@ module peppermint_pd_main #(
     .edn_i(edn0_edn_rsp[0]),
     .aes_key_o(keymgr_dpe_aes_key),
     .kmac_key_o(keymgr_dpe_kmac_key),
+    .hmac_key_o(),
     .otbn_key_o(keymgr_dpe_otbn_key),
     .kmac_data_o(kmac_app_req[0]),
     .kmac_data_i(kmac_app_rsp[0]),
@@ -1108,6 +1116,7 @@ module peppermint_pd_main #(
     .NumRamInst(SramCtrlMainNumRamInst),
     .InstrExec(SramCtrlMainInstrExec),
     .NumPrinceRoundsHalf(SramCtrlMainNumPrinceRoundsHalf),
+    .NumAddrScrRounds(SramCtrlMainNumAddrScrRounds),
     .Outstanding(SramCtrlMainOutstanding),
     .EccCorrection(SramCtrlMainEccCorrection)
   ) u_sram_ctrl_main (
@@ -1299,8 +1308,8 @@ module peppermint_pd_main #(
     .AlertSkewCycles(top_pkg::AlertSkewCycles),
     .RndCnstLfsrSeed(RndCnstRvCoreIbexLfsrSeed),
     .RndCnstLfsrPerm(RndCnstRvCoreIbexLfsrPerm),
-    .RndCnstIbexKeyDefault(RndCnstRvCoreIbexIbexKeyDefault),
-    .RndCnstIbexNonceDefault(RndCnstRvCoreIbexIbexNonceDefault),
+    .RndCnstIbexKey(RndCnstRvCoreIbexIbexKey),
+    .RndCnstIbexNonce(RndCnstRvCoreIbexIbexNonce),
     .NEscalationSeverities(AlertHandlerEscNumSeverities),
     .WidthPingCounter(AlertHandlerEscPingCountWidth),
     .PMPEnable(RvCoreIbexPMPEnable),

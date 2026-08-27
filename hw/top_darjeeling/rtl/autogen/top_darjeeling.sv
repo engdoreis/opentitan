@@ -637,10 +637,10 @@ module top_darjeeling #(
   .SramCtrlRetNumRamInst(SramCtrlRetNumRamInst),
   .SramCtrlRetInstrExec(SramCtrlRetInstrExec),
   .SramCtrlRetNumPrinceRoundsHalf(SramCtrlRetNumPrinceRoundsHalf),
+  .SramCtrlRetNumAddrScrRounds(SramCtrlRetNumAddrScrRounds),
+  .SramCtrlRetEccCorrection(SramCtrlRetEccCorrection),
   .AlertHandlerEscNumSeverities(AlertHandlerEscNumSeverities),
   .AlertHandlerEscPingCountWidth(AlertHandlerEscPingCountWidth)
-  .SramCtrlRetNumAddrScrRounds(SramCtrlRetNumAddrScrRounds),
-  .SramCtrlRetEccCorrection(SramCtrlRetEccCorrection)
   ) darjeeling_pd_aon (
     // All externally supplied clocks
     .clk_main_i(ast_base_clks_i.clk_sys),
