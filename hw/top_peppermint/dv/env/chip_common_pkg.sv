@@ -8,9 +8,6 @@
 // need, and carry no dependency on UVM. Keeping them out of chip_env_pkg lets tb.sv import them
 // without pulling in the environment classes, and gives the agents and models being built a single
 // place to agree with the testbench on widths and addresses.
-//
-// TODO: the environment should be told these by tb.sv through uvm_config_db rather than importing
-//   them, which also moves this file to tb/ (peppermint-embargoed#45).
 package chip_common_pkg;
 
   import dv_utils_pkg::uint;
