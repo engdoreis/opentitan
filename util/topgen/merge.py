@@ -1482,8 +1482,8 @@ def commit_alert_connections(top: ConfigT,
                 lo_async = outgoing_alert_idx[outgoing_group]
                 lo = alert_handler_info[outgoing_group]["count_pd"][m_domain]
                 if w > 1:
-                    slice = f"{lo+w-1}:{lo}"
-                    slice_async = f"{lo_async+w-1}:{lo_async}"
+                    slice = f"{lo + w - 1}:{lo}"
+                    slice_async = f"{lo_async + w - 1}:{lo_async}"
                 else:
                     slice = lo
                     slice_async = lo_async
@@ -1513,8 +1513,8 @@ def commit_alert_connections(top: ConfigT,
                     lo = alert_idx[handler]
 
                 if w > 1:
-                    slice = f"{lo+w-1}:{lo}"
-                    slice_async = f"{lo_async+w-1}:{lo_async}"
+                    slice = f"{lo + w - 1}:{lo}"
+                    slice_async = f"{lo_async + w - 1}:{lo_async}"
                 else:
                     slice = lo
                     slice_async = lo_async
@@ -1554,7 +1554,7 @@ def commit_alert_connections(top: ConfigT,
         w = len(alerts)
         alert_tx, alert_rx = alert_handler_signals(handler)
         lo = alert_idx[handler]
-        slice = f"{lo+w-1}:{lo}"
+        slice = f"{lo + w - 1}:{lo}"
         alert_tx_expr = f"{alert_tx}[{slice}]"
         alert_rx_expr = f"{alert_rx}[{slice}]"
 
