@@ -8,6 +8,7 @@
 
 // Copyright lowRISC contributors.
 // Copyright 2017 ETH Zurich and University of Bologna, see also CREDITS.md.
+// Copyright Microsoft Corporation
 // Licensed under the Apache License, Version 2.0, see LICENSE for details.
 // SPDX-License-Identifier: Apache-2.0
 
@@ -39,6 +40,11 @@ package lowrisc_ibex_pkg;
   /////////////////////
   // Parameter Enums //
   /////////////////////
+
+  typedef enum integer {
+    BaseIsaRV32I          = 0, // only RV32I
+    BaseIsaRV32IorCHERIoT = 1  // dual base ISA: RV32I/CHERIoT runtime switchable
+  } base_isa_e;
 
   typedef enum integer {
     RegFileFF    = 0,
@@ -82,7 +88,9 @@ package lowrisc_ibex_pkg;
     OPCODE_BRANCH   = 7'h63,
     OPCODE_JALR     = 7'h67,
     OPCODE_JAL      = 7'h6f,
-    OPCODE_SYSTEM   = 7'h73
+    OPCODE_SYSTEM   = 7'h73,
+    OPCODE_CHERI    = 7'h5b,
+    OPCODE_AUICGP   = 7'h7b
   } opcode_e;
 
 
@@ -318,8 +326,9 @@ package lowrisc_ibex_pkg;
   // Compressed instruction expansion
   typedef enum logic [1:0] {
     INSTR_NOT_EXPANDED,
-    INSTR_EXPANDED,
-    INSTR_EXPANDED_LAST
+    INSTR_EXPANDED,        // Executing micro-ops of an expanded instruction
+    INSTR_EXPANDED_COMMIT, // Micro-ops need to be committed atomically with successor micro-ops
+    INSTR_EXPANDED_LAST    // Last micro-op of an expanded instruction
   } instr_exp_e;
 
   // Exception PC mux selection
@@ -362,14 +371,20 @@ package lowrisc_ibex_pkg;
     '{irq_ext: 1'b0, irq_int: 1'b0, lower_cause: 5'd02};
   localparam exc_cause_t ExcCauseBreakpoint =
     '{irq_ext: 1'b0, irq_int: 1'b0, lower_cause: 5'd03};
+  localparam exc_cause_t ExcCauseLoadAddrMisaligned  =
+    '{irq_ext: 1'b0, irq_int: 1'b0, lower_cause: 5'd04};
   localparam exc_cause_t ExcCauseLoadAccessFault  =
     '{irq_ext: 1'b0, irq_int: 1'b0, lower_cause: 5'd05};
+  localparam exc_cause_t ExcCauseStoreAddrMisaligned  =
+    '{irq_ext: 1'b0, irq_int: 1'b0, lower_cause: 5'd06};
   localparam exc_cause_t ExcCauseStoreAccessFault =
     '{irq_ext: 1'b0, irq_int: 1'b0, lower_cause: 5'd07};
   localparam exc_cause_t ExcCauseEcallUMode =
     '{irq_ext: 1'b0, irq_int: 1'b0, lower_cause: 5'd08};
   localparam exc_cause_t ExcCauseEcallMMode =
     '{irq_ext: 1'b0, irq_int: 1'b0, lower_cause: 5'd11};
+  localparam exc_cause_t ExcCauseCheriFault =
+    '{irq_ext: 1'b0, irq_int: 1'b0, lower_cause: 5'd28};
 
   // Internal NMI cause
   typedef enum logic [4:0] {
@@ -616,6 +631,9 @@ package lowrisc_ibex_pkg;
     CSR_MHPMCOUNTER29H = 12'hB9D,
     CSR_MHPMCOUNTER30H = 12'hB9E,
     CSR_MHPMCOUNTER31H = 12'hB9F,
+    CSR_MSHWM          = 12'hBC1,
+    CSR_MSHWMB         = 12'hBC2,
+    CSR_CDBG_CTRL      = 12'hBC4,
     // Unprivileged Counter/Timers (readable from U-mode subject to mcounteren)
     CSR_CYCLE          = 12'hC00,
     CSR_INSTRET        = 12'hC02,
@@ -715,6 +733,8 @@ package lowrisc_ibex_pkg;
   // RISC-V Foundation. Note this is allocated specifically to Ibex, should significant changes be
   // made a different architecture ID should be supplied.
   localparam logic [31:0] CSR_MARCHID_VALUE = {1'b0, 31'd22};
+  localparam logic [31:0] CSR_MARCHID_CHERIOT_VALUE = 32'hce1;
+
 
   // Machine Configuration Pointer
   // 0 indicates the configuration data structure does not exist. Ibex implementers may wish to
@@ -796,6 +816,980 @@ package lowrisc_ibex_pkg;
   };
 
   parameter pmp_mseccfg_t PmpMseccfgRst = '{rlb : 1'b0, mmwp: 1'b0, mml: 1'b0};
+
+  //////////////
+  // LSU      //
+  //////////////
+
+  typedef enum logic [3:0]  {
+    IDLE, WAIT_GNT_MIS, WAIT_RVALID_MIS, WAIT_GNT,
+    WAIT_RVALID_MIS_GNTS_DONE,
+    CTX_WAIT_GNT1, CTX_WAIT_GNT2, CTX_WAIT_RESP
+  } ls_fsm_e;
+
+  typedef enum logic [2:0] {CRX_IDLE, CRX_WAIT_RESP1, CRX_WAIT_RESP2} cap_rx_fsm_t;
+
+endpackage
+// Copyright lowRISC contributors.
+// Copyright Microsoft Corporation
+// Licensed under the Apache License, Version 2.0, see LICENSE for details.
+// SPDX-License-Identifier: Apache-2.0
+
+// CHERIoT types, constants, and functions shared across Ibex.
+
+package lowrisc_ibex_cheriot_pkg;
+
+  // Capability width parameters (spec v1.0, chapter 7.13)
+  //
+  //                       31 30       25 24   22 21  18 17             9 8              0
+  // +-----------+       +---+-----------+-------+------+----------------+----------------+
+  // | valid tag |       | R |  cperms   | otype | cexp |    top (T)     |    base (B)    |
+  // +-----------+       +---+-----------+-------+------+----------------+----------------+
+  //      [1]             [1]      [6]      [3]    [4]         [9]               [9]
+  //
+  // Naming convention: C* prefix for compressed/stored form. No prefix for the expanded/working
+  // form only used inside the core
+  parameter int unsigned ADDR_W    = 32;
+  parameter int unsigned CBOUND_W  = 9;   // 9-bit compressed bound (T or B)
+  parameter int unsigned CEXP_W    = 4;   // 4-bit compressed exponent
+  parameter int unsigned EXP_W     = 5;   // 5-bit expanded exponent
+  parameter int unsigned OTYPE_W   = 3;   // 3-bit object type (sealing)
+  parameter int unsigned CPERMS_W  = 6;   // 6-bit compressed permissions
+  parameter int unsigned PERMS_W   = 12;  // 12-bit expanded permissions
+  // Width of the compressed capability type (cap_t) as a flat vector used for ECC protection.
+  parameter int unsigned REGCAP_W = 35;
+
+  // Capability typedefs
+  typedef logic [CBOUND_W-1:0] cbound_t;  // 9-bit compressed bound (T or B)
+  typedef logic [CEXP_W-1:0]   cexp_t;    // 4-bit compressed exponent
+  typedef logic [EXP_W-1:0]    exp_t;     // 5-bit expanded exponent
+  typedef logic [OTYPE_W-1:0]  otype_t;   // 3-bit object type (sealing)
+  typedef logic [CPERMS_W-1:0] cperms_t;  // 6-bit compressed permissions
+  typedef logic [1:0]          cap_cor_t; // 2-bit correction: [1]=top_hi^addr_hi, [0]=addr_hi
+
+  // Expanded 12-bit permissions (spec v1.0, chapter 7.13.1)
+  typedef struct packed {
+    logic U0;  // [11] user permission (software-defined)
+    logic SE;  // [10] seal
+    logic US;  // [9]  unseal
+    logic EX;  // [8]  execute
+    logic SR;  // [7]  access system registers
+    logic MC;  // [6]  load/store capability
+    logic LD;  // [5]  load
+    logic SL;  // [4]  store local capability
+    logic LM;  // [3]  load mutable
+    logic SD;  // [2]  store
+    logic LG;  // [1]  load global
+    logic GL;  // [0]  global
+  } perms_t;
+
+  // Sealing types (spec v1.0, chapter 7.13.2)
+  parameter otype_t OTYPE_UNSEALED        = 3'd0; // unsealed
+  parameter otype_t OTYPE_SENTRY_II_FWD   = 3'd1; // interrupt-inheriting forward sentry
+  parameter otype_t OTYPE_SENTRY_ID_FWD   = 3'd2; // interrupt disabling forward sentry
+  parameter otype_t OTYPE_SENTRY_IE_FWD   = 3'd3; // interrupt enabling forward sentry
+  parameter otype_t OTYPE_SENTRY_ID_BKWD  = 3'd4; // interrupt disabling backward sentry
+  parameter otype_t OTYPE_SENTRY_IE_BKWD  = 3'd5; // interrupt enabling backward sentry
+
+  // Exponent (spec v1.0, chapter 7.13.3)
+  parameter cexp_t MAXCEXP = 4'd15; // compressed maximum exponent encoding
+  parameter exp_t  MAXEXP  = 5'd24; // expanded maximum exponent
+
+  // -----------------------------------------------------------------------------------------------
+  // Capability types
+  // -----------------------------------------------------------------------------------------------
+  // The CHERIoT ISA defines the capability format (spec v1.0, chapter 7.13, Figure 7.2).
+  // Two types are used in the RTL:
+  //
+  //  cap_t          - The primary compressed form defined by the spec and used everywhere a
+  //                   capability is stored (register file, CSR registers, load/store ports,
+  //                   ECC/lockstep vectors). Its lower 33 bits (cap[32:0]) are a 1:1 match with the
+  //                   spec so writing to memory is a simple truncation and a direct cast.
+  //                   Bits [34:33] store the correction factors that are not in the spec but kept
+  //                   in the register file to save recomputation costs. See the
+  //                   `cheriot_compute_corrections` function below.
+  //
+  //  decoded_cap_t  - The uncompressed capability type used inside the core. Created by
+  //                   `cheriot_decode_cap` and `cheriot_encode_cap`. Its lower 35 bits are the same
+  //                   as cap_t so encode is simpley a cast. The upper bits add the decompressed
+  //                   bounds and permissions.
+  // -----------------------------------------------------------------------------------------------
+
+  // Compressed capability + correction factors
+  typedef struct packed {
+    cap_cor_t cap_cor; // [34:33] correction factors
+    // Capability according to spec v1.0, chapter 7.13
+    logic     valid;   // [32]    tag bit
+    logic     rsvd;    // [31]    reserved R
+    cperms_t  cperms;  // [30:25] compressed permissions
+    otype_t   otype;   // [24:22] object type
+    cexp_t    cexp;    // [21:18] 4-bit compressed exponent
+    cbound_t  top;     // [17:9]  top mantissa T
+    cbound_t  base;    // [8:0]   base mantissa B
+  } cap_t;  // 2+1+1+6+3+4+9+9 = 35 bits = REGCAP_W
+
+  // Uncompressed capability
+  typedef struct packed {
+    logic [ADDR_W:0]   top33;  // 33 bits absolute top
+    logic [ADDR_W-1:0] base32; // 32 bits absolute base
+    perms_t            perms;  // 12 bits expanded permissions
+    // Identical layout to cap_t from here
+    cap_cor_t cap_cor; // [34:33] correction factors
+    logic     valid;   // [32]    tag bit
+    logic     rsvd;    // [31]    reserved R
+    cperms_t  cperms;  // [30:25] compressed permissions
+    otype_t   otype;   // [24:22] object type
+    cexp_t    cexp;    // [21:18] 4-bit compressed exponent
+    cbound_t  top;     // [17:9]  top mantissa T
+    cbound_t  base;    // [8:0]   base mantissa B
+  } decoded_cap_t;  // 33+32+12+35 = 112 bits
+
+
+  // Types for bound computation in CHERIoT EX Stage
+  typedef struct packed {
+    logic [32:0]    top33req; // requested top = addr + length (33-bit)
+    exp_t           exp1;     // exponent candidate from length (no overflow)
+    exp_t           exp2;     // exp1 + 1 (used when exp1 path overflows)
+    logic [EXP_W:0] explen;   // MSB position of length[31:9] (6-bit, can be 32)
+    logic [EXP_W:0] expb;     // trailing-zero count of base address (6-bit)
+    logic           in_bound; // addr..addr+length lies within parent bounds
+  } bound_req_t;
+
+  // The decoded capability plus the alignment mask and representable length.
+  typedef struct packed {
+    decoded_cap_t cap;   // resulting capability
+    logic [31:0]  maska; // alignment mask    (CRAM result)
+    logic [31:0]  rlen;  // representable len (CRRL result)
+  } bound_result_t;
+
+  // Permission-clearing control for capability loads (CLC instruction).
+  // Each field corresponds to one CLC clearing rule from the spec.
+  typedef struct packed {
+    logic CTAG;   // [2] clear tag (valid) bit (loading cap lacks MC)
+    logic SD_LM;  // [1] clear SD and LM       (loading cap lacks LM)
+    logic GL_LG;  // [0] clear GL and LG       (loading cap lacks LG)
+  } cap_clrperm_t;
+
+  // -----------------------------------------------------------------------------------------------
+  // Root Capabilities and Constants
+  // -----------------------------------------------------------------------------------------------
+  parameter cap_t         NULL_CAP         = '{default: '0};
+  parameter decoded_cap_t NULL_DECODED_CAP = '{default: '0};
+
+  // Three CHERIoT root capabilities (spec v1.0, chapter 7.13.1)
+  parameter logic [5:0] CPERMS_TX = 6'b101111;  // Tx (executable root)
+  parameter logic [5:0] CPERMS_TM = 6'b111111;  // Tm (memory root)
+  parameter logic [5:0] CPERMS_TS = 6'b100111;  // Tx (sealing root)
+
+  // ROOT_DECODED_CAP_TX is used for the PCC. All other root capabilities are cap_t
+  // Executable Root Capability
+  parameter decoded_cap_t ROOT_DECODED_CAP_TX = '{
+    top33:   33'h10000_0000,
+    base32:  '0,
+    perms:   12'h1eb,
+    cap_cor: '0,
+    valid:   1'b1,
+    rsvd:    1'b0,
+    cperms:  CPERMS_TX,
+    otype:   OTYPE_UNSEALED,
+    cexp:    MAXCEXP,
+    top:     9'h100,
+    base:    '0
+  };
+  parameter cap_t ROOT_CAP_TX = cap_t'(ROOT_DECODED_CAP_TX);
+
+  // Memory Root Capability
+  parameter cap_t ROOT_CAP_TM = '{
+    cap_cor: '0,
+    valid:   1'b1,
+    rsvd:    1'b0,
+    cperms:  CPERMS_TM,
+    otype:   OTYPE_UNSEALED,
+    cexp:    MAXCEXP,
+    top:     9'h100,
+    base:    '0
+  };
+
+  // Sealing Root Capability
+  parameter cap_t ROOT_CAP_TS = '{
+    cap_cor: '0,
+    valid:   1'b1,
+    rsvd:    1'b0,
+    cperms:  CPERMS_TS,
+    otype:   OTYPE_UNSEALED,
+    cexp:    MAXCEXP,
+    top:     9'h100,
+    base:    '0
+  };
+
+
+  // Implicit permission masks for each compressed permission format (spec v1.0, chapter 7.13.1)
+  parameter perms_t PERM_MRW_IMSK = '{LD:1, MC:1, SD:1, default:0}; // Memory cap-read-write
+  parameter perms_t PERM_MRO_IMSK = '{LD:1, MC:1, default:0};       // Memory cap-read-only
+  parameter perms_t PERM_MWO_IMSK = '{SD:1, MC:1, default:0};       // Memory cap-write-only
+  parameter perms_t PERM_MDO_IMSK = '{default:0};                   // Memory data-only
+  parameter perms_t PERM_EXE_IMSK = '{EX:1, MC:1, LD:1, default:0}; // Executable
+  parameter perms_t PERM_SEA_IMSK = '{default:0};                   // Sealing
+
+  // Decode the 6-bit compressed permission encoding to the full 12-bit permissions field.
+  function automatic perms_t cheriot_expand_perms(cperms_t cperms);
+    perms_t perms;
+    perms = '0;
+
+    if (cperms[4:3] == 2'b11) begin
+      perms    = PERM_MRW_IMSK;
+      perms.LG = cperms[0];
+      perms.LM = cperms[1];
+      perms.SL = cperms[2];
+    end else if (cperms[4:2] == 3'b101) begin
+      perms    = PERM_MRO_IMSK;
+      perms.LG = cperms[0];
+      perms.LM = cperms[1];
+    end else if (cperms[4:0] == 5'b10000) begin
+      perms    = PERM_MWO_IMSK;
+    end else if (cperms[4:2] == 3'b100) begin
+      perms    = PERM_MDO_IMSK;
+      perms.SD = cperms[0];
+      perms.LD = cperms[1];
+    end else if (cperms[4:3] == 2'b01) begin
+      perms    = PERM_EXE_IMSK;
+      perms.LG = cperms[0];
+      perms.LM = cperms[1];
+      perms.SR = cperms[2];
+    end else if (cperms[4:3] == 2'b00) begin
+      perms    = PERM_SEA_IMSK;
+      perms.US = cperms[0];
+      perms.SE = cperms[1];
+      perms.U0 = cperms[2];
+    end
+
+    // GL is mapped directly
+    perms.GL = cperms[5];
+
+    return perms;
+  endfunction
+
+  // True if all bits set in mask are also set in p (i.e., mask is implied by p).
+  function automatic logic cheriot_perms_covers(perms_t p, perms_t mask);
+    return &(PERMS_W'(p) | ~PERMS_W'(mask));
+  endfunction
+
+  // Encode the full 12-bit permissions field to the 6-bit compressed memory representation.
+  function automatic cperms_t cheriot_compress_perms(perms_t perms);
+    cperms_t cperms;
+
+    cperms    = '0;
+    cperms[5] = perms.GL;
+
+    if (cheriot_perms_covers(perms, PERM_EXE_IMSK)) begin
+      cperms[0]   = perms.LG;
+      cperms[1]   = perms.LM;
+      cperms[2]   = perms.SR;
+      cperms[4:3] = 2'b01;
+    end else if (cheriot_perms_covers(perms, PERM_MRW_IMSK)) begin
+      cperms[0]   = perms.LG;
+      cperms[1]   = perms.LM;
+      cperms[2]   = perms.SL;
+      cperms[4:3] = 2'b11;
+    end else if (cheriot_perms_covers(perms, PERM_MRO_IMSK)) begin
+      cperms[0]   = perms.LG;
+      cperms[1]   = perms.LM;
+      cperms[4:2] = 3'b101;
+    end else if (cheriot_perms_covers(perms, PERM_MWO_IMSK)) begin
+      cperms[4:0] = 5'b10000;
+    end else if (perms.SD | perms.LD) begin
+      cperms[0]   = perms.SD;
+      cperms[1]   = perms.LD;
+      cperms[4:2] = 3'b100;
+    end else begin
+      cperms[0]   = perms.US;
+      cperms[1]   = perms.SE;
+      cperms[2]   = perms.U0;
+      cperms[4:3] = 2'b00;
+    end
+
+    return cperms;
+  endfunction
+
+  // Apply CLC permission-clearing rules to loaded compressed permissions
+  // based on the loading capability's clrperm bits.
+  function automatic cperms_t cheriot_mask_loaded_cperms(cperms_t cperms_in,
+                                                         cap_clrperm_t clrperm,
+                                                         logic valid_in, logic sealed);
+    cperms_t cperms_out;
+    logic    clr_gl, clr_lg, clr_sdlm;
+    logic    unused_ctag;
+    unused_ctag = clrperm.CTAG;
+
+    clr_gl    = clrperm.GL_LG & valid_in;
+    clr_lg    = clrperm.GL_LG & valid_in & ~sealed;
+    clr_sdlm  = clrperm.SD_LM & valid_in & ~sealed;  // only clear SD/LM if not sealed
+
+    cperms_out    = cperms_in;
+    cperms_out[5] = cperms_in[5] & ~clr_gl;          // GL
+
+    if (cperms_in[4:3] == 2'b11) begin
+      cperms_out[0] = cperms_in[0] & ~clr_lg;        // LG
+      cperms_out[1] = cperms_in[1] & ~clr_sdlm;      // LM
+      cperms_out[4:2] = clr_sdlm ? 3'b101 : cperms_in[4:2];
+    end else if (cperms_in[4:2] == 3'b101) begin
+      cperms_out[0] = cperms_in[0] & ~clr_lg;        // LG
+      cperms_out[1] = cperms_in[1] & ~clr_sdlm;      // LM
+    end else if (cperms_in[4:0] == 5'b10000) begin
+      // clear SD will results in NULL permission
+      cperms_out[4:0] = clr_sdlm ? 5'h0 : cperms_in[4:0];
+    end else if (cperms_in[4:2] == 3'b100) begin
+      cperms_out[4] = ~(clr_sdlm & ~cperms_in[1]);   // must decode to 5'h0 if both ld/sd are 0.
+      cperms_out[0] = cperms_in[0] & ~clr_sdlm;
+    end else if (cperms_in[4:3] == 2'b01) begin
+      cperms_out[0] = cperms_in[0] & ~clr_lg;        // LG
+      cperms_out[1] = cperms_in[1] & ~clr_sdlm;      // LM
+    end
+
+    return cperms_out;
+  endfunction
+
+  // Expand the 4-bit compressed exponent to the 5-bit value used for bounds arithmetic.
+  // Field value 15 (MAXCEXP) decodes to the effective exponent 24 (MAXEXP).
+  function automatic exp_t cheriot_expand_exp(cexp_t cexp);
+    return (cexp == MAXCEXP) ? MAXEXP : {1'b0, cexp};
+  endfunction
+
+  // Compress a 5-bit working exponent back to the 4-bit stored form. Effective exponent 24
+  // (MAXEXP) maps to field value 15 (MAXCEXP).
+  function automatic cexp_t cheriot_compress_exp(exp_t exp5);
+    return (exp5 == MAXEXP) ? MAXCEXP : exp5[CEXP_W-1:0];
+  endfunction
+
+  // Return the byte length of a capability (top33 - base32), saturated at 0xFFFF_FFFF on overflow.
+  function automatic logic[31:0] cheriot_cap_length (decoded_cap_t full_cap);
+    logic [32:0] tmp33;
+    logic [31:0] result;
+    decoded_cap_t unused_full_cap;
+
+    unused_full_cap = full_cap;
+    tmp33  = full_cap.top33 - {1'b0, full_cap.base32};
+    result = tmp33[32] ? 32'hffff_ffff : tmp33[31:0];
+
+    return result;
+  endfunction
+
+  // Reconstruct a 33-bit absolute bound from a 9-bit compressed bound, correction bits, exponent,
+  // and the current address.
+  function automatic logic[32:0] cheriot_expand_bound33(cbound_t mant, logic [1:0] cor,
+                                           exp_t exp5, logic [31:0] addr);
+    logic [32:0] cor_val, mask, bound, mant_ext;
+
+    if (cor[1]) begin
+      cor_val = {33{1'b1}};   // -1 (cor[1] is the sign bit and cor=10 never occurs)
+    end else begin
+      cor_val = {32'h0, cor[0]};  // 0 or +1
+    end
+
+    cor_val = (cor_val << exp5) << CBOUND_W;
+    mask    = (33'h1_ffff_ffff << exp5) << CBOUND_W;
+
+    bound = ({1'b0, addr} & mask) + cor_val; // apply correction and mask to upper address bits
+    mant_ext = {24'h0, mant};                // zero-extend 9-bit bound mantissa to 33 bits
+    bound = bound | (mant_ext << exp5);      // merge address and bound
+
+    return bound;
+  endfunction
+
+  // CHERIoT compressed bounds borrow their upper bits from the address. If the top (T) or address
+  // lie in a different 2^(e+9) aligned region than the base (B), a correction (top cor, base cor)
+  // must be applied to those upper bits.
+  //
+  // While applying the final correction is fast, determining which correction to apply requires
+  // expensive comparisons. Therefore, we do not evaluate this on every register read. Instead, we
+  // encode a 2-bit state (`cap_cor`) when the bounds or address change, and store it in the
+  // register file.
+  //
+  // `cap_cor` encodes {top_hi XOR addr_hi, addr_hi}, where:
+  // top_hi  = T < B (top is in the upper region)
+  // addr_hi = addr < B (address is in the upper region)
+  //
+  // cap_cor | top cor | base cor | condition
+  // --------+---------+----------+-------------------------------------------------
+  //  2'b00  |    0    |     0    | Top and address in the same region as base
+  //  2'b01  |    0    |    -1    | Top and address both in the upper region
+  //  2'b10  |   +1    |     0    | Top in the upper region, address is not
+  //  2'b11  |   -1    |    -1    | Address in the upper region, top is not
+  function automatic cap_cor_t cheriot_compute_corrections(cbound_t top, cbound_t base,
+                                                           cbound_t addr);
+    logic top_hi, addr_hi;
+    top_hi  = (top < base);
+    addr_hi = (addr < base);
+    return {top_hi ^ addr_hi, addr_hi};
+  endfunction
+
+  // Decode cap_cor into the 2-bit top correction expected by cheriot_expand_bound33: -1, 0, or +1
+  // It can never be 2 (2'b10)
+  function automatic logic [1:0] cheriot_get_top_correction(cap_cor_t cap_cor);
+    return {cap_cor[1] & cap_cor[0], cap_cor[1]};
+  endfunction
+
+  // Decode cap_cor into the 2-bit base correction expected by cheriot_expand_bound33: -1 or 0
+  // Only cap_cor[0] (addr_hi) is used. It can never be 1 or 2 (2'b01, 2'b10).
+  function automatic logic [1:0] cheriot_get_base_correction(cap_cor_t cap_cor);
+    logic unused_top_cor_bit;
+    unused_top_cor_bit = cap_cor[1];
+    return {2{cap_cor[0]}};
+  endfunction
+
+  // Update a capability's address and recompute correction fields. Invalidate the tag if not
+  // representable.
+  function automatic decoded_cap_t cheriot_set_address(decoded_cap_t in_cap, logic [31:0] newptr);
+    decoded_cap_t         out_cap;
+    exp_t                 exp5;
+    logic [32:0]          ptr_minus_base;
+    logic [CBOUND_W-1:0]  unused_ptr_minus_base;
+    logic [32-CBOUND_W:0] high_delta, repr_mask;
+    cbound_t              ptr_mantissa;
+
+    out_cap   = in_cap;
+    exp5      = cheriot_expand_exp(in_cap.cexp);
+    repr_mask = {(33-CBOUND_W){1'b1}} << exp5;   // zero when exp5 == 24 (full range)
+
+    // extend to 33 bits to capture carry
+    ptr_minus_base        = {1'b0, newptr} - {1'b0, in_cap.base32};
+    unused_ptr_minus_base = ptr_minus_base[CBOUND_W-1:0]; // below granularity, not needed for check
+    high_delta            = ptr_minus_base[32:CBOUND_W] & repr_mask;
+
+    if (high_delta != 0) begin
+      // Bounds not representable for new pointer
+      out_cap.valid = 1'b0;
+    end
+
+    ptr_mantissa    = cbound_t'(newptr >> exp5);
+    out_cap.cap_cor = cheriot_compute_corrections(out_cap.top, out_cap.base, ptr_mantissa);
+
+    return out_cap;
+  endfunction
+
+  // -----------------------------------------------------------------------------------------------
+  // utility functions
+  // -----------------------------------------------------------------------------------------------
+
+  // Count the number of 1s in a thermometer-encoded 32-bit vector (N LSB-aligned ones);
+  function automatic logic [5:0] cheriot_thermometer_count(logic [31:0] a32);
+    logic [5:0]  count;
+    logic [15:0] b32;
+
+    if (a32[31]) count = 6'd32;
+    else begin
+      count[5] = 1'b0;
+      count[4] = a32[15];
+      b32[15:0] = count[4] ? a32[31:16] : a32[15:0];
+      count[3] = b32[7];
+      b32[ 7:0] = count[3] ? b32[15:8] : b32[7:0];
+      count[2] = b32[3];
+      b32[ 3:0] = count[2] ? b32[7:4] : b32[3:0];
+      count[1] = b32[1];
+      b32[ 1:0] = count[1] ? b32[3:2] : b32[1:0];
+      count[0] = b32[0];
+    end
+
+    return count;
+  endfunction
+
+  // Return the number of bits needed to represent din (position of the highest set bit + 1).
+  // Returns 0 if din is zero.
+  function automatic logic [5:0] cheriot_msb_position(logic [31:0] din);
+    logic  [5:0] count;
+    logic [31:0] a32;
+    int i;
+
+    a32 = {din[31], 31'h0};
+    for (i = 30; i >=  0; i--) a32[i] = a32[i+1] | din[i];
+    count = cheriot_thermometer_count(a32);
+
+    return count;
+  endfunction
+
+  // Count trailing zeros, giving the alignment exponent of an address. Returns 32 if din is zero.
+  function automatic logic [5:0] cheriot_count_trailing_zeros(logic [31:0] din);
+    logic  [5:0] count;
+    logic [31:0] a32;
+    int i;
+
+    a32 = {31'h0, din[0]};
+    for (i = 1; i < 32; i++) a32[i] = a32[i-1] | din[i];
+    count = cheriot_thermometer_count(~a32);       // if input all zero, return 32
+
+    return count;
+  endfunction
+
+  // Precompute candidate exponents and parent-bound check for a SetBounds operation (cycle 1 of 2).
+  function automatic bound_req_t cheriot_prep_bounds(decoded_cap_t in_cap, logic [31:0] addr,
+                                                 logic [31:0] length);
+    bound_req_t   result;
+    logic [5:0]   size_result;
+    decoded_cap_t unused_in_cap;
+
+    unused_in_cap   = in_cap; // We don't use all capability fields
+    result.top33req = {1'b0, addr} + {1'b0, length};               // "requested" 33-bit top
+    result.expb     = cheriot_count_trailing_zeros(addr);
+    result.explen   = cheriot_msb_position({9'h0, length[31:9]});  // length exp without saturation
+
+    size_result     = result.explen;
+    result.exp1     = (size_result >= 6'(MAXCEXP)) ? EXP_W'(MAXEXP) : EXP_W'(size_result);
+
+    size_result     += 6'd1;
+    result.exp2     = (size_result >= 6'(MAXCEXP)) ? EXP_W'(MAXEXP) : EXP_W'(size_result);
+
+    // moved here to share with cheriot_set_bounds_rounddown
+    //   should be ok to fit this in cycle 1 since it is a straight compare
+    result.in_bound = ~((result.top33req > in_cap.top33) || (addr < in_cap.base32));
+
+    return result;
+  endfunction
+
+  // Apply a prepared bound request to set a capability's top/base/exp. req_exact=1 invalidates if
+  // rounding was required. Returns the decoded capability together with the alignment mask (maska)
+  // and representable length (rlen) needed by the "Adjusting to Compressed Capability Precision
+  // Instructions" (CRAM/CRRL).
+  function automatic bound_result_t cheriot_set_bounds_ex (decoded_cap_t in_cap, logic[31:0] addr,
+                                            bound_req_t bound_req, logic req_exact);
+    bound_result_t     result;
+    decoded_cap_t      out_cap;
+    bound_req_t        unused_bound_req;
+
+    exp_t              exp1, exp2, exp_sel;
+    logic [32:0]       top33req;
+    logic [CBOUND_W:0] base1, base2, top1, top2, len1, len2;
+    logic [32:0]       mask1, mask2;
+    logic              ovrflw, topoff1, topoff2, topoff;
+    logic              baseoff1, baseoff2, baseoff;
+    logic              tophi1, tophi2, tophi;
+    logic              in_bound;
+
+    unused_bound_req = bound_req;
+
+    out_cap  = in_cap;
+
+    top33req = bound_req.top33req;
+    exp1     = bound_req.exp1;
+    exp2     = bound_req.exp2;
+    in_bound = bound_req.in_bound;
+
+    // 1st path
+    mask1    = {33{1'b1}} << exp1;
+    base1    = (CBOUND_W+1)'(addr >> exp1);
+    topoff1  = |(top33req & ~mask1);
+    baseoff1 = |({1'b0, addr} & ~mask1);
+    top1     = (CBOUND_W+1)'(top33req >> exp1) + (CBOUND_W+1)'(topoff1);
+    len1     = top1 - base1;
+    tophi1   = (top1[8:0] >= base1[8:0]);
+
+    // overflow detection based on 1st path
+    ovrflw = len1[9];
+
+    // 2nd path in parallel
+    mask2    = {33{1'b1}} << exp2;
+    base2    = (CBOUND_W+1)'(addr >> exp2);
+    topoff2  = |(top33req & ~mask2);
+    baseoff2 = |({1'b0, addr} & ~mask2);
+    top2     = (CBOUND_W+1)'(top33req >> exp2) + (CBOUND_W+1)'(topoff2);
+    len2     = top2 - base2;
+    tophi2   = (top2[8:0] >= base2[8:0]);
+
+    // select results
+    if (~ovrflw) begin
+      exp_sel       = exp1;
+      out_cap.top   = top1[CBOUND_W-1:0];
+      out_cap.base  = base1[CBOUND_W-1:0];
+      result.maska  = mask1[31:0];
+      result.rlen   = {22'h0, len1} << exp1;
+      topoff        = topoff1;
+      baseoff       = baseoff1;
+      tophi         = tophi1;
+    end else begin
+      exp_sel       = exp2;
+      out_cap.top   = top2[CBOUND_W-1:0];
+      out_cap.base  = base2[CBOUND_W-1:0];
+      result.maska  = mask2[31:0];
+      result.rlen   = {22'h0, len2} << exp2;
+      topoff        = topoff2;
+      baseoff       = baseoff2;
+      tophi         = tophi2;
+    end
+
+    out_cap.cexp = cheriot_compress_exp(exp_sel);
+
+
+
+    // top/base correction values
+    // Note the new base == addr >> exp, so addr_hi == FALSE, thus base correction == 0 as such, top
+    // correction can only be 0 or 1.
+    out_cap.cap_cor = tophi ? 2'b00 : 2'b10;
+
+    if (req_exact & (topoff | baseoff)) out_cap.valid = 1'b0;
+
+    // we used the "requested top" to verify the results against original bounds
+    // also compare address >= old base 32 to handle exp=24 case
+    //   exp = 24 case: can have addr < base (not covered by representibility checking);
+    //   other exp cases: always addr >= base when out_cap.tag == 1
+    if (~in_bound)
+      out_cap.valid = 1'b0;
+
+    result.cap = out_cap;
+    return result;
+  endfunction
+
+  // Set capability bounds rounded down to the nearest representable alignment.
+  function automatic decoded_cap_t cheriot_set_bounds_rounddown(decoded_cap_t in_cap,
+                                                                logic[31:0] addr,
+                                                                bound_req_t bound_req);
+    decoded_cap_t   out_cap;
+    bound_req_t     unused_bound_req;  // reads exp1/exp2 to suppress INPUT_NOT_READ lint warnings
+    logic [EXP_W:0] explen, expb, exp_final;
+    logic [32:0]    top33req;
+    logic           in_bound;
+    logic           el_gt_eb, el_gt_14, eb_gt_14;
+    logic           tophi;
+
+    unused_bound_req = bound_req;
+    out_cap          = in_cap;
+
+    top33req = bound_req.top33req;
+    explen   = bound_req.explen;
+    expb     = bound_req.expb;
+    in_bound = bound_req.in_bound;
+
+    el_gt_eb = (explen > expb);
+    el_gt_14 = (explen > 14);
+    eb_gt_14 = (expb   > 14);
+
+    // exp_final = min(14, explen, expb). Expanded form of the ternary below:
+    // if (el_gt_eb & eb_gt_14) exp_final = 14;       //  min(14, min(e_l, e_b)), el > eb, eb > 14
+    // else if (el_gt_eb)       exp_final = expb;     //  min(14, min(e_l, e_b)), el > eb, eb <= 14
+    // else if (el_gt_14)       exp_final = 14;       //  min(14, min(e_l, e_b)), el <= eb, el > 14
+    // else                     exp_final = explen;   //  e_l,                    el <= eb, el <= 14
+    exp_final = (el_gt_eb & !eb_gt_14) ? expb : (el_gt_14 ? 6'd14 : explen);
+
+    out_cap.cexp = cheriot_compress_exp(exp_final[EXP_W-1:0]);
+    out_cap.base = cbound_t'(addr >> exp_final);
+
+    out_cap.top = (el_gt_eb | el_gt_14) ? out_cap.base - cbound_t'(1'b1) :
+                                          cbound_t'(top33req >> exp_final);
+
+    if (~in_bound) out_cap.valid = 1'b0;
+
+    // top/base correction values
+    // Note the new base == addr >> exp, so addr_hi == FALSE, thus base correction == 0 as such, top
+    // correction can only be 0 or 1.
+    tophi = (out_cap.top >= out_cap.base);
+    out_cap.cap_cor = tophi ? 2'b00 : 2'b10;
+
+    return out_cap;
+  endfunction
+
+  // Check if a capability's permissions correspond to a sealing capability.
+  function automatic logic cheriot_is_sealing_cap(cperms_t cperms);
+    logic unused_cperms_gl;
+    unused_cperms_gl = cperms[5]; // GL bit not needed for sealing check
+    return (cperms[4:3] == 2'b00) && (|cperms[2:0]);
+  endfunction
+
+  // Return a copy of the capability sealed with the given object type.
+  function automatic decoded_cap_t cheriot_seal(decoded_cap_t in_cap, otype_t new_otype);
+    decoded_cap_t out_cap;
+    out_cap = in_cap;
+    out_cap.otype = new_otype;
+    return out_cap;
+  endfunction
+
+  // Return a copy of the capability with otype set to OTYPE_UNSEALED.
+  function automatic decoded_cap_t cheriot_unseal(decoded_cap_t in_cap);
+    decoded_cap_t out_cap;
+    out_cap = in_cap;
+    out_cap.otype = OTYPE_UNSEALED;
+    return out_cap;
+  endfunction
+
+  // Return true if the capability's otype is not OTYPE_UNSEALED.
+  function automatic logic cheriot_is_sealed(decoded_cap_t in_cap);
+    logic result;
+    decoded_cap_t unused_in_cap;
+    unused_in_cap = in_cap; // bounds/perms fields not needed for seal check
+    result = (in_cap.otype != OTYPE_UNSEALED);
+    return result;
+  endfunction
+
+  // Decode a 3-bit otype to 4-bit form; non-zero otypes lacking EX permission are tagged in bit 3.
+  function automatic logic [3:0] cheriot_decode_otype(otype_t otype3, logic perm_ex);
+    logic [3:0] otype4;
+    otype4 = {~perm_ex & (otype3 != 0), otype3};
+    return otype4;
+  endfunction
+
+  // Decode a compressed cap_t: copy the compressed fields, expand the compressed permissions, and
+  // compute the absolute top33/base32 bounds from addr.
+  function automatic decoded_cap_t cheriot_decode_cap(cap_t cap, logic [31:0] addr);
+    decoded_cap_t d;
+    exp_t         exp5;
+
+    exp5 = cheriot_expand_exp(cap.cexp);
+
+    // lower fields are identical to cap_t and are copied directly
+    d.cap_cor = cap.cap_cor;
+    d.valid   = cap.valid;
+    d.rsvd    = cap.rsvd;
+    d.cperms  = cap.cperms;
+    d.otype   = cap.otype;
+    d.cexp    = cap.cexp;
+    d.top     = cap.top;
+    d.base    = cap.base;
+
+    // upper fields: decompressed bounds and permissions
+    d.perms  = cheriot_expand_perms(cap.cperms);
+    d.top33  = cheriot_expand_bound33(cap.top, cheriot_get_top_correction(cap.cap_cor), exp5, addr);
+    d.base32 = 32'(cheriot_expand_bound33(cap.base, cheriot_get_base_correction(cap.cap_cor), exp5,
+                                          addr));
+
+    return d;
+  endfunction
+
+  // Re-encode a decoded capability to compressed cap_t. Because the lower 35 bits of decoded_cap_t
+  // are laid out identically to cap_t, this is a single downward truncation/cast (the absolute
+  // bounds and expanded permissions in the upper bits are discarded).
+  function automatic cap_t cheriot_encode_cap(decoded_cap_t d);
+    decoded_cap_t unused_d;
+    unused_d = d;
+    return cap_t'(d);
+  endfunction
+
+  // Convert a decoded PCC and an exception PC address to a compressed capability for MEPC.
+  function automatic cap_t cheriot_pcc_to_mepc(decoded_cap_t pcc, logic [31:0] address,
+                                               logic clrtag);
+    cap_t         cap;
+    decoded_cap_t new_dcap;
+
+    // Still need representability check to cover save_pc_if and save_pc_wb cases
+    new_dcap = cheriot_set_address(pcc, address);
+
+    cap = cheriot_encode_cap(new_dcap);
+    if (clrtag) cap.valid = 1'b0;
+
+    return cap;
+  endfunction
+
+  // -----------------------------------------------------------------------------------------------
+  // Vector representation and casts
+  // -----------------------------------------------------------------------------------------------
+
+  localparam int unsigned BASE_LO   = 0;
+  localparam int unsigned TOP_LO    = BASE_LO + CBOUND_W;   // 9
+  localparam int unsigned CEXP_LO   = TOP_LO + CBOUND_W;    // 18
+  localparam int unsigned OTYPE_LO  = CEXP_LO + CEXP_W;     // 22
+  localparam int unsigned CPERMS_LO = OTYPE_LO + OTYPE_W;   // 25
+  localparam int unsigned RSVD_LO   = CPERMS_LO + CPERMS_W; // 31
+
+  // Decode a memory-format capability metadata word and address to cap_t, applying CLC permission
+  // clearing.
+  function automatic cap_t cheriot_mem_to_cap(logic [32:0] cap_mw, logic [32:0] addr33,
+                                              cap_clrperm_t clrperm);
+    cap_t    cap;
+    exp_t    exp5;
+    cperms_t cperms_mem;
+    cbound_t addrmi9;
+    logic    sealed;
+    logic    valid_in;
+
+    valid_in   = cap_mw[32] & addr33[32];
+    cap.valid  = valid_in & ~clrperm.CTAG;
+
+    cap.base   = cap_mw[BASE_LO+:CBOUND_W];
+    cap.top    = cap_mw[TOP_LO+:CBOUND_W];
+    cap.cexp   = cap_mw[CEXP_LO+:CEXP_W];
+    cap.otype  = cap_mw[OTYPE_LO+:OTYPE_W];
+
+    sealed       = (cap.otype != OTYPE_UNSEALED);
+    cperms_mem   = cap_mw[CPERMS_LO+:CPERMS_W];
+    cap.cperms   = cheriot_mask_loaded_cperms(cperms_mem, clrperm, cap.valid, sealed);
+    exp5         = cheriot_expand_exp(cap.cexp);
+    addrmi9      = cbound_t'(addr33[31:0] >> exp5);
+    cap.cap_cor  = cheriot_compute_corrections(cap.top, cap.base, addrmi9);
+
+    cap.rsvd     = cap_mw[RSVD_LO];
+
+    return cap;
+  endfunction
+
+  // Encode a stored cap_t to memory format. The lower 33 bits of cap_t are exactly the capability
+  // metadata word (tag in bit [32]), so this is a single truncation that drops the correction
+  // factors.
+  function automatic logic[32:0] cheriot_cap_to_mem(cap_t cap);
+    logic [REGCAP_W-1:0] cap_bits;
+    logic [1:0] unused_cap_corr;
+    cap_bits = cap;
+    unused_cap_corr = cap_bits[REGCAP_W-1:33];
+    return cap_bits[32:0];
+  endfunction
+
+  // Pack a cap_t into a flat REGCAP_W-bit vector cap_t is exactly REGCAP_W bits wide, so this is a
+  // direct cast.
+  function automatic logic [REGCAP_W-1:0] cheriot_regcap_to_vec(cap_t cap);
+    return REGCAP_W'(cap);
+  endfunction
+
+  // Unpack a flat REGCAP_W-bit vector back to a cap_t.
+  function automatic cap_t cheriot_vec_to_regcap(logic [REGCAP_W-1:0] vec_in);
+    return cap_t'(vec_in);
+  endfunction
+
+  // Return true if two capabilities are identical in all fields and their addresses match.
+  function automatic logic cheriot_caps_equal(decoded_cap_t cap_a, decoded_cap_t cap_b,
+                                              logic [31:0] addr_a, logic[31:0] addr_b);
+    // expanded bounds/perms not needed for equality check
+    decoded_cap_t unused_cap_a, unused_cap_b;
+    unused_cap_a = cap_a;
+    unused_cap_b = cap_b;
+    cheriot_caps_equal = (cap_a.valid == cap_b.valid) &&
+                         (cap_a.top == cap_b.top) &&
+                         (cap_a.base == cap_b.base) &&
+                         (cap_a.cperms == cap_b.cperms) &&
+                         (cap_a.rsvd == cap_b.rsvd) &&
+                         (cap_a.cexp == cap_b.cexp) &&
+                         (cap_a.otype == cap_b.otype) &&
+                         (addr_a == addr_b);
+    return cheriot_caps_equal;
+  endfunction
+
+  // -----------------------------------------------------------------------------------------------
+  // CHERIoT Decoding and ALU constants
+  // -----------------------------------------------------------------------------------------------
+
+  // CHERIoT Operator
+  typedef struct packed {
+    logic CSET_BOUNDS_RNDN; // CSetBoundsRoundDown
+    logic CRAM;             // CRepresentableAlignmentMask
+    logic CRRL;             // CRepresentableLength
+    logic CAUICGP;          // AUICGP
+    logic CAUIPCC;          // AUIPCC
+    logic CJAL;             // JAL
+    logic CJALR;            // JALR
+    logic CCSR_RW;          // CSpecialRW
+    logic CSTORE_CAP;       // CSC
+    logic CSET_HIGH;        // CSetHigh
+    logic CLOAD_CAP;        // CLC
+    logic CCLEAR_TAG;       // CClearTag
+    logic CSUB_CAP;         // CSub
+    logic CMOVE_CAP;        // CMove
+    logic CIS_EQUAL;        // CIsEqual
+    logic CIS_SUBSET;       // CTestSubset
+    logic CSET_BOUNDS_IMM;  // CSetBoundsImm
+    logic CSET_BOUNDS_EX;   // CSetBoundsExact
+    logic CSET_BOUNDS;      // CSetBounds
+    logic CINC_ADDR_IMM;    // CIncAddrImm
+    logic CINC_ADDR;        // CIncAddr
+    logic CSET_ADDR;        // CSetAddr
+    logic CAND_PERM;        // CAndPerm
+    logic CUNSEAL;          // CUnseal
+    logic CSEAL;            // CSeal
+    logic CGET_FIELD;       // CGetPerm/Type/Base/Len/Tag/Addr/High/Top
+  } cheriot_op_t;
+
+  typedef enum logic [2:0] {
+    CFIELD_PERM = 3'h0,
+    CFIELD_TYPE = 3'h1,
+    CFIELD_BASE = 3'h2,
+    CFIELD_LEN  = 3'h3,
+    CFIELD_TAG  = 3'h4,
+    CFIELD_ADDR = 3'h5,
+    CFIELD_HIGH = 3'h6,
+    CFIELD_TOP  = 3'h7
+  } cheriot_cap_field_e;
+
+  typedef enum logic [2:0] {
+    CHERIOT_ADDER_A_ZERO  = 3'h0,
+    CHERIOT_ADDER_A_IMM12 = 3'h1,
+    CHERIOT_ADDER_A_IMM21 = 3'h2,
+    CHERIOT_ADDER_A_IMM20 = 3'h3,
+    CHERIOT_ADDER_A_RS2   = 3'h4
+  } cheriot_adder_a_sel_e;
+
+  typedef enum logic [1:0] {
+    CHERIOT_ADDER_B_ZERO = 2'h0,
+    CHERIOT_ADDER_B_RS1  = 2'h1,
+    CHERIOT_ADDER_B_PC   = 2'h2
+  } cheriot_adder_b_sel_e;
+
+  typedef enum logic [2:0] {
+    SETADDR_NONE      = 3'h0,  // default: null cap, zero addr
+    SETADDR_PCC_PCNXT = 3'h1,  // CJAL/CJALR: pcc cap, pc_id_nxt addr
+    SETADDR_PCC_ARITH = 3'h2,  // CAUIPCC: pcc cap, addr_result
+    SETADDR_RFA_ARITH = 3'h3,  // CSET_ADDR/CINC_ADDR/CINC_ADDR_IMM/CAUICGP: rf_a cap, addr_result
+    SETADDR_SCR       = 3'h4   // CCSR_RW: rf_a cap, csr_wdata (only when scr_legalization=1)
+  } cheriot_setaddr_sel_e;
+
+  typedef enum logic [2:0] {
+    SETBOUNDS_NONE   = 3'h0,  // default
+    SETBOUNDS_RS2    = 3'h1,  // CSET_BOUNDS: newlen=rs2, not exact, cap from rs1
+    SETBOUNDS_RNDN   = 3'h2,  // CSET_BOUNDS_RNDN: newlen=rs2, not exact, cap from rs1 (rounded)
+    SETBOUNDS_RS2_EX = 3'h3,  // CSET_BOUNDS_EX: newlen=rs2, exact, cap from rs1
+    SETBOUNDS_IMM    = 3'h4,  // CSET_BOUNDS_IMM: newlen=imm12, not exact, cap from rs1
+    SETBOUNDS_CRRL   = 3'h5,  // CRRL: newlen=rs1, null cap, result=rlen
+    SETBOUNDS_CRAM   = 3'h6   // CRAM: newlen=rs1, null cap, result=maska
+  } cheriot_setbounds_sel_e;
+
+  typedef enum logic [4:0] {
+    CHERIOT_CSR_NULL,
+    CHERIOT_CSR_RW
+  } cheriot_csr_op_e;
+
+  parameter logic [4:0] CHERIOT_SCR_MEPCC      = 5'h1f;
+  parameter logic [4:0] CHERIOT_SCR_MSCRATCHC  = 5'h1e;
+  parameter logic [4:0] CHERIOT_SCR_MTDC       = 5'h1d;
+  parameter logic [4:0] CHERIOT_SCR_MTCC       = 5'h1c;
+  parameter logic [4:0] CHERIOT_SCR_ZTOPC      = 5'h1b;
+  parameter logic [4:0] CHERIOT_SCR_DSCRATCHC1 = 5'h1a;
+  parameter logic [4:0] CHERIOT_SCR_DSCRATCHC0 = 5'h19;
+  parameter logic [4:0] CHERIOT_SCR_DEPCC      = 5'h18;
+
+  // permission violations
+  parameter int unsigned W_PVIO = 8;
+
+  parameter logic [2:0] PVIO_TAG   = 3'h0;
+  parameter logic [2:0] PVIO_SEAL  = 3'h1;
+  parameter logic [2:0] PVIO_EX    = 3'h2;
+  parameter logic [2:0] PVIO_LD    = 3'h3;
+  parameter logic [2:0] PVIO_SD    = 3'h4;
+  parameter logic [2:0] PVIO_SC    = 3'h5;
+  parameter logic [2:0] PVIO_ASR   = 3'h6;
+  parameter logic [2:0] PVIO_ALIGN = 3'h7;
+
+
+  // Encode permission and bounds violation flags into the CHERIoT exception cause code.
+  function automatic logic [4:0] cheriot_violation_cause(logic bound_vio,
+                                                         logic[W_PVIO-1:0] perm_vio_vec);
+    logic [4:0] vio_cause;
+    logic       unused_align_vio;
+
+    unused_align_vio = perm_vio_vec[PVIO_ALIGN];  // alignment not mapped to a cause code yet
+    if (perm_vio_vec[PVIO_TAG])
+      vio_cause = 5'h2;
+    else if (perm_vio_vec[PVIO_SEAL])
+      vio_cause = 5'h3;
+    else if (perm_vio_vec[PVIO_EX])
+      vio_cause = 5'h11;
+    else if (perm_vio_vec[PVIO_LD])
+      vio_cause = 5'h12;
+    else if (perm_vio_vec[PVIO_SD])
+      vio_cause = 5'h13;
+    else if (perm_vio_vec[PVIO_SC])
+      vio_cause = 5'h15;
+    else if (perm_vio_vec[PVIO_ASR])
+      vio_cause = 5'h18;
+    else if (bound_vio)
+      vio_cause = 5'h1;
+    else
+      vio_cause = 5'h0;
+
+    return vio_cause;
+  endfunction
+
 endpackage
 // Copyright lowRISC contributors (OpenTitan project).
 // Licensed under the Apache License, Version 2.0, see LICENSE for details.
@@ -4527,7 +5521,7 @@ module lowrisc_ibex_icache import lowrisc_ibex_pkg::*; #(
     OUT_OF_RESET,
     AWAIT_SCRAMBLE_KEY,
     INVAL_CACHE,
-    IDLE
+    INVAL_IDLE
   } inval_state_e;
 
   inval_state_e          inval_state_q, inval_state_d;
@@ -5546,7 +6540,7 @@ module lowrisc_ibex_icache import lowrisc_ibex_pkg::*; #(
 
     // Prevent other cache activity (cache lookups and cache allocations) whilst an invalidation is
     // in progress. Set to 1 by default as the only time we don't block is when the state machine is
-    // IDLE.
+    // INVAL_IDLE.
     inval_block_cache = 1'b1;
 
     unique case (inval_state_q)
@@ -5584,16 +6578,16 @@ module lowrisc_ibex_icache import lowrisc_ibex_pkg::*; #(
           inval_state_d = AWAIT_SCRAMBLE_KEY;
         end else if (&inval_index_q) begin
           // When the final index is written we're done
-            inval_state_d = IDLE;
+            inval_state_d = INVAL_IDLE;
         end
       end
-      IDLE: begin
+      INVAL_IDLE: begin
         // Usual running state
         if (icache_inval_i) begin
           ic_scr_key_req_o = 1'b1;
           inval_state_d = AWAIT_SCRAMBLE_KEY;
         end else begin
-          // Allow other cache activities whilst in IDLE and no invalidation has been requested
+          // Allow other cache activities whilst in INVAL_IDLE; no invalidation requested
           inval_block_cache = 1'b0;
         end
       end
@@ -5601,7 +6595,7 @@ module lowrisc_ibex_icache import lowrisc_ibex_pkg::*; #(
     endcase
   end
 
-  assign inval_active = inval_state_q != IDLE;
+  assign inval_active = inval_state_q != INVAL_IDLE;
 
   always_ff @(posedge clk_i or negedge rst_ni) begin
     if (!rst_ni) begin
@@ -13101,6 +14095,761 @@ module lowrisc_prim_sum_tree #(
 
 
 endmodule : lowrisc_prim_sum_tree
+// Copyright 2018 ETH Zurich and University of Bologna.
+// Copyright and related rights are licensed under the Solderpad Hardware
+// License, Version 0.51 (the "License"); you may not use this file except in
+// compliance with the License. You may obtain a copy of the License at
+// http://solderpad.org/licenses/SHL-0.51. Unless required by applicable law
+// or agreed to in writing, software, hardware and materials distributed under
+// this License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
+// CONDITIONS OF ANY KIND, either express or implied. See the License for the
+// specific language governing permissions and limitations under the License.
+
+// Stream fork: Connects the input stream (ready-valid) handshake to *all* of `N_OUP` output stream
+// handshakes. For each input stream handshake, every output stream handshakes exactly once. The
+// input stream only handshakes when all output streams have handshaked, but the output streams do
+// not have to handshake simultaneously.
+//
+// This module has no data ports because stream data does not need to be forked: the data of the
+// input stream can just be applied at all output streams.
+
+// Copyright lowRISC contributors (OpenTitan project).
+// Licensed under the Apache License, Version 2.0, see LICENSE for details.
+// SPDX-License-Identifier: Apache-2.0
+
+// Macros and helper code for using assertions.
+//  - Provides default clk and rst options to simplify code
+//  - Provides boiler plate template for common assertions
+
+
+
+
+///////////////////
+// Helper macros //
+///////////////////
+
+// Default clk and reset signals used by assertion macros below.
+
+
+
+// Converts an arbitrary block of code into a Verilog string
+
+
+// ASSERT_ERROR logs an error message with either `uvm_error or with $error.
+//
+// This somewhat duplicates `DV_ERROR macro defined in hw/dv/sv/dv_utils/dv_macros.svh. The reason
+// for redefining it here is to avoid creating a dependency.
+
+
+// This macro is suitable for conditionally triggering lint errors, e.g., if a Sec parameter takes
+// on a non-default value. This may be required for pre-silicon/FPGA evaluation but we don't want
+// to allow this for tapeout.
+
+
+// Static assertions for checks inside SV packages. If the conditions is not true, this will
+// trigger an error during elaboration.
+
+
+// The basic helper macros are actually defined in "implementation headers". The macros should do
+// the same thing in each case (except for the dummy flavour), but in a way that the respective
+// tools support.
+//
+// If the tool supports assertions in some form, we also define INC_ASSERT (which can be used to
+// hide signal definitions that are only used for assertions).
+//
+// The list of basic macros supported is:
+//
+//  ASSERT_I:     Immediate assertion. Note that immediate assertions are sensitive to simulation
+//                glitches.
+//
+//  ASSERT_INIT:  Assertion in initial block. Can be used for things like parameter checking.
+//
+//  ASSERT_INIT_NET: Assertion in initial block. Can be used for initial value of a net.
+//
+//  ASSERT_FINAL: Assertion in final block. Can be used for things like queues being empty at end of
+//                sim, all credits returned at end of sim, state machines in idle at end of sim.
+//
+//  ASSERT_AT_RESET: Assertion just before reset. Can be used to check sum-like properties that get
+//                   cleared at reset.
+//                   Note that unless your simulation ends with a reset, the property does not get
+//                   checked at end of simulation; use ASSERT_AT_RESET_AND_FINAL if the property
+//                   should also get checked at end of simulation.
+//
+//  ASSERT_AT_RESET_AND_FINAL: Assertion just before reset and in final block. Can be used to check
+//                             sum-like properties before every reset and at the end of simulation.
+//
+//  ASSERT:       Assert a concurrent property directly. It can be called as a module (or
+//                interface) body item.
+//
+//                Note: We use (__rst !== '0) in the disable iff statements instead of (__rst ==
+//                '1). This properly disables the assertion in cases when reset is X at the
+//                beginning of a simulation. For that case, (reset == '1) does not disable the
+//                assertion.
+//
+//  ASSERT_NEVER: Assert a concurrent property NEVER happens
+//
+//  ASSERT_KNOWN: Assert that signal has a known value (each bit is either '0' or '1') after reset.
+//                It can be called as a module (or interface) body item.
+//
+//  COVER:        Cover a concurrent property
+//
+//  ASSUME:       Assume a concurrent property
+//
+//  ASSUME_I:     Assume an immediate property
+
+
+ // Copyright lowRISC contributors (OpenTitan project).
+// Licensed under the Apache License, Version 2.0, see LICENSE for details.
+// SPDX-License-Identifier: Apache-2.0
+
+// Macro bodies included by prim_assert.sv for tools that don't support assertions. See
+// prim_assert.sv for documentation for each of the macros.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+//////////////////////////////
+// Complex assertion macros //
+//////////////////////////////
+
+// Assert that signal is an active-high pulse with pulse length of 1 clock cycle
+
+
+// Assert that a property is true only when an enable signal is set.  It can be called as a module
+// (or interface) body item.
+
+
+// Assert that signal has a known value (each bit is either '0' or '1') after reset if enable is
+// set.  It can be called as a module (or interface) body item.
+
+
+//////////////////////////////////
+// For formal verification only //
+//////////////////////////////////
+
+// Note that the existing set of ASSERT macros specified above shall be used for FPV,
+// thereby ensuring that the assertions are evaluated during DV simulations as well.
+
+// ASSUME_FPV
+// Assume a concurrent property during formal verification only.
+
+
+// ASSUME_I_FPV
+// Assume a concurrent property during formal verification only.
+
+
+// COVER_FPV
+// Cover a concurrent property during formal verification
+
+
+// FPV assertion that proves that the FSM control flow is linear (no loops)
+// The sequence triggers whenever the state changes and stores the current state as "initial_state".
+// Then thereafter we must never see that state again until reset.
+// It is possible for the reset to release ahead of the clock.
+// Create a small "gray" window beyond the usual rst time to avoid
+// checking.
+
+
+// Copyright lowRISC contributors (OpenTitan project).
+// Licensed under the Apache License, Version 2.0, see LICENSE for details.
+// SPDX-License-Identifier: Apache-2.0
+
+// // Macros and helper code for security countermeasures.
+
+
+
+
+
+
+// When a named error signal rises, expect to see an associated error in at most MAX_CYCLES_ cycles.
+//
+// The NAME_ argument gets included in the name of the generated assertion, following an FpSecCm
+// prefix. The error signal should be at HIER_.ERR_NAME_ and the posedge is ignored if GATE_ is
+// true.
+//
+// This macro drives a magic "unused_assert_connected" signal, which is used for a static check to
+// ensure the assertions are in place.
+
+
+// When an error signal rises, expect to see the associated alert in at most MAX_CYCLE_ cycles.
+//
+// The NAME_, HIER_, GATE_, MAX_CYCLES_ and ERR_NAME_ arguments are the same as for
+// `ASSERT_ERROR_TRIGGER_ERR. The ALERT_ argument is the name of the alert that we expect to be
+// asserted.
+//
+// This macro adds an assumption that says the named error signal will stay low for the first 10
+// cycles after reset.
+
+
+// When an error signal rises, expect to see the associated ALERT_IN_ signal go high in at most
+// MAX_CYCLES_
+//
+// This is expected to cause an alert to be signalled, but avoids needing to reason about the
+// internals of the alert sender (which are checked with formal properties in the prim_alert_rxtx*
+// cores).
+//
+// The NAME_, HIER_, GATE_, MAX_CYCLES_ and ERR_NAME_ arguments are the same as for
+// `ASSERT_ERROR_TRIGGER_ERR.
+
+
+////////////////////////////////////////////////////////////////////////////////
+//
+// Assertions for CMs that trigger alerts
+//
+////////////////////////////////////////////////////////////////////////////////
+
+
+
+
+
+
+
+
+
+
+
+
+
+////////////////////////////////////////////////////////////////////////////////
+//
+// The input flavour of assertions for CMs that trigger alerts
+//
+// Note that the default value for MAX_CYCLES_ in these assertions is much smaller than
+// _SEC_CM_ALERT_MAX_CYC. Because we are asserting something about the *input* for the alert system,
+// the timing can be much tighter: we default to two cycles.
+//
+////////////////////////////////////////////////////////////////////////////////
+
+
+
+
+
+
+
+
+
+
+
+
+
+////////////////////////////////////////////////////////////////////////////////
+//
+// Assertions for CMs that trigger some other form of error
+//
+////////////////////////////////////////////////////////////////////////////////
+
+
+
+
+
+
+
+
+
+
+
+ // PRIM_ASSERT_SEC_CM_SVH
+
+// Copyright lowRISC contributors (OpenTitan project).
+// Licensed under the Apache License, Version 2.0, see LICENSE for details.
+// SPDX-License-Identifier: Apache-2.0
+
+
+
+
+/////////////////////////////////////
+// Default Values for Macros below //
+/////////////////////////////////////
+
+
+
+
+
+/////////////////////
+// Register Macros //
+/////////////////////
+
+// TODO: define other variations of register macros so that they can be used throughout all designs
+// to make the code more concise.
+
+// Register with asynchronous reset.
+
+
+///////////////////////////
+// Macro for Sparse FSMs //
+///////////////////////////
+
+// Simulation tools typically infer FSMs and report coverage for these separately. However, tools
+// like Xcelium and VCS seem to have problems inferring FSMs if the state register is not coded in
+// a behavioral always_ff block in the same hierarchy. To that end, this uses a modified variant
+// with a second behavioral register definition for RTL simulations so that FSMs can be inferred.
+// Note that in this variant, the __q output is disconnected from prim_sparse_fsm_flop and attached
+// to the behavioral flop. An assertion is added to ensure equivalence between the
+// prim_sparse_fsm_flop output and the behavioral flop output in that case.
+
+
+ // PRIM_FLOP_MACROS_SV
+
+
+ // PRIM_ASSERT_SV
+
+
+module lowrisc_stream_fork #(
+    parameter int unsigned N_OUP = 0    // Synopsys DC requires a default value for parameters.
+) (
+    input  logic                clk_i,
+    input  logic                rst_ni,
+    input  logic                valid_i,
+    output logic                ready_o,
+    output logic [N_OUP-1:0]    valid_o,
+    input  logic [N_OUP-1:0]    ready_i
+);
+
+    typedef enum logic {READY, WAITING} state_t;
+
+    logic [N_OUP-1:0]   oup_ready,
+                        all_ones;
+
+    state_t inp_state_d, inp_state_q;
+
+    // Input control FSM
+    always_comb begin
+        // ready_o     = 1'b0;
+        inp_state_d = inp_state_q;
+
+        unique case (inp_state_q)
+            READY: begin
+                if (valid_i) begin
+                    if (valid_o == all_ones && ready_i == all_ones) begin
+                        // If handshake on all outputs, handshake on input.
+                        ready_o = 1'b1;
+                    end else begin
+                        ready_o = 1'b0;
+                        // Otherwise, wait for inputs that did not handshake yet.
+                        inp_state_d = WAITING;
+                    end
+                end else begin
+                    ready_o = 1'b0;
+                end
+            end
+            WAITING: begin
+                if (valid_i && oup_ready == all_ones) begin
+                    ready_o = 1'b1;
+                    inp_state_d = READY;
+                end else begin
+                    ready_o = 1'b0;
+                end
+            end
+            default: begin
+                inp_state_d = READY;
+                ready_o = 1'b0;
+            end
+        endcase
+    end
+
+    always_ff @(posedge clk_i, negedge rst_ni) begin
+        if (!rst_ni) begin
+            inp_state_q <= READY;
+        end else begin
+            inp_state_q <= inp_state_d;
+        end
+    end
+
+    // Output control FSM
+    for (genvar i = 0; i < N_OUP; i++) begin: gen_oup_state
+        state_t oup_state_d, oup_state_q;
+
+        always_comb begin
+            oup_ready[i]    = 1'b1;
+            valid_o[i]      = 1'b0;
+            oup_state_d     = oup_state_q;
+
+            unique case (oup_state_q)
+                READY: begin
+                    if (valid_i) begin
+                        valid_o[i] = 1'b1;
+                        if (ready_i[i]) begin   // Output handshake
+                            if (!ready_o) begin     // No input handshake yet
+                                oup_state_d = WAITING;
+                            end
+                        end else begin          // No output handshake
+                            oup_ready[i] = 1'b0;
+                        end
+                    end
+                end
+                WAITING: begin
+                    if (valid_i && ready_o) begin   // Input handshake
+                        oup_state_d = READY;
+                    end
+                end
+                default: begin
+                    oup_state_d = READY;
+                end
+            endcase
+        end
+
+        always_ff @(posedge clk_i, negedge rst_ni) begin
+            if (!rst_ni) begin
+                oup_state_q <= READY;
+            end else begin
+                oup_state_q <= oup_state_d;
+            end
+        end
+    end
+
+    assign all_ones = '1;   // Synthesis fix for Vivado, which does not correctly compute the width
+                            // of the '1 literal when assigned to a port of parametrized width.
+
+
+
+endmodule
+// Copyright 2020 ETH Zurich and University of Bologna.
+// Copyright and related rights are licensed under the Solderpad Hardware
+// License, Version 0.51 (the "License"); you may not use this file except in
+// compliance with the License. You may obtain a copy of the License at
+// http://solderpad.org/licenses/SHL-0.51. Unless required by applicable law
+// or agreed to in writing, software, hardware and materials distributed under
+// this License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
+// CONDITIONS OF ANY KIND, either express or implied. See the License for the
+// specific language governing permissions and limitations under the License.
+
+// Authors:
+// - Luca Colagrande <colluca@iis.ee.ethz.ch>
+
+// Copyright lowRISC contributors (OpenTitan project).
+// Licensed under the Apache License, Version 2.0, see LICENSE for details.
+// SPDX-License-Identifier: Apache-2.0
+
+// Macros and helper code for using assertions.
+//  - Provides default clk and rst options to simplify code
+//  - Provides boiler plate template for common assertions
+
+
+
+
+///////////////////
+// Helper macros //
+///////////////////
+
+// Default clk and reset signals used by assertion macros below.
+
+
+
+// Converts an arbitrary block of code into a Verilog string
+
+
+// ASSERT_ERROR logs an error message with either `uvm_error or with $error.
+//
+// This somewhat duplicates `DV_ERROR macro defined in hw/dv/sv/dv_utils/dv_macros.svh. The reason
+// for redefining it here is to avoid creating a dependency.
+
+
+// This macro is suitable for conditionally triggering lint errors, e.g., if a Sec parameter takes
+// on a non-default value. This may be required for pre-silicon/FPGA evaluation but we don't want
+// to allow this for tapeout.
+
+
+// Static assertions for checks inside SV packages. If the conditions is not true, this will
+// trigger an error during elaboration.
+
+
+// The basic helper macros are actually defined in "implementation headers". The macros should do
+// the same thing in each case (except for the dummy flavour), but in a way that the respective
+// tools support.
+//
+// If the tool supports assertions in some form, we also define INC_ASSERT (which can be used to
+// hide signal definitions that are only used for assertions).
+//
+// The list of basic macros supported is:
+//
+//  ASSERT_I:     Immediate assertion. Note that immediate assertions are sensitive to simulation
+//                glitches.
+//
+//  ASSERT_INIT:  Assertion in initial block. Can be used for things like parameter checking.
+//
+//  ASSERT_INIT_NET: Assertion in initial block. Can be used for initial value of a net.
+//
+//  ASSERT_FINAL: Assertion in final block. Can be used for things like queues being empty at end of
+//                sim, all credits returned at end of sim, state machines in idle at end of sim.
+//
+//  ASSERT_AT_RESET: Assertion just before reset. Can be used to check sum-like properties that get
+//                   cleared at reset.
+//                   Note that unless your simulation ends with a reset, the property does not get
+//                   checked at end of simulation; use ASSERT_AT_RESET_AND_FINAL if the property
+//                   should also get checked at end of simulation.
+//
+//  ASSERT_AT_RESET_AND_FINAL: Assertion just before reset and in final block. Can be used to check
+//                             sum-like properties before every reset and at the end of simulation.
+//
+//  ASSERT:       Assert a concurrent property directly. It can be called as a module (or
+//                interface) body item.
+//
+//                Note: We use (__rst !== '0) in the disable iff statements instead of (__rst ==
+//                '1). This properly disables the assertion in cases when reset is X at the
+//                beginning of a simulation. For that case, (reset == '1) does not disable the
+//                assertion.
+//
+//  ASSERT_NEVER: Assert a concurrent property NEVER happens
+//
+//  ASSERT_KNOWN: Assert that signal has a known value (each bit is either '0' or '1') after reset.
+//                It can be called as a module (or interface) body item.
+//
+//  COVER:        Cover a concurrent property
+//
+//  ASSUME:       Assume a concurrent property
+//
+//  ASSUME_I:     Assume an immediate property
+
+
+ // Copyright lowRISC contributors (OpenTitan project).
+// Licensed under the Apache License, Version 2.0, see LICENSE for details.
+// SPDX-License-Identifier: Apache-2.0
+
+// Macro bodies included by prim_assert.sv for tools that don't support assertions. See
+// prim_assert.sv for documentation for each of the macros.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+//////////////////////////////
+// Complex assertion macros //
+//////////////////////////////
+
+// Assert that signal is an active-high pulse with pulse length of 1 clock cycle
+
+
+// Assert that a property is true only when an enable signal is set.  It can be called as a module
+// (or interface) body item.
+
+
+// Assert that signal has a known value (each bit is either '0' or '1') after reset if enable is
+// set.  It can be called as a module (or interface) body item.
+
+
+//////////////////////////////////
+// For formal verification only //
+//////////////////////////////////
+
+// Note that the existing set of ASSERT macros specified above shall be used for FPV,
+// thereby ensuring that the assertions are evaluated during DV simulations as well.
+
+// ASSUME_FPV
+// Assume a concurrent property during formal verification only.
+
+
+// ASSUME_I_FPV
+// Assume a concurrent property during formal verification only.
+
+
+// COVER_FPV
+// Cover a concurrent property during formal verification
+
+
+// FPV assertion that proves that the FSM control flow is linear (no loops)
+// The sequence triggers whenever the state changes and stores the current state as "initial_state".
+// Then thereafter we must never see that state again until reset.
+// It is possible for the reset to release ahead of the clock.
+// Create a small "gray" window beyond the usual rst time to avoid
+// checking.
+
+
+// Copyright lowRISC contributors (OpenTitan project).
+// Licensed under the Apache License, Version 2.0, see LICENSE for details.
+// SPDX-License-Identifier: Apache-2.0
+
+// // Macros and helper code for security countermeasures.
+
+
+
+
+
+
+// When a named error signal rises, expect to see an associated error in at most MAX_CYCLES_ cycles.
+//
+// The NAME_ argument gets included in the name of the generated assertion, following an FpSecCm
+// prefix. The error signal should be at HIER_.ERR_NAME_ and the posedge is ignored if GATE_ is
+// true.
+//
+// This macro drives a magic "unused_assert_connected" signal, which is used for a static check to
+// ensure the assertions are in place.
+
+
+// When an error signal rises, expect to see the associated alert in at most MAX_CYCLE_ cycles.
+//
+// The NAME_, HIER_, GATE_, MAX_CYCLES_ and ERR_NAME_ arguments are the same as for
+// `ASSERT_ERROR_TRIGGER_ERR. The ALERT_ argument is the name of the alert that we expect to be
+// asserted.
+//
+// This macro adds an assumption that says the named error signal will stay low for the first 10
+// cycles after reset.
+
+
+// When an error signal rises, expect to see the associated ALERT_IN_ signal go high in at most
+// MAX_CYCLES_
+//
+// This is expected to cause an alert to be signalled, but avoids needing to reason about the
+// internals of the alert sender (which are checked with formal properties in the prim_alert_rxtx*
+// cores).
+//
+// The NAME_, HIER_, GATE_, MAX_CYCLES_ and ERR_NAME_ arguments are the same as for
+// `ASSERT_ERROR_TRIGGER_ERR.
+
+
+////////////////////////////////////////////////////////////////////////////////
+//
+// Assertions for CMs that trigger alerts
+//
+////////////////////////////////////////////////////////////////////////////////
+
+
+
+
+
+
+
+
+
+
+
+
+
+////////////////////////////////////////////////////////////////////////////////
+//
+// The input flavour of assertions for CMs that trigger alerts
+//
+// Note that the default value for MAX_CYCLES_ in these assertions is much smaller than
+// _SEC_CM_ALERT_MAX_CYC. Because we are asserting something about the *input* for the alert system,
+// the timing can be much tighter: we default to two cycles.
+//
+////////////////////////////////////////////////////////////////////////////////
+
+
+
+
+
+
+
+
+
+
+
+
+
+////////////////////////////////////////////////////////////////////////////////
+//
+// Assertions for CMs that trigger some other form of error
+//
+////////////////////////////////////////////////////////////////////////////////
+
+
+
+
+
+
+
+
+
+
+
+ // PRIM_ASSERT_SEC_CM_SVH
+
+// Copyright lowRISC contributors (OpenTitan project).
+// Licensed under the Apache License, Version 2.0, see LICENSE for details.
+// SPDX-License-Identifier: Apache-2.0
+
+
+
+
+/////////////////////////////////////
+// Default Values for Macros below //
+/////////////////////////////////////
+
+
+
+
+
+/////////////////////
+// Register Macros //
+/////////////////////
+
+// TODO: define other variations of register macros so that they can be used throughout all designs
+// to make the code more concise.
+
+// Register with asynchronous reset.
+
+
+///////////////////////////
+// Macro for Sparse FSMs //
+///////////////////////////
+
+// Simulation tools typically infer FSMs and report coverage for these separately. However, tools
+// like Xcelium and VCS seem to have problems inferring FSMs if the state register is not coded in
+// a behavioral always_ff block in the same hierarchy. To that end, this uses a modified variant
+// with a second behavioral register definition for RTL simulations so that FSMs can be inferred.
+// Note that in this variant, the __q output is disconnected from prim_sparse_fsm_flop and attached
+// to the behavioral flop. An assertion is added to ensure equivalence between the
+// prim_sparse_fsm_flop output and the behavioral flop output in that case.
+
+
+ // PRIM_FLOP_MACROS_SV
+
+
+ // PRIM_ASSERT_SV
+
+
+// Stream join dynamic: Joins a parametrizable number of input streams (i.e. valid-ready
+// handshaking with dependency rules as in AXI4) to a single output stream. The subset of streams
+// to join can be configured dynamically via `sel_i`. The output handshake happens only after
+// there has been a handshake. The data channel flows outside of this module.
+module lowrisc_stream_join_dynamic #(
+  /// Number of input streams
+  parameter int unsigned N_INP = 32'd0 // Synopsys DC requires a default value for parameters.
+) (
+  /// Input streams valid handshakes
+  input  logic [N_INP-1:0] inp_valid_i,
+  /// Input streams ready handshakes
+  output logic [N_INP-1:0] inp_ready_o,
+  /// Selection mask for the output handshake
+  input  logic [N_INP-1:0] sel_i,
+  /// Output stream valid handshake
+  output logic             oup_valid_o,
+  /// Output stream ready handshake
+  input  logic             oup_ready_i
+);
+
+  // Corner case when `sel_i` is all 0s should not generate valid
+  assign oup_valid_o = &(inp_valid_i | ~sel_i) && |sel_i;
+  for (genvar i = 0; i < N_INP; i++) begin : gen_inp_ready
+    assign inp_ready_o[i] = oup_valid_o & oup_ready_i & sel_i[i];
+  end
+
+
+
+endmodule
 // Copyright lowRISC contributors (OpenTitan project).
 // Licensed under the Apache License, Version 2.0, see LICENSE for details.
 // SPDX-License-Identifier: Apache-2.0
@@ -19019,12 +20768,13 @@ module lowrisc_prim_trivium import lowrisc_prim_trivium_pkg::*;
   input  logic [StateWidth-1:0]       seed_state_full_i,    // Seed input for SeedTypeStateFull
   input  logic [PartialSeedWidth-1:0] seed_state_partial_i, // Seed input for SeedTypeStatePartial
 
-  output logic [OutputWidth-1:0] key_o, // Key stream output
-  output logic                   err_o  // The primitive entered an all zero state and may have
-                                        // locked up or entered the default state defined by
-                                        // RndCnstTriviumLfsrSeed depending on the
-                                        // StrictLockupProtection parameter and the allow_lockup_i
-                                        // signal.
+  output logic [OutputWidth-1:0] key_o,   // Key stream output
+  output logic [StateWidth-1:0]  state_o, // The current cipher state
+  output logic                   err_o    // The primitive entered an all zero state and may have
+                                          // locked up or entered the default state defined by
+                                          // RndCnstTriviumLfsrSeed depending on the
+                                          // StrictLockupProtection parameter and the
+                                          // allow_lockup_i signal.
 );
 
   localparam int unsigned LastStatePartFractional = StateWidth % PartialSeedWidth != 0 ? 1 : 0;
@@ -19070,6 +20820,8 @@ module lowrisc_prim_trivium import lowrisc_prim_trivium_pkg::*;
       end
     end
   end
+
+  assign state_o = state_q;
 
   ///////////////
   // Reseeding //
@@ -19241,6 +20993,1037 @@ module lowrisc_prim_trivium import lowrisc_prim_trivium_pkg::*;
 
 
 endmodule
+// Copyright Microsoft Corporation
+// Licensed under the Apache License, Version 2.0, see LICENSE for details.
+// SPDX-License-Identifier: Apache-2.0
+
+module lowrisc_ibex_cheriot_ex import lowrisc_ibex_cheriot_pkg::*; import lowrisc_ibex_pkg::*; #(
+  parameter logic        WritebackStage = 1'b0
+)(
+   // Clock and Reset
+  input  logic                   clk_i,
+  input  logic                   rst_ni,
+
+  // configuration & control
+  input  ibex_mubi_t             cheriot_enable_i,
+  input  logic                   debug_mode_i,
+
+  // data forwarded from WB stage
+  input  logic                   fwd_we_i,
+  input  logic  [4:0]            fwd_waddr_i,
+  input  logic [31:0]            fwd_wdata_i,
+  input  cap_t                   fwd_wcap_i,
+
+  // regfile interface
+  input  logic  [4:0]            rf_raddr_a_i,
+  input  logic [31:0]            rf_rdata_a_i,
+  input  cap_t                   rf_rcap_a_i,
+  input  logic  [4:0]            rf_raddr_b_i,
+  input  logic [31:0]            rf_rdata_b_i,
+  input  cap_t                   rf_rcap_b_i,
+  input  logic  [4:0]            rf_waddr_i,
+
+  // pcc interface
+  input  decoded_cap_t           pcc_cap_i,
+  output decoded_cap_t           pcc_cap_o,
+  input  logic [31:0]            pc_id_i,
+
+  // use branch_req_o also to update pcc cap
+  output logic                   branch_req_o,          // update PCC (goes to cs_registers)
+  output logic                   branch_req_spec_o,     // speculative branch request (go to IF)
+  output logic [31:0]            branch_target_o,
+
+  // Interface to ID stage control logic
+  input  logic                   cheriot_exec_id_i,
+  input  logic                   instr_first_cycle_i,   // 1st exec cycle allowing lsu_req
+
+  // inputs from decoder
+  input  logic                   instr_valid_i,
+  input  logic                   instr_is_cheriot_i,
+  input  logic                   instr_is_rv32lsu_i,
+  input  logic                   instr_is_compressed_i,
+  input  logic [11:0]            cheriot_imm12_i,
+  input  logic [19:0]            cheriot_imm20_i,
+  input  logic [20:0]            cheriot_imm21_i,
+  input  logic  [4:0]            cheriot_cs2_dec_i,       // cs2 used for CSR address
+  input  cheriot_op_t            cheriot_operator_i,
+  input  cheriot_cap_field_e     cheriot_cap_field_sel_i,
+  input  cheriot_adder_a_sel_e   cheriot_adder_a_sel_i,
+  input  cheriot_adder_b_sel_e   cheriot_adder_b_sel_i,
+  input  cheriot_setaddr_sel_e   cheriot_setaddr_sel_i,
+  input  cheriot_setbounds_sel_e cheriot_setbounds_sel_i,
+
+  // output to wb stage
+  output logic                   cheriot_rf_we_o,
+  output logic [31:0]            result_data_o,
+  output cap_t                   result_cap_o,
+
+  output logic                   cheriot_ex_valid_o,
+  output logic                   cheriot_ex_err_o,
+  output logic [11:0]            cheriot_ex_err_info_o,
+  output logic                   cheriot_wb_err_o,
+  output logic [15:0]            cheriot_wb_err_info_o,
+
+  // lsu interface
+  output logic                   lsu_req_o,
+  output logic                   lsu_cheriot_err_o,
+  output logic                   lsu_is_cap_o,
+  output cap_clrperm_t           lsu_lc_clrperm_o,
+  output logic                   lsu_we_o,
+  output logic [31:0]            lsu_addr_o,
+  output logic [1:0]             lsu_type_o,
+  output logic [31:0]            lsu_wdata_o,
+  output cap_t                   lsu_wcap_o,
+  output logic                   lsu_sign_ext_o,
+
+  input  logic                   addr_incr_req_i,
+  input  logic [31:0]            addr_last_i,
+
+  // LSU interface to the existing core (muxed)
+  input  logic                   rv32_lsu_req_i,
+  input  logic                   rv32_lsu_we_i,
+  input  logic [1:0]             rv32_lsu_type_i,
+  input  logic [31:0]            rv32_lsu_wdata_i,
+  input  logic                   rv32_lsu_sign_ext_i,
+  input  logic [31:0]            rv32_lsu_addr_i,
+  output logic                   rv32_addr_incr_req_o,
+  output logic [31:0]            rv32_addr_last_o,
+
+  input  logic [31:0]            csr_rdata_i,
+  input  cap_t                   csr_rcap_i,
+  input  logic                   csr_mstatus_mie_i,
+  output logic                   csr_access_o,
+  output logic  [4:0]            csr_addr_o,
+  output logic [31:0]            csr_wdata_o,
+  output cap_t                   csr_wcap_o,
+  output cheriot_csr_op_e        csr_op_o,
+  output logic                   csr_op_en_o,
+  output logic                   csr_set_mie_o,
+  output logic                   csr_clr_mie_o,
+
+  // stack highwater mark updates
+  input  logic [31:0]            csr_mshwm_i,
+  input  logic [31:0]            csr_mshwmb_i,
+  output logic                   csr_mshwm_set_o,
+  output logic [31:0]            csr_mshwm_new_o,
+
+  input  logic [31:0]            ztop_rdata_i,
+  input  cap_t                   ztop_rcap_i,
+
+  // debug feature
+  input  logic                   csr_dbg_tclr_fault_i
+);
+
+  logic               cheriot_lsu_req;
+  logic               cheriot_lsu_we;
+  logic [31:0]        cheriot_lsu_addr;
+  logic [31:0]        cheriot_lsu_wdata;
+  cap_t               cheriot_lsu_wcap;
+  logic               cheriot_lsu_err;
+  logic               cheriot_lsu_is_cap;
+
+  logic [31:0]        rf_rdata_a, rf_rdata_ng_a;
+  logic [31:0]        rf_rdata_b, rf_rdata_ng_b;
+
+  cap_t               rf_rcap_a, rf_rcap_ng_a;
+  cap_t               rf_rcap_b, rf_rcap_ng_b;
+
+  decoded_cap_t       rf_fullcap_a, rf_fullcap_b;
+
+  cap_t               csc_wcap;
+
+  logic               is_load_cap, is_store_cap, is_cap;
+
+  logic               addr_bound_vio;
+  logic               perm_vio, perm_vio_slc;
+  logic               rv32_lsu_err;
+  logic               addr_bound_vio_rv32;
+  logic               perm_vio_rv32;
+
+  logic [W_PVIO-1:0]  perm_vio_vec, perm_vio_vec_rv32;
+
+  logic  [31:0]       cs1_addr_plusimm;
+  logic  [31:0]       cs1_imm;
+  logic  [31:0]       addr_result;
+
+  logic               cheriot_rf_we_raw, branch_req_raw, branch_req_spec_raw;
+  logic               csr_set_mie_raw, csr_clr_mie_raw;
+  logic               cheriot_ex_valid_raw, cheriot_ex_err_raw;
+  logic               csr_op_en_raw;
+  logic               cheriot_wb_err_raw;
+  logic               cheriot_wb_err_q, cheriot_wb_err_d;
+  cap_clrperm_t       cheriot_lsu_lc_clrperm;
+  logic               lc_cglg, lc_csdlm, lc_ctag;
+  logic  [31:0]       pc_id_nxt;
+
+  decoded_cap_t       setaddr1_outcap, setbounds_outcap, setbounds_rndn_outcap;
+  bound_result_t      setbounds_result;
+  logic  [31:0]       setbounds_maska, setbounds_rlen;
+  logic  [15:0]       cheriot_wb_err_info_q, cheriot_wb_err_info_d;
+
+  logic   [4:0]       cheriot_err_cause, rv32_err_cause;
+  logic   [31:0]      cpu_lsu_addr;
+  logic   [31:0]      cpu_lsu_wdata;
+  logic               cpu_lsu_we;
+  logic               cpu_lsu_cheriot_err, cpu_lsu_is_cap;
+
+  logic               illegal_scr_addr;
+  // verilator lint_off UNOPTFLAT
+  logic               scr_legalization;
+  // verilator lint_on UNOPTFLAT
+
+  decoded_cap_t       tfcap;
+  perms_t             pmask;
+  logic               clr_sealed;
+  logic               instr_fault;
+  logic               is_write, is_ztop;
+  cap_t               trcap;
+  logic [2:0]         seal_type;
+  logic [31:0]        tmp32a, tmp32b;
+  decoded_cap_t       tfcap1;
+  logic [31:0]        taddr1;
+  logic [31:0]        newlen;
+  logic               req_exact;
+  logic [31:0]        tmp_addr;
+  decoded_cap_t       tfcap3;
+  logic [31:0]        rv32_top_offset;
+  logic [32:0]        rv32_top_bound;
+  logic [31:0]        rv32_base_bound, rv32_base_chkaddr;
+  logic               rv32_top_vio, rv32_base_vio;
+  logic [32:0]        rv32_top_chkaddr;
+  logic               rv32_top_size_ok;
+  logic [32:0]        chk_top_bound;
+  logic [31:0]        chk_base_bound, chk_base_chkaddr;
+  logic [32:0]        chk_top_chkaddr;
+  logic               chk_top_vio, chk_base_vio, chk_top_equal;
+  logic               chk_cs2_bad_type;
+  logic               chk_cs1_otype_0, chk_cs1_otype_1, chk_cs1_otype_45, chk_cs1_otype_23;
+
+  // data forwarding for CHERIoT instructions
+  //  - note address 0 is a read-only location per RISC-V
+  always_comb begin : fwd_data_merger
+    if ((rf_raddr_a_i == fwd_waddr_i) && fwd_we_i && (|rf_raddr_a_i)) begin
+      rf_rdata_ng_a = fwd_wdata_i;
+      rf_rcap_ng_a  = fwd_wcap_i;
+    end else begin
+      rf_rdata_ng_a = rf_rdata_a_i;
+      rf_rcap_ng_a  = rf_rcap_a_i;
+    end
+
+    if ((rf_raddr_b_i == fwd_waddr_i) && fwd_we_i && (|rf_raddr_b_i)) begin
+      rf_rdata_ng_b = fwd_wdata_i;
+      rf_rcap_ng_b  = fwd_wcap_i;
+    end else begin
+      rf_rdata_ng_b = rf_rdata_b_i;
+      rf_rcap_ng_b  = rf_rcap_b_i;
+    end
+  end
+
+  // 1st level of operand gating (power-saving)
+  //  - gate off the input to reg2full conversion logic
+  //  - note rv32 lsu req only use cs1
+  //  - may need to use don't-touch gates
+  assign rf_rcap_a   = (instr_is_cheriot_i | instr_is_rv32lsu_i) ? rf_rcap_ng_a : NULL_CAP;
+  assign rf_rdata_a  = (instr_is_cheriot_i | instr_is_rv32lsu_i) ? rf_rdata_ng_a : 32'h0;
+
+  assign rf_rcap_b   = instr_is_cheriot_i ? rf_rcap_ng_b : NULL_CAP;
+  assign rf_rdata_b  = instr_is_cheriot_i ? rf_rdata_ng_b : 32'h0;
+
+  // expand the capabilities
+  assign rf_fullcap_a = cheriot_decode_cap(rf_rcap_a, rf_rdata_a);
+  assign rf_fullcap_b = cheriot_decode_cap(rf_rcap_b, rf_rdata_b);
+
+  // gate these signals with cheriot_exec_id to make sure they are only active when needed
+  // (only 1 cycle in all cases other than cheriot_rf_we)
+  // -- safest approach and probably the right thing to do in case there is a wb_exception
+  assign cheriot_rf_we_o   = cheriot_rf_we_raw & cheriot_exec_id_i;
+  assign branch_req_o      = branch_req_raw & cheriot_exec_id_i;
+  assign branch_req_spec_o = branch_req_spec_raw & cheriot_exec_id_i;
+  assign csr_set_mie_o     = csr_set_mie_raw & cheriot_exec_id_i;
+  assign csr_clr_mie_o     = csr_clr_mie_raw & cheriot_exec_id_i;
+  assign csr_op_en_o       = csr_op_en_raw & cheriot_exec_id_i;
+
+  // ex_valid only used in multicycle case
+  // ex_err is used for id exceptions
+  assign cheriot_ex_valid_o = cheriot_ex_valid_raw & cheriot_exec_id_i;
+  assign cheriot_ex_err_o   = cheriot_ex_err_raw & cheriot_exec_id_i & ~debug_mode_i;
+
+  if (WritebackStage) begin : gen_err_wb_stage
+    assign cheriot_wb_err_o = cheriot_wb_err_q;
+  end else begin : gen_err_no_wb_stage
+    assign cheriot_wb_err_o = cheriot_wb_err_d;
+  end
+
+  assign cheriot_lsu_lc_clrperm = debug_mode_i ? '0 :
+                                                 '{CTAG: lc_ctag, SD_LM: lc_csdlm, GL_LG: lc_cglg};
+
+  always_comb begin : main_ex
+    //default
+    cheriot_rf_we_raw    = 1'b0;
+    result_data_o        = 32'h0;
+    result_cap_o         = NULL_CAP;
+    csc_wcap             = NULL_CAP;
+    cheriot_ex_valid_raw = 1'b0;
+    cheriot_ex_err_raw   = 1'b0;
+    cheriot_wb_err_raw   = 1'b0;
+    csr_access_o         = 1'b0;
+    csr_addr_o           = 5'h0;
+    csr_wdata_o          = 32'h0;
+    csr_wcap_o           = NULL_CAP;
+    csr_op_o             = CHERIOT_CSR_NULL;
+    csr_op_en_raw        = 1'b0;
+    scr_legalization     = 1'b0;
+
+    branch_req_raw       = 1'b0;
+    branch_req_spec_raw  = 1'b0;
+    csr_set_mie_raw      = 1'b0;
+    csr_clr_mie_raw      = 1'b0;
+    branch_target_o      = 32'h0;
+    pcc_cap_o            = NULL_DECODED_CAP;
+    tfcap                = NULL_DECODED_CAP;
+    lc_cglg              = 1'b0;
+    lc_csdlm             = 1'b0;
+    lc_ctag              = 1'b0;
+
+    unique case (1'b1)
+      cheriot_operator_i.CGET_FIELD:
+        begin
+          result_cap_o         = NULL_CAP;
+          cheriot_rf_we_raw    = 1'b1;
+          cheriot_ex_valid_raw = 1'b1;
+          unique case (cheriot_cap_field_sel_i)
+            CFIELD_PERM: result_data_o = {20'h0, rf_fullcap_a.perms};
+            CFIELD_TYPE: result_data_o = {28'h0,
+                             cheriot_decode_otype(rf_fullcap_a.otype, rf_fullcap_a.perms.EX)};
+            CFIELD_BASE: result_data_o = rf_fullcap_a.base32;
+            CFIELD_TOP:  result_data_o = rf_fullcap_a.top33[32] ? 32'hffff_ffff
+                                                                 : rf_fullcap_a.top33[31:0];
+            CFIELD_LEN:  result_data_o = cheriot_cap_length(rf_fullcap_a);
+            CFIELD_TAG:  result_data_o = {31'h0, rf_fullcap_a.valid};
+            CFIELD_ADDR: result_data_o = rf_rdata_a;
+            CFIELD_HIGH: result_data_o = 32'(cheriot_cap_to_mem(rf_rcap_a));
+            default:     result_data_o = 32'h0;
+          endcase
+        end
+      (cheriot_operator_i.CSEAL | cheriot_operator_i.CUNSEAL):
+        begin                   // cd <-- cs1; cd.otyp <-- cs2.otype; cd.sealed <-- val
+          result_data_o = rf_rdata_a;
+
+          if (cheriot_operator_i.CSEAL)
+            result_cap_o = cheriot_encode_cap(cheriot_seal(rf_fullcap_a, rf_rdata_b[OTYPE_W-1:0]));
+          else begin
+            tfcap          = cheriot_unseal(rf_fullcap_a);
+            tfcap.perms.GL = rf_fullcap_a.perms.GL & rf_fullcap_b.perms.GL;
+            tfcap.cperms   = cheriot_compress_perms(tfcap.perms);
+            result_cap_o   = cheriot_encode_cap(tfcap);
+          end
+
+          result_cap_o.valid   = result_cap_o.valid & (~addr_bound_vio) & (~perm_vio);
+          cheriot_rf_we_raw      = 1'b1;
+          cheriot_ex_valid_raw   = 1'b1;
+        end
+      cheriot_operator_i.CAND_PERM:         // cd <-- cs1; cd.perm <-- cd.perm & rs2
+        begin
+          result_data_o = rf_rdata_a;
+          tfcap         = rf_fullcap_a;
+          tfcap.perms   = perms_t'(PERMS_W'(tfcap.perms) & rf_rdata_b[PERMS_W-1:0]);
+          tfcap.cperms  = cheriot_compress_perms(tfcap.perms);
+          // for sealed caps, clear tag unless perm mask (excluding GL) == all '1'
+          pmask                = perms_t'(rf_rdata_b[PERMS_W-1:0]);
+          pmask.GL             = 1'b1;
+          tfcap.valid          = tfcap.valid &
+                                 (~cheriot_is_sealed(rf_fullcap_a) | (&PERMS_W'(pmask)));
+          result_cap_o         = cheriot_encode_cap(tfcap);
+          cheriot_rf_we_raw    = 1'b1;
+          cheriot_ex_valid_raw = 1'b1;
+        end
+      cheriot_operator_i.CSET_HIGH:         // cd <-- cs1; cd.high <-- convert(rs2)
+        begin
+          result_data_o        = rf_rdata_a;
+          result_cap_o         = cheriot_mem_to_cap({1'b0, rf_rdata_b}, {1'b0, rf_rdata_a}, 3'h0);
+          cheriot_rf_we_raw    = 1'b1;
+          cheriot_ex_valid_raw = 1'b1;
+        end
+
+      // setaddr/incoffset: cd <-- cs1; cd.offset <-- rs2, or cs1.addr + rs2, or cs1.addr + imm12
+      // auipcc: cd <-- pcc, cd.address <-- pcc.address + (imm20 << 12)
+      (cheriot_operator_i.CSET_ADDR | cheriot_operator_i.CINC_ADDR |
+       cheriot_operator_i.CINC_ADDR_IMM | cheriot_operator_i.CAUIPCC |
+       cheriot_operator_i.CAUICGP):
+        begin
+          result_data_o        = addr_result;
+
+          // for pointer operations, follow C convention and allow newptr == top
+          clr_sealed           = (cheriot_setaddr_sel_i == SETADDR_PCC_ARITH)
+                                 ? 1'b0 : cheriot_is_sealed(rf_fullcap_a);
+          tfcap                = setaddr1_outcap;
+          tfcap.valid          = tfcap.valid & ~clr_sealed;
+          result_cap_o         = cheriot_encode_cap(tfcap);
+          instr_fault          = csr_dbg_tclr_fault_i
+              & (rf_fullcap_a.valid | (cheriot_setaddr_sel_i == SETADDR_PCC_ARITH))
+              & ~result_cap_o.valid;
+          cheriot_wb_err_raw   = instr_fault;
+          cheriot_rf_we_raw    = ~instr_fault;
+          cheriot_ex_valid_raw = 1'b1;
+        end
+      (cheriot_operator_i.CSET_BOUNDS | cheriot_operator_i.CSET_BOUNDS_IMM
+       | cheriot_operator_i.CSET_BOUNDS_EX | cheriot_operator_i.CRRL
+       | cheriot_operator_i.CRAM | cheriot_operator_i.CSET_BOUNDS_RNDN):
+        begin                  // cd <-- cs1; cd.base <-- cs1.address, cd.len <-- rs2 or imm12
+          tfcap       = (cheriot_setbounds_sel_i == SETBOUNDS_RNDN) ? setbounds_rndn_outcap
+                                                                  : setbounds_outcap;
+          tfcap.valid = tfcap.valid & ~cheriot_is_sealed(rf_fullcap_a);
+
+          if (cheriot_setbounds_sel_i == SETBOUNDS_CRRL) begin
+            result_data_o = setbounds_rlen;
+            result_cap_o  = NULL_CAP;
+          end else if (cheriot_setbounds_sel_i == SETBOUNDS_CRAM) begin
+            result_data_o = setbounds_maska;
+            result_cap_o  = NULL_CAP;
+          end else begin
+            result_data_o = rf_rdata_a;
+            result_cap_o  = cheriot_encode_cap(tfcap);
+          end
+
+          cheriot_ex_valid_raw = 1'b1;
+          instr_fault        = csr_dbg_tclr_fault_i & rf_fullcap_a.valid & ~result_cap_o.valid &
+                               (cheriot_setbounds_sel_i == SETBOUNDS_RS2   ||
+                                cheriot_setbounds_sel_i == SETBOUNDS_RS2_EX ||
+                                cheriot_setbounds_sel_i == SETBOUNDS_IMM   ||
+                                cheriot_setbounds_sel_i == SETBOUNDS_RNDN);
+          cheriot_rf_we_raw    = ~instr_fault;
+          cheriot_wb_err_raw   = instr_fault;
+        end
+      cheriot_operator_i.CCLEAR_TAG:         // cd <-- cs1; cd.tag <-- '0'
+        begin
+          result_data_o        = rf_rdata_a;
+          result_cap_o         = rf_rcap_a;
+          result_cap_o.valid   = 1'b0;
+          cheriot_rf_we_raw    = 1'b1;
+          cheriot_ex_valid_raw = 1'b1;
+        end
+      cheriot_operator_i.CIS_SUBSET:      // rd <-- (cs1.tag == cs2.tag) && (cs2 is_subset_of cs1)
+        begin
+          result_data_o        = 32'((rf_fullcap_a.valid == rf_fullcap_b.valid) &&
+                                  ~addr_bound_vio && (&(rf_fullcap_a.perms | ~rf_fullcap_b.perms)));
+          result_cap_o         = NULL_CAP;
+          cheriot_rf_we_raw    = 1'b1;
+          cheriot_ex_valid_raw = 1'b1;
+        end
+      cheriot_operator_i.CIS_EQUAL:       // rd <-- (cs1 == cs2)
+        begin
+          result_data_o =
+              32'(cheriot_caps_equal(rf_fullcap_a, rf_fullcap_b, rf_rdata_a, rf_rdata_b));
+          result_cap_o         = NULL_CAP;
+          cheriot_rf_we_raw    = 1'b1;
+          cheriot_ex_valid_raw = 1'b1;
+        end
+      cheriot_operator_i.CSUB_CAP:          // rd <-- cs1.addr - cs2.addr
+        begin
+          result_data_o        = rf_rdata_a - rf_rdata_b;
+          result_cap_o         = NULL_CAP;
+          cheriot_rf_we_raw    = 1'b1;
+          cheriot_ex_valid_raw = 1'b1;
+        end
+      cheriot_operator_i.CMOVE_CAP:         // cd <-- cs1
+        begin
+          result_data_o        = rf_rdata_a;
+          result_cap_o         = rf_rcap_a;
+          cheriot_rf_we_raw    = 1'b1;
+          cheriot_ex_valid_raw = 1'b1;
+        end
+      cheriot_operator_i.CLOAD_CAP:
+        begin
+          lc_cglg              = ~rf_fullcap_a.perms.LG;
+          lc_csdlm             = ~rf_fullcap_a.perms.LM;
+          lc_ctag              = ~rf_fullcap_a.perms.MC;
+
+          result_data_o        = 32'h0;
+          result_cap_o         = NULL_CAP;
+          cheriot_rf_we_raw    = 1'b0;
+          cheriot_ex_valid_raw = 1'b1;             // lsu_req_done is factored in by id_stage
+          cheriot_ex_err_raw   = 1'b0;             // acc err passed to LSU, processed later in WB
+        end
+      cheriot_operator_i.CSTORE_CAP:
+        begin
+          result_data_o        = 32'h0;
+          result_cap_o         = NULL_CAP;
+          cheriot_rf_we_raw    = 1'b0;
+          cheriot_ex_valid_raw = 1'b1;
+          cheriot_ex_err_raw   = 1'b0;       // acc err passed to LSU and processed later in WB
+          csc_wcap             = rf_rcap_b;
+          csc_wcap.valid       = rf_rcap_b.valid & ~perm_vio_slc;
+        end
+      cheriot_operator_i.CCSR_RW:           // cd <-- scr; scr <-- cs1 if cs1 != C0
+        begin
+          is_ztop       = (cheriot_cs2_dec_i == CHERIOT_SCR_ZTOPC);
+          is_write      = (rf_raddr_a_i != 0);
+          instr_fault   = perm_vio | illegal_scr_addr;
+
+          csr_access_o  = ~instr_fault;
+          csr_op_o      = CHERIOT_CSR_RW;
+          csr_op_en_raw = ~instr_fault && is_write && ~is_ztop;
+          csr_addr_o    = cheriot_cs2_dec_i;
+
+          if (cheriot_cs2_dec_i == CHERIOT_SCR_MTCC) begin
+            // MTVEC/MTCC legalization (clear tag if checking fails)
+            // The cheriot_set_address call is required to recompute cap_cor for the legalized
+            // address, updating the correction values only when the trimmed address falls below
+            // the lower bound. Although the capability will be invalidated here regardless,
+            // recomputing ensures the resulting (untagged) capability matches the Sail reference
+            // model in the case where legalization actually changes the address.
+            scr_legalization = 1'b1;
+            csr_wdata_o      = {rf_rdata_a[31:2], 2'b00};
+            trcap            = cheriot_encode_cap(setaddr1_outcap);
+            if ((rf_rdata_a[1:0] != 2'b00) || ~rf_fullcap_a.perms.EX
+                || (rf_fullcap_a.otype != 0))
+              trcap.valid = 1'b0;
+            else
+              trcap.valid = rf_fullcap_a.valid;
+            csr_wcap_o = trcap;
+          end else if (cheriot_cs2_dec_i == CHERIOT_SCR_MEPCC) begin
+            // MEPCC legalization (clear tag if checking fails)
+            // Apply the same legalization and Sail-matching logic as with MTCC above.
+            scr_legalization = 1'b1;
+            csr_wdata_o      = {rf_rdata_a[31:1], 1'b0};
+            trcap            = cheriot_encode_cap(setaddr1_outcap);
+            if ((rf_rdata_a[0] != 1'b0) || ~rf_fullcap_a.perms.EX
+                || (rf_fullcap_a.otype != 0))
+              trcap.valid = 1'b0;
+            else
+              trcap.valid = rf_fullcap_a.valid;
+            csr_wcap_o = trcap;
+          end else begin
+            scr_legalization = 1'b0;
+            csr_wdata_o      = rf_rdata_a;
+            csr_wcap_o       = rf_rcap_a;
+          end
+
+          if (is_ztop) begin
+            result_data_o = ztop_rdata_i;
+            result_cap_o  = ztop_rcap_i;
+          end else begin
+            result_data_o = csr_rdata_i;
+            result_cap_o  = csr_rcap_i;
+          end
+          cheriot_rf_we_raw    = ~instr_fault;
+          cheriot_ex_valid_raw = 1'b1;
+          cheriot_wb_err_raw   = instr_fault;
+        end
+      (cheriot_operator_i.CJALR | cheriot_operator_i.CJAL):
+        begin  // cd <-- pcc; pcc <-- cs1/pc+offset; pcc.address[0] <--'0'; pcc.sealed <--'0'
+          // note this is the RV32 definition of JALR arithmetic (add first then mask of lsb)
+          branch_target_o = {addr_result[31:1], 1'b0};
+          pcc_cap_o       = cheriot_unseal(rf_fullcap_a);
+          // Note we can't directly use pc_if here
+          // (link address == pc_id + delta, but pc_if should be the next executed PC
+          //  (the jump target)
+          //  if branch prediction works)
+          result_data_o   = pc_id_nxt;
+          seal_type       = csr_mstatus_mie_i ? OTYPE_SENTRY_IE_BKWD : OTYPE_SENTRY_ID_BKWD;
+          tfcap           = (rf_waddr_i == 5'h1) ? cheriot_seal(setaddr1_outcap, seal_type) :
+                                                   setaddr1_outcap;
+          result_cap_o    = cheriot_encode_cap(tfcap);
+
+          // problem with instr_fault: the pcc_cap.valid check causing timing issue on instr_addr_o
+          // -- use the speculative version for instruction fetch
+          // -- the ID exception (cheriot_ex_err) flushes the pipeline and re-set PC so
+          //    the speculatively fetched instruction will be flushed
+          // -- this is now mitigated since we no longer do address bound checking here
+          //    but let's keep the solution for now
+
+          instr_fault          = perm_vio;
+
+          cheriot_rf_we_raw    = ~instr_fault;    // err -> wb exception
+          branch_req_raw       = ~instr_fault & cheriot_operator_i.CJALR;    // update PCC in CSR
+          branch_req_spec_raw  = ~instr_fault;    // set fetch PC
+
+          cheriot_wb_err_raw   = instr_fault;
+          cheriot_ex_err_raw   = 1'b0;
+          csr_set_mie_raw      = ~instr_fault && cheriot_operator_i.CJALR &&
+                                 ((rf_fullcap_a.otype == OTYPE_SENTRY_IE_FWD) ||
+                                  (rf_fullcap_a.otype == OTYPE_SENTRY_IE_BKWD)) ;
+          csr_clr_mie_raw      = ~instr_fault && cheriot_operator_i.CJALR &&
+                                 ((rf_fullcap_a.otype == OTYPE_SENTRY_ID_FWD) ||
+                                  (rf_fullcap_a.otype == OTYPE_SENTRY_ID_BKWD)) ;
+          cheriot_ex_valid_raw = 1'b1;
+        end
+      default:;
+    endcase
+  end   // always_comb
+
+  assign is_load_cap  = cheriot_operator_i.CLOAD_CAP;
+  assign is_store_cap = cheriot_operator_i.CSTORE_CAP;
+  assign is_cap       = cheriot_operator_i.CLOAD_CAP | cheriot_operator_i.CSTORE_CAP;
+
+  // muxing between "normal cheriot LSU requests (clc/csc) and CLBC
+
+  if (WritebackStage) begin : gen_lsu_req_wb_stage
+    // assert LSU req until instruction is retired (req_done from LSU)
+    // note if the previous instr is also a load/store, cheriot_exec_id won't be asserted
+    // till WB is ready (lsu_resp for the previous isntr)
+    logic unused_instr_first_cycle;
+    assign unused_instr_first_cycle = instr_first_cycle_i;  // not needed with WB stage
+    assign cheriot_lsu_req = is_cap & cheriot_exec_id_i;
+  end else begin : gen_lsu_req_no_wb_stage
+    // no WB stage, only assert req in the first_cycle phase of the instruction
+    // (consistent with the RV32 load/store instructions)
+    // Here instruction won't complete till lsu_resp_valid in this case,
+    // keeping lsu_req asserted causes problem as LSU sees it as a new request
+    assign cheriot_lsu_req = is_cap & cheriot_exec_id_i & instr_first_cycle_i;
+  end
+
+  assign cheriot_lsu_we     = is_store_cap;
+  assign cheriot_lsu_addr   = cs1_addr_plusimm + {29'h0, addr_incr_req_i, 2'b00};
+  assign cheriot_lsu_is_cap = is_cap;
+
+  assign cheriot_lsu_wdata  = is_store_cap ? rf_rdata_b : 32'h0;
+  assign cheriot_lsu_wcap   = is_store_cap  ? csc_wcap : NULL_CAP;
+
+  // RS1/CS1+offset is
+  //  keep this separate to help timing on the memory interface
+  //   - the starting address for cheriot L*CAP/S*CAP instructions
+  assign cs1_imm = (is_cap | cheriot_operator_i.CJALR) ?
+      {{20{cheriot_imm12_i[11]}}, cheriot_imm12_i} : '0;
+
+  assign cs1_addr_plusimm = rf_rdata_a + cs1_imm;
+
+  assign pc_id_nxt = pc_id_i + (instr_is_compressed_i ? 32'd2 : 32'd4);
+
+  //
+  // shared adder for address calculation
+  //
+  always_comb begin : shared_adder
+    unique case (cheriot_adder_a_sel_i)
+      CHERIOT_ADDER_A_IMM12: tmp32a = {{20{cheriot_imm12_i[11]}}, cheriot_imm12_i};
+      CHERIOT_ADDER_A_IMM21: tmp32a = {{11{cheriot_imm21_i[20]}}, cheriot_imm21_i};
+      CHERIOT_ADDER_A_IMM20: tmp32a = {cheriot_imm20_i[19], cheriot_imm20_i, 11'h0};
+      CHERIOT_ADDER_A_RS2:   tmp32a = rf_rdata_b;
+      default:             tmp32a = 32'h0;
+    endcase
+
+    unique case (cheriot_adder_b_sel_i)
+      CHERIOT_ADDER_B_RS1: tmp32b = rf_rdata_a;
+      CHERIOT_ADDER_B_PC:  tmp32b = pc_id_i;
+      default:           tmp32b = 32'h0;
+    endcase
+
+    addr_result = tmp32a + tmp32b;
+  end
+
+  //
+  // Big combinational functions
+  //  - break out to make sure we can properly gate off operands to save power
+  //
+  always_comb begin: set_address_comb
+    if (cheriot_setaddr_sel_i == SETADDR_PCC_PCNXT) begin
+      tfcap1 = pcc_cap_i;
+      taddr1 = pc_id_nxt;
+    end else if (cheriot_setaddr_sel_i == SETADDR_PCC_ARITH) begin
+      tfcap1 = pcc_cap_i;
+      taddr1 = addr_result;
+    end else if (cheriot_setaddr_sel_i == SETADDR_RFA_ARITH) begin
+      tfcap1 = rf_fullcap_a;
+      taddr1 = addr_result;
+    end else if ((cheriot_setaddr_sel_i == SETADDR_SCR) && scr_legalization) begin
+      tfcap1 = rf_fullcap_a;
+      taddr1 = csr_wdata_o;
+    end else begin
+      tfcap1 = NULL_DECODED_CAP;
+      taddr1 = 32'h0;
+    end
+
+    setaddr1_outcap = cheriot_set_address(tfcap1, taddr1);
+  end
+
+  bound_req_t bound_req;
+
+  always_comb begin: set_bounds_comb
+    if (cheriot_setbounds_sel_i == SETBOUNDS_CRRL ||
+        cheriot_setbounds_sel_i == SETBOUNDS_CRAM) begin
+      newlen    = rf_rdata_a;
+      req_exact = 1'b0;
+      tfcap3    = NULL_DECODED_CAP;
+      tmp_addr  = 32'h0;
+    end else if (cheriot_setbounds_sel_i == SETBOUNDS_IMM) begin
+      newlen    = 32'(cheriot_imm12_i);  // unsigned imm
+      req_exact = 1'b0;
+      tfcap3    = rf_fullcap_a;
+      tmp_addr  = rf_rdata_a;
+    end else if (cheriot_setbounds_sel_i != SETBOUNDS_NONE) begin
+      // RS2, RS2_EX, RNDN
+      newlen    = rf_rdata_b;
+      req_exact = (cheriot_setbounds_sel_i == SETBOUNDS_RS2_EX);
+      tfcap3    = rf_fullcap_a;
+      tmp_addr  = rf_rdata_a;
+    end else begin
+      newlen    = 32'h0;
+      req_exact = 1'b0;
+      tfcap3    = NULL_DECODED_CAP;
+      tmp_addr  = 32'h0;
+    end
+
+    bound_req = cheriot_prep_bounds(tfcap3, tmp_addr, newlen);
+
+    // cheriot_set_bounds_ex returns the decoded capability plus maska/rlen (consumed by CRAM/CRRL)
+    setbounds_result = cheriot_set_bounds_ex(tfcap3, tmp_addr, bound_req, req_exact);
+    setbounds_outcap = setbounds_result.cap;
+    setbounds_maska  = setbounds_result.maska;
+    setbounds_rlen   = setbounds_result.rlen;
+
+    setbounds_rndn_outcap = cheriot_set_bounds_rounddown(tfcap3, tmp_addr, bound_req);
+  end
+
+
+
+  // address bound and permission checks for
+  //    - cheriot no-LSU instructions
+  //    - cheriot LSU (cap) instructions (including internal instr like LBC)
+  //    - RV32  LSU (data) instructions
+  // this is a architectural access check (apply to the whole duration of an instruction)
+  //    - based on architectural capability registers and addresses
+
+  // - orginally we combine checking for CHERIoT and RV32 but it caused a combi loop
+  //   that goes from instr_executing -> rv32_lsu_req -> lsu_error ->
+  //   cheriot_ex_err -> instr_executing
+  //   it's not a real runtime issue but it does confuses timing tools so let's split for now.
+  //   Besides - note checking/lsu_cheriot_err_o is one timing critical path
+  logic [31:0] rv32_ls_chkaddr;
+  assign rv32_ls_chkaddr = rv32_lsu_addr_i;
+
+  always_comb begin : check_rv32
+    // generate the address used to check top bound violation
+    rv32_base_chkaddr = rv32_ls_chkaddr;
+
+    if (rv32_lsu_type_i == 2'b00) begin
+      rv32_top_offset  = 32'h4;
+      rv32_top_size_ok = |rf_fullcap_a.top33[32:2];     // at least 4 bytes
+    end else if (rv32_lsu_type_i == 2'b01) begin
+      rv32_top_offset  = 32'h2;
+      rv32_top_size_ok = |rf_fullcap_a.top33[32:1];
+    end else begin
+      rv32_top_offset  = 32'h1;
+      rv32_top_size_ok = |rf_fullcap_a.top33[32:0];
+    end
+
+    rv32_top_chkaddr = {1'b0, rv32_base_chkaddr};
+
+
+    rv32_top_bound  = rf_fullcap_a.top33 - {1'b0, rv32_top_offset};
+    rv32_base_bound = rf_fullcap_a.base32;
+
+    rv32_top_vio  = (rv32_top_chkaddr  > rv32_top_bound) || ~rv32_top_size_ok;
+    rv32_base_vio = (rv32_base_chkaddr < rv32_base_bound);
+
+    // timing critical (data_req_o) path - don't add any unnecssary terms.
+    // we will chose with is_cheriot on the LSU interface later.
+    //   for unaligned access, only check the starting (1st) address
+    //   (if there is an error, addr_incr_req won't be thre anyway
+    addr_bound_vio_rv32 =  (rv32_top_vio | rv32_base_vio) & ~addr_incr_req_i ;
+
+    // main permission logic
+    perm_vio_vec_rv32 = '0;
+
+    perm_vio_vec_rv32[PVIO_TAG]  = ~rf_fullcap_a.valid;
+    perm_vio_vec_rv32[PVIO_SEAL] = cheriot_is_sealed(rf_fullcap_a);
+    perm_vio_vec_rv32[PVIO_LD]   = ((~rv32_lsu_we_i) && (~rf_fullcap_a.perms.LD));
+    perm_vio_vec_rv32[PVIO_SD]   = (rv32_lsu_we_i && (~rf_fullcap_a.perms.SD));
+
+    perm_vio_rv32 =  |perm_vio_vec_rv32;
+  end
+
+  assign rv32_lsu_err = (cheriot_enable_i == IbexMuBiOn) & ~debug_mode_i
+                        & (addr_bound_vio_rv32 | perm_vio_rv32);
+
+  // CHERIoT instr address bound checking
+  //   -- we choose to centralize the address bound checking here
+  //      so that we can mux the inputs and save some area
+
+
+  logic [31:0] cheriot_ls_chkaddr;
+  assign cheriot_ls_chkaddr = cs1_addr_plusimm;
+
+  always_comb begin : check_cheriot
+    // generate the address used to check top bound violation
+    if (cheriot_operator_i.CSEAL)
+      chk_base_chkaddr = rf_rdata_b;           // cs2.address
+    else if (cheriot_operator_i.CUNSEAL)
+      // inCapBounds(cs2_val, zero_extend(cs1_val.otype), 1)
+      chk_base_chkaddr = {28'h0, cheriot_decode_otype(rf_fullcap_a.otype, rf_fullcap_a.perms.EX)};
+    else if (cheriot_operator_i.CIS_SUBSET)
+      chk_base_chkaddr = rf_fullcap_b.base32;  // cs2.base32
+    else   // CLC/CSC
+      chk_base_chkaddr = cheriot_ls_chkaddr;     // cs1.address + offset
+
+    if (cheriot_operator_i.CIS_SUBSET)
+      chk_top_chkaddr = rf_fullcap_b.top33;
+    else if (is_cap)  // CLC/CSC
+      chk_top_chkaddr = {1'b0, chk_base_chkaddr[31:3], 3'b000};
+    else
+      chk_top_chkaddr = {1'b0, chk_base_chkaddr};
+
+    if (cheriot_operator_i.CSEAL | cheriot_operator_i.CUNSEAL) begin
+      chk_top_bound  = rf_fullcap_b.top33;
+      chk_base_bound = rf_fullcap_b.base32;
+    end else if (is_cap) begin // CLC/CSC
+      chk_top_bound  = {rf_fullcap_a.top33[32:3], 3'b000};       // 8-byte aligned access only
+      chk_base_bound = rf_fullcap_a.base32;
+    end else begin
+      chk_top_bound  = rf_fullcap_a.top33;
+      chk_base_bound = rf_fullcap_a.base32;
+    end
+
+    chk_top_vio   = (chk_top_chkaddr  > chk_top_bound);
+    chk_base_vio  = (chk_base_chkaddr < chk_base_bound);
+    chk_top_equal = (chk_top_chkaddr == chk_top_bound);
+
+    if (debug_mode_i)
+      addr_bound_vio = 1'b0;
+    else if (is_cap)
+      addr_bound_vio = chk_top_vio | chk_base_vio | chk_top_equal;
+    else if (cheriot_operator_i.CIS_SUBSET)
+      addr_bound_vio = chk_top_vio | chk_base_vio;
+    else if (cheriot_operator_i.CSEAL | cheriot_operator_i.CUNSEAL)
+      addr_bound_vio = chk_top_vio | chk_base_vio | chk_top_equal;
+    else
+      addr_bound_vio = 1'b0;
+
+    // main permission logic
+    perm_vio_vec     = '0;
+    perm_vio         = 0;
+    perm_vio_slc     = 0;
+    chk_cs2_bad_type = 1'b0;
+    illegal_scr_addr = 1'b0;
+
+    // otype_1: forward sentry; otype_23: forward inherit sentry; otype_45: backward sentry;
+    chk_cs1_otype_0  = (rf_fullcap_a.otype == OTYPE_UNSEALED);
+    chk_cs1_otype_1  = rf_fullcap_a.perms.EX & (rf_fullcap_a.otype == OTYPE_SENTRY_II_FWD);
+    chk_cs1_otype_23 = rf_fullcap_a.perms.EX
+                       & ((rf_fullcap_a.otype == OTYPE_SENTRY_ID_FWD) ||
+                          (rf_fullcap_a.otype == OTYPE_SENTRY_IE_FWD));
+    chk_cs1_otype_45 = rf_fullcap_a.perms.EX
+                       & ((rf_fullcap_a.otype == OTYPE_SENTRY_ID_BKWD) ||
+                          (rf_fullcap_a.otype == OTYPE_SENTRY_IE_BKWD));
+
+    // note cseal/unseal/cis_subject doesn't generate exceptions,
+    // so for all exceptions, violations can always be attributed to cs1, thus no need to
+    // further split
+    // exceptions based on source operands.
+    if (is_load_cap) begin
+      perm_vio_vec[PVIO_TAG]   = ~rf_fullcap_a.valid;
+      perm_vio_vec[PVIO_SEAL]  = cheriot_is_sealed(rf_fullcap_a);
+      perm_vio_vec[PVIO_LD]    = ~rf_fullcap_a.perms.LD;
+      perm_vio_vec[PVIO_ALIGN] = (cheriot_ls_chkaddr[2:0] != 0);
+    end else if (is_store_cap) begin
+      perm_vio_vec[PVIO_TAG]   = ~rf_fullcap_a.valid;
+      perm_vio_vec[PVIO_SEAL]  = cheriot_is_sealed(rf_fullcap_a);
+      perm_vio_vec[PVIO_SD]    = ~rf_fullcap_a.perms.SD;
+      perm_vio_vec[PVIO_SC]    = (~rf_fullcap_a.perms.MC && rf_fullcap_b.valid);
+      perm_vio_vec[PVIO_ALIGN] = (cheriot_ls_chkaddr[2:0] != 0);
+      perm_vio_slc             = ~rf_fullcap_a.perms.SL && rf_fullcap_b.valid &&
+                                (~rf_fullcap_b.perms.GL) ;
+    end else if (cheriot_operator_i.CSEAL) begin
+      chk_cs2_bad_type = rf_fullcap_a.perms.EX ?
+                         ((rf_rdata_b[31:3] != 0) || (rf_rdata_b[2:0] == 0)) :
+                         ((|rf_rdata_b[31:4]) || (rf_rdata_b[3:0] <= 8));
+      // cs2.addr check : ex: 0-7, non-ex: 9-15
+      perm_vio_vec[PVIO_TAG]   = ~rf_fullcap_b.valid;
+      perm_vio_vec[PVIO_SEAL]  = cheriot_is_sealed(rf_fullcap_a) ||
+                                  cheriot_is_sealed(rf_fullcap_b) ||
+                                  (~rf_fullcap_b.perms.SE) || chk_cs2_bad_type;
+    end else if (cheriot_operator_i.CUNSEAL) begin
+      perm_vio_vec[PVIO_TAG]   = ~rf_fullcap_b.valid;
+      perm_vio_vec[PVIO_SEAL]  = (~cheriot_is_sealed(rf_fullcap_a)) ||
+                                 cheriot_is_sealed(rf_fullcap_b) ||
+                                 (~rf_fullcap_b.perms.US);
+    end else if (cheriot_operator_i.CJALR) begin
+      perm_vio_vec[PVIO_TAG]   = ~rf_fullcap_a.valid;
+      perm_vio_vec[PVIO_SEAL]  = (cheriot_is_sealed(rf_fullcap_a) && (cheriot_imm12_i != 0)) ||
+                                 ~(((rf_waddr_i == 0) && (rf_raddr_a_i == 5'h1)
+                                    && chk_cs1_otype_45) ||
+                                   ((rf_waddr_i == 0) && (rf_raddr_a_i != 5'h1)
+                                    && (chk_cs1_otype_0 || chk_cs1_otype_1)) ||
+                                   ((rf_waddr_i == 5'h1) && (chk_cs1_otype_0 | chk_cs1_otype_23)) ||
+                                   ((rf_waddr_i != 0) && (chk_cs1_otype_0 | chk_cs1_otype_1)));
+
+      perm_vio_vec[PVIO_EX]    = ~rf_fullcap_a.perms.EX;
+    end else if (cheriot_operator_i.CCSR_RW) begin
+      perm_vio_vec[PVIO_ASR]   = ~pcc_cap_i.perms.SR;
+      illegal_scr_addr         = (csr_addr_o < 24) | (csr_addr_o == 27) |
+                                 (~debug_mode_i & (csr_addr_o < 28));
+    end else begin
+      perm_vio_vec = '0;
+    end
+
+    perm_vio = | perm_vio_vec;
+
+  end
+
+  // qualified by lsu_req later
+  // store_local error only causes tag clearing unless escalated to fault for debugging
+  assign cheriot_lsu_err = (cheriot_enable_i == IbexMuBiOn) & ~debug_mode_i &
+                           (addr_bound_vio | perm_vio | (csr_dbg_tclr_fault_i & perm_vio_slc));
+
+  //
+  // fault case mtval generation
+  // report to csr as mtval
+  logic ls_addr_misaligned_only;
+
+  assign cheriot_ex_err_info_o = 12'h0;           // no ex stage cheriot error currently
+  assign cheriot_wb_err_info_o = cheriot_wb_err_info_q;
+
+  assign cheriot_wb_err_d      = cheriot_wb_err_raw & cheriot_exec_id_i
+                                 & cheriot_ex_valid_raw & ~debug_mode_i;
+
+  // addr_bound_vio is the timing optimized version (gating data_req)
+  // However we need to generate full version of addr_bound_vio to match the sail exception
+  // priority definition (bound_vio has higher priority over alignment_error).
+  // this has less timing impact since it goes to a flop stage
+  logic addr_bound_vio_ext;
+  logic [32:0] cheriot_top_chkaddr_ext;
+
+  assign cheriot_top_chkaddr_ext = cheriot_ls_chkaddr + 33'd8;   // extend to 33 bit for compare
+  assign addr_bound_vio_ext = is_cap
+                              ? addr_bound_vio | (cheriot_top_chkaddr_ext > rf_fullcap_a.top33)
+                              : addr_bound_vio;
+
+  always_comb begin : err_cause_comb
+    cheriot_err_cause = cheriot_violation_cause(addr_bound_vio_ext, perm_vio_vec);
+    rv32_err_cause    = cheriot_violation_cause(addr_bound_vio_rv32, perm_vio_vec_rv32);
+
+
+    ls_addr_misaligned_only = perm_vio_vec[PVIO_ALIGN]
+                              && (perm_vio_vec[PVIO_ALIGN-1:0] == 0) && ~addr_bound_vio_ext;
+
+    // cheriot_wb_err_raw is already qualified by instr
+    // bit 15:13: reserved
+    // bit 12: illegal_scr_addr
+    // bit 11: alignment error (load/store)
+    // bit 10:0 mtval as defined by CHERIoT arch spec
+    if (cheriot_operator_i.CCSR_RW & cheriot_wb_err_raw & illegal_scr_addr & cheriot_exec_id_i)
+      // cspecialrw trap, illegal addr, treated as illegal_insn
+      cheriot_wb_err_info_d = {3'h0, 1'b1, 12'h0};
+    else if (cheriot_operator_i.CCSR_RW & cheriot_wb_err_raw & cheriot_exec_id_i)
+      // cspecialrw traps, PERM_SR
+      cheriot_wb_err_info_d = {5'h0, 1'b1, cheriot_cs2_dec_i, cheriot_err_cause};
+    else if (cheriot_wb_err_raw  & cheriot_exec_id_i)
+      cheriot_wb_err_info_d = {5'h0, 1'b0, rf_raddr_a_i, cheriot_err_cause};
+    else if ((is_load_cap | is_store_cap) & cheriot_lsu_err & cheriot_exec_id_i)
+      cheriot_wb_err_info_d =
+          {4'h0, ls_addr_misaligned_only, 1'b0, rf_raddr_a_i, cheriot_err_cause};
+    else if (rv32_lsu_req_i & rv32_lsu_err)
+      cheriot_wb_err_info_d = {5'h0, 1'b0, rf_raddr_a_i, rv32_err_cause};
+    else
+      cheriot_wb_err_info_d = cheriot_wb_err_info_q;
+  end
+
+  always_ff @(posedge clk_i or negedge rst_ni) begin
+    if (!rst_ni) begin
+      cheriot_wb_err_q      <= 1'b0;
+      cheriot_wb_err_info_q <= '0;
+    end else begin
+      // Simple flop here works since
+      //  -- cheriot_wb_err is gated by cheriot_exec_id/ex_valid
+      //  --  all non-load/store cheriot instructions that can generate exceptions
+      //      only takes 1 cycle in ID/EX stage
+      //  -- faulted non-load/store instruction can only stay 1 cycle in wb_stage
+      cheriot_wb_err_q      <= cheriot_wb_err_d;
+      cheriot_wb_err_info_q <= cheriot_wb_err_info_d;
+    end
+  end
+
+  //
+  // muxing in cheriot LSU signals with the rv32 signals
+  //
+  assign lsu_req_o           = (instr_is_cheriot_i ? cheriot_lsu_req : rv32_lsu_req_i);
+
+  assign cpu_lsu_cheriot_err = instr_is_cheriot_i ? cheriot_lsu_err : rv32_lsu_err;
+  assign cpu_lsu_addr        = instr_is_cheriot_i ? cheriot_lsu_addr : rv32_lsu_addr_i;
+  assign cpu_lsu_we          = instr_is_cheriot_i ? cheriot_lsu_we : rv32_lsu_we_i;
+  assign cpu_lsu_wdata       = instr_is_cheriot_i ? cheriot_lsu_wdata : rv32_lsu_wdata_i;
+  assign cpu_lsu_is_cap      = instr_is_cheriot_i & cheriot_lsu_is_cap;
+
+  assign lsu_cheriot_err_o   = cpu_lsu_cheriot_err;
+  assign lsu_we_o            = cpu_lsu_we;
+  assign lsu_addr_o          = cpu_lsu_addr;
+  assign lsu_wdata_o         = cpu_lsu_wdata;
+  assign lsu_is_cap_o        = cpu_lsu_is_cap;
+
+  assign lsu_lc_clrperm_o    = instr_is_cheriot_i ? cheriot_lsu_lc_clrperm : '0;
+  assign lsu_type_o          = ~instr_is_cheriot_i ? rv32_lsu_type_i : 2'b00;
+  assign lsu_wcap_o          = instr_is_cheriot_i ? cheriot_lsu_wcap    : NULL_CAP;
+  assign lsu_sign_ext_o      = ~instr_is_cheriot_i ? rv32_lsu_sign_ext_i : 1'b0;
+
+  // rv32 core side signals
+  // request phase: be nice and mux using the current EX instruction to select
+
+  // addr_incr:
+  //  -- must qualify addr_incr otherwise it goes to ALU and mess up non-LSU instructions
+  //  -- however for LEC to gate this with cheriot_enable_i, otherwise illegal_insn will
+  //     feed into addr logic
+  //     since illegal_insn goes into instr_is_rv32lsu
+  assign rv32_addr_incr_req_o = ((cheriot_enable_i != IbexMuBiOn) | instr_is_rv32lsu_i)
+                                ? addr_incr_req_i : 1'b0;
+
+  assign rv32_addr_last_o     = addr_last_i;
+
+  // req_done, resp_valid, load/store_err will be directly from LSU
+
+  //
+  // Stack high watermark CSR update
+  //
+
+  // Notes,
+  //  - this should also take care of unaligned access (which increases addr only)
+  //    (although stack access should not have any)
+  //  - it's also ok if the prev instr gets faulted in WB, since stall_mem/data_req_allowed
+  //    logic ensures
+  //    that lsu_req won't be issued till memory response/error comes back
+  //  - what if the instruction gets faulted later in WB stage? Also fine since worst case
+  //    even if HM is
+  //    too aggressive we will just have to spend more time zeroing out more stack area.
+
+  assign csr_mshwm_set_o = lsu_req_o & ~lsu_cheriot_err_o & lsu_we_o
+                           & (lsu_addr_o[31:4] >= csr_mshwmb_i[31:4])
+                           & (lsu_addr_o[31:4] < csr_mshwm_i[31:4]);
+  assign csr_mshwm_new_o = {lsu_addr_o[31:4], 4'h0};
+
+
+
+  //
+  // debug signal for FPGA only
+  //
+  logic unused_dbg_status;
+  logic unused_dbg_cs1_vec, unused_dbg_cs2_vec, unused_dbg_cd_vec;
+
+  assign unused_dbg_status = |{instr_is_rv32lsu_i, rv32_lsu_req_i, rv32_lsu_we_i,  rv32_lsu_err,
+                               cheriot_exec_id_i, cheriot_lsu_err, rf_fullcap_a.valid,
+                               result_cap_o.valid, addr_bound_vio, perm_vio, addr_bound_vio_rv32,
+                               perm_vio_rv32};
+
+  assign unused_dbg_cs1_vec = |{rf_fullcap_a.cap_cor,
+                                cheriot_expand_exp(rf_fullcap_a.cexp),
+                                rf_fullcap_a.top, rf_fullcap_a.base,
+                                rf_fullcap_a.otype, rf_fullcap_a.cperms,
+                                rf_rdata_a};
+
+  assign unused_dbg_cs2_vec = |{rf_fullcap_b.cap_cor,
+                                cheriot_expand_exp(rf_fullcap_b.cexp),
+                                rf_fullcap_b.top, rf_fullcap_b.base,
+                                rf_fullcap_b.otype, rf_fullcap_b.cperms,
+                                rf_rdata_b};
+
+  assign unused_dbg_cd_vec = |{result_cap_o.cap_cor,
+                               cheriot_expand_exp(result_cap_o.cexp),
+                               result_cap_o.top, result_cap_o.base,
+                               result_cap_o.otype, result_cap_o.cperms,
+                               result_data_o};
+
+  logic unused_cheriot_ex_signals;
+  assign unused_cheriot_ex_signals = |{instr_valid_i, csr_mshwm_i[3:0],
+                                       csr_mshwmb_i[3:0], cheriot_wb_err_q};
+
+endmodule : lowrisc_ibex_cheriot_ex
 // Copyright lowRISC contributors.
 // Copyright 2018 ETH Zurich and University of Bologna, see also CREDITS.md.
 // Licensed under the Apache License, Version 2.0, see LICENSE for details.
@@ -21034,6 +23817,7 @@ module lowrisc_ibex_branch_predict (
 endmodule
 // Copyright lowRISC contributors.
 // Copyright 2018 ETH Zurich and University of Bologna, see also CREDITS.md.
+// Copyright Microsoft Corporation
 // Licensed under the Apache License, Version 2.0, see LICENSE for details.
 // SPDX-License-Identifier: Apache-2.0
 
@@ -21338,22 +24122,23 @@ endmodule
  // PRIM_ASSERT_SV
 
 
-module lowrisc_ibex_compressed_decoder #(
-  parameter lowrisc_ibex_pkg::rv32zc_e RV32ZC   = lowrisc_ibex_pkg::RV32ZcaZcbZcmp,
-  parameter bit                ResetAll = 1'b0
+module lowrisc_ibex_compressed_decoder import lowrisc_ibex_pkg::*; #(
+  parameter lowrisc_ibex_pkg::rv32zc_e   RV32ZC   = lowrisc_ibex_pkg::RV32ZcaZcbZcmp,
+  parameter bit                  ResetAll = 1'b0,
+  parameter lowrisc_ibex_pkg::base_isa_e BaseIsa  = lowrisc_ibex_pkg::BaseIsaRV32IorCHERIoT
 ) (
   input  logic                 clk_i,
   input  logic                 rst_ni,
   input  logic                 valid_i,
   input  logic                 id_in_ready_i,
   input  logic [31:0]          instr_i,
+  input  ibex_mubi_t           cheriot_enable_i,
   output logic [31:0]          instr_o,
   output logic                 is_compressed_o,
   output lowrisc_ibex_pkg::instr_exp_e gets_expanded_o,
+  input  logic                 flush_expanded_i,
   output logic                 illegal_instr_o
 );
-  import lowrisc_ibex_pkg::*;
-
   if (!(RV32ZC == RV32ZcaZcbZcmp || RV32ZC == RV32ZcaZcmp)) begin : gen_unused_valid
     // valid_i indicates if instr_i is valid and is used for assertions only if Zcmp is disabled.
     // id_in_ready_i indicates if instr_o is consumed and is used for assertions only if Zcmp is
@@ -21550,16 +24335,33 @@ module lowrisc_ibex_compressed_decoder #(
       2'b00: begin
         unique case (instr_i[15:13])
           3'b000: begin
-            // c.addi4spn -> addi rd', x2, imm
-            instr_o = {2'b0, instr_i[10:7], instr_i[12:11], instr_i[5],
-                       instr_i[6], 2'b00, 5'h02, 3'b000, 2'b01, instr_i[4:2], {OPCODE_OP_IMM}};
-            if (instr_i[12:5] == 8'b0)  illegal_instr_o = 1'b1;
+            if ((BaseIsa == BaseIsaRV32IorCHERIoT) && (cheriot_enable_i == IbexMuBiOn)) begin
+              // c.incaddr4cspn -> cincoffsetimm cd', csp, imm
+              instr_o = {2'b0, instr_i[10:7], instr_i[12:11], instr_i[5],
+                         instr_i[6], 2'b00, 5'h02, 3'b001, 2'b01, instr_i[4:2], {OPCODE_CHERI}};
+            end else begin
+              // c.addi4spn -> addi rd', x2, imm
+              instr_o = {2'b0, instr_i[10:7], instr_i[12:11], instr_i[5],
+                         instr_i[6], 2'b00, 5'h02, 3'b000, 2'b01, instr_i[4:2], {OPCODE_OP_IMM}};
+            end
+            if (instr_i[12:5] == 8'b0) illegal_instr_o = 1'b1;
           end
 
           3'b010: begin
             // c.lw -> lw rd', imm(rs1')
             instr_o = {5'b0, instr_i[5], instr_i[12:10], instr_i[6],
                        2'b00, 2'b01, instr_i[9:7], 3'b010, 2'b01, instr_i[4:2], {OPCODE_LOAD}};
+          end
+
+          3'b011: begin
+            if ((BaseIsa == BaseIsaRV32IorCHERIoT) && (cheriot_enable_i == IbexMuBiOn)) begin
+              // CHERIoT: c.clc -> clc rd', imm(rs1'); reuse c.ld
+              instr_o = {4'b0, instr_i[6:5], instr_i[12:10],
+                         3'b000, 2'b01, instr_i[9:7], 3'b011, 2'b01, instr_i[4:2], {OPCODE_LOAD}};
+            end else begin
+              instr_o = instr_i;
+              illegal_instr_o = 1'b1;
+            end
           end
 
           3'b110: begin
@@ -21631,13 +24433,21 @@ module lowrisc_ibex_compressed_decoder #(
             end
           end
 
-          3'b001,
-          3'b011,
-          3'b101,
           3'b111: begin
-            illegal_instr_o = 1'b1;
+            if ((BaseIsa == BaseIsaRV32IorCHERIoT) && (cheriot_enable_i == IbexMuBiOn)) begin
+              // CHERIoT: c.csc -> csc rs2', imm(rs1'); reuse c.sd
+              instr_o = {4'b0, instr_i[6:5], instr_i[12], 2'b01, instr_i[4:2],
+                        2'b01, instr_i[9:7], 3'b011, instr_i[11:10], 3'b000, {OPCODE_STORE}};
+            end else begin
+              instr_o = instr_i;
+              illegal_instr_o = 1'b1;
+            end
           end
 
+          3'b001,
+          3'b101: begin
+            illegal_instr_o = 1'b1;
+          end
           default: begin
             illegal_instr_o = 1'b1;
           end
@@ -21654,8 +24464,15 @@ module lowrisc_ibex_compressed_decoder #(
           3'b000: begin
             // c.addi -> addi rd, rd, nzimm
             // c.nop
-            instr_o = {{6 {instr_i[12]}}, instr_i[12], instr_i[6:2],
-                       instr_i[11:7], 3'b0, instr_i[11:7], {OPCODE_OP_IMM}};
+            if ((BaseIsa == BaseIsaRV32IorCHERIoT) && (cheriot_enable_i == IbexMuBiOn)) begin
+              // In CHERIoT mode, hints (nzimm==0) zero rd to avoid clearing capability metadata
+              instr_o = {{6 {instr_i[12]}}, instr_i[12], instr_i[6:2], instr_i[11:7], 3'b0,
+                         ({instr_i[12], instr_i[6:2]} == 6'h0) ? 5'h0 : instr_i[11:7],
+                         {OPCODE_OP_IMM}};
+            end else begin
+              instr_o = {{6 {instr_i[12]}}, instr_i[12], instr_i[6:2],
+                         instr_i[11:7], 3'b0, instr_i[11:7], {OPCODE_OP_IMM}};
+            end
           end
 
           3'b001, 3'b101: begin
@@ -21678,7 +24495,12 @@ module lowrisc_ibex_compressed_decoder #(
             // (c.lui hints are translated into a lui hint)
             instr_o = {{15 {instr_i[12]}}, instr_i[6:2], instr_i[11:7], {OPCODE_LUI}};
 
-            if (instr_i[11:7] == 5'h02) begin
+            // c.incaddr16csp -> cincoffsetimm csp, csp, nzimm
+            if ((BaseIsa == BaseIsaRV32IorCHERIoT) && (cheriot_enable_i == IbexMuBiOn) &&
+                (instr_i[11:7] == 5'h02)) begin
+              instr_o = {{3 {instr_i[12]}}, instr_i[4:3], instr_i[5], instr_i[2],
+                         instr_i[6], 4'b0, 5'h02, 3'b001, 5'h02, {OPCODE_CHERI}};
+            end else if (instr_i[11:7] == 5'h02) begin
               // c.addi16sp -> addi x2, x2, nzimm
               instr_o = {{3 {instr_i[12]}}, instr_i[4:3], instr_i[5], instr_i[2],
                          instr_i[6], 4'b0, 5'h02, 3'b000, 5'h02, {OPCODE_OP_IMM}};
@@ -21694,8 +24516,15 @@ module lowrisc_ibex_compressed_decoder #(
                 // 00: c.srli -> srli rd, rd, shamt
                 // 01: c.srai -> srai rd, rd, shamt
                 // (c.srli/c.srai hints are translated into a srli/srai hint)
-                instr_o = {1'b0, instr_i[10], 5'b0, instr_i[6:2], 2'b01, instr_i[9:7],
-                           3'b101, 2'b01, instr_i[9:7], {OPCODE_OP_IMM}};
+                if ((BaseIsa == BaseIsaRV32IorCHERIoT) && (cheriot_enable_i == IbexMuBiOn)) begin
+                  // In CHERIoT mode, hints (shamt==0) zero rd to avoid clearing capability metadata
+                  instr_o = {1'b0, instr_i[10], 5'b0, instr_i[6:2], 2'b01, instr_i[9:7],
+                             3'b101, (instr_i[6:2] == 5'b0) ? 5'b0 : {2'b01, instr_i[9:7]},
+                             {OPCODE_OP_IMM}};
+                end else begin
+                  instr_o = {1'b0, instr_i[10], 5'b0, instr_i[6:2], 2'b01, instr_i[9:7],
+                             3'b101, 2'b01, instr_i[9:7], {OPCODE_OP_IMM}};
+                end
                 if (instr_i[12] == 1'b1)  illegal_instr_o = 1'b1;
               end
 
@@ -21833,7 +24662,13 @@ module lowrisc_ibex_compressed_decoder #(
           3'b000: begin
             // c.slli -> slli rd, rd, shamt
             // (c.ssli hints are translated into a slli hint)
-            instr_o = {7'b0, instr_i[6:2], instr_i[11:7], 3'b001, instr_i[11:7], {OPCODE_OP_IMM}};
+            if ((BaseIsa == BaseIsaRV32IorCHERIoT) && (cheriot_enable_i == IbexMuBiOn)) begin
+              // In CHERIoT mode, hints (shamt==0) zero rd to avoid clearing capability metadata
+              instr_o = {7'b0, instr_i[6:2], instr_i[11:7], 3'b001,
+                         (instr_i[6:2] == 5'b0) ? 5'b0 : instr_i[11:7], {OPCODE_OP_IMM}};
+            end else begin
+              instr_o = {7'b0, instr_i[6:2], instr_i[11:7], 3'b001, instr_i[11:7], {OPCODE_OP_IMM}};
+            end
             if (instr_i[12] == 1'b1)  illegal_instr_o = 1'b1; // reserved for custom extensions
           end
 
@@ -21842,6 +24677,18 @@ module lowrisc_ibex_compressed_decoder #(
             instr_o = {4'b0, instr_i[3:2], instr_i[12], instr_i[6:4], 2'b00, 5'h02,
                        3'b010, instr_i[11:7], OPCODE_LOAD};
             if (instr_i[11:7] == 5'b0)  illegal_instr_o = 1'b1;
+          end
+
+          3'b011: begin
+            if ((BaseIsa == BaseIsaRV32IorCHERIoT) && (cheriot_enable_i == IbexMuBiOn)) begin
+              // c.clcsp -> clc cd, imm(c2),  reused c.ldsp
+              instr_o = {3'b0, instr_i[4:2], instr_i[12], instr_i[6:5], 3'b000, 5'h02,
+                         3'b011, instr_i[11:7], OPCODE_LOAD};
+              if (instr_i[11:7] == 5'b0)  illegal_instr_o = 1'b1;
+            end else begin
+              instr_o = instr_i;
+              illegal_instr_o = 1'b1;
+            end
           end
 
           3'b100: begin
@@ -21873,7 +24720,13 @@ module lowrisc_ibex_compressed_decoder #(
           end
 
           3'b101: begin
-            if (RV32ZC == RV32ZcaZcbZcmp || RV32ZC == RV32ZcaZcmp) begin
+            if ((BaseIsa == BaseIsaRV32IorCHERIoT) && (cheriot_enable_i == IbexMuBiOn)) begin
+              // Zcmp is incompatible with CHERIoT mode: sw/lw strip capability tags and addi
+              // corrupts CSP bounds. We could inject the CHERIoT version of those instructions
+              // but the stack offset would need to be 8 bytes (full capability) for each push/pop,
+              // which doesn't align with the spec and how the stack update is defined.
+              illegal_instr_o = 1'b1;
+            end else if (RV32ZC == RV32ZcaZcbZcmp || RV32ZC == RV32ZcaZcmp) begin
               unique casez (instr_i[12:8])
                 // cm.push
                 5'b11000: begin
@@ -21995,6 +24848,8 @@ module lowrisc_ibex_compressed_decoder #(
                       instr_o = cm_sp_addi(.rlist(instr_i[7:4]),
                                           .spimm(instr_i[3:2]),
                                           .decr(1'b0));
+                      // Ensure the SP adjustment commits atomically with the subsequent micro-ops.
+                      gets_expanded = INSTR_EXPANDED_COMMIT;
                       if (id_in_ready_i) begin
                         unique case (instr_i[12:8])
                           5'b11100: cm_state_d = CmPopZeroA0; // cm.popretz
@@ -22009,6 +24864,8 @@ module lowrisc_ibex_compressed_decoder #(
                     end
                     CmPopZeroA0: begin
                       instr_o = cm_zero_a0();
+                      // Ensure the `ret` after is executed atomically with this one.
+                      gets_expanded = INSTR_EXPANDED_COMMIT;
                       if (id_in_ready_i) begin
                         cm_state_d = CmPopRetRa;
                       end
@@ -22037,6 +24894,8 @@ module lowrisc_ibex_compressed_decoder #(
                           // No cm.mvsa01 instruction is active yet; start a new one.
                           // Move a0 to register indicated by r1s'.
                           instr_o = cm_mvsa01(.a01(1'b0), .rs(instr_i[9:7]));
+                          // Ensure the second move happens atomically with this one.
+                          gets_expanded = INSTR_EXPANDED_COMMIT;
                           if (valid_i && id_in_ready_i) begin
                             cm_state_d = CmMvSecondReg;
                           end
@@ -22063,6 +24922,8 @@ module lowrisc_ibex_compressed_decoder #(
                           // No cm.mva01s instruction is active yet; start a new one.
                           // Move register indicated by r1s' into a0.
                           instr_o = cm_mva01s(.rs(instr_i[9:7]), .a01(1'b0));
+                          // Ensure the second move happens atomically with this one.
+                          gets_expanded = INSTR_EXPANDED_COMMIT;
                           if (valid_i && id_in_ready_i) begin
                             cm_state_d = CmMvSecondReg;
                           end
@@ -22097,9 +24958,18 @@ module lowrisc_ibex_compressed_decoder #(
                        instr_i[11:9], 2'b00, {OPCODE_STORE}};
           end
 
-          3'b001,
-          3'b011,
           3'b111: begin
+            if ((BaseIsa == BaseIsaRV32IorCHERIoT) && (cheriot_enable_i == IbexMuBiOn)) begin
+              // c.cscsp -> csc cs2, imm(c2),  reuse c.sdsp
+              instr_o = {3'b0, instr_i[9:7], instr_i[12], instr_i[6:2], 5'h02, 3'b011,
+                         instr_i[11:10], 3'b000, {OPCODE_STORE}};
+            end else begin
+              instr_o = instr_i;
+              illegal_instr_o = 1'b1;
+            end
+          end
+
+          3'b001: begin
             illegal_instr_o = 1'b1;
           end
 
@@ -22124,7 +24994,7 @@ module lowrisc_ibex_compressed_decoder #(
     if (!rst_ni) begin
       cm_state_q <= CmIdle;
     end else begin
-      cm_state_q <= cm_state_d;
+      cm_state_q <= flush_expanded_i ? CmIdle : cm_state_d;
     end
   end
 
@@ -22146,6 +25016,11 @@ module lowrisc_ibex_compressed_decoder #(
     end
   end
 
+  if (BaseIsa != BaseIsaRV32IorCHERIoT) begin : gen_no_cheriot_cdec
+    logic unused_cheriot_enable;
+    assign unused_cheriot_enable = ^cheriot_enable_i;
+  end
+
   ////////////////
   // Assertions //
   ////////////////
@@ -22165,6 +25040,7 @@ module lowrisc_ibex_compressed_decoder #(
 endmodule
 // Copyright lowRISC contributors.
 // Copyright 2018 ETH Zurich and University of Bologna, see also CREDITS.md.
+// Copyright Microsoft Corporation
 // Licensed under the Apache License, Version 2.0, see LICENSE for details.
 // SPDX-License-Identifier: Apache-2.0
 
@@ -22537,13 +25413,15 @@ endmodule
 
 
 
-module lowrisc_ibex_controller #(
+module lowrisc_ibex_controller import lowrisc_ibex_pkg::*; #(
+  parameter base_isa_e BaseIsa  = BaseIsaRV32I,
   parameter bit WritebackStage  = 1'b0,
   parameter bit BranchPredictor = 1'b0,
   parameter bit MemECC          = 1'b0
  ) (
   input  logic                  clk_i,
   input  logic                  rst_ni,
+  input  ibex_mubi_t            cheriot_enable_i,
 
   output logic                  ctrl_busy_o,             // core is busy processing instrs
 
@@ -22555,15 +25433,21 @@ module lowrisc_ibex_controller #(
   input  logic                  wfi_insn_i,              // decoder has WFI instr
   input  logic                  ebrk_insn_i,             // decoder has EBREAK instr
   input  logic                  csr_pipe_flush_i,        // do CSR-related pipeline flush
+  input  logic                  csr_access_i,            // decoder has CSR access instr
+  input  logic                  csr_cheriot_always_ok_i,   // cheriot safe-listed CSR registers
 
   // instr from IF-ID pipeline stage
   input  logic                  instr_valid_i,           // instr is valid
   input  logic [31:0]           instr_i,                 // uncompressed instr data for mtval
   input  logic [15:0]           instr_compressed_i,      // instr compressed data for mtval
   input  logic                  instr_is_compressed_i,   // instr is compressed
+  input  lowrisc_ibex_pkg::instr_exp_e  instr_gets_expanded_i,   // instr expansion state
   input  logic                  instr_bp_taken_i,        // instr was predicted taken branch
   input  logic                  instr_fetch_err_i,       // instr has error
   input  logic                  instr_fetch_err_plus2_i, // instr error is x32
+  input  logic                  instr_fetch_cheriot_acc_vio_i,
+  input  logic                  instr_fetch_cheriot_bound_vio_i,
+
   input  logic [31:0]           pc_id_i,                 // instr address
 
   // to IF-ID pipeline stage
@@ -22589,8 +25473,10 @@ module lowrisc_ibex_controller #(
   input  logic                  load_err_i,
   input  logic                  store_err_i,
   input  logic                  mem_resp_intg_err_i,
+  input  logic                  lsu_err_is_cheriot_i,
   output logic                  wb_exception_o,          // Instruction in WB taking an exception
   output logic                  id_exception_o,          // Instruction in ID taking an exception
+  output logic                  id_exception_nc_o,       // no-cheriot
 
   // jump/branch signals
   input  logic                  branch_set_i,            // branch set signal (branch definitely
@@ -22623,8 +25509,11 @@ module lowrisc_ibex_controller #(
   output logic                  csr_restore_mret_id_o,
   output logic                  csr_restore_dret_id_o,
   output logic                  csr_save_cause_o,
+  output logic                  csr_mepcc_clrtag_o,
+
   output logic [31:0]           csr_mtval_o,
   input  lowrisc_ibex_pkg::priv_lvl_e   priv_mode_i,
+  input  logic                  csr_pcc_perm_sr_i,
 
   // stall & flush signals
   input  logic                  stall_id_i,
@@ -22635,10 +25524,17 @@ module lowrisc_ibex_controller #(
   // performance monitors
   output logic                  perf_jump_o,             // we are executing a jump
                                                          // instruction (j, jr, jal, jalr)
-  output logic                  perf_tbranch_o           // we are executing a taken branch
+  output logic                  perf_tbranch_o,          // we are executing a taken branch
                                                          // instruction
+  input  logic                  instr_is_cheriot_i,        // from decoder
+  input  logic                  cheriot_ex_valid_i,        // from cheriot EX
+  input  logic                  cheriot_ex_err_i,
+  input  logic                  cheriot_wb_err_i,
+  input  logic  [11:0]          cheriot_ex_err_info_i,
+  input  logic  [15:0]          cheriot_wb_err_info_i,
+  input  logic                  cheriot_branch_req_i,
+  input  logic [31:0]           cheriot_branch_target_i
 );
-  import lowrisc_ibex_pkg::*;
 
   ctrl_fsm_e ctrl_fsm_cs, ctrl_fsm_ns;
 
@@ -22647,8 +25543,12 @@ module lowrisc_ibex_controller #(
   dbg_cause_e debug_cause_d, debug_cause_q;
   logic load_err_q, load_err_d;
   logic store_err_q, store_err_d;
-  logic exc_req_q, exc_req_d;
+  logic lsu_err_is_cheriot_q;
+  logic exc_req_q, exc_req_d, exc_req_nc, exc_req_wb;
   logic illegal_insn_q, illegal_insn_d;
+  logic cheriot_ex_err_q, cheriot_ex_err_d;
+  logic cheriot_wb_err_q;
+  logic cheriot_asr_err_q, cheriot_asr_err_d;
 
   // Of the various exception/fault signals, which one takes priority in FLUSH and hence controls
   // what happens next (setting exc_cause, csr_mtval etc)
@@ -22658,6 +25558,9 @@ module lowrisc_ibex_controller #(
   logic ebrk_insn_prio;
   logic store_err_prio;
   logic load_err_prio;
+  logic cheriot_ex_err_prio;
+  logic cheriot_wb_err_prio;
+  logic cheriot_asr_err_prio;
 
   logic stall;
   logic halt_if;
@@ -22693,6 +25596,9 @@ module lowrisc_ibex_controller #(
   logic ebrk_insn;
   logic csr_pipe_flush;
   logic instr_fetch_err;
+  logic cheriot_ex_err;
+  logic mret_cheriot_asr_err;
+  logic csr_cheriot_asr_err;
 
 
 
@@ -22711,6 +25617,21 @@ module lowrisc_ibex_controller #(
   assign ebrk_insn       = ebrk_insn_i       & instr_valid_i;
   assign csr_pipe_flush  = csr_pipe_flush_i  & instr_valid_i;
   assign instr_fetch_err = instr_fetch_err_i & instr_valid_i;
+  assign cheriot_ex_err    = cheriot_ex_err_i & instr_is_cheriot_i & instr_valid_i;
+
+  if (BaseIsa == BaseIsaRV32IorCHERIoT) begin : g_cheriot_asr_err
+    assign mret_cheriot_asr_err = (cheriot_enable_i == IbexMuBiOn) & ~csr_pcc_perm_sr_i & mret_insn;
+    assign csr_cheriot_asr_err  = (cheriot_enable_i == IbexMuBiOn) & ~csr_pcc_perm_sr_i
+                              & instr_valid_i & csr_access_i & ~illegal_insn_i
+                              & ~csr_cheriot_always_ok_i;
+  end else begin : g_no_cheriot_asr_err
+    assign mret_cheriot_asr_err = 1'b0;
+    assign csr_cheriot_asr_err  = 1'b0;
+    logic unused_cheriot_asr_inputs;
+    assign unused_cheriot_asr_inputs = ^{csr_access_i, csr_cheriot_always_ok_i, csr_pcc_perm_sr_i,
+                                         instr_fetch_cheriot_acc_vio_i,
+                                         instr_fetch_cheriot_bound_vio_i};
+  end
 
   // This is recorded in the illegal_insn_q flop to help timing.  Specifically
   // it is needed to break the path from ibex_cs_registers/illegal_csr_insn_o
@@ -22718,6 +25639,10 @@ module lowrisc_ibex_controller #(
   // once illegal instruction is handled.
   // illegal_insn_i only set when instr_valid_i is set.
   assign illegal_insn_d = illegal_insn_i & (ctrl_fsm_cs != FLUSH);
+  assign cheriot_ex_err_d = (cheriot_enable_i == IbexMuBiOn) & cheriot_ex_err
+                          & (ctrl_fsm_cs != FLUSH);
+
+  assign cheriot_asr_err_d = (~illegal_insn_i & csr_cheriot_asr_err) | mret_cheriot_asr_err;
 
 
 
@@ -22726,13 +25651,18 @@ module lowrisc_ibex_controller #(
   // the FLUSH state so the cycle following exc_req_q won't remain set for an
   // exception request that has just been handled.
   // All terms in this expression are qualified by instr_valid_i
-  assign exc_req_d = (ecall_insn | ebrk_insn | illegal_insn_d | instr_fetch_err) &
-                     (ctrl_fsm_cs != FLUSH);
+  assign exc_req_d = (ecall_insn | ebrk_insn | illegal_insn_d | instr_fetch_err
+                    | ((cheriot_enable_i == IbexMuBiOn) & cheriot_ex_err)
+                    | cheriot_asr_err_d) & (ctrl_fsm_cs != FLUSH);
+  assign exc_req_nc = (ecall_insn | ebrk_insn | illegal_insn_d | instr_fetch_err
+                    | cheriot_asr_err_d) & (ctrl_fsm_cs != FLUSH);
 
   // LSU exception requests
   assign exc_req_lsu = store_err_i | load_err_i;
+  assign exc_req_wb  = exc_req_lsu | ((cheriot_enable_i == IbexMuBiOn) & cheriot_wb_err_i);
 
-  assign id_exception_o = exc_req_d & ~wb_exception_o;
+  assign id_exception_o = exc_req_d;
+  assign id_exception_nc_o = exc_req_nc;
 
   // special requests: special instructions, pipeline flushes, exceptions...
   // All terms in these expressions are qualified by instr_valid_i except exc_req_lsu which can come
@@ -22743,7 +25673,7 @@ module lowrisc_ibex_controller #(
   assign special_req_flush_only = wfi_insn | csr_pipe_flush;
 
   // These special requests cause a change in PC
-  assign special_req_pc_change = mret_insn | dret_insn | exc_req_d | exc_req_lsu;
+  assign special_req_pc_change = mret_insn | dret_insn | exc_req_d | exc_req_wb;
 
   // generic special request signal, applies to all instructions
   assign special_req = special_req_pc_change | special_req_flush_only;
@@ -22760,6 +25690,9 @@ module lowrisc_ibex_controller #(
       ebrk_insn_prio       = 0;
       store_err_prio       = 0;
       load_err_prio        = 0;
+      cheriot_ex_err_prio    = 1'b0;
+      cheriot_wb_err_prio    = 1'b0;
+      cheriot_asr_err_prio   = 1'b0;
 
       // Note that with the writeback stage store/load errors occur on the instruction in writeback,
       // all other exception/faults occur on the instruction in ID/EX. The faults from writeback
@@ -22768,6 +25701,8 @@ module lowrisc_ibex_controller #(
         store_err_prio = 1'b1;
       end else if (load_err_q) begin
         load_err_prio  = 1'b1;
+      end else if ((cheriot_enable_i == IbexMuBiOn) & cheriot_wb_err_q) begin
+        cheriot_wb_err_prio  = 1'b1;
       end else if (instr_fetch_err) begin
         instr_fetch_err_prio = 1'b1;
       end else if (illegal_insn_q) begin
@@ -22776,11 +25711,16 @@ module lowrisc_ibex_controller #(
         ecall_insn_prio = 1'b1;
       end else if (ebrk_insn) begin
         ebrk_insn_prio = 1'b1;
+      end else if ((cheriot_enable_i == IbexMuBiOn) & cheriot_ex_err_q) begin
+        cheriot_ex_err_prio = 1'b1;
+      end else if (cheriot_asr_err_q) begin
+        cheriot_asr_err_prio = 1'b1;
       end
     end
 
     // Instruction in writeback is generating an exception so instruction in ID must not execute
-    assign wb_exception_o = load_err_q | store_err_q | load_err_i | store_err_i;
+    assign wb_exception_o = load_err_q | store_err_q | load_err_i | store_err_i
+                          | ((cheriot_enable_i == IbexMuBiOn) & cheriot_wb_err_i);
   end else begin : g_no_wb_exceptions
     always_comb begin
       instr_fetch_err_prio = 0;
@@ -22789,6 +25729,9 @@ module lowrisc_ibex_controller #(
       ebrk_insn_prio       = 0;
       store_err_prio       = 0;
       load_err_prio        = 0;
+      cheriot_wb_err_prio    = 1'b0;
+      cheriot_ex_err_prio    = 1'b0;
+      cheriot_asr_err_prio   = 1'b0;
 
       if (instr_fetch_err) begin
         instr_fetch_err_prio = 1'b1;
@@ -22798,10 +25741,16 @@ module lowrisc_ibex_controller #(
         ecall_insn_prio = 1'b1;
       end else if (ebrk_insn) begin
         ebrk_insn_prio = 1'b1;
+      end else if ((cheriot_enable_i == IbexMuBiOn) & cheriot_ex_err_q) begin
+        cheriot_ex_err_prio  = 1'b1;
       end else if (store_err_q) begin
         store_err_prio = 1'b1;
       end else if (load_err_q) begin
         load_err_prio  = 1'b1;
+      end else if ((cheriot_enable_i == IbexMuBiOn) & cheriot_wb_err_q) begin
+        cheriot_wb_err_prio  = 1'b1;
+      end else if (cheriot_asr_err_q) begin
+        cheriot_asr_err_prio = 1'b1;
       end
     end
     assign wb_exception_o = 1'b0;
@@ -22897,8 +25846,11 @@ module lowrisc_ibex_controller #(
   // interrupt. `trigger_match_i` is not a priority entry into debug mode as it must be ignored
   // where control flow changes such that the instruction causing the trigger is no longer being
   // executed.
-  assign enter_debug_mode_prio_d = (debug_req_i | do_single_step_d) & ~debug_mode_q;
-  assign enter_debug_mode = enter_debug_mode_prio_d | (trigger_match_i & ~debug_mode_q);
+  // We don't interrupt expanded Zcmp sequences with debug mode entry.
+  assign enter_debug_mode_prio_d = (debug_req_i | do_single_step_d) & ~debug_mode_q &
+      !(instr_gets_expanded_i inside {INSTR_EXPANDED, INSTR_EXPANDED_COMMIT});
+  assign enter_debug_mode = enter_debug_mode_prio_d | (trigger_match_i & ~debug_mode_q) &
+      !(instr_gets_expanded_i inside {INSTR_EXPANDED, INSTR_EXPANDED_COMMIT});
 
   // Set when an ebreak should enter debug mode rather than jump to exception
   // handler
@@ -22918,8 +25870,10 @@ module lowrisc_ibex_controller #(
   // - while in NMI mode (nested NMIs are not supported, NMI has highest priority and
   //   cannot be interrupted by regular interrupts),
   // - while single stepping.
+  // - while the atomic committing instructions of a Zcmp sequence.
   assign handle_irq = ~debug_mode_q & ~debug_single_step_i & ~nmi_mode_q &
-      (irq_nm | (irq_pending_i & irq_enabled));
+      (irq_nm | (irq_pending_i & irq_enabled)) &
+      !(instr_gets_expanded_i == INSTR_EXPANDED_COMMIT);
 
   // generate ID of fast interrupts, highest priority to lowest ID
   always_comb begin : gen_mfip_id
@@ -22968,6 +25922,7 @@ module lowrisc_ibex_controller #(
     csr_restore_mret_id_o = 1'b0;
     csr_restore_dret_id_o = 1'b0;
     csr_save_cause_o      = 1'b0;
+    csr_mepcc_clrtag_o    = 1'b0;
     csr_mtval_o           = '0;
 
     // The values of pc_mux and exc_pc_mux are only relevant if pc_set is set. Some of the states
@@ -23099,7 +26054,8 @@ module lowrisc_ibex_controller #(
           end
         end
 
-        if (branch_set_i || jump_set_i) begin
+        if (branch_set_i || jump_set_i
+            || ((cheriot_enable_i == IbexMuBiOn) & cheriot_branch_req_i)) begin
           // Only set the PC if the branch predictor hasn't already done the branch for us
           pc_set_o       = BranchPredictor ? ~instr_bp_taken_i : 1'b1;
 
@@ -23244,7 +26200,8 @@ module lowrisc_ibex_controller #(
 
         // exceptions: set exception PC, save PC and exception cause
         // exc_req_lsu is high for one clock cycle only (in DECODE)
-        if (exc_req_q || store_err_q || load_err_q) begin
+        if (exc_req_q || store_err_q || load_err_q
+            || ((cheriot_enable_i == IbexMuBiOn) & cheriot_wb_err_q)) begin
           pc_set_o         = 1'b1;
           pc_mux_o         = PC_EXC;
           exc_pc_mux_o     = debug_mode_q ? EXC_PC_DBG_EXC : EXC_PC_EXC;
@@ -23253,8 +26210,10 @@ module lowrisc_ibex_controller #(
             // With the writeback stage present whether an instruction accessing memory will cause
             // an exception is only known when it is in writeback. So when taking such an exception
             // epc must come from writeback.
-            csr_save_id_o  = ~(store_err_q | load_err_q);
-            csr_save_wb_o  = store_err_q | load_err_q;
+            csr_save_id_o  = ~(store_err_q | load_err_q
+                             | ((cheriot_enable_i == IbexMuBiOn) & cheriot_wb_err_q));
+            csr_save_wb_o  = store_err_q | load_err_q
+                           | ((cheriot_enable_i == IbexMuBiOn) & cheriot_wb_err_q);
           end else begin : g_no_writeback_mepc_save
             csr_save_id_o  = 1'b0;
           end
@@ -23264,12 +26223,25 @@ module lowrisc_ibex_controller #(
           // Exception/fault prioritisation logic will have set exactly 1 X_prio signal
           unique case (1'b1)
             instr_fetch_err_prio: begin
-              exc_cause_o = ExcCauseInstrAccessFault;
-              csr_mtval_o = instr_fetch_err_plus2_i ? (pc_id_i + 32'd2) : pc_id_i;
+              if ((BaseIsa == BaseIsaRV32IorCHERIoT) & (cheriot_enable_i == IbexMuBiOn) &
+                  instr_fetch_cheriot_acc_vio_i) begin  // tag violation
+                exc_cause_o = ExcCauseCheriFault;
+                csr_mtval_o = {21'h0, 1'b1, 5'h0, 5'h2};   // s=1, cap_idx=0
+              end else if ((BaseIsa == BaseIsaRV32IorCHERIoT) & (cheriot_enable_i == IbexMuBiOn) &
+                           instr_fetch_cheriot_bound_vio_i) begin  // bound violation
+                exc_cause_o = ExcCauseCheriFault;
+                csr_mtval_o = {21'h0, 1'b1, 5'h0, 5'h1};   // s=1, cap_idx=0
+                csr_mepcc_clrtag_o = 1'b1;
+              end else begin                            // ext memory error
+                exc_cause_o = ExcCauseInstrAccessFault;
+                csr_mtval_o = instr_fetch_err_plus2_i ? (pc_id_i + 32'd2) : pc_id_i;
+              end
             end
             illegal_insn_prio: begin
               exc_cause_o = ExcCauseIllegalInsn;
-              csr_mtval_o = instr_is_compressed_i ? {16'b0, instr_compressed_i} : instr_i;
+              csr_mtval_o = ((BaseIsa == BaseIsaRV32IorCHERIoT)
+                             & (cheriot_enable_i == IbexMuBiOn)) ? 32'h0 :
+                            (instr_is_compressed_i ? {16'b0, instr_compressed_i} : instr_i);
             end
             ecall_insn_prio: begin
               exc_cause_o = (priv_mode_i == PRIV_LVL_M) ? ExcCauseEcallMMode :
@@ -23286,19 +26258,71 @@ module lowrisc_ibex_controller #(
                 ctrl_fsm_ns      = DBG_TAKEN_ID;
                 flush_id         = 1'b0;
               end else begin
-                // If EBREAK won't enter debug mode (dcsr.ebreakm/u not set) then raise a breakpoint
-                // exception.
+                // "The EBREAK instruction is used by debuggers to cause control
+                // to be transferred back to a debugging environment. It
+                // generates a breakpoint exception and performs no other
+                // operation. [...] ECALL and EBREAK cause the receiving
+                // privilege mode's epc register to be set to the address of the
+                // ECALL or EBREAK instruction itself, not the address of the
+                // following instruction." [Privileged Spec v1.11, p.40]
                 exc_cause_o      = ExcCauseBreakpoint;
+                // CHERIoT: report PC in mtval for breakpoint
+                if ((BaseIsa == BaseIsaRV32IorCHERIoT)
+                    && (cheriot_enable_i == IbexMuBiOn)) begin
+                  csr_mtval_o = pc_id_i;
+                end
               end
             end
             store_err_prio: begin
-              exc_cause_o = ExcCauseStoreAccessFault;
-              csr_mtval_o = lsu_addr_last_i;
+              if ((cheriot_enable_i == IbexMuBiOn) & lsu_err_is_cheriot_q) begin
+                if (cheriot_wb_err_info_i[11]) begin
+                  exc_cause_o = ExcCauseStoreAddrMisaligned;
+                  csr_mtval_o = lsu_addr_last_i;
+                end else begin
+                  exc_cause_o = ExcCauseCheriFault;
+                  csr_mtval_o = {21'h0, cheriot_wb_err_info_i[10:0]};
+                end
+              end else begin
+                exc_cause_o = ExcCauseStoreAccessFault;
+                csr_mtval_o = lsu_addr_last_i;
+              end
             end
             load_err_prio: begin
-              exc_cause_o = ExcCauseLoadAccessFault;
-              csr_mtval_o = lsu_addr_last_i;
+              if ((cheriot_enable_i == IbexMuBiOn) & lsu_err_is_cheriot_q) begin
+                if (cheriot_wb_err_info_i[11]) begin
+                  exc_cause_o = ExcCauseLoadAddrMisaligned;
+                  csr_mtval_o = lsu_addr_last_i;
+                end else begin
+                  exc_cause_o = ExcCauseCheriFault;
+                  csr_mtval_o = {21'h0, cheriot_wb_err_info_i[10:0]};
+                end
+              end else begin
+                exc_cause_o = ExcCauseLoadAccessFault;
+                csr_mtval_o = lsu_addr_last_i;
+              end
             end
+            cheriot_ex_err_prio: begin
+              if (cheriot_enable_i == IbexMuBiOn) begin
+                exc_cause_o = ExcCauseCheriFault;
+                csr_mtval_o = {21'h0, cheriot_ex_err_info_i[10:0]};
+              end
+            end
+            cheriot_wb_err_prio: begin
+              if (cheriot_enable_i == IbexMuBiOn) begin
+                if (cheriot_wb_err_info_i[12]) begin  // illegal SCR addr
+                  exc_cause_o = ExcCauseIllegalInsn;
+                  csr_mtval_o = {21'h0, cheriot_wb_err_info_i[10:0]};
+                end else begin
+                  exc_cause_o = ExcCauseCheriFault;
+                  csr_mtval_o = {21'h0, cheriot_wb_err_info_i[10:0]};
+                end
+              end
+            end
+            cheriot_asr_err_prio: begin
+              exc_cause_o = ExcCauseCheriFault;
+              csr_mtval_o = {21'b0, 1'b1, 5'h0, 5'h18};  // S=1, cap_idx=0 (pcc), err=0x18
+            end
+
             default: ;
           endcase
         end else begin
@@ -23403,6 +26427,30 @@ module lowrisc_ibex_controller #(
     end
   end
 
+  if (BaseIsa == BaseIsaRV32IorCHERIoT) begin : gen_update_regs_cheriot
+    always_ff @(posedge clk_i or negedge rst_ni) begin : update_regs_cheriot
+      if (!rst_ni) begin
+        lsu_err_is_cheriot_q <= 1'b0;
+        cheriot_ex_err_q     <= 1'b0;
+        cheriot_wb_err_q     <= 1'b0;
+        cheriot_asr_err_q    <= 1'b0;
+      end else begin
+        lsu_err_is_cheriot_q <= lsu_err_is_cheriot_i;
+        cheriot_ex_err_q     <= cheriot_ex_err_d;
+        cheriot_wb_err_q     <= cheriot_wb_err_i;
+        cheriot_asr_err_q    <= cheriot_asr_err_d;
+      end
+    end
+  end else begin : gen_cheriot_tieoff
+    logic unused_cheriot;
+    assign unused_cheriot = |{lsu_err_is_cheriot_i, cheriot_ex_err_d, cheriot_wb_err_i,
+                              cheriot_asr_err_d};
+    assign lsu_err_is_cheriot_q = 1'b0;
+    assign cheriot_ex_err_q     = 1'b0;
+    assign cheriot_wb_err_q     = 1'b0;
+    assign cheriot_asr_err_q    = 1'b0;
+  end
+
 
 
   //////////
@@ -23436,9 +26484,19 @@ module lowrisc_ibex_controller #(
 
 
 
+
+  logic unused_cheriot_ctrl_inputs;
+  assign unused_cheriot_ctrl_inputs = ^{
+    cheriot_ex_valid_i,
+    cheriot_ex_err_info_i[11],
+    cheriot_wb_err_info_i[15:13],
+    cheriot_branch_target_i
+  };
+
 endmodule
 // Copyright lowRISC contributors.
 // Copyright 2018 ETH Zurich and University of Bologna, see also CREDITS.md.
+// Copyright Microsoft Corporation
 // Licensed under the Apache License, Version 2.0, see LICENSE for details.
 // SPDX-License-Identifier: Apache-2.0
 
@@ -23739,7 +26797,8 @@ endmodule
  // PRIM_ASSERT_SV
 
 
-module lowrisc_ibex_cs_registers import lowrisc_ibex_pkg::*; #(
+module lowrisc_ibex_cs_registers import lowrisc_ibex_pkg::*, lowrisc_ibex_cheriot_pkg::*; #(
+  parameter base_isa_e              BaseIsa                     = BaseIsaRV32I,
   parameter bit                     DbgTriggerEn                = 0,
   parameter int unsigned            DbgHwBreakNum               = 1,
   parameter bit                     DataIndTiming               = 1'b0,
@@ -23766,6 +26825,7 @@ module lowrisc_ibex_cs_registers import lowrisc_ibex_pkg::*; #(
   input  logic                 clk_i,
   input  logic                 rst_ni,
 
+  input  ibex_mubi_t           cheriot_enable_i,
   // Hart ID
   input  logic [31:0]          hart_id_i,
 
@@ -23784,8 +26844,26 @@ module lowrisc_ibex_cs_registers import lowrisc_ibex_pkg::*; #(
   input  lowrisc_ibex_pkg::csr_num_e   csr_addr_i,
   input  logic [31:0]          csr_wdata_i,
   input  lowrisc_ibex_pkg::csr_op_e    csr_op_i,
-  input                        csr_op_en_i,
+  input  logic                 csr_op_en_i,
   output logic [31:0]          csr_rdata_o,
+
+  input  logic                 cheriot_csr_access_i,
+  input  logic [4:0]           cheriot_csr_addr_i,
+  input  logic [31:0]          cheriot_csr_wdata_i,
+  input  cap_t                 cheriot_csr_wcap_i,
+  input  cheriot_csr_op_e      cheriot_csr_op_i,
+  input  logic                 cheriot_csr_op_en_i,
+  input  logic                 cheriot_csr_set_mie_i,
+  input  logic                 cheriot_csr_clr_mie_i,
+
+  output logic [31:0]          cheriot_csr_rdata_o,
+  output cap_t                 cheriot_csr_rcap_o,
+
+  // stack highwatermark and fast-clearing function
+  output logic [31:0]          csr_mshwm_o,
+  output logic [31:0]          csr_mshwmb_o,
+  input  logic                 csr_mshwm_set_i,
+  input  logic [31:0]          csr_mshwm_new_i,
 
   // interrupts
   input  logic                 irq_software_i,
@@ -23837,6 +26915,7 @@ module lowrisc_ibex_cs_registers import lowrisc_ibex_pkg::*; #(
   input  logic                 csr_restore_mret_i,
   input  logic                 csr_restore_dret_i,
   input  logic                 csr_save_cause_i,
+  input  logic                 csr_mepcc_clrtag_i,
   input  lowrisc_ibex_pkg::exc_cause_t csr_mcause_i,
   input  logic [31:0]          csr_mtval_i,
   output logic                 illegal_csr_insn_o,     // access to non-existent CSR,
@@ -23856,7 +26935,15 @@ module lowrisc_ibex_cs_registers import lowrisc_ibex_pkg::*; #(
   input  logic                 mem_store_i,                 // store to memory in this cycle
   input  logic                 dside_wait_i,                // core waiting for the dside
   input  logic                 mul_wait_i,                  // core waiting for multiply
-  input  logic                 div_wait_i                   // core waiting for divide
+  input  logic                 div_wait_i,                   // core waiting for divide
+
+  input  logic                 cheriot_branch_req_i,
+  input  logic [31:0]          cheriot_branch_target_i,
+  input  decoded_cap_t         pcc_cap_i,
+  output decoded_cap_t         pcc_cap_o,
+
+  output logic                 csr_dbg_tclr_fault_o,
+  output logic                 cheriot_fatal_err_o
 );
 
   // Is a PMP config a locked one that allows M-mode execution when MSECCFG.MML is set (either
@@ -23878,6 +26965,8 @@ module lowrisc_ibex_cs_registers import lowrisc_ibex_pkg::*; #(
   // All bitmanip configs enable non-ratified sub-extensions
   localparam int unsigned RV32BExtra   = (RV32B != RV32BNone) ? 1 : 0;
   localparam int unsigned RV32MEnabled = (RV32M == RV32MNone) ? 0 : 1;
+  // X bit: non-standard extensions present (B extra sub-extensions or CHERIoT configured)
+  localparam int unsigned MisaXBit     = RV32BExtra | 32'(BaseIsa == BaseIsaRV32IorCHERIoT);
   localparam int unsigned PMPAddrWidth = (PMPGranularity > 0) ? PMP_ADDR_MSB - PMPGranularity : 32;
   // Base index of the first HPM counter (0=cycle, 1=time, 2=instret)
   localparam int unsigned MHPMCOUNTER_BASE = 3;
@@ -23895,7 +26984,8 @@ module lowrisc_ibex_cs_registers import lowrisc_ibex_pkg::*; #(
     | (0                 << 13)  // N - User level interrupts supported
     | (0                 << 18)  // S - Supervisor mode implemented
     | (1                 << 20)  // U - User mode implemented
-    | (RV32BExtra        << 23)  // X - Non-standard extensions present
+    // X - Non-standard extensions present
+    | (MisaXBit          << 23)
     | (32'(CSR_MISA_MXL) << 30); // M-XLEN
 
   typedef struct packed {
@@ -23946,31 +27036,41 @@ module lowrisc_ibex_cs_registers import lowrisc_ibex_pkg::*; #(
   logic [31:0] exception_pc;
 
   // CSRs
-  priv_lvl_e   priv_lvl_q, priv_lvl_d;
-  status_t     mstatus_q, mstatus_d;
-  logic        mstatus_err;
-  logic        mstatus_en;
-  irqs_t       mie_q, mie_d;
-  logic        mie_en;
-  logic [31:0] mscratch_q;
-  logic        mscratch_en;
-  logic [31:0] mepc_q, mepc_d;
-  logic        mepc_en;
-  exc_cause_t  mcause_q, mcause_d;
-  logic        mcause_en;
-  logic [31:0] mtval_q, mtval_d;
-  logic        mtval_en;
-  logic [31:0] mtvec_q, mtvec_d;
-  logic        mtvec_err;
-  logic        mtvec_en;
-  irqs_t       mip;
-  dcsr_t       dcsr_q, dcsr_d;
-  logic        dcsr_en;
-  logic [31:0] depc_q, depc_d;
-  logic        depc_en;
-  logic [31:0] dscratch0_q;
-  logic [31:0] dscratch1_q;
-  logic        dscratch0_en, dscratch1_en;
+  priv_lvl_e    priv_lvl_q, priv_lvl_d;
+  status_t      mstatus_q, mstatus_d;
+  logic         mstatus_err;
+  logic         mstatus_en;
+  irqs_t        mie_q, mie_d;
+  logic         mie_en;
+  logic [31:0]  mscratch_q;
+  logic         mscratch_en;
+  logic [31:0]  mepc_q, mepc_d;
+  logic         mepc_en;
+  exc_cause_t   mcause_q, mcause_d;
+  cap_t         mepc_cap;
+  logic         mcause_en;
+  logic [31:0]  mtval_q, mtval_d;
+  logic         mtval_en;
+  logic [31:0]  mtvec_q, mtvec_d;
+  cap_t         mtvec_cap;
+  logic         mtvec_err;
+  logic         mtvec_en;
+  irqs_t        mip;
+  dcsr_t        dcsr_q, dcsr_d;
+  logic         dcsr_en;
+  logic [31:0]  depc_q, depc_d;
+  logic         depc_en;
+  cap_t         depc_cap;
+  logic [31:0]  dscratch0_q;
+  logic [31:0]  dscratch1_q;
+  logic         dscratch0_en, dscratch1_en;
+  cap_t         dscratch0_cap, dscratch1_cap;
+  logic [31:0]  mshwm_q, mshwm_d;
+  logic [31:0]  mshwmb_q;
+  logic         mshwm_en, mshwmb_en;
+  logic [31:0]  cdbg_ctrl_q;
+  logic         cdbg_ctrl_en;
+  decoded_cap_t pcc_cap_q, pcc_cap_d;
 
   // CSRs for recoverable NMIs
   // NOTE: these CSRS are nonstandard, see https://github.com/riscv/riscv-isa-manual/issues/261
@@ -24041,19 +27141,53 @@ module lowrisc_ibex_cs_registers import lowrisc_ibex_pkg::*; #(
   logic [7:0]  unused_boot_addr;
   logic [2:0]  unused_csr_addr;
 
+  logic        mepc_en_combi, mepc_en_cheriot;
+  logic [31:0] mepc_d_combi;
+
+  logic        mtvec_en_combi, mtvec_en_cheriot;
+  logic [31:0] mtvec_d_combi;
+
+  logic        depc_en_combi, depc_en_cheriot;
+  logic [31:0] depc_d_combi;
+
+  logic        dscratch0_en_combi, dscratch0_en_cheriot;
+  logic [31:0] dscratch0_d_combi;
+  logic        dscratch1_en_combi, dscratch1_en_cheriot;
+  logic [31:0] dscratch1_d_combi;
+
   assign unused_boot_addr = boot_addr_i[7:0];
+
+  logic [31:0] misa_value_masked;
+
+  // Set the X, I and E bits dynamically based on cheriot_enable_i.
+  // I must always be the complement of E.
+  assign misa_value_masked = {MISA_VALUE[31:24],
+                              // X
+                              (BaseIsa == BaseIsaRV32IorCHERIoT)
+                                ? ((cheriot_enable_i == IbexMuBiOn) || (RV32BExtra != 0)) :
+                                  MISA_VALUE[23],
+                              MISA_VALUE[22:9],
+                              // I
+                              (BaseIsa == BaseIsaRV32IorCHERIoT)
+                                ? (cheriot_enable_i != IbexMuBiOn) : MISA_VALUE[8],
+                              MISA_VALUE[7:5],
+                              // E
+                              (BaseIsa == BaseIsaRV32IorCHERIoT)
+                                ? (cheriot_enable_i == IbexMuBiOn) : MISA_VALUE[4],
+                              MISA_VALUE[3:0]
+                             };
 
   /////////////
   // CSR reg //
   /////////////
 
   logic [$bits(csr_num_e)-1:0] csr_addr;
-  assign csr_addr           = {csr_addr_i};
+  assign csr_addr           = csr_addr_i;
   assign unused_csr_addr    = csr_addr[7:5];
   assign mhpmcounter_idx    = csr_addr[4:0];
 
   assign illegal_csr_dbg    = dbg_csr & ~debug_mode_i;
-  assign illegal_csr_priv   = (csr_addr[9:8] > {priv_lvl_q});
+  assign illegal_csr_priv   = (csr_addr[9:8] > priv_lvl_q);
   assign illegal_csr_write  = (csr_addr[11:10] == 2'b11) && csr_wr;
   assign illegal_csr_insn_o = csr_access_i & (illegal_csr | illegal_csr_write | illegal_csr_priv |
                                               illegal_csr_dbg);
@@ -24074,7 +27208,9 @@ module lowrisc_ibex_cs_registers import lowrisc_ibex_pkg::*; #(
       // mvendorid: encoding of manufacturer/provider
       CSR_MVENDORID: csr_rdata_int = CsrMvendorId;
       // marchid: encoding of base microarchitecture
-      CSR_MARCHID: csr_rdata_int = CSR_MARCHID_VALUE;
+      CSR_MARCHID: csr_rdata_int =
+        ((BaseIsa == BaseIsaRV32IorCHERIoT) & (cheriot_enable_i == IbexMuBiOn))
+          ? CSR_MARCHID_CHERIOT_VALUE : CSR_MARCHID_VALUE;
       // mimpid: encoding of processor implementation version
       CSR_MIMPID: csr_rdata_int = CsrMimpId;
       // mhartid: unique hardware thread id
@@ -24100,7 +27236,7 @@ module lowrisc_ibex_cs_registers import lowrisc_ibex_pkg::*; #(
       CSR_MENVCFG, CSR_MENVCFGH: csr_rdata_int = '0;
 
       // misa
-      CSR_MISA: csr_rdata_int = MISA_VALUE;
+      CSR_MISA: csr_rdata_int = misa_value_masked;
 
       // interrupt enable
       CSR_MIE: begin
@@ -24116,11 +27252,23 @@ module lowrisc_ibex_cs_registers import lowrisc_ibex_pkg::*; #(
 
       CSR_MSCRATCH: csr_rdata_int = mscratch_q;
 
-      // mtvec: trap-vector base address
-      CSR_MTVEC: csr_rdata_int = mtvec_q;
+      // mtvec: trap-vector base address (replaced by MTCC in CHERIoT mode)
+      CSR_MTVEC: begin
+        if ((BaseIsa == BaseIsaRV32IorCHERIoT) && (cheriot_enable_i == IbexMuBiOn)) begin
+          illegal_csr = 1'b1;
+        end else begin
+          csr_rdata_int = mtvec_q;
+        end
+      end
 
-      // mepc: exception program counter
-      CSR_MEPC: csr_rdata_int = mepc_q;
+      // mepc: exception program counter (replaced by MEPCC in CHERIoT mode)
+      CSR_MEPC: begin
+        if ((BaseIsa == BaseIsaRV32IorCHERIoT) && (cheriot_enable_i == IbexMuBiOn)) begin
+          illegal_csr = 1'b1;
+        end else begin
+          csr_rdata_int = mepc_q;
+        end
+      end
 
       // mcause: exception cause
       CSR_MCAUSE: csr_rdata_int = {mcause_q.irq_ext | mcause_q.irq_int,
@@ -24140,7 +27288,8 @@ module lowrisc_ibex_cs_registers import lowrisc_ibex_pkg::*; #(
       end
 
       CSR_MSECCFG: begin
-        if (PMPEnable) begin
+        if (PMPEnable &&
+            !((BaseIsa == BaseIsaRV32IorCHERIoT) && (cheriot_enable_i == IbexMuBiOn))) begin
           csr_rdata_int                       = '0;
           csr_rdata_int[CSR_MSECCFG_MML_BIT]  = pmp_mseccfg.mml;
           csr_rdata_int[CSR_MSECCFG_MMWP_BIT] = pmp_mseccfg.mmwp;
@@ -24151,7 +27300,8 @@ module lowrisc_ibex_cs_registers import lowrisc_ibex_pkg::*; #(
       end
 
       CSR_MSECCFGH: begin
-        if (PMPEnable) begin
+        if (PMPEnable &&
+            !((BaseIsa == BaseIsaRV32IorCHERIoT) && (cheriot_enable_i == IbexMuBiOn))) begin
           csr_rdata_int = '0;
         end else begin
           illegal_csr = 1'b1;
@@ -24311,12 +27461,38 @@ module lowrisc_ibex_cs_registers import lowrisc_ibex_pkg::*; #(
         csr_rdata_int = '0;
       end
 
+      // MSHWM CSR (stack high watermark in cheriot)
+      CSR_MSHWM:  begin
+        if (cheriot_enable_i == IbexMuBiOn) begin
+          csr_rdata_int = mshwm_q;
+        end else begin
+          illegal_csr = 1'b1;
+        end
+      end
+
+      CSR_MSHWMB: begin
+        if (cheriot_enable_i == IbexMuBiOn) begin
+          csr_rdata_int = mshwmb_q;
+        end else begin
+          illegal_csr = 1'b1;
+        end
+      end
+
+      CSR_CDBG_CTRL: begin
+        if (cheriot_enable_i == IbexMuBiOn) begin
+          csr_rdata_int = cdbg_ctrl_q;
+        end else begin
+          illegal_csr = 1'b1;
+        end
+      end
+
       default: begin
         illegal_csr = 1'b1;
       end
     endcase
 
-    if (!PMPEnable) begin
+    if (!PMPEnable ||
+        ((BaseIsa == BaseIsaRV32IorCHERIoT) && (cheriot_enable_i == IbexMuBiOn))) begin
       if (csr_addr inside {CSR_PMPCFG0,   CSR_PMPCFG1,   CSR_PMPCFG2,   CSR_PMPCFG3,
                            CSR_PMPADDR0,  CSR_PMPADDR1,  CSR_PMPADDR2,  CSR_PMPADDR3,
                            CSR_PMPADDR4,  CSR_PMPADDR5,  CSR_PMPADDR6,  CSR_PMPADDR7,
@@ -24347,8 +27523,11 @@ module lowrisc_ibex_cs_registers import lowrisc_ibex_pkg::*; #(
     mtvec_en     = csr_mtvec_init_i;
     // mtvec.MODE set to vectored
     // mtvec.BASE must be 256-byte aligned
-    mtvec_d      = csr_mtvec_init_i ? {boot_addr_i[31:8], 6'b0, 2'b01} :
-                                      {csr_wdata_int[31:8], 6'b0, 2'b01};
+    mtvec_d      = csr_mtvec_init_i
+      ? {boot_addr_i[31:8], 6'b0, 1'b0,
+         ~((BaseIsa == BaseIsaRV32IorCHERIoT) & (cheriot_enable_i == IbexMuBiOn))}
+      : {csr_wdata_int[31:8], 6'b0, 1'b0,
+         ~((BaseIsa == BaseIsaRV32IorCHERIoT) & (cheriot_enable_i == IbexMuBiOn))};
     dcsr_en      = 1'b0;
     dcsr_d       = dcsr_q;
     depc_d       = {csr_wdata_int[31:1], 1'b0};
@@ -24369,6 +27548,10 @@ module lowrisc_ibex_cs_registers import lowrisc_ibex_pkg::*; #(
 
     cpuctrlsts_part_we = 1'b0;
     cpuctrlsts_part_d  = cpuctrlsts_part_q;
+
+    mshwm_en     = 1'b0;
+    mshwmb_en    = 1'b0;
+    cdbg_ctrl_en = 1'b0;
 
     double_fault_seen_o = 1'b0;
 
@@ -24396,7 +27579,9 @@ module lowrisc_ibex_cs_registers import lowrisc_ibex_pkg::*; #(
         CSR_MSCRATCH: mscratch_en = 1'b1;
 
         // mepc: exception program counter
-        CSR_MEPC: mepc_en = 1'b1;
+        // disabled for pure cap mode (only allow cap writes)
+        CSR_MEPC: mepc_en = ~(BaseIsa == BaseIsaRV32IorCHERIoT)
+                            | (cheriot_enable_i != IbexMuBiOn);
 
         // mcause
         CSR_MCAUSE: mcause_en = 1'b1;
@@ -24405,7 +27590,9 @@ module lowrisc_ibex_cs_registers import lowrisc_ibex_pkg::*; #(
         CSR_MTVAL: mtval_en = 1'b1;
 
         // mtvec
-        CSR_MTVEC: mtvec_en = 1'b1;
+        // disabled for pure cap mode (only allow cap writes)
+        CSR_MTVEC: mtvec_en = ~(BaseIsa == BaseIsaRV32IorCHERIoT)
+                            | (cheriot_enable_i != IbexMuBiOn);
 
         CSR_DCSR: begin
           dcsr_d = csr_wdata_int;
@@ -24474,6 +27661,13 @@ module lowrisc_ibex_cs_registers import lowrisc_ibex_pkg::*; #(
           cpuctrlsts_part_d  = cpuctrlsts_part_wdata;
           cpuctrlsts_part_we = 1'b1;
         end
+
+        CSR_MSHWM:     mshwm_en     = (BaseIsa == BaseIsaRV32IorCHERIoT)
+                                    & (cheriot_enable_i == IbexMuBiOn);
+        CSR_MSHWMB:    mshwmb_en    = (BaseIsa == BaseIsaRV32IorCHERIoT)
+                                    & (cheriot_enable_i == IbexMuBiOn);
+        CSR_CDBG_CTRL: cdbg_ctrl_en = (BaseIsa == BaseIsaRV32IorCHERIoT)
+                                    & (cheriot_enable_i == IbexMuBiOn);
 
         default:;
       endcase
@@ -24603,7 +27797,16 @@ module lowrisc_ibex_cs_registers import lowrisc_ibex_pkg::*; #(
   assign csr_wr = (csr_op_i inside {CSR_OP_WRITE, CSR_OP_SET, CSR_OP_CLEAR});
 
   // only write CSRs during one clock cycle
-  assign csr_we_int  = csr_wr & csr_op_en_i & ~illegal_csr_insn_o;
+
+  // enforcing the CHERIoT CSR access policy.
+  //  - exceptions for ASR violation is generated in the controller.
+  //  - we never allow writes to any CSR if ASR=0
+  //  - no need to gate csr_rdata for ASR violation since the instruction will be faulted anyway
+
+  assign csr_we_int  = csr_wr & csr_op_en_i
+    & (~(BaseIsa == BaseIsaRV32IorCHERIoT) | (cheriot_enable_i != IbexMuBiOn)
+       | debug_mode_i | pcc_cap_q.perms.SR)
+    & ~illegal_csr_insn_o;
 
   assign csr_rdata_o = csr_rdata_int;
 
@@ -24612,6 +27815,9 @@ module lowrisc_ibex_cs_registers import lowrisc_ibex_pkg::*; #(
   assign csr_depc_o  = depc_q;
   assign csr_mtvec_o = mtvec_q;
   assign csr_mtval_o = mtval_q;
+
+  assign csr_mshwm_o  = mshwm_q;
+  assign csr_mshwmb_o = mshwmb_q;
 
   assign csr_mstatus_mie_o   = mstatus_q.mie;
   assign csr_mstatus_tw_o    = mstatus_q.tw;
@@ -24634,6 +27840,21 @@ module lowrisc_ibex_cs_registers import lowrisc_ibex_pkg::*; #(
                                           mpp:  PRIV_LVL_U,
                                           mprv: 1'b0,
                                           tw:   1'b0};
+
+  // adding set/clr of mie based on sentry type for CHERIoT
+  logic    mstatus_en_combi;
+  status_t mstatus_d_combi;
+
+  assign mstatus_en_combi = mstatus_en |
+      ((cheriot_enable_i == IbexMuBiOn) & (cheriot_csr_clr_mie_i | cheriot_csr_set_mie_i));
+
+  always_comb begin
+    mstatus_d_combi     = mstatus_d;
+    mstatus_d_combi.mie = (mstatus_d.mie
+                          & ~((cheriot_enable_i == IbexMuBiOn) & cheriot_csr_clr_mie_i))
+                          | ((cheriot_enable_i == IbexMuBiOn) & cheriot_csr_set_mie_i);
+  end
+
   lowrisc_ibex_csr #(
     .Width     ($bits(status_t)),
     .ShadowCopy(ShadowCSR),
@@ -24641,11 +27862,14 @@ module lowrisc_ibex_cs_registers import lowrisc_ibex_pkg::*; #(
   ) u_mstatus_csr (
     .clk_i     (clk_i),
     .rst_ni    (rst_ni),
-    .wr_data_i ({mstatus_d}),
-    .wr_en_i   (mstatus_en),
+    .wr_data_i ({mstatus_d_combi}),
+    .wr_en_i   (mstatus_en_combi),
     .rd_data_o (mstatus_q),
     .rd_error_o(mstatus_err)
   );
+
+  assign mepc_en_combi = mepc_en | mepc_en_cheriot;
+  assign mepc_d_combi = ({32{mepc_en}} & mepc_d) | ({32{mepc_en_cheriot}} & cheriot_csr_wdata_i);
 
   // MEPC
   lowrisc_ibex_csr #(
@@ -24655,8 +27879,8 @@ module lowrisc_ibex_cs_registers import lowrisc_ibex_pkg::*; #(
   ) u_mepc_csr (
     .clk_i     (clk_i),
     .rst_ni    (rst_ni),
-    .wr_data_i (mepc_d),
-    .wr_en_i   (mepc_en),
+    .wr_data_i (mepc_d_combi),
+    .wr_en_i   (mepc_en_combi),
     .rd_data_o (mepc_q),
     .rd_error_o()
   );
@@ -24721,16 +27945,23 @@ module lowrisc_ibex_cs_registers import lowrisc_ibex_pkg::*; #(
     .rd_error_o()
   );
 
+
+  assign mtvec_en_combi = mtvec_en | mtvec_en_cheriot;
+
+  // use only 2'b00 (direct mode) for CHERIoT
+  assign mtvec_d_combi = ({32{mtvec_en}} & mtvec_d) | ({32{mtvec_en_cheriot}} &
+                          {cheriot_csr_wdata_i[31:2], 2'b00});
+
   // MTVEC
   lowrisc_ibex_csr #(
     .Width     (32),
     .ShadowCopy(ShadowCSR),
-    .ResetValue(32'd1)
+    .ResetValue({32'd1})   // retain this to make lec vs ibex pass
   ) u_mtvec_csr (
     .clk_i     (clk_i),
     .rst_ni    (rst_ni),
-    .wr_data_i (mtvec_d),
-    .wr_en_i   (mtvec_en),
+    .wr_data_i (mtvec_d_combi),
+    .wr_en_i   (mtvec_en_combi),
     .rd_data_o (mtvec_q),
     .rd_error_o(mtvec_err)
   );
@@ -24755,6 +27986,9 @@ module lowrisc_ibex_cs_registers import lowrisc_ibex_pkg::*; #(
     .rd_error_o()
   );
 
+  assign depc_en_combi = depc_en | depc_en_cheriot;
+  assign depc_d_combi = ({32{depc_en}} & depc_d) | ({32{depc_en_cheriot}} & cheriot_csr_wdata_i);
+
   // DEPC
   lowrisc_ibex_csr #(
     .Width     (32),
@@ -24763,11 +27997,15 @@ module lowrisc_ibex_cs_registers import lowrisc_ibex_pkg::*; #(
   ) u_depc_csr (
     .clk_i     (clk_i),
     .rst_ni    (rst_ni),
-    .wr_data_i (depc_d),
-    .wr_en_i   (depc_en),
+    .wr_data_i (depc_d_combi),
+    .wr_en_i   (depc_en_combi),
     .rd_data_o (depc_q),
     .rd_error_o()
   );
+
+  assign dscratch0_en_combi = dscratch0_en | dscratch0_en_cheriot;
+  assign dscratch0_d_combi = ({32{dscratch0_en}} & csr_wdata_int) |
+                             ({32{dscratch0_en_cheriot}} & cheriot_csr_wdata_i);
 
   // DSCRATCH0
   lowrisc_ibex_csr #(
@@ -24777,11 +28015,15 @@ module lowrisc_ibex_cs_registers import lowrisc_ibex_pkg::*; #(
   ) u_dscratch0_csr (
     .clk_i     (clk_i),
     .rst_ni    (rst_ni),
-    .wr_data_i (csr_wdata_int),
-    .wr_en_i   (dscratch0_en),
+    .wr_data_i (dscratch0_d_combi),
+    .wr_en_i   (dscratch0_en_combi),
     .rd_data_o (dscratch0_q),
     .rd_error_o()
   );
+
+  assign dscratch1_en_combi = dscratch1_en | dscratch1_en_cheriot;
+  assign dscratch1_d_combi = ({32{dscratch1_en}} & csr_wdata_int) |
+                             ({32{dscratch1_en_cheriot}} & cheriot_csr_wdata_i);
 
   // DSCRATCH1
   lowrisc_ibex_csr #(
@@ -24791,8 +28033,8 @@ module lowrisc_ibex_cs_registers import lowrisc_ibex_pkg::*; #(
   ) u_dscratch1_csr (
     .clk_i     (clk_i),
     .rst_ni    (rst_ni),
-    .wr_data_i (csr_wdata_int),
-    .wr_en_i   (dscratch1_en),
+    .wr_data_i (dscratch1_d_combi),
+    .wr_en_i   (dscratch1_en_combi),
     .rd_data_o (dscratch1_q),
     .rd_error_o()
   );
@@ -24839,6 +28081,65 @@ module lowrisc_ibex_cs_registers import lowrisc_ibex_pkg::*; #(
     .rd_data_o (mstack_cause_q),
     .rd_error_o()
   );
+
+  // MSHWM and HSHWMB
+  logic        mshwm_en_combi;
+  assign mshwm_en_combi = mshwm_en | csr_mshwm_set_i;
+  assign mshwm_d = csr_mshwm_set_i ? csr_mshwm_new_i : {csr_wdata_int[31:4], 4'h0};
+
+  if (BaseIsa == BaseIsaRV32IorCHERIoT) begin: g_mshwm
+    lowrisc_ibex_csr #(
+      .Width     (32),
+      .ShadowCopy(ShadowCSR),
+      .ResetValue('0)
+    ) u_mshwm_csr (
+      .clk_i     (clk_i),
+      .rst_ni    (rst_ni),
+      .wr_data_i (mshwm_d),
+      .wr_en_i   (mshwm_en_combi),
+      .rd_data_o (mshwm_q),
+      .rd_error_o()
+    );
+
+    lowrisc_ibex_csr #(
+      .Width     (32),
+      .ShadowCopy(ShadowCSR),
+      .ResetValue('0)
+    ) u_mshwmb_csr (
+      .clk_i     (clk_i),
+      .rst_ni    (rst_ni),
+      .wr_data_i ({csr_wdata_int[31:4], 4'h0}),
+      .wr_en_i   (mshwmb_en),
+      .rd_data_o (mshwmb_q),
+      .rd_error_o()
+      );
+
+    // cheriot debug feature control
+    lowrisc_ibex_csr #(
+      .Width     (32),
+      .ShadowCopy(ShadowCSR),
+      .ResetValue('0)
+    ) u_cdbg_ctrl_csr (
+      .clk_i     (clk_i),
+      .rst_ni    (rst_ni),
+      .wr_data_i ({31'h0, csr_wdata_int[0]}),
+      .wr_en_i   (cdbg_ctrl_en),
+      .rd_data_o (cdbg_ctrl_q),
+      .rd_error_o()
+      );
+
+    assign csr_dbg_tclr_fault_o = cdbg_ctrl_q[0];
+
+  end else begin: g_mshwm_tieoff
+    assign mshwm_q    = '0;
+    assign mshwmb_q   = '0;
+    assign cdbg_ctrl_q = '0;
+
+    assign csr_dbg_tclr_fault_o = 1'b0;
+
+    logic unused_mshwm_sigs;
+    assign unused_mshwm_sigs = ^{mshwm_d, mshwmb_en, cdbg_ctrl_en, mshwm_en_combi};
+  end
 
   // -----------------
   // PMP registers
@@ -25477,6 +28778,273 @@ module lowrisc_ibex_cs_registers import lowrisc_ibex_pkg::*; #(
 
 
 
+  // CHERIoT isolation: MIE control signals must be 0 when CHERIoT is disabled.
+
+
+
+  //////////////////////
+  // Cheriot SCR's
+  //////////////////////
+
+  if (BaseIsa == BaseIsaRV32IorCHERIoT) begin: gen_scr
+    cap_t         pcc_exc_cap;
+    cap_t         mtdc_cap;
+    logic [31:0]  mtdc_data;
+    cap_t         mscratchc_cap;
+    logic [31:0]  mscratchc_data;  // note this is separate from legacy mscratch
+    cap_t         mstack_epc_cap_q;
+
+
+    logic mtdc_en_cheriot, mscratchc_en_cheriot;
+
+    always_comb begin
+      unique case (cheriot_csr_addr_i)
+        CHERIOT_SCR_DEPCC:
+          begin
+            cheriot_csr_rdata_o = debug_mode_i ? depc_q : '0;
+            cheriot_csr_rcap_o  = debug_mode_i ? depc_cap : NULL_CAP;
+          end
+        CHERIOT_SCR_DSCRATCHC0:
+          begin
+            cheriot_csr_rdata_o = debug_mode_i ? dscratch0_q : '0;
+            cheriot_csr_rcap_o  = debug_mode_i ? dscratch0_cap : NULL_CAP;
+          end
+        CHERIOT_SCR_DSCRATCHC1:
+          begin
+            cheriot_csr_rdata_o = debug_mode_i ? dscratch1_q : '0;
+            cheriot_csr_rcap_o  = debug_mode_i ? dscratch1_cap : NULL_CAP;
+          end
+        CHERIOT_SCR_MTCC:
+          begin
+            cheriot_csr_rdata_o = mtvec_q;
+            cheriot_csr_rcap_o  = mtvec_cap;
+          end
+        CHERIOT_SCR_MTDC:
+          begin
+            cheriot_csr_rdata_o = mtdc_data;
+            cheriot_csr_rcap_o  = mtdc_cap;
+          end
+        CHERIOT_SCR_MSCRATCHC:
+          begin
+            cheriot_csr_rdata_o = mscratchc_data;
+            cheriot_csr_rcap_o  = mscratchc_cap;
+          end
+        CHERIOT_SCR_MEPCC:
+          begin
+            cheriot_csr_rdata_o = mepc_q;
+            cheriot_csr_rcap_o  = mepc_cap;
+          end
+        default:
+          begin
+            cheriot_csr_rdata_o = 32'h0;
+            cheriot_csr_rcap_o  = NULL_CAP;
+          end
+      endcase
+    end
+
+    assign pcc_cap_o = pcc_cap_q;
+
+    assign pcc_exc_cap = cheriot_pcc_to_mepc(pcc_cap_q, exception_pc, csr_mepcc_clrtag_i);
+
+    always_ff @(posedge clk_i or negedge rst_ni) begin
+      if (!rst_ni) begin
+        pcc_cap_q  <= ROOT_DECODED_CAP_TX;
+      end else if (cheriot_enable_i == IbexMuBiOn) begin
+        pcc_cap_q  <= pcc_cap_d;
+      end
+    end
+
+    decoded_cap_t   tf_cap;
+    cap_t           tr_cap;
+    logic [31:0]    tr_addr;
+
+    // PCC updating
+    //  -- PC address range checking is always against the pcc_cap, which is only updated with
+    //     CHER CJALR or exceptions. Legacy RV32 jumps/branches can change PC but not the PCC
+    //     bounds/perms, so they are still limited by the orginal bounds in IF stage checking
+    always_comb begin
+
+      if (csr_save_cause_i) begin              // Exception cases
+        tr_cap  = mtvec_cap;
+        tr_addr = mtvec_q;
+      end else if (csr_restore_mret_i) begin
+        tr_cap  = mepc_cap;
+        tr_addr = mepc_q;
+      end else if (csr_restore_dret_i & debug_mode_i) begin
+        tr_cap  = depc_cap;
+        tr_addr = depc_q;
+      end else begin
+        tr_cap  = NULL_CAP;
+        tr_addr = 32'h0;
+      end
+
+      tf_cap = cheriot_decode_cap(tr_cap, tr_addr);
+
+      // Exception cases
+      if (csr_save_cause_i | csr_restore_mret_i | (csr_restore_dret_i & debug_mode_i)) begin
+        pcc_cap_d = tf_cap;
+      end else if (cheriot_branch_req_i) begin
+        pcc_cap_d = pcc_cap_i;
+      end else begin
+        pcc_cap_d = pcc_cap_q;
+      end
+    end
+
+    // mtvec extended capability
+    assign mtvec_en_cheriot = cheriot_csr_op_en_i &&
+                              (cheriot_csr_addr_i == CHERIOT_SCR_MTCC) &&
+                              (cheriot_csr_op_i == CHERIOT_CSR_RW);
+
+    always_ff @(posedge clk_i or negedge rst_ni) begin
+      if (!rst_ni) begin
+        mtvec_cap <= ROOT_CAP_TX;
+      end else if (mtvec_en_cheriot) begin
+        mtvec_cap <= cheriot_csr_wcap_i;
+      end
+    end
+
+    // mepc extended capability
+    assign mepc_en_cheriot = cheriot_csr_op_en_i &&
+                             (cheriot_csr_addr_i == CHERIOT_SCR_MEPCC) &&
+                             (cheriot_csr_op_i == CHERIOT_CSR_RW);
+
+    // Shadow capability for the mstack EPC so NMI return can restore a tagged mepc_cap.
+    always_ff @(posedge clk_i or negedge rst_ni) begin
+      if (!rst_ni) begin
+        mstack_epc_cap_q <= NULL_CAP;
+      end else if (mstack_en) begin
+        mstack_epc_cap_q <= mepc_cap;
+      end
+    end
+
+    always_ff @(posedge clk_i or negedge rst_ni) begin
+      if (!rst_ni) begin
+        mepc_cap <= ROOT_CAP_TX;
+      end else if ((cheriot_enable_i == IbexMuBiOn) && csr_save_cause_i && ~debug_csr_save_i &&
+                   ~debug_mode_i) begin
+        mepc_cap <= pcc_exc_cap;
+      end else if ((cheriot_enable_i == IbexMuBiOn) && csr_restore_mret_i && nmi_mode_i) begin
+        // Restore the full capability saved before the NMI.
+        mepc_cap <= mstack_epc_cap_q;
+      end else if (mepc_en_cheriot) begin
+        mepc_cap <= cheriot_csr_wcap_i;
+      end
+    end
+
+    // MTDC capability
+    assign mtdc_en_cheriot = cheriot_csr_op_en_i &&
+                           (cheriot_csr_addr_i == CHERIOT_SCR_MTDC) &&
+                           (cheriot_csr_op_i == CHERIOT_CSR_RW);
+
+    always_ff @(posedge clk_i or negedge rst_ni) begin
+      if (!rst_ni) begin
+        mtdc_cap  <= ROOT_CAP_TM;
+        mtdc_data <= 32'h0;
+      end else if (mtdc_en_cheriot) begin
+        mtdc_cap  <= cheriot_csr_wcap_i;
+        mtdc_data <= cheriot_csr_wdata_i;
+      end
+    end
+
+    // MSCRATCHC capability
+    assign mscratchc_en_cheriot = cheriot_csr_op_en_i &&
+                                (cheriot_csr_addr_i == CHERIOT_SCR_MSCRATCHC) &&
+                                (cheriot_csr_op_i == CHERIOT_CSR_RW);
+
+    always_ff @(posedge clk_i or negedge rst_ni) begin
+      if (!rst_ni) begin
+        mscratchc_cap  <= ROOT_CAP_TS;
+        mscratchc_data <= 32'h0;
+      end else if (mscratchc_en_cheriot) begin
+        mscratchc_cap  <= cheriot_csr_wcap_i;
+        mscratchc_data <= cheriot_csr_wdata_i;
+      end
+    end
+
+    // depc extended capability
+    assign depc_en_cheriot = debug_mode_i & cheriot_csr_op_en_i &&
+                           (cheriot_csr_addr_i == CHERIOT_SCR_DEPCC) &&
+                           (cheriot_csr_op_i == CHERIOT_CSR_RW);
+
+    always_ff @(posedge clk_i or negedge rst_ni) begin
+      if (!rst_ni) begin
+        depc_cap <= NULL_CAP;
+      end else if ((cheriot_enable_i == IbexMuBiOn) && csr_save_cause_i & debug_csr_save_i) begin
+        depc_cap <= pcc_exc_cap;
+      end else if (depc_en_cheriot) begin
+        depc_cap <= cheriot_csr_wcap_i;
+      end
+    end
+
+    // dscratch0/1 extended capability
+    assign dscratch0_en_cheriot = debug_mode_i & cheriot_csr_op_en_i &&
+                                (cheriot_csr_addr_i == CHERIOT_SCR_DSCRATCHC0) &&
+                                (cheriot_csr_op_i == CHERIOT_CSR_RW);
+    assign dscratch1_en_cheriot = debug_mode_i & cheriot_csr_op_en_i &&
+                                (cheriot_csr_addr_i == CHERIOT_SCR_DSCRATCHC1) &&
+                                (cheriot_csr_op_i == CHERIOT_CSR_RW);
+
+    always_ff @(posedge clk_i or negedge rst_ni) begin
+      if (!rst_ni) begin
+        dscratch0_cap <= NULL_CAP;
+        dscratch1_cap <= NULL_CAP;
+      end else if (dscratch0_en_cheriot) begin
+        dscratch0_cap <= cheriot_csr_wcap_i;
+      end else if (dscratch1_en_cheriot) begin
+        dscratch1_cap <= cheriot_csr_wcap_i;
+      end
+    end
+
+    // fatal error condition (unrecoverable, need external reset)
+    // exception with invalid mepcc
+    logic cheriot_fatal_err_q;
+
+    assign cheriot_fatal_err_o = cheriot_fatal_err_q;
+
+    always_ff @(posedge clk_i or negedge rst_ni) begin
+      if (!rst_ni) begin
+        cheriot_fatal_err_q <= 1'b0;
+      end else begin
+        if ((cheriot_enable_i == IbexMuBiOn) && csr_save_cause_i && ~mtvec_cap.valid)
+          cheriot_fatal_err_q <= 1'b1;
+      end
+    end
+
+
+  end else begin: gen_no_scr
+
+    assign cheriot_csr_rdata_o = 32'h0;
+    assign cheriot_csr_rcap_o  = NULL_CAP;
+
+    assign pcc_cap_o  = NULL_DECODED_CAP;
+    assign pcc_cap_q  = NULL_DECODED_CAP;
+    assign pcc_cap_d  = NULL_DECODED_CAP;
+
+    assign mepc_cap      = NULL_CAP;
+    assign mtvec_cap     = NULL_CAP;
+    assign depc_cap      = NULL_CAP;
+    assign dscratch0_cap = NULL_CAP;
+    assign dscratch1_cap = NULL_CAP;
+
+    assign mtvec_en_cheriot      = 1'b0;
+    assign mepc_en_cheriot       = 1'b0;
+    assign depc_en_cheriot       = 1'b0;
+    assign dscratch0_en_cheriot  = 1'b0;
+    assign dscratch1_en_cheriot  = 1'b0;
+
+    assign cheriot_fatal_err_o   = 1'b0;
+
+    logic unused_cheriot_scr_sigs;
+    assign unused_cheriot_scr_sigs = (^cheriot_csr_addr_i) | (^cheriot_csr_op_i) |
+                                     cheriot_csr_op_en_i | (^cheriot_csr_wcap_i) |
+                                     csr_mepcc_clrtag_i | cheriot_branch_req_i | (^pcc_cap_i) |
+                                     (^mepc_cap) | (^mtvec_cap) | (^depc_cap) | (^dscratch0_cap) |
+                                     (^dscratch1_cap) | (^pcc_cap_d) | (^pcc_cap_q);
+  end
+
+  logic unused_cheriot_csr_inputs;
+  assign unused_cheriot_csr_inputs = ^{cheriot_csr_access_i, cheriot_branch_target_i};
+
 endmodule
 // Copyright lowRISC contributors.
 // Licensed under the Apache License, Version 2.0, see LICENSE for details.
@@ -25932,6 +29500,7 @@ module lowrisc_ibex_counter #(
 endmodule
 // Copyright lowRISC contributors.
 // Copyright 2018 ETH Zurich and University of Bologna, see also CREDITS.md.
+// Copyright Microsoft Corporation
 // Licensed under the Apache License, Version 2.0, see LICENSE for details.
 // SPDX-License-Identifier: Apache-2.0
 
@@ -26236,14 +29805,17 @@ endmodule
  // PRIM_ASSERT_SV
 
 
-module lowrisc_ibex_decoder #(
+module lowrisc_ibex_decoder import lowrisc_ibex_cheriot_pkg::*; #(
   parameter bit RV32E               = 0,
   parameter lowrisc_ibex_pkg::rv32m_e RV32M = lowrisc_ibex_pkg::RV32MFast,
   parameter lowrisc_ibex_pkg::rv32b_e RV32B = lowrisc_ibex_pkg::RV32BNone,
-  parameter bit BranchTargetALU     = 0
+  parameter bit BranchTargetALU     = 0,
+  parameter lowrisc_ibex_pkg::base_isa_e BaseIsa        = lowrisc_ibex_pkg::BaseIsaRV32IorCHERIoT
 ) (
   input  logic                 clk_i,
   input  logic                 rst_ni,
+
+  input  lowrisc_ibex_pkg::ibex_mubi_t cheriot_enable_i,
 
   // to/from controller
   output logic                 illegal_insn_o,        // illegal instr encountered
@@ -26280,6 +29852,7 @@ module lowrisc_ibex_decoder #(
   // register file
   output lowrisc_ibex_pkg::rf_wd_sel_e rf_wdata_sel_o,   // RF write data selection
   output logic                 rf_we_o,          // write enable for regfile
+  output logic                 rf_we_or_load_o,
   output logic [4:0]           rf_raddr_a_o,
   output logic [4:0]           rf_raddr_b_o,
   output logic [4:0]           rf_waddr_o,
@@ -26307,9 +29880,11 @@ module lowrisc_ibex_decoder #(
   output logic                 csr_access_o,          // access to CSR
   output lowrisc_ibex_pkg::csr_op_e    csr_op_o,              // operation to perform on CSR
   output lowrisc_ibex_pkg::csr_num_e   csr_addr_o,            // CSR address
+  output logic                 csr_cheriot_always_ok_o, // CHERIoT safe-listed (no ASR needed) CSRs
 
   // LSU
   output logic                 data_req_o,            // start transaction to data memory
+  output logic                 cheriot_data_req_o,      // cheriot lsu transaction
   output logic                 data_we_o,             // write enable
   output logic [1:0]           data_type_o,           // size of transaction: byte, half
                                                       // word or word
@@ -26318,13 +29893,29 @@ module lowrisc_ibex_decoder #(
 
   // jump/branches
   output logic                 jump_in_dec_o,         // jump is being calculated in ALU
-  output logic                 branch_in_dec_o
+  output logic                 branch_in_dec_o,
+
+  // output to cheriot EX
+  output logic                   instr_is_cheriot_o,
+  output logic                   instr_is_legal_cheriot_o,
+  output logic [11:0]            cheriot_imm12_o,
+  output logic [19:0]            cheriot_imm20_o,
+  output logic [20:0]            cheriot_imm21_o,
+  output cheriot_op_t            cheriot_operator_o,
+  output logic [4:0]             cheriot_cs2_dec_o,
+  output cheriot_cap_field_e     cheriot_cap_field_sel_o,
+  output cheriot_adder_a_sel_e   cheriot_adder_a_sel_o,
+  output cheriot_adder_b_sel_e   cheriot_adder_b_sel_o,
+  output cheriot_setaddr_sel_e   cheriot_setaddr_sel_o,
+  output cheriot_setbounds_sel_e cheriot_setbounds_sel_o
 );
 
   import lowrisc_ibex_pkg::*;
 
+  localparam bit CheriLimit16Regs = (BaseIsa == BaseIsaRV32IorCHERIoT);
+
   logic        illegal_insn;
-  logic        illegal_reg_rv32e;
+  logic        illegal_reg_16;
   logic        csr_illegal;
   logic        rf_we;
 
@@ -26344,6 +29935,8 @@ module lowrisc_ibex_decoder #(
 
   opcode_e     opcode;
   opcode_e     opcode_alu;
+
+  logic        instr_is_legal_cheriot;
 
   // To help timing the flops containing the current instruction are replicated to reduce fan-out.
   // instr_alu is used to determine the ALU control logic and associated operand/imm select signals
@@ -26392,22 +29985,54 @@ module lowrisc_ibex_decoder #(
   assign instr_rs1 = instr[19:15];
   assign instr_rs2 = instr[24:20];
   assign instr_rs3 = instr[31:27];
-  assign rf_raddr_a_o = (use_rs3_q & ~instr_first_cycle_i) ? instr_rs3 : instr_rs1; // rs3 / rs1
-  assign rf_raddr_b_o = instr_rs2; // rs2
 
+  // read cx3 if AUICGP
+  // note for GDC (c3) we want to use the regular scheme to resovel data hazards, instead of using
+  // sideband signals to export CX3 from register file directly
+  logic [4:0] raddr_a, raddr_b;
+  assign raddr_a = cheriot_operator_o.CAUICGP ? 5'h3 :
+                   ((use_rs3_q & ~instr_first_cycle_i) ? instr_rs3 : instr_rs1); // rs3 / rs1
+  assign raddr_b = instr_rs2; // rs2
+
+  // cheriot only uses 16 registers and repurposes the MSB addr bits
   // destination register
   assign instr_rd = instr[11:7];
-  assign rf_waddr_o   = instr_rd; // rd
+  // In CHERIoT mode all instructions (both CHERIoT-specific and standard RV32I) are limited to
+  // x0-x15.
+  if (CheriLimit16Regs) begin : gen_16_regs
+    assign rf_raddr_a_o = (cheriot_enable_i == IbexMuBiOn) ?
+                          {1'b0,  raddr_a[3:0]} : raddr_a;
+    assign rf_raddr_b_o = (cheriot_enable_i == IbexMuBiOn) ?
+                          {1'b0,  raddr_b[3:0]} : raddr_b;
+    assign rf_waddr_o   = (cheriot_enable_i == IbexMuBiOn) ?
+                          {1'b0, instr_rd[3:0]} : instr_rd;
+  end else begin : gen_regs
+    assign rf_raddr_a_o = raddr_a;
+    assign rf_raddr_b_o = raddr_b;
+    assign rf_waddr_o   = instr_rd;
+  end
 
   ////////////////////
   // Register check //
   ////////////////////
-  if (RV32E) begin : gen_rv32e_reg_check_active
-    assign illegal_reg_rv32e = ((rf_raddr_a_o[4] & (alu_op_a_mux_sel_o == OP_A_REG_A)) |
-                                (rf_raddr_b_o[4] & (alu_op_b_mux_sel_o == OP_B_REG_B)) |
-                                (rf_waddr_o[4]   & rf_we));
-  end else begin : gen_rv32e_reg_check_inactive
-    assign illegal_reg_rv32e = 1'b0;
+
+  // rf_we from decoder doesn't cover memory load case (where regfile write signal
+  // comes from LSU response)
+  logic rf_we_or_load;
+  assign rf_we_or_load = rf_we | (opcode == OPCODE_LOAD);
+
+  assign rf_we_or_load_o = rf_we_or_load;
+
+  // RV32E and CHERIoT both enforce a 16-register address space (CheriLimit16Regs implies RV32E).
+  // RV32E is a static build choice (unconditional); CHERIoT is runtime-gated on cheriot_enable_i.
+  if (RV32E || CheriLimit16Regs) begin : gen_16reg_check_active
+    assign illegal_reg_16 = (RV32E || (cheriot_enable_i == IbexMuBiOn)) &&
+                            ((raddr_a[4]   && rf_ren_a_o) ||
+                             (raddr_b[4]   && rf_ren_b_o) ||
+                             (instr_rs3[4] && use_rs3_d && rf_ren_a_o) ||
+                             (instr_rd[4]  && rf_we_or_load));
+  end else begin : gen_16reg_check_inactive
+    assign illegal_reg_16 = 1'b0;
   end
 
   ///////////////////////
@@ -26429,36 +30054,46 @@ module lowrisc_ibex_decoder #(
   /////////////
 
   always_comb begin
-    jump_in_dec_o         = 1'b0;
-    jump_set_o            = 1'b0;
-    branch_in_dec_o       = 1'b0;
-    icache_inval_o        = 1'b0;
+    jump_in_dec_o           = 1'b0;
+    jump_set_o              = 1'b0;
+    branch_in_dec_o         = 1'b0;
+    icache_inval_o          = 1'b0;
 
-    multdiv_operator_o    = MD_OP_MULL;
-    multdiv_signed_mode_o = 2'b00;
+    multdiv_operator_o      = MD_OP_MULL;
+    multdiv_signed_mode_o   = 2'b00;
 
-    rf_wdata_sel_o        = RF_WD_EX;
-    rf_we                 = 1'b0;
-    rf_ren_a_o            = 1'b0;
-    rf_ren_b_o            = 1'b0;
+    rf_wdata_sel_o          = RF_WD_EX;
+    rf_we                   = 1'b0;
+    rf_ren_a_o              = 1'b0;
+    rf_ren_b_o              = 1'b0;
 
-    csr_access_o          = 1'b0;
-    csr_illegal           = 1'b0;
-    csr_op                = CSR_OP_READ;
+    csr_access_o            = 1'b0;
+    csr_illegal             = 1'b0;
+    csr_op                  = CSR_OP_READ;
+    csr_cheriot_always_ok_o = 1'b0;
 
-    data_we_o             = 1'b0;
-    data_type_o           = 2'b00;
-    data_sign_extension_o = 1'b0;
-    data_req_o            = 1'b0;
+    data_we_o               = 1'b0;
+    data_type_o             = 2'b00;
+    data_sign_extension_o   = 1'b0;
+    data_req_o              = 1'b0;
+    cheriot_data_req_o      = 1'b0;
 
-    illegal_insn          = 1'b0;
-    ebrk_insn_o           = 1'b0;
-    mret_insn_o           = 1'b0;
-    dret_insn_o           = 1'b0;
-    ecall_insn_o          = 1'b0;
-    wfi_insn_o            = 1'b0;
+    illegal_insn            = 1'b0;
+    ebrk_insn_o             = 1'b0;
+    mret_insn_o             = 1'b0;
+    dret_insn_o             = 1'b0;
+    ecall_insn_o            = 1'b0;
+    wfi_insn_o              = 1'b0;
 
-    opcode                = opcode_e'(instr[6:0]);
+    cheriot_operator_o      = '0;
+    instr_is_cheriot_o      = 1'b0;
+    cheriot_cap_field_sel_o = CFIELD_PERM;
+    cheriot_adder_a_sel_o   = CHERIOT_ADDER_A_ZERO;
+    cheriot_adder_b_sel_o   = CHERIOT_ADDER_B_ZERO;
+    cheriot_setaddr_sel_o   = SETADDR_NONE;
+    cheriot_setbounds_sel_o = SETBOUNDS_NONE;
+
+    opcode                  = opcode_e'(instr[6:0]);
 
     unique case (opcode)
 
@@ -26467,34 +30102,62 @@ module lowrisc_ibex_decoder #(
       ///////////
 
       OPCODE_JAL: begin   // Jump and Link
-        jump_in_dec_o      = 1'b1;
-
-        if (instr_first_cycle_i) begin
-          // Calculate jump target (and store PC + 4 if BranchTargetALU is configured)
-          rf_we            = BranchTargetALU;
-          jump_set_o       = 1'b1;
+        if ((BaseIsa == BaseIsaRV32IorCHERIoT) & (cheriot_enable_i == IbexMuBiOn) &
+            ~illegal_c_insn_i) begin
+          // cheriot_ex takes over JAL now as a single-cycle jump
+          cheriot_operator_o.CJAL = 1'b1;
+          instr_is_cheriot_o      = 1'b1;
+          illegal_insn            = 1'b0;
+          rf_we                   = 1'b1;
+          cheriot_adder_a_sel_o   = CHERIOT_ADDER_A_IMM21;
+          cheriot_adder_b_sel_o   = CHERIOT_ADDER_B_PC;
+          cheriot_setaddr_sel_o   = SETADDR_PCC_PCNXT;
         end else begin
-          // Calculate and store PC+4
-          rf_we            = 1'b1;
+          jump_in_dec_o     = 1'b1;
+
+          if (instr_first_cycle_i) begin
+            // Calculate jump target (and store PC + 4 if BranchTargetALU is configured)
+            rf_we            = BranchTargetALU;
+            jump_set_o       = 1'b1;
+          end else begin
+            // Calculate and store PC+4
+            rf_we            = 1'b1;
+          end
         end
       end
 
       OPCODE_JALR: begin  // Jump and Link Register
-        jump_in_dec_o      = 1'b1;
+        if ((BaseIsa == BaseIsaRV32IorCHERIoT) & (cheriot_enable_i == IbexMuBiOn) &
+            ~illegal_c_insn_i) begin
+          // cheriot_ex takes over JALR now as a single-cycle jump
+          if (instr[14:12] == 3'b0) cheriot_operator_o.CJALR = 1'b1;
+          instr_is_cheriot_o    = 1'b1;
+          rf_ren_a_o            = 1'b1;
+          rf_we                 = 1'b1;
+          cheriot_adder_a_sel_o = CHERIOT_ADDER_A_IMM12;
+          cheriot_adder_b_sel_o = CHERIOT_ADDER_B_RS1;
+          cheriot_setaddr_sel_o = SETADDR_PCC_PCNXT;
 
-        if (instr_first_cycle_i) begin
-          // Calculate jump target (and store PC + 4 if BranchTargetALU is configured)
-          rf_we            = BranchTargetALU;
-          jump_set_o       = 1'b1;
+          if (instr[14:12] != 3'b0) begin
+            illegal_insn    = 1'b1;
+          end
         end else begin
-          // Calculate and store PC+4
-          rf_we            = 1'b1;
-        end
-        if (instr[14:12] != 3'b0) begin
-          illegal_insn = 1'b1;
-        end
+          jump_in_dec_o      = 1'b1;
 
-        rf_ren_a_o = 1'b1;
+          if (instr_first_cycle_i) begin
+            // Calculate jump target (and store PC + 4 if BranchTargetALU is configured)
+            rf_we            = BranchTargetALU;
+            jump_set_o       = 1'b1;
+          end else begin
+            // Calculate and store PC+4
+            rf_we            = 1'b1;
+          end
+          if (instr[14:12] != 3'b0) begin
+            illegal_insn = 1'b1;
+          end
+
+          rf_ren_a_o = 1'b1;
+        end
       end
 
       OPCODE_BRANCH: begin // Branch
@@ -26521,11 +30184,22 @@ module lowrisc_ibex_decoder #(
       OPCODE_STORE: begin
         rf_ren_a_o         = 1'b1;
         rf_ren_b_o         = 1'b1;
-        data_req_o         = 1'b1;
+        data_req_o         = 1'b1;  // keep this to pass LEC w/ ibex
         data_we_o          = 1'b1;
 
         if (instr[14]) begin
-          illegal_insn = 1'b1;
+          illegal_insn     = 1'b1;
+        end else if (instr[13:12] == 2'b11) begin
+          if ((BaseIsa == BaseIsaRV32IorCHERIoT) & (cheriot_enable_i == IbexMuBiOn)) begin
+            cheriot_operator_o.CSTORE_CAP = ~illegal_c_insn_i;
+            instr_is_cheriot_o            = ~illegal_c_insn_i;
+            cheriot_data_req_o            = ~illegal_c_insn_i;
+            data_req_o                    = 1'b0;
+            illegal_insn                  = 1'b0;
+          end else begin
+            cheriot_data_req_o = 1'b0;
+            illegal_insn       = 1'b1;
+          end
         end
 
         // store size
@@ -26533,8 +30207,9 @@ module lowrisc_ibex_decoder #(
           2'b00:   data_type_o  = 2'b10; // sb
           2'b01:   data_type_o  = 2'b01; // sh
           2'b10:   data_type_o  = 2'b00; // sw
-          default: illegal_insn = 1'b1;
+          default: data_type_o  = 2'b00;
         endcase
+
       end
 
       OPCODE_LOAD: begin
@@ -26555,6 +30230,23 @@ module lowrisc_ibex_decoder #(
               illegal_insn = 1'b1;    // lwu does not exist
             end
           end
+          2'b11: begin
+            // illegal_c_insn_i is added to fix the c.clcsp case
+            //   (compressed decoder translate to cheriot instruction but could still
+            //   assert illegal_c_insn
+            //   if rd == 0
+            if ((BaseIsa == BaseIsaRV32IorCHERIoT) & (cheriot_enable_i == IbexMuBiOn) &&
+                ~instr[14] && ~illegal_c_insn_i) begin
+              cheriot_operator_o.CLOAD_CAP = 1'b1;
+              instr_is_cheriot_o           = 1'b1;
+              cheriot_data_req_o           = 1'b1;
+              data_req_o                   = 1'b0;    // req generated by cheriot_ex
+              illegal_insn                 = 1'b0;
+            end else begin                // CHERIoT consider instr[14]=1 illegal
+              cheriot_data_req_o = 1'b0;
+              illegal_insn       = 1'b1;
+            end
+          end
           default: begin
             illegal_insn = 1'b1;
           end
@@ -26569,8 +30261,19 @@ module lowrisc_ibex_decoder #(
         rf_we            = 1'b1;
       end
 
-      OPCODE_AUIPC: begin  // Add Upper Immediate to PC
-        rf_we            = 1'b1;
+      OPCODE_AUIPC: begin
+        if ((BaseIsa == BaseIsaRV32IorCHERIoT) & (cheriot_enable_i == IbexMuBiOn) &
+            ~illegal_c_insn_i) begin
+          cheriot_operator_o.CAUIPCC = 1'b1;
+          instr_is_cheriot_o         = 1'b1;
+          illegal_insn               = 1'b0;
+          rf_we                      = 1'b1;
+          cheriot_adder_a_sel_o      = CHERIOT_ADDER_A_IMM20;
+          cheriot_adder_b_sel_o      = CHERIOT_ADDER_B_PC;
+          cheriot_setaddr_sel_o      = SETADDR_PCC_ARITH;
+        end else begin
+          rf_we = 1'b1;
+        end
       end
 
       OPCODE_OP_IMM: begin // Register-Immediate ALU Operations
@@ -26593,7 +30296,8 @@ module lowrisc_ibex_decoder #(
               end
               5'b0_1001,                                                              // bclri
               5'b0_0101,                                                              // bseti
-              5'b0_1101: illegal_insn = (RV32B != RV32BNone) ? 1'b0 : 1'b1;           // binvi
+              5'b0_1101: illegal_insn = (RV32B != RV32BNone) ?        // binvi
+                         (instr[26:25] != 2'b00) : 1'b1;
               5'b0_0001: begin
                 if (instr[26] == 1'b0) begin                                          // shfl
                   illegal_insn = (RV32B == RV32BOTEarlGrey || RV32B == RV32BFull) ? 1'b0 : 1'b1;
@@ -26635,7 +30339,8 @@ module lowrisc_ibex_decoder #(
                   illegal_insn = (RV32B == RV32BOTEarlGrey || RV32B == RV32BFull) ? 1'b0 : 1'b1;
                 end
                 5'b0_1100,                                                             // rori
-                5'b0_1001: illegal_insn = (RV32B != RV32BNone) ? 1'b0 : 1'b1;          // bexti
+                5'b0_1001: illegal_insn = (RV32B != RV32BNone) ?       // bexti
+                           (instr[26:25] != 2'b00) : 1'b1;
 
                 5'b0_1101: begin
                   if (RV32B == RV32BOTEarlGrey || RV32B == RV32BFull) begin
@@ -26859,10 +30564,127 @@ module lowrisc_ibex_decoder #(
             default: csr_illegal = 1'b1;
           endcase
 
+          // always allow access to the following CSRs even without ASR permission
+          //   -- 0xC00-0xC9F (unprivileged read-only counters, per CHERIoT spec Table 7.1)
+          csr_cheriot_always_ok_o = (BaseIsa == BaseIsaRV32IorCHERIoT) &
+                                    (cheriot_enable_i == IbexMuBiOn) &
+                                    ((instr[31:28] == 4'hc) &&
+                                     ((instr[27] == 1'b0) || (instr[26:25] == 2'b00)));
+
           illegal_insn = csr_illegal;
         end
-
       end
+
+      /////////////
+      // CHERIoT //
+      /////////////
+
+      OPCODE_CHERI: begin
+        if ((BaseIsa == BaseIsaRV32IorCHERIoT) & (cheriot_enable_i == IbexMuBiOn) &
+            ~illegal_c_insn_i) begin
+          instr_is_cheriot_o = 1'b1;
+          rf_ren_a_o       = 1'b1;
+          rf_we            = 1'b1;
+
+          if (instr[14:12] == 3'b000) begin
+            if (instr[31:25] == 7'h7f) begin
+              // fmt3: single-source instructions (rd = op(cs1))
+              unique case (instr[24:20])
+                5'h00: begin cheriot_operator_o.CGET_FIELD = 1'b1;
+                             cheriot_cap_field_sel_o = CFIELD_PERM; end
+                5'h01: begin cheriot_operator_o.CGET_FIELD = 1'b1;
+                             cheriot_cap_field_sel_o = CFIELD_TYPE; end
+                5'h02: begin cheriot_operator_o.CGET_FIELD = 1'b1;
+                             cheriot_cap_field_sel_o = CFIELD_BASE; end
+                5'h03: begin cheriot_operator_o.CGET_FIELD = 1'b1;
+                             cheriot_cap_field_sel_o = CFIELD_LEN;  end
+                5'h04: begin cheriot_operator_o.CGET_FIELD = 1'b1;
+                             cheriot_cap_field_sel_o = CFIELD_TAG;  end
+                5'h08: begin cheriot_operator_o.CRRL = 1'b1;
+                             cheriot_setbounds_sel_o = SETBOUNDS_CRRL; end
+                5'h09: begin cheriot_operator_o.CRAM = 1'b1;
+                             cheriot_setbounds_sel_o = SETBOUNDS_CRAM; end
+                5'h0a: cheriot_operator_o.CMOVE_CAP  = 1'b1; // CMove
+                5'h0b: cheriot_operator_o.CCLEAR_TAG = 1'b1; // CClearTag
+                5'h0f: begin cheriot_operator_o.CGET_FIELD = 1'b1;
+                             cheriot_cap_field_sel_o = CFIELD_ADDR; end
+                5'h17: begin cheriot_operator_o.CGET_FIELD = 1'b1;
+                             cheriot_cap_field_sel_o = CFIELD_HIGH; end
+                5'h18: begin cheriot_operator_o.CGET_FIELD = 1'b1;
+                             cheriot_cap_field_sel_o = CFIELD_TOP;  end
+                default: illegal_insn = 1'b1;
+              endcase
+
+            end else if (instr[31:25] == 7'h01) begin
+              // CCSR_RW (CSpecialRW): imm5 selects the special register, not rs2
+              cheriot_operator_o.CCSR_RW = 1'b1;
+              cheriot_setaddr_sel_o = SETADDR_SCR;
+
+            end else begin
+              // fmt2: two-source instructions (rd = op(cs1, cs2))
+              rf_ren_b_o = 1'b1;
+              unique case (instr[31:25])
+                7'h08: begin cheriot_operator_o.CSET_BOUNDS      = 1'b1;
+                             cheriot_setbounds_sel_o = SETBOUNDS_RS2;    end
+                7'h09: begin cheriot_operator_o.CSET_BOUNDS_EX   = 1'b1;
+                             cheriot_setbounds_sel_o = SETBOUNDS_RS2_EX; end
+                7'h0a: begin cheriot_operator_o.CSET_BOUNDS_RNDN = 1'b1;
+                             cheriot_setbounds_sel_o = SETBOUNDS_RNDN;   end
+                7'h0b: cheriot_operator_o.CSEAL            = 1'b1; // CSeal
+                7'h0c: cheriot_operator_o.CUNSEAL          = 1'b1; // CUnseal
+                7'h0d: cheriot_operator_o.CAND_PERM        = 1'b1; // CAndPerm
+                7'h10: begin cheriot_operator_o.CSET_ADDR = 1'b1;
+                             cheriot_adder_a_sel_o = CHERIOT_ADDER_A_RS2;
+                             cheriot_setaddr_sel_o = SETADDR_RFA_ARITH; end
+                7'h11: begin cheriot_operator_o.CINC_ADDR = 1'b1;
+                             cheriot_adder_a_sel_o = CHERIOT_ADDER_A_RS2;
+                             cheriot_adder_b_sel_o = CHERIOT_ADDER_B_RS1;
+                             cheriot_setaddr_sel_o = SETADDR_RFA_ARITH; end
+                7'h14: cheriot_operator_o.CSUB_CAP         = 1'b1; // CSub
+                7'h16: cheriot_operator_o.CSET_HIGH        = 1'b1; // CSetHigh
+                7'h20: cheriot_operator_o.CIS_SUBSET       = 1'b1; // CTestSubset
+                7'h21: cheriot_operator_o.CIS_EQUAL        = 1'b1; // CIsEqual
+                default: illegal_insn = 1'b1;
+              endcase
+            end
+
+          end else if (instr[14:12] == 3'b001) begin
+            // fmt1: CIncAddrImm
+            cheriot_operator_o.CINC_ADDR_IMM = 1'b1;
+            cheriot_adder_a_sel_o = CHERIOT_ADDER_A_IMM12;
+            cheriot_adder_b_sel_o = CHERIOT_ADDER_B_RS1;
+            cheriot_setaddr_sel_o = SETADDR_RFA_ARITH;
+
+          end else if (instr[14:12] == 3'b010) begin
+            // fmt1: CSetBoundsImm
+            cheriot_operator_o.CSET_BOUNDS_IMM = 1'b1;
+            cheriot_setbounds_sel_o = SETBOUNDS_IMM;
+
+          end else begin
+            illegal_insn = 1'b1;
+          end
+
+        end else begin
+          illegal_insn = 1'b1;
+        end
+      end
+
+      OPCODE_AUICGP: begin
+        if ((BaseIsa == BaseIsaRV32IorCHERIoT) & (cheriot_enable_i == IbexMuBiOn) &
+            ~illegal_c_insn_i) begin
+          cheriot_operator_o.CAUICGP = 1'b1;
+          instr_is_cheriot_o          = 1'b1;
+          rf_ren_a_o                = 1'b1;
+          rf_we                     = 1'b1;
+          illegal_insn              = 1'b0;
+          cheriot_adder_a_sel_o       = CHERIOT_ADDER_A_IMM20;
+          cheriot_adder_b_sel_o       = CHERIOT_ADDER_B_RS1;
+          cheriot_setaddr_sel_o       = SETADDR_RFA_ARITH;
+        end else begin
+          illegal_insn = 1'b1;
+        end
+      end
+
       default: begin
         illegal_insn = 1'b1;
       end
@@ -27033,6 +30855,7 @@ module lowrisc_ibex_decoder #(
         alu_operator_o      = ALU_ADD;
       end
 
+      // use CHERIoT version of AUIPCC when pmode == 1
       OPCODE_AUIPC: begin  // Add Upper Immediate to PC
         alu_op_a_mux_sel_o  = OP_A_CURRPC;
         alu_op_b_mux_sel_o  = OP_B_IMM;
@@ -27412,18 +31235,41 @@ module lowrisc_ibex_decoder #(
   end
 
   // do not enable multdiv in case of illegal instruction exceptions
-  assign mult_en_o = illegal_insn ? 1'b0 : mult_sel_o;
-  assign div_en_o  = illegal_insn ? 1'b0 : div_sel_o;
+  assign mult_en_o = illegal_insn_o ? 1'b0 : mult_sel_o;
+  assign div_en_o  = illegal_insn_o ? 1'b0 : div_sel_o;
 
-  // make sure instructions accessing non-available registers in RV32E cause illegal
-  // instruction exceptions
-  assign illegal_insn_o = illegal_insn | illegal_reg_rv32e;
+  // Trap on illegal register addresses (x16-x31 in RV32E or CHERIoT mode).
+  assign illegal_insn_o = illegal_insn | illegal_reg_16;
 
-  // do not propagate regfile write enable if non-available registers are accessed in RV32E
-  assign rf_we_o = rf_we & ~illegal_reg_rv32e;
+  // Suppress regfile write enable when an illegal register is addressed.
+  assign rf_we_o = rf_we & ~illegal_reg_16;
 
   // Not all bits are used
-  assign unused_instr_alu = {instr_alu[19:15],instr_alu[11:7]};
+  assign unused_instr_alu = {instr_alu[19:15], instr_alu[11:7]};
+
+  assign instr_is_legal_cheriot   = |cheriot_operator_o;
+  assign instr_is_legal_cheriot_o = instr_is_legal_cheriot & ~illegal_reg_16;
+
+
+  assign cheriot_cs2_dec_o = cheriot_operator_o.CCSR_RW ? instr[24:20] : 5'h0;
+
+  assign cheriot_imm12_o = (cheriot_operator_o.CJALR           |
+                            cheriot_operator_o.CSET_BOUNDS_IMM  |
+                            cheriot_operator_o.CINC_ADDR_IMM    |
+                            cheriot_operator_o.CLOAD_CAP) ?
+                           {instr[31:25], instr[24:20]} :
+                           (cheriot_operator_o.CSTORE_CAP ? {instr[31:25], instr[11:7]} : 12'h0);
+
+  assign cheriot_imm20_o = (cheriot_operator_o.CAUIPCC | cheriot_operator_o.CAUICGP) ?
+                            instr[31:12] : 20'h0;
+
+  assign cheriot_imm21_o = cheriot_operator_o.CJAL ?
+                           {instr[31], instr[19:12], instr[20], instr[30:21], 1'b0} : 21'h0;
+
+  if (BaseIsa != BaseIsaRV32IorCHERIoT) begin : gen_no_cheriot_decoder
+    logic unused_cheriot_enable;
+    assign unused_cheriot_enable = ^cheriot_enable_i;
+  end
 
   ////////////////
   // Assertions //
@@ -27955,6 +31801,9 @@ module lowrisc_ibex_fetch_fifo #(
   input  logic [31:0]         in_rdata_i,
   input  logic                in_err_i,
 
+  // force unaligned compressed based on CHERIoT bounds check
+  input  logic                cheriot_force_uc_i,
+
   // output port
   output logic                out_valid_o,
   input  logic                out_ready_i,
@@ -28029,8 +31878,10 @@ module lowrisc_ibex_fetch_fifo #(
                                         (valid_q[0] & in_valid_i);
 
   // If there is an error, rdata is unknown
-  assign unaligned_is_compressed = (rdata[17:16] != 2'b11) & ~err;
+
+  assign unaligned_is_compressed = cheriot_force_uc_i | ((rdata[17:16] != 2'b11) & ~err);
   assign aligned_is_compressed   = (rdata[ 1: 0] != 2'b11) & ~err;
+
 
   ////////////////////////////////////////
   // Instruction aligner (if unaligned) //
@@ -28039,7 +31890,10 @@ module lowrisc_ibex_fetch_fifo #(
   always_comb begin
     if (out_addr_o[1]) begin
       // unaligned case
+
+
       out_rdata_o     = rdata_unaligned;
+
       out_err_o       = err_unaligned;
       out_err_plus2_o = err_plus2;
 
@@ -28050,7 +31904,9 @@ module lowrisc_ibex_fetch_fifo #(
       end
     end else begin
       // aligned case
+
       out_rdata_o     = rdata;
+
       out_err_o       = err;
       out_err_plus2_o = 1'b0;
       out_valid_o     = valid;
@@ -28193,6 +32049,7 @@ module lowrisc_ibex_fetch_fifo #(
 endmodule
 // Copyright lowRISC contributors.
 // Copyright 2018 ETH Zurich and University of Bologna, see also CREDITS.md.
+// Copyright Microsoft Corporation
 // Licensed under the Apache License, Version 2.0, see LICENSE for details.
 // SPDX-License-Identifier: Apache-2.0
 
@@ -28570,7 +32427,7 @@ endmodule
 
 
 
-module lowrisc_ibex_id_stage #(
+module lowrisc_ibex_id_stage import lowrisc_ibex_cheriot_pkg::*; #(
   parameter bit               RV32E           = 0,
   parameter lowrisc_ibex_pkg::rv32m_e RV32M           = lowrisc_ibex_pkg::RV32MFast,
   parameter lowrisc_ibex_pkg::rv32b_e RV32B           = lowrisc_ibex_pkg::RV32BNone,
@@ -28578,11 +32435,13 @@ module lowrisc_ibex_id_stage #(
   parameter bit               BranchTargetALU = 0,
   parameter bit               WritebackStage  = 0,
   parameter bit               BranchPredictor = 0,
-  parameter bit               MemECC          = 1'b0
+  parameter bit               MemECC          = 1'b0,
+  parameter lowrisc_ibex_pkg::base_isa_e BaseIsa      = lowrisc_ibex_pkg::BaseIsaRV32IorCHERIoT
 ) (
   input  logic                      clk_i,
   input  logic                      rst_ni,
 
+  input  lowrisc_ibex_pkg::ibex_mubi_t      cheriot_enable_i,
   output logic                      ctrl_busy_o,
   output logic                      illegal_insn_o,
 
@@ -28592,6 +32451,7 @@ module lowrisc_ibex_id_stage #(
   input  logic [31:0]               instr_rdata_alu_i,     // from IF-ID pipeline registers
   input  logic [15:0]               instr_rdata_c_i,       // from IF-ID pipeline registers
   input  logic                      instr_is_compressed_i,
+  input  lowrisc_ibex_pkg::instr_exp_e      instr_gets_expanded_i,
   input  logic                      instr_bp_taken_i,
   output logic                      instr_req_o,
   output logic                      instr_first_cycle_id_o,
@@ -28614,6 +32474,8 @@ module lowrisc_ibex_id_stage #(
   input  logic                      illegal_c_insn_i,
   input  logic                      instr_fetch_err_i,
   input  logic                      instr_fetch_err_plus2_i,
+  input  logic                      instr_fetch_cheriot_acc_vio_i,
+  input  logic                      instr_fetch_cheriot_bound_vio_i,
 
   input  logic [31:0]               pc_id_i,
 
@@ -28656,11 +32518,13 @@ module lowrisc_ibex_id_stage #(
   output logic                      csr_restore_mret_id_o,
   output logic                      csr_restore_dret_id_o,
   output logic                      csr_save_cause_o,
+  output logic                      csr_mepcc_clrtag_o,
   output logic [31:0]               csr_mtval_o,
   input  lowrisc_ibex_pkg::priv_lvl_e       priv_mode_i,
   input  logic                      csr_mstatus_tw_i,
   input  logic                      illegal_csr_insn_i,
   input  logic                      data_ind_timing_i,
+  input  logic                      csr_pcc_perm_sr_i,
 
   // Interface to load store unit
   output logic                      lsu_req_o,
@@ -28688,6 +32552,7 @@ module lowrisc_ibex_id_stage #(
   input  logic                      lsu_load_resp_intg_err_i,
   input  logic                      lsu_store_err_i,
   input  logic                      lsu_store_resp_intg_err_i,
+  input  logic                      lsu_err_is_cheriot_i,
 
   output logic                      expecting_load_resp_o,
   output logic                      expecting_store_resp_o,
@@ -28742,7 +32607,32 @@ module lowrisc_ibex_id_stage #(
                                                         // access to finish before proceeding
   output logic                      perf_mul_wait_o,
   output logic                      perf_div_wait_o,
-  output logic                      instr_id_done_o
+  output logic                      instr_id_done_o,
+
+  // cheriot signals
+  output logic                      cheriot_exec_id_o,
+  output logic                      instr_is_cheriot_id_o,
+  output logic                      instr_is_rv32lsu_id_o,
+  output logic [11:0]               cheriot_imm12_o,
+  output logic [19:0]               cheriot_imm20_o,
+  output logic [20:0]               cheriot_imm21_o,
+  output cheriot_op_t               cheriot_operator_o,
+  output logic  [4:0]               cheriot_cs2_dec_o,
+  output cheriot_cap_field_e        cheriot_cap_field_sel_o,
+  output cheriot_adder_a_sel_e      cheriot_adder_a_sel_o,
+  output cheriot_adder_b_sel_e      cheriot_adder_b_sel_o,
+  output cheriot_setaddr_sel_e      cheriot_setaddr_sel_o,
+  output cheriot_setbounds_sel_e    cheriot_setbounds_sel_o,
+  output logic                      cheriot_load_o,
+  output logic                      cheriot_store_o,
+
+  input  logic                      cheriot_ex_valid_i,
+  input  logic                      cheriot_ex_err_i,
+  input  logic [11:0]               cheriot_ex_err_info_i,
+  input  logic                      cheriot_wb_err_i,
+  input  logic [15:0]               cheriot_wb_err_info_i,
+  input  logic                      cheriot_branch_req_i,   // from cheriot EX
+  input  logic [31:0]               cheriot_branch_target_i
 );
 
   import lowrisc_ibex_pkg::*;
@@ -28758,7 +32648,8 @@ module lowrisc_ibex_id_stage #(
   logic        wfi_insn_dec;
 
   logic        wb_exception;
-  logic        id_exception;
+  logic        unused_id_exception;
+  logic        id_exception_nc;
 
   logic        branch_in_dec;
   logic        branch_set, branch_set_raw, branch_set_raw_d;
@@ -28803,6 +32694,7 @@ module lowrisc_ibex_id_stage #(
   logic        rf_we_dec, rf_we_raw;
   logic        rf_ren_a, rf_ren_b;
   logic        rf_ren_a_dec, rf_ren_b_dec;
+  logic        rf_we_or_load;
 
   // Read enables should only be asserted for valid and legal instructions
   assign rf_ren_a = instr_valid_i & ~instr_fetch_err_i & ~illegal_insn_o & rf_ren_a_dec;
@@ -28813,6 +32705,9 @@ module lowrisc_ibex_id_stage #(
 
   logic [31:0] rf_rdata_a_fwd;
   logic [31:0] rf_rdata_b_fwd;
+
+  logic        cheriot_lsu_req_dec;
+  logic        ex_valid_all;
 
   // ALU Control
   alu_op_e     alu_operator;
@@ -28846,9 +32741,12 @@ module lowrisc_ibex_id_stage #(
   // CSR control
   logic        no_flush_csr_addr;
   logic        csr_pipe_flush;
+  logic        csr_cheriot_always_ok;
 
   logic [31:0] alu_operand_a;
   logic [31:0] alu_operand_b;
+
+  logic        instr_is_legal_cheriot;
 
   /////////////
   // LSU Mux //
@@ -28978,11 +32876,13 @@ module lowrisc_ibex_id_stage #(
     .RV32E          (RV32E),
     .RV32M          (RV32M),
     .RV32B          (RV32B),
-    .BranchTargetALU(BranchTargetALU)
+    .BranchTargetALU(BranchTargetALU),
+    .BaseIsa        (BaseIsa)
   ) decoder_i (
     .clk_i (clk_i),
     .rst_ni(rst_ni),
 
+    .cheriot_enable_i (cheriot_enable_i),
     // controller
     .illegal_insn_o(illegal_insn_dec),
     .ebrk_insn_o   (ebrk_insn),
@@ -29016,6 +32916,7 @@ module lowrisc_ibex_id_stage #(
     // register file
     .rf_wdata_sel_o(rf_wdata_sel),
     .rf_we_o       (rf_we_dec),
+    .rf_we_or_load_o(rf_we_or_load),
 
     .rf_raddr_a_o(rf_raddr_a_o),
     .rf_raddr_b_o(rf_raddr_b_o),
@@ -29041,17 +32942,41 @@ module lowrisc_ibex_id_stage #(
     .csr_access_o(csr_access_o),
     .csr_op_o    (csr_op_o),
     .csr_addr_o  (csr_addr_o),
+    .csr_cheriot_always_ok_o(csr_cheriot_always_ok),
 
     // LSU
-    .data_req_o           (lsu_req_dec),
-    .data_we_o            (lsu_we),
-    .data_type_o          (lsu_type),
-    .data_sign_extension_o(lsu_sign_ext),
+    .data_req_o             (lsu_req_dec),
+    .cheriot_data_req_o     (cheriot_lsu_req_dec),
+    .data_we_o              (lsu_we),
+    .data_type_o            (lsu_type),
+    .data_sign_extension_o  (lsu_sign_ext),
 
     // jump/branches
     .jump_in_dec_o  (jump_in_dec),
-    .branch_in_dec_o(branch_in_dec)
+    .branch_in_dec_o(branch_in_dec),
+
+    // cheriot signals
+    .instr_is_cheriot_o       (instr_is_cheriot_id_o),
+    .instr_is_legal_cheriot_o (instr_is_legal_cheriot),
+    .cheriot_imm12_o          (cheriot_imm12_o),
+    .cheriot_imm20_o          (cheriot_imm20_o),
+    .cheriot_imm21_o          (cheriot_imm21_o),
+    .cheriot_operator_o       (cheriot_operator_o),
+    .cheriot_cs2_dec_o        (cheriot_cs2_dec_o),
+    .cheriot_cap_field_sel_o  (cheriot_cap_field_sel_o),
+    .cheriot_adder_a_sel_o    (cheriot_adder_a_sel_o),
+    .cheriot_adder_b_sel_o    (cheriot_adder_b_sel_o),
+    .cheriot_setaddr_sel_o    (cheriot_setaddr_sel_o),
+    .cheriot_setbounds_sel_o  (cheriot_setbounds_sel_o)
   );
+
+  assign instr_is_rv32lsu_id_o = lsu_req_dec;
+
+  assign ex_valid_all = instr_is_cheriot_id_o ? cheriot_ex_valid_i : ex_valid_i;
+
+  assign cheriot_load_o = cheriot_operator_o.CLOAD_CAP;
+
+  assign cheriot_store_o = cheriot_operator_o.CSTORE_CAP;
 
   // Flush pipe on most CSR modification. Some CSR modifications alter how instructions execute
   // (e.g. the PMP CSRs) so this ensures all instructions always see the latest architectural state
@@ -29085,32 +33010,39 @@ module lowrisc_ibex_id_stage #(
   assign mem_resp_intg_err = lsu_load_resp_intg_err_i | lsu_store_resp_intg_err_i;
 
   lowrisc_ibex_controller #(
+    .BaseIsa        (BaseIsa),
     .WritebackStage (WritebackStage),
     .BranchPredictor(BranchPredictor),
     .MemECC(MemECC)
   ) controller_i (
-    .clk_i (clk_i),
-    .rst_ni(rst_ni),
-
-    .ctrl_busy_o(ctrl_busy_o),
+    .clk_i           (clk_i),
+    .rst_ni          (rst_ni),
+    .cheriot_enable_i(cheriot_enable_i),
+    .ctrl_busy_o     (ctrl_busy_o),
 
     // decoder related signals
-    .illegal_insn_i  (illegal_insn_o),
-    .ecall_insn_i    (ecall_insn_dec),
-    .mret_insn_i     (mret_insn_dec),
-    .dret_insn_i     (dret_insn_dec),
-    .wfi_insn_i      (wfi_insn_dec),
-    .ebrk_insn_i     (ebrk_insn),
-    .csr_pipe_flush_i(csr_pipe_flush),
+    .illegal_insn_i         (illegal_insn_o),
+    .ecall_insn_i           (ecall_insn_dec),
+    .mret_insn_i            (mret_insn_dec),
+    .dret_insn_i            (dret_insn_dec),
+    .wfi_insn_i             (wfi_insn_dec),
+    .ebrk_insn_i            (ebrk_insn),
+    .csr_pipe_flush_i       (csr_pipe_flush),
+    .csr_access_i           (csr_access_o),
+    .csr_cheriot_always_ok_i(csr_cheriot_always_ok),
 
     // from IF-ID pipeline
-    .instr_valid_i          (instr_valid_i),
-    .instr_i                (instr_rdata_i),
-    .instr_compressed_i     (instr_rdata_c_i),
-    .instr_is_compressed_i  (instr_is_compressed_i),
-    .instr_bp_taken_i       (instr_bp_taken_i),
-    .instr_fetch_err_i      (instr_fetch_err_i),
-    .instr_fetch_err_plus2_i(instr_fetch_err_plus2_i),
+    .instr_valid_i                  (instr_valid_i),
+    .instr_i                        (instr_rdata_i),
+    .instr_compressed_i             (instr_rdata_c_i),
+    .instr_is_compressed_i          (instr_is_compressed_i),
+    .instr_gets_expanded_i          (instr_gets_expanded_i),
+    .instr_bp_taken_i               (instr_bp_taken_i),
+    .instr_fetch_err_i              (instr_fetch_err_i),
+    .instr_fetch_err_plus2_i        (instr_fetch_err_plus2_i),
+    .instr_fetch_cheriot_acc_vio_i  (instr_fetch_cheriot_acc_vio_i),
+    .instr_fetch_cheriot_bound_vio_i(instr_fetch_cheriot_bound_vio_i),
+
     .pc_id_i                (pc_id_i),
 
     // to IF-ID pipeline
@@ -29128,12 +33060,14 @@ module lowrisc_ibex_id_stage #(
     .exc_cause_o           (exc_cause_o),
 
     // LSU
-    .lsu_addr_last_i    (lsu_addr_last_i),
-    .load_err_i         (lsu_load_err_i),
-    .mem_resp_intg_err_i(mem_resp_intg_err),
-    .store_err_i        (lsu_store_err_i),
-    .wb_exception_o     (wb_exception),
-    .id_exception_o     (id_exception),
+    .lsu_addr_last_i      (lsu_addr_last_i),
+    .load_err_i           (lsu_load_err_i),
+    .lsu_err_is_cheriot_i (lsu_err_is_cheriot_i),
+    .mem_resp_intg_err_i  (mem_resp_intg_err),
+    .store_err_i          (lsu_store_err_i),
+    .wb_exception_o       (wb_exception),
+    .id_exception_o       (unused_id_exception),
+    .id_exception_nc_o    (id_exception_nc),
 
     // jump/branch control
     .branch_set_i     (branch_set),
@@ -29154,8 +33088,10 @@ module lowrisc_ibex_id_stage #(
     .csr_restore_mret_id_o(csr_restore_mret_id_o),
     .csr_restore_dret_id_o(csr_restore_dret_id_o),
     .csr_save_cause_o     (csr_save_cause_o),
+    .csr_mepcc_clrtag_o   (csr_mepcc_clrtag_o),
     .csr_mtval_o          (csr_mtval_o),
     .priv_mode_i          (priv_mode_i),
+    .csr_pcc_perm_sr_i    (csr_pcc_perm_sr_i),
 
     // Debug Signal
     .debug_mode_o         (debug_mode_o),
@@ -29175,11 +33111,21 @@ module lowrisc_ibex_id_stage #(
 
     // Performance Counters
     .perf_jump_o   (perf_jump_o),
-    .perf_tbranch_o(perf_tbranch_o)
+    .perf_tbranch_o(perf_tbranch_o),
+
+    .instr_is_cheriot_i      (instr_is_cheriot_id_o),
+    .cheriot_ex_valid_i      (cheriot_ex_valid_i),
+    .cheriot_ex_err_i        (cheriot_ex_err_i),
+    .cheriot_ex_err_info_i   (cheriot_ex_err_info_i),
+    .cheriot_wb_err_i        (cheriot_wb_err_i),
+    .cheriot_wb_err_info_i   (cheriot_wb_err_info_i),
+    .cheriot_branch_req_i    (cheriot_branch_req_i),
+    .cheriot_branch_target_i (cheriot_branch_target_i)
   );
 
   assign multdiv_en_dec   = mult_en_dec | div_en_dec;
 
+  // note data_req_allowed is already part of instr_executing
   assign lsu_req         = instr_executing ? data_req_allowed & lsu_req_dec  : 1'b0;
   assign mult_en_id      = instr_executing ? mult_en_dec                     : 1'b0;
   assign div_en_id       = instr_executing ? div_en_dec                      : 1'b0;
@@ -29191,9 +33137,13 @@ module lowrisc_ibex_id_stage #(
   assign lsu_wdata_o             = rf_rdata_b_fwd;
   // csr_op_en_o is set when CSR access should actually happen.
   // csr_access_o is set when CSR access instruction is present and is used to compute whether a CSR
-  // access is illegal. A combinational loop would be created if csr_op_en_o was used along (as
+  // access is illegal. A combinational loop would be created if csr_op_en_o was used alone (as
   // asserting it for an illegal csr access would result in a flush that would need to deassert it).
-  assign csr_op_en_o             = csr_access_o & instr_executing & instr_id_done_o;
+
+  // improve timing for CHERIoT mode (instr_id_done has too much logic)
+  assign csr_op_en_o = csr_access_o & instr_executing &
+                       (((BaseIsa == BaseIsaRV32IorCHERIoT) & (cheriot_enable_i == IbexMuBiOn)) ?
+                        instr_first_cycle : instr_id_done_o);
 
   assign alu_operator_ex_o           = alu_operator;
   assign alu_operand_a_ex_o          = alu_operand_a;
@@ -29224,6 +33174,8 @@ module lowrisc_ibex_id_stage #(
     always_ff @(posedge clk_i or negedge rst_ni) begin
       if (!rst_ni) begin
         branch_set_raw_q <= 1'b0;
+    // bug here (see the 07082022 report). should qualify this with instr_executing
+    // (same as id_fsm_q). let's wait for now and fix later QQQ
       end else begin
         branch_set_raw_q <= branch_set_raw_d;
       end
@@ -29339,9 +33291,16 @@ module lowrisc_ibex_id_stage #(
               if (!WritebackStage) begin
                 // LSU operation
                 id_fsm_d    = MULTI_CYCLE;
-              end else begin
-                if(~lsu_req_done_i) begin
-                  id_fsm_d  = MULTI_CYCLE;
+              end else if (~lsu_req_done_i) begin
+                id_fsm_d  = MULTI_CYCLE;
+              end
+            end
+            cheriot_lsu_req_dec: begin
+              if (cheriot_enable_i == IbexMuBiOn) begin
+                if (!WritebackStage) begin
+                  id_fsm_d = MULTI_CYCLE;
+                end else if (~lsu_req_done_i) begin  // covers the lsu_cheriot_err case (1cycle)
+                  id_fsm_d = MULTI_CYCLE;
                 end
               end
             end
@@ -29418,8 +33377,7 @@ module lowrisc_ibex_id_stage #(
 
   // Stall ID/EX stage for reason that relates to instruction in ID/EX, update assertion below if
   // modifying this.
-  assign stall_id = stall_ld_hz | stall_mem | stall_multdiv | stall_jump | stall_branch |
-                      stall_alu;
+  assign stall_id = stall_ld_hz | stall_mem | stall_multdiv | stall_jump | stall_branch | stall_alu;
 
   // Generally illegal instructions have no reason to stall, however they must still stall waiting
   // for outstanding memory requests so exceptions related to them take priority over the illegal
@@ -29428,7 +33386,7 @@ module lowrisc_ibex_id_stage #(
 
   assign instr_done = ~stall_id & ~flush_id & instr_executing;
 
-  // Signal instruction in ID is in it's first cycle. It can remain in its
+  // Signal instruction in ID is in its first cycle. It can remain in its
   // first cycle if it is stalled.
   assign instr_first_cycle      = instr_valid_i & (id_fsm_q == FIRST_CYCLE);
   // Used by RVFI to know when to capture register read data
@@ -29447,7 +33405,7 @@ module lowrisc_ibex_id_stage #(
 
     logic instr_kill;
 
-    assign multicycle_done = lsu_req_dec ? ~stall_mem : ex_valid_i;
+    assign multicycle_done = (lsu_req_dec | cheriot_lsu_req_dec) ? ~stall_mem : ex_valid_all;
 
     // Is a memory access ongoing that isn't finishing this cycle
     assign outstanding_memory_access = (outstanding_load_wb_i | outstanding_store_wb_i) &
@@ -29464,9 +33422,13 @@ module lowrisc_ibex_id_stage #(
     //   response to an IRQ or debug request or whilst the core is sleeping or resetting/fetching
     //   first instruction in which case any valid instruction in ID/EX should be ignored.
     // - There was an error on instruction fetch
+
+    // cheriot instr can only generate exception after execution
+    // exclude cheriot EX exception from insr_kill improves timing
+
     assign instr_kill = instr_fetch_err_i |
                         wb_exception      |
-                        id_exception      |
+                        id_exception_nc   |   // exclude cheriot EX exceptions
                         ~controller_run;
 
     // With writeback stage instructions must be prevented from executing if there is:
@@ -29495,6 +33457,20 @@ module lowrisc_ibex_id_stage #(
                              ~stall_ld_hz               &
                              ~outstanding_memory_access;
 
+    // allowing a cheriot instruction to start execution - valid instruction not stalled by WB/hz
+    // note we can't use instr_kill here since it includes id_exception (cheriot_ex_err),
+    // which causes a
+    // comb loop.
+
+    assign cheriot_exec_id_o = (cheriot_enable_i == IbexMuBiOn) & instr_valid_i &
+                               ~instr_fetch_err_i     &
+                               instr_is_legal_cheriot &
+                               controller_run         &
+                               ~wb_exception          &
+                               ~stall_ld_hz           &
+                               ~outstanding_memory_access;
+
+
 
 
 
@@ -29506,8 +33482,12 @@ module lowrisc_ibex_id_stage #(
     //   precise exceptions)
     // * There is a load/store request not being granted or which is unaligned and waiting to issue
     //   a second request (needs to stay in ID for the address calculation)
-    assign stall_mem = instr_valid_i &
-                       (outstanding_memory_access | (lsu_req_dec & ~lsu_req_done_i));
+
+
+    // For pipeline timing/stalling, we treat cheriot data load/stores the same as
+    // legacy RV32 load/stores
+    assign stall_mem = instr_valid_i & (outstanding_memory_access |
+                                        ((lsu_req_dec | cheriot_lsu_req_dec) & ~lsu_req_done_i));
 
     // If we stall a load in ID for any reason, it must not make an LSU request
     // (otherwise we might issue two requests for the same instruction)
@@ -29532,6 +33512,10 @@ module lowrisc_ibex_id_stage #(
 
     assign stall_ld_hz = outstanding_load_wb_i & (rf_rd_a_hz | rf_rd_b_hz);
 
+    logic unused_rf_we_or_load_valid;
+    assign unused_rf_we_or_load_valid = rf_we_or_load & instr_valid_i
+                                      & ~instr_fetch_err_i & ~illegal_insn_o;
+
     assign instr_type_wb_o = ~lsu_req_dec ? WB_INSTR_OTHER :
                               lsu_we      ? WB_INSTR_STORE :
                                             WB_INSTR_LOAD;
@@ -29550,20 +33534,23 @@ module lowrisc_ibex_id_stage #(
     assign expecting_store_resp_o = 1'b0;
   end else begin : gen_no_stall_mem
 
-    assign multicycle_done = lsu_req_dec ? lsu_resp_valid_i : ex_valid_i;
+    assign multicycle_done = (cheriot_lsu_req_dec | lsu_req_dec) ? lsu_resp_valid_i : ex_valid_all;
 
     assign data_req_allowed = instr_first_cycle;
 
     // Without Writeback Stage always stall the first cycle of a load/store.
     // Then stall until it is complete
-    assign stall_mem = instr_valid_i & (lsu_req_dec & (~lsu_resp_valid_i | instr_first_cycle));
+    assign stall_mem = instr_valid_i
+                    & ((lsu_req_dec | cheriot_lsu_req_dec)
+                    & (~lsu_resp_valid_i | instr_first_cycle));
 
     // No load hazards without Writeback Stage
     assign stall_ld_hz   = 1'b0;
 
     // Without writeback stage any valid instruction that hasn't seen an error will execute
     assign instr_executing_spec = instr_valid_i & ~instr_fetch_err_i & controller_run;
-    assign instr_executing = instr_executing_spec;
+    assign instr_executing      = instr_executing_spec;
+    assign cheriot_exec_id_o    = (cheriot_enable_i == IbexMuBiOn) & instr_executing;
 
 
 
@@ -29592,7 +33579,6 @@ module lowrisc_ibex_id_stage #(
     logic unused_outstanding_store_wb;
     logic unused_wb_exception;
     logic [31:0] unused_rf_wdata_fwd_wb;
-    logic unused_id_exception;
 
     assign unused_data_req_done_ex     = lsu_req_done_i;
     assign unused_rf_waddr_wb          = rf_waddr_wb_i;
@@ -29601,7 +33587,9 @@ module lowrisc_ibex_id_stage #(
     assign unused_outstanding_store_wb = outstanding_store_wb_i;
     assign unused_wb_exception         = wb_exception;
     assign unused_rf_wdata_fwd_wb      = rf_wdata_fwd_wb_i;
-    assign unused_id_exception         = id_exception;
+
+    logic unused_cheriot_wb_signals;
+    assign unused_cheriot_wb_signals = ^{id_exception_nc, rf_we_or_load, instr_is_legal_cheriot};
 
     assign instr_type_wb_o = WB_INSTR_OTHER;
     assign stall_wb        = 1'b0;
@@ -29620,7 +33608,8 @@ module lowrisc_ibex_id_stage #(
       (csr_addr_o inside {CSR_MINSTRET, CSR_MINSTRETH});
 
   assign instr_perf_count_id_o = ~ebrk_insn & ~ecall_insn_dec & ~illegal_insn_dec &
-      ~illegal_csr_insn_i & ~instr_fetch_err_i & ~minstret_write;
+      ~illegal_csr_insn_i & ~instr_fetch_err_i & ~minstret_write &
+      !(instr_gets_expanded_i inside {INSTR_EXPANDED, INSTR_EXPANDED_COMMIT});
 
   // An instruction is ready to move to the writeback stage (or retire if there is no writeback
   // stage)
@@ -29692,9 +33681,17 @@ module lowrisc_ibex_id_stage #(
 
 
 
+  // CHERIoT isolation: when CHERIoT is disabled, all CHERIoT-specific output signals must be 0.
+  // These assertions verify the invariant relied upon by downstream modules (WB, LSU).
+
+
+
+
+
 endmodule
 // Copyright lowRISC contributors.
 // Copyright 2018 ETH Zurich and University of Bologna, see also CREDITS.md.
+// Copyright Microsoft Corporation
 // Licensed under the Apache License, Version 2.0, see LICENSE for details.
 // SPDX-License-Identifier: Apache-2.0
 
@@ -30070,7 +34067,8 @@ endmodule
 
 
 
-module lowrisc_ibex_if_stage import lowrisc_ibex_pkg::*; #(
+module lowrisc_ibex_if_stage import lowrisc_ibex_pkg::*; import lowrisc_ibex_cheriot_pkg::*; #(
+  parameter base_isa_e   BaseIsa              = BaseIsaRV32I,
   parameter int unsigned DmHaltAddr           = 32'h1A110800,
   parameter int unsigned DmExceptionAddr      = 32'h1A110808,
   parameter bit          DummyInstructions    = 1'b0,
@@ -30092,8 +34090,10 @@ module lowrisc_ibex_if_stage import lowrisc_ibex_pkg::*; #(
   input  logic                         clk_i,
   input  logic                         rst_ni,
 
+  input  ibex_mubi_t                   cheriot_enable_i,
   input  logic [31:0]                  boot_addr_i,              // also used for mtvec
   input  logic                         req_i,                    // instruction request control
+  input  logic                         debug_mode_i,
 
   // instruction cache interface
   output logic                        instr_req_o,
@@ -30140,6 +34140,8 @@ module lowrisc_ibex_if_stage import lowrisc_ibex_pkg::*; #(
   output logic                        instr_fetch_err_plus2_o,  // bus error misaligned
   output logic                        illegal_c_insn_id_o,      // compressed decoder thinks this
                                                                 // is an invalid instr
+  output logic                        instr_fetch_cheriot_acc_vio_o,
+  output logic                        instr_fetch_cheriot_bound_vio_o,
   output logic                        dummy_instr_id_o,         // Instruction is a dummy
   output logic [31:0]                 pc_if_o,
   output logic [31:0]                 pc_id_o,
@@ -30180,7 +34182,8 @@ module lowrisc_ibex_if_stage import lowrisc_ibex_pkg::*; #(
 
   // misc signals
   output logic                        pc_mismatch_alert_o,
-  output logic                        if_busy_o                 // IF stage is busy fetching instr
+  output logic                        if_busy_o,                // IF stage is busy fetching instr
+  input  decoded_cap_t                pcc_cap_i
 );
 
   logic              instr_valid_id_d, instr_valid_id_q;
@@ -30241,10 +34244,23 @@ module lowrisc_ibex_if_stage import lowrisc_ibex_pkg::*; #(
   logic        [7:0] unused_csr_mtvec;
   logic              unused_exc_cause;
 
+  logic              cheriot_acc_vio, cheriot_bound_vio;
+  logic              cheriot_force_uc;
+  decoded_cap_t      unused_pcc_cap;
+  logic              unused_cheriot_force_uc;
+
   assign unused_boot_addr = boot_addr_i[7:0];
   assign unused_csr_mtvec = csr_mtvec_i[7:0];
 
   assign unused_exc_cause = |{exc_cause.irq_ext, exc_cause.irq_int};
+
+  assign unused_pcc_cap = pcc_cap_i;
+  assign unused_cheriot_force_uc = cheriot_force_uc;  // driven to prefetch_buffer port
+
+  if (BaseIsa != BaseIsaRV32IorCHERIoT) begin : gen_no_cheriot_if
+    logic unused_cheriot_if_sigs;
+    assign unused_cheriot_if_sigs = ^cheriot_enable_i | debug_mode_i;
+  end
 
   // exception PC selection mux
   always_comb begin : exc_pc_mux
@@ -30256,8 +34272,13 @@ module lowrisc_ibex_if_stage import lowrisc_ibex_pkg::*; #(
     end
 
     unique case (exc_pc_mux_i)
-      EXC_PC_EXC:     exc_pc = { csr_mtvec_i[31:8], 8'h00                };
-      EXC_PC_IRQ:     exc_pc = { csr_mtvec_i[31:8], 1'b0, irq_vec, 2'b00 };
+      EXC_PC_EXC:     exc_pc = ((BaseIsa == BaseIsaRV32IorCHERIoT)
+                                & (cheriot_enable_i == IbexMuBiOn)) ?
+                               {csr_mtvec_i[31:2], 2'b00} : {csr_mtvec_i[31:8], 8'h00};
+      EXC_PC_IRQ:     exc_pc = ((BaseIsa == BaseIsaRV32IorCHERIoT)
+                                & (cheriot_enable_i == IbexMuBiOn)) ?
+                               {csr_mtvec_i[31:2], 2'b00} :
+                               {csr_mtvec_i[31:8], 1'b0, irq_vec, 2'b00};
       EXC_PC_DBD:     exc_pc = DmHaltAddr;
       EXC_PC_DBG_EXC: exc_pc = DmExceptionAddr;
       default:        exc_pc = { csr_mtvec_i[31:8], 8'h00                };
@@ -30397,6 +34418,8 @@ module lowrisc_ibex_if_stage import lowrisc_ibex_pkg::*; #(
         .err_o               ( fetch_err                  ),
         .err_plus2_o         ( fetch_err_plus2            ),
 
+        .cheriot_force_uc_i  ( cheriot_force_uc           ),
+
         .instr_req_o         ( instr_req_o                ),
         .instr_addr_o        ( instr_addr_o               ),
         .instr_gnt_i         ( instr_gnt_i                ),
@@ -30443,30 +34466,77 @@ module lowrisc_ibex_if_stage import lowrisc_ibex_pkg::*; #(
                             (if_instr_addr[1] & ~instr_is_compressed & pmp_err_if_plus2_i);
 
   // Combine bus errors and pmp errors
-  assign if_instr_err = if_instr_bus_err | if_instr_pmp_err;
+  assign if_instr_err = if_instr_bus_err | if_instr_pmp_err | cheriot_acc_vio | cheriot_bound_vio;
 
   // Capture the second half of the address for errors on the second part of an instruction
+  // LEC_NOT_COMPATIBLE
   assign if_instr_err_plus2 = ((if_instr_addr[1] & ~instr_is_compressed & pmp_err_if_plus2_i) |
                                fetch_err_plus2) & ~pmp_err_if_i;
+
+  // pre-calculate headroom to improve memory read timing
+  logic [33:0] instr_hdrm;
+  logic        hdrm_ge4, hdrm_ge2, hdrm_ok, base_ok;
+  logic        allow_all;
+
+  // allow_all is used to permit the pc wraparound case (pc = 0xffff_fffe, uncompressed instruction)
+  // - in this case fetch should be allowed if pcc bounds is specified as the entire 32-bit space.
+  // - If we don't treat this as a specail case the fetch would be erred since headroom < 4
+  assign allow_all  = (pcc_cap_i.base32 == 0) & (pcc_cap_i.top33 == 33'h1_0000_0000);
+
+  assign instr_hdrm = {1'b0, pcc_cap_i.top33} - {2'b00, if_instr_addr};
+  assign hdrm_ge4   = (|instr_hdrm[32:2]) & ~instr_hdrm[33];     // >= 4
+  assign hdrm_ge2   = (|instr_hdrm[32:1]) & ~instr_hdrm[33];     // >= 2
+  logic unused_hdrm_lsb;
+  assign unused_hdrm_lsb = instr_hdrm[0];
+  assign hdrm_ok    = allow_all || (instr_is_compressed ? hdrm_ge2 : hdrm_ge4);
+  assign base_ok    = ~(if_instr_addr < pcc_cap_i.base32);
+
+  // only issue cheriot_acc_vio on valid fetches
+  assign cheriot_bound_vio = (BaseIsa == BaseIsaRV32IorCHERIoT) & (cheriot_enable_i == IbexMuBiOn)
+                           & ~debug_mode_i & (~base_ok  || ~hdrm_ok);
+
+  // In order to have constant timing (avoid side-channel leakage due to data-dependent behavior),
+  // if base vio or headroom < 4 (we are only authorized to fetch 2 bytes), force the fetch_fifo
+  // to treat the current rdata as a unaligned compressed instruction if pc[1]=1, and push it to
+  // ID stage without waiting for the 2nd part of 32-bit instruction.
+  //
+  assign cheriot_force_uc = (BaseIsa == BaseIsaRV32IorCHERIoT) & (cheriot_enable_i == IbexMuBiOn)
+                          & ~allow_all & (~base_ok | ~hdrm_ge4);
+
+  // we still check seal/perm here to be safe, however by ISA those can't happen at fetch time
+  // since they are check elsewhere already
+  assign cheriot_acc_vio = (BaseIsa == BaseIsaRV32IorCHERIoT) & (cheriot_enable_i == IbexMuBiOn)
+                         & ~debug_mode_i
+                         & (~pcc_cap_i.perms.EX || ~pcc_cap_i.valid ||
+                            (pcc_cap_i.otype != 0));
 
   // compressed instruction decoding, or more precisely compressed instruction
   // expander
   //
   // since it does not matter where we decompress instructions, we do it here
   // to ease timing closure
+
+  // The compressed decoder only has state for the Zcmp expanded instructions. Flush this state if
+  // there is an exception.
+  logic flush_expanded;
+  assign flush_expanded = pc_set_i & (pc_mux_i == lowrisc_ibex_pkg::PC_EXC);
+
   lowrisc_ibex_compressed_decoder #(
     .RV32ZC   (RV32ZC),
-    .ResetAll (ResetAll)
+    .ResetAll (ResetAll),
+    .BaseIsa  (BaseIsa)
   ) compressed_decoder_i (
-    .clk_i          (clk_i),
-    .rst_ni         (rst_ni),
-    .valid_i        (fetch_valid & ~fetch_err),
-    .id_in_ready_i  (id_in_ready_i & ~pc_set_i),
-    .instr_i        (if_instr_rdata),
-    .instr_o        (instr_decompressed),
-    .is_compressed_o(instr_is_compressed),
-    .gets_expanded_o(instr_gets_expanded),
-    .illegal_instr_o(illegal_c_insn)
+    .clk_i            (clk_i),
+    .rst_ni           (rst_ni),
+    .valid_i          (fetch_valid & ~fetch_err),
+    .id_in_ready_i    (id_in_ready_i & ~pc_set_i),
+    .instr_i          (if_instr_rdata),
+    .cheriot_enable_i (cheriot_enable_i),
+    .instr_o          (instr_decompressed),
+    .is_compressed_o  (instr_is_compressed),
+    .gets_expanded_o  (instr_gets_expanded),
+    .flush_expanded_i (flush_expanded),
+    .illegal_instr_o  (illegal_c_insn)
   );
 
   // Dummy instruction insertion
@@ -30558,46 +34628,70 @@ module lowrisc_ibex_if_stage import lowrisc_ibex_pkg::*; #(
   if (ResetAll) begin : g_instr_rdata_ra
     always_ff @(posedge clk_i or negedge rst_ni) begin
       if (!rst_ni) begin
-        instr_rdata_id_o         <= '0;
-        instr_rdata_alu_id_o     <= '0;
-        instr_fetch_err_o        <= '0;
-        instr_fetch_err_plus2_o  <= '0;
-        instr_rdata_c_id_o       <= '0;
-        instr_is_compressed_id_o <= '0;
-        instr_gets_expanded_id_o <= INSTR_NOT_EXPANDED;
-        instr_expanded_id_o      <= '0;
-        illegal_c_insn_id_o      <= '0;
-        pc_id_o                  <= '0;
+        instr_rdata_id_o                <= '0;
+        instr_rdata_alu_id_o            <= '0;
+        instr_fetch_err_o               <= '0;
+        instr_fetch_err_plus2_o         <= '0;
+        instr_rdata_c_id_o              <= '0;
+        instr_is_compressed_id_o        <= '0;
+        instr_gets_expanded_id_o        <= INSTR_NOT_EXPANDED;
+        instr_expanded_id_o             <= '0;
+        illegal_c_insn_id_o             <= '0;
+        pc_id_o                         <= '0;
       end else if (if_id_pipe_reg_we) begin
-        instr_rdata_id_o         <= instr_out;
+        instr_rdata_id_o                <= instr_out;
         // To reduce fan-out and help timing from the instr_rdata_id flops they are replicated.
-        instr_rdata_alu_id_o     <= instr_out;
-        instr_fetch_err_o        <= instr_err_out;
-        instr_fetch_err_plus2_o  <= if_instr_err_plus2;
-        instr_rdata_c_id_o       <= if_instr_rdata[15:0];
-        instr_is_compressed_id_o <= instr_is_compressed_out;
-        instr_gets_expanded_id_o <= instr_gets_expanded_out;
-        instr_expanded_id_o      <= if_instr_rdata[15:0];
-        illegal_c_insn_id_o      <= illegal_c_instr_out;
-        pc_id_o                  <= pc_if_o;
+        instr_rdata_alu_id_o            <= instr_out;
+        instr_fetch_err_o               <= instr_err_out;
+        instr_fetch_err_plus2_o         <= if_instr_err_plus2;
+        instr_rdata_c_id_o              <= if_instr_rdata[15:0];
+        instr_is_compressed_id_o        <= instr_is_compressed_out;
+        instr_gets_expanded_id_o        <= instr_gets_expanded_out;
+        instr_expanded_id_o             <= if_instr_rdata[15:0];
+        illegal_c_insn_id_o             <= illegal_c_instr_out;
+        pc_id_o                         <= pc_if_o;
       end
     end
   end else begin : g_instr_rdata_nr
     always_ff @(posedge clk_i) begin
       if (if_id_pipe_reg_we) begin
-        instr_rdata_id_o         <= instr_out;
+        instr_rdata_id_o                <= instr_out;
         // To reduce fan-out and help timing from the instr_rdata_id flops they are replicated.
-        instr_rdata_alu_id_o     <= instr_out;
-        instr_fetch_err_o        <= instr_err_out;
-        instr_fetch_err_plus2_o  <= if_instr_err_plus2;
-        instr_rdata_c_id_o       <= if_instr_rdata[15:0];
-        instr_is_compressed_id_o <= instr_is_compressed_out;
-        instr_gets_expanded_id_o <= instr_gets_expanded_out;
-        instr_expanded_id_o      <= if_instr_rdata[15:0];
-        illegal_c_insn_id_o      <= illegal_c_instr_out;
-        pc_id_o                  <= pc_if_o;
+        instr_rdata_alu_id_o            <= instr_out;
+        instr_fetch_err_o               <= instr_err_out;
+        instr_fetch_err_plus2_o         <= if_instr_err_plus2;
+        instr_rdata_c_id_o              <= if_instr_rdata[15:0];
+        instr_is_compressed_id_o        <= instr_is_compressed_out;
+        instr_gets_expanded_id_o        <= instr_gets_expanded_out;
+        instr_expanded_id_o             <= if_instr_rdata[15:0];
+        illegal_c_insn_id_o             <= illegal_c_instr_out;
+        pc_id_o                         <= pc_if_o;
       end
     end
+  end
+
+  if (BaseIsa == BaseIsaRV32IorCHERIoT) begin : gen_cheriot_vio_regs
+    if (ResetAll) begin : g_cheriot_vio_ra
+      always_ff @(posedge clk_i or negedge rst_ni) begin
+        if (!rst_ni) begin
+          instr_fetch_cheriot_acc_vio_o   <= '0;
+          instr_fetch_cheriot_bound_vio_o <= '0;
+        end else if (if_id_pipe_reg_we) begin
+          instr_fetch_cheriot_acc_vio_o   <= cheriot_acc_vio;
+          instr_fetch_cheriot_bound_vio_o <= cheriot_bound_vio;
+        end
+      end
+    end else begin : g_cheriot_vio_nr
+      always_ff @(posedge clk_i) begin
+        if (if_id_pipe_reg_we) begin
+          instr_fetch_cheriot_acc_vio_o   <= cheriot_acc_vio;
+          instr_fetch_cheriot_bound_vio_o <= cheriot_bound_vio;
+        end
+      end
+    end
+  end else begin : gen_cheriot_vio_tieoff
+    assign instr_fetch_cheriot_acc_vio_o   = 1'b0;
+    assign instr_fetch_cheriot_bound_vio_o = 1'b0;
   end
 
   // Check for expected increments of the PC when security hardening enabled
@@ -30610,7 +34704,8 @@ module lowrisc_ibex_if_stage import lowrisc_ibex_pkg::*; #(
     // request, all of which will set branch_req. Also do not check after reset or for dummy
     // instructions.
     assign prev_instr_seq_d = (prev_instr_seq_q | instr_new_id_d) &
-        ~branch_req & ~if_instr_err & ~stall_dummy_instr & !(instr_gets_expanded == INSTR_EXPANDED);
+        ~branch_req & ~if_instr_err & ~stall_dummy_instr &
+        !(instr_gets_expanded inside {INSTR_EXPANDED, INSTR_EXPANDED_COMMIT});
 
     always_ff @(posedge clk_i or negedge rst_ni) begin
       if (!rst_ni) begin
@@ -30673,7 +34768,8 @@ module lowrisc_ibex_if_stage import lowrisc_ibex_pkg::*; #(
     assign instr_skid_en = predict_branch_taken & ~pc_set_i & ~id_in_ready_i & ~instr_skid_valid_q;
 
     assign instr_skid_valid_d = (instr_skid_valid_q & ~id_in_ready_i & ~stall_dummy_instr &
-                                 !(instr_gets_expanded == INSTR_EXPANDED)) | instr_skid_en;
+                                 !(instr_gets_expanded inside
+                                 {INSTR_EXPANDED, INSTR_EXPANDED_COMMIT})) | instr_skid_en;
 
     always_ff @(posedge clk_i or negedge rst_ni) begin
       if (!rst_ni) begin
@@ -30732,7 +34828,8 @@ module lowrisc_ibex_if_stage import lowrisc_ibex_pkg::*; #(
     assign instr_bp_taken_d = instr_skid_valid_q ? instr_skid_bp_taken_q : predict_branch_taken;
 
     assign fetch_ready = id_in_ready_i & ~stall_dummy_instr &
-                         !(instr_gets_expanded == INSTR_EXPANDED) & ~instr_skid_valid_q;
+                         !(instr_gets_expanded inside {INSTR_EXPANDED, INSTR_EXPANDED_COMMIT}) &
+                         ~instr_skid_valid_q;
 
     assign instr_bp_taken_o = instr_bp_taken_q;
 
@@ -30748,7 +34845,7 @@ module lowrisc_ibex_if_stage import lowrisc_ibex_pkg::*; #(
     assign if_instr_addr  = fetch_addr;
     assign if_instr_bus_err = fetch_err;
     assign fetch_ready = id_in_ready_i & ~stall_dummy_instr &
-                         !(instr_gets_expanded == INSTR_EXPANDED);
+                         !(instr_gets_expanded inside {INSTR_EXPANDED, INSTR_EXPANDED_COMMIT});
   end
 
   //////////
@@ -30785,6 +34882,7 @@ module lowrisc_ibex_if_stage import lowrisc_ibex_pkg::*; #(
 endmodule
 // Copyright lowRISC contributors.
 // Copyright 2018 ETH Zurich and University of Bologna, see also CREDITS.md.
+// Copyright Microsoft Corporation
 // Licensed under the Apache License, Version 2.0, see LICENSE for details.
 // SPDX-License-Identifier: Apache-2.0
 
@@ -31161,12 +35259,14 @@ endmodule
 
 
 
-module lowrisc_ibex_load_store_unit #(
+module lowrisc_ibex_load_store_unit import lowrisc_ibex_pkg::*; import lowrisc_ibex_cheriot_pkg::*; #(
+  parameter base_isa_e   BaseIsa      = BaseIsaRV32I,
   parameter bit          MemECC       = 1'b0,
   parameter int unsigned MemDataWidth = MemECC ? 32 + 7 : 32
 ) (
   input  logic         clk_i,
   input  logic         rst_ni,
+  input  ibex_mubi_t   cheriot_enable_i,
 
   // data interface
   output logic         data_req_o,
@@ -31179,14 +35279,21 @@ module lowrisc_ibex_load_store_unit #(
   output logic                    data_we_o,
   output logic [3:0]              data_be_o,
   output logic [MemDataWidth-1:0] data_wdata_o,
+  output logic                    data_tag_o,
   input  logic [MemDataWidth-1:0] data_rdata_i,
+  input  logic                    data_tag_i,
 
   // signals to/from ID/EX stage
   input  logic         lsu_we_i,             // write enable                     -> from ID/EX
+  input  logic         lsu_is_cap_i,         // capability load/store            -> from ID/EX
+  input  logic         lsu_cheriot_err_i,    // CHERIoT access error               -> from ID/EX
   input  logic [1:0]   lsu_type_i,           // data type: word, half word, byte -> from ID/EX
   input  logic [31:0]  lsu_wdata_i,          // data to write to memory          -> from ID/EX
+  input  cap_t         lsu_wcap_i,           // capability to write to memory    -> from ID/EX
+  input  cap_clrperm_t lsu_lc_clrperm_i,     // cap load clear permissions       -> from ID/EX
   input  logic         lsu_sign_ext_i,       // sign extension                   -> from ID/EX
 
+  output cap_t         lsu_rcap_o,           // capability read from memory      -> to ID/EX
   output logic [31:0]  lsu_rdata_o,          // requested data                   -> to ID/EX
   output logic         lsu_rdata_valid_o,
   input  logic         lsu_req_i,            // data request                     -> from ID/EX
@@ -31194,22 +35301,23 @@ module lowrisc_ibex_load_store_unit #(
   input  logic [31:0]  adder_result_ex_i,    // address computed in ALU          -> from ID/EX
 
   output logic         addr_incr_req_o,      // request address increment for
-                                              // misaligned accesses              -> to ID/EX
+                                             // misaligned accesses              -> to ID/EX
   output logic [31:0]  addr_last_o,          // address of last transaction      -> to controller
-                                              // -> mtval
-                                              // -> AGU for misaligned accesses
+                                             // -> mtval
+                                             // -> AGU for misaligned accesses
 
   output logic         lsu_req_done_o,       // Signals that data request is complete
-                                              // (only need to await final data
-                                              // response)                        -> to ID/EX
+                                             // (only need to await final data
+                                             // response)                        -> to ID/EX
 
-  output logic         lsu_resp_valid_o,     // LSU has response from transaction -> to ID/EX
+  output logic         lsu_resp_valid_o,     // LSU has response from transaction -> to ID/EX & WB
 
   // exception signals
   output logic         load_err_o,
   output logic         load_resp_intg_err_o,
   output logic         store_err_o,
   output logic         store_resp_intg_err_o,
+  output logic         lsu_err_is_cheriot_o,
 
   output logic         busy_o,
 
@@ -31233,7 +35341,8 @@ module lowrisc_ibex_load_store_unit #(
   logic [1:0]   data_offset;   // mux control for data to be written to memory
 
   logic [3:0]   data_be;
-  logic [31:0]  data_wdata;
+  logic [31:0]  data_wdata_data;
+  logic         data_wdata_tag;
 
   logic [31:0]  data_rdata_ext;
 
@@ -31248,69 +35357,81 @@ module lowrisc_ibex_load_store_unit #(
   logic         lsu_err_q, lsu_err_d;
   logic         data_intg_err, data_or_pmp_err;
 
-  typedef enum logic [2:0]  {
-    IDLE, WAIT_GNT_MIS, WAIT_RVALID_MIS, WAIT_GNT,
-    WAIT_RVALID_MIS_GNTS_DONE
-  } ls_fsm_e;
+  logic         resp_is_cap_q;
+  logic         cheriot_err_d, cheriot_err_q;
+  cap_clrperm_t resp_lc_clrperm_q;
+  logic         lsu_go, lsu_go_goodcap;
+  logic         cpu_req_erred, cpu_req_valid;
 
-  ls_fsm_e ls_fsm_cs, ls_fsm_ns;
+  ls_fsm_e      ls_fsm_cs, ls_fsm_ns;
+
+  cap_rx_fsm_t  cap_rx_fsm_q, cap_rx_fsm_d;
+
+  logic         cap_lsw_err_q;
+  logic [31:0]  cap_lsw_data_q;
+  logic         cap_lsw_tag_q;
 
   assign data_addr   = adder_result_ex_i;
-  assign data_offset = data_addr[1:0];
+  assign data_offset = ((BaseIsa == BaseIsaRV32IorCHERIoT) &
+                        (cheriot_enable_i == IbexMuBiOn) & lsu_is_cap_i) ? 2'b00 : data_addr[1:0];
 
   ///////////////////
   // BE generation //
   ///////////////////
 
   always_comb begin
-    unique case (lsu_type_i) // Data type 00 Word, 01 Half word, 11,10 byte
-      2'b00: begin // Writing a word
-        if (!handle_misaligned_q) begin // first part of potentially misaligned transaction
+    if ((BaseIsa == BaseIsaRV32IorCHERIoT) & (cheriot_enable_i == IbexMuBiOn) & lsu_is_cap_i)
+      data_be = 4'b1111;                  // caps are always word aligned
+    else begin
+      unique case (lsu_type_i) // Data type 00 Word, 01 Half word, 11,10 byte
+        2'b00: begin // Writing a word
+          if (!handle_misaligned_q) begin // first part of potentially misaligned transaction
+            unique case (data_offset)
+              2'b00:   data_be = 4'b1111;
+              2'b01:   data_be = 4'b1110;
+              2'b10:   data_be = 4'b1100;
+              2'b11:   data_be = 4'b1000;
+              default: data_be = 4'b1111;
+            endcase // case (data_offset)
+          end else begin // second part of misaligned transaction
+            unique case (data_offset)
+              2'b00:   data_be = 4'b0000; // this is not used, but included for completeness
+              2'b01:   data_be = 4'b0001;
+              2'b10:   data_be = 4'b0011;
+              2'b11:   data_be = 4'b0111;
+              default: data_be = 4'b1111;
+            endcase // case (data_offset)
+          end
+        end
+
+        2'b01: begin // Writing a half word
+          if (!handle_misaligned_q) begin // first part of potentially misaligned transaction
+            unique case (data_offset)
+              2'b00:   data_be = 4'b0011;
+              2'b01:   data_be = 4'b0110;
+              2'b10:   data_be = 4'b1100;
+              2'b11:   data_be = 4'b1000;
+              default: data_be = 4'b1111;
+            endcase // case (data_offset)
+          end else begin // second part of misaligned transaction
+            data_be = 4'b0001;
+          end
+        end
+
+        2'b10,
+        2'b11: begin // Writing a byte
           unique case (data_offset)
-            2'b00:   data_be = 4'b1111;
-            2'b01:   data_be = 4'b1110;
-            2'b10:   data_be = 4'b1100;
+            2'b00:   data_be = 4'b0001;
+            2'b01:   data_be = 4'b0010;
+            2'b10:   data_be = 4'b0100;
             2'b11:   data_be = 4'b1000;
             default: data_be = 4'b1111;
           endcase // case (data_offset)
-        end else begin // second part of misaligned transaction
-          unique case (data_offset)
-            2'b00:   data_be = 4'b0000; // this is not used, but included for completeness
-            2'b01:   data_be = 4'b0001;
-            2'b10:   data_be = 4'b0011;
-            2'b11:   data_be = 4'b0111;
-            default: data_be = 4'b1111;
-          endcase // case (data_offset)
         end
-      end
 
-      2'b01: begin // Writing a half word
-        if (!handle_misaligned_q) begin // first part of potentially misaligned transaction
-          unique case (data_offset)
-            2'b00:   data_be = 4'b0011;
-            2'b01:   data_be = 4'b0110;
-            2'b10:   data_be = 4'b1100;
-            2'b11:   data_be = 4'b1000;
-            default: data_be = 4'b1111;
-          endcase // case (data_offset)
-        end else begin // second part of misaligned transaction
-          data_be = 4'b0001;
-        end
-      end
-
-      2'b10,
-      2'b11: begin // Writing a byte
-        unique case (data_offset)
-          2'b00:   data_be = 4'b0001;
-          2'b01:   data_be = 4'b0010;
-          2'b10:   data_be = 4'b0100;
-          2'b11:   data_be = 4'b1000;
-          default: data_be = 4'b1111;
-        endcase // case (data_offset)
-      end
-
-      default:     data_be = 4'b1111;
-    endcase // case (lsu_type_i)
+        default:     data_be = 4'b1111;
+      endcase // case (lsu_type_i)
+    end  // if lsu_cap
   end
 
   /////////////////////
@@ -31319,16 +35440,33 @@ module lowrisc_ibex_load_store_unit #(
 
   // prepare data to be written to the memory
   // we handle misaligned accesses, half word and byte accesses here
+  logic [31:0] wdata_int;
   always_comb begin
     unique case (data_offset)
-      2'b00:   data_wdata =  lsu_wdata_i[31:0];
-      2'b01:   data_wdata = {lsu_wdata_i[23:0], lsu_wdata_i[31:24]};
-      2'b10:   data_wdata = {lsu_wdata_i[15:0], lsu_wdata_i[31:16]};
-      2'b11:   data_wdata = {lsu_wdata_i[ 7:0], lsu_wdata_i[31: 8]};
-      default: data_wdata =  lsu_wdata_i[31:0];
+      2'b00:   wdata_int = lsu_wdata_i;
+      2'b01:   wdata_int = {lsu_wdata_i[23:0], lsu_wdata_i[31:24]};
+      2'b10:   wdata_int = {lsu_wdata_i[15:0], lsu_wdata_i[31:16]};
+      2'b11:   wdata_int = {lsu_wdata_i[ 7:0], lsu_wdata_i[31: 8]};
+      default: wdata_int = lsu_wdata_i;
     endcase // case (data_offset)
   end
 
+  always_comb begin
+    if ((BaseIsa == BaseIsaRV32IorCHERIoT) & (cheriot_enable_i == IbexMuBiOn) & lsu_is_cap_i) begin
+      if (lsu_we_i & (ls_fsm_cs == CTX_WAIT_GNT2))
+        {data_wdata_tag, data_wdata_data} = cheriot_cap_to_mem(lsu_wcap_i);
+      else if (lsu_we_i)
+        {data_wdata_tag, data_wdata_data} = {lsu_wcap_i.valid, lsu_wdata_i};
+      else
+        // cap load: tag=1 signals capability read to memory
+        {data_wdata_tag, data_wdata_data} = {1'b1, lsu_wdata_i};
+    end else
+      {data_wdata_tag, data_wdata_data} = {1'b0, wdata_int};
+  end
+  // correction-factor bits are consumed by cheriot_cap_to_mem but the linter's
+  // hierarchical analysis doesn't trace through function bodies
+  logic [1:0] unused_lsu_wcap_cor;
+  assign unused_lsu_wcap_cor = lsu_wcap_i.cap_cor;
   /////////////////////
   // RData alignment //
   /////////////////////
@@ -31510,15 +35648,19 @@ module lowrisc_ibex_load_store_unit #(
       ((lsu_type_i == 2'b00) && (data_offset != 2'b00)) || // misaligned word access
       ((lsu_type_i == 2'b01) && (data_offset == 2'b11));   // misaligned half-word access
 
+  assign cpu_req_valid = lsu_req_i & ~((cheriot_enable_i == IbexMuBiOn) & lsu_cheriot_err_i);
+  assign cpu_req_erred = lsu_req_i &  (cheriot_enable_i == IbexMuBiOn) & lsu_cheriot_err_i;
+
   // FSM
   always_comb begin
-    ls_fsm_ns       = ls_fsm_cs;
+    ls_fsm_ns           = ls_fsm_cs;
 
     data_req_o          = 1'b0;
     addr_incr_req_o     = 1'b0;
     handle_misaligned_d = handle_misaligned_q;
     pmp_err_d           = pmp_err_q;
     lsu_err_d           = lsu_err_q;
+    cheriot_err_d       = cheriot_err_q & (cheriot_enable_i == IbexMuBiOn);
 
     addr_update         = 1'b0;
     ctrl_update         = 1'b0;
@@ -31527,16 +35669,55 @@ module lowrisc_ibex_load_store_unit #(
     perf_load_o         = 1'b0;
     perf_store_o        = 1'b0;
 
+    lsu_go              = 1'b0;
+    lsu_go_goodcap      = 1'b0;
+
     unique case (ls_fsm_cs)
 
       IDLE: begin
-        pmp_err_d = 1'b0;
-        if (lsu_req_i) begin
-          data_req_o   = 1'b1;
-          pmp_err_d    = data_pmp_err_i;
-          lsu_err_d    = 1'b0;
-          perf_load_o  = ~lsu_we_i;
-          perf_store_o = lsu_we_i;
+        pmp_err_d   = 1'b0;
+        cheriot_err_d = 1'b0;
+
+        if ((BaseIsa == BaseIsaRV32IorCHERIoT) & (cheriot_enable_i == IbexMuBiOn) &
+            cpu_req_erred) begin
+          // cheriot access error: don't issue data_req; send error response back to WB stage
+          data_req_o    = 1'b0;
+          cheriot_err_d = 1'b1;
+          ctrl_update   = 1'b1;         // update ctrl/address so we can report error correctly
+          addr_update   = 1'b1;
+          pmp_err_d     = 1'b0;
+          lsu_err_d     = 1'b0;
+          perf_load_o   = 1'b0;
+          lsu_go        = 1'b1;         // decision to move forward with a request
+          ls_fsm_ns     = IDLE;
+        end else if ((BaseIsa == BaseIsaRV32IorCHERIoT) & (cheriot_enable_i == IbexMuBiOn) &
+            cpu_req_valid & lsu_is_cap_i) begin
+          // normal cap access case
+          data_req_o     = 1'b1;
+          cheriot_err_d  = 1'b0;
+          pmp_err_d      = data_pmp_err_i;
+          lsu_err_d      = 1'b0;
+          perf_load_o    = ~lsu_we_i;
+          perf_store_o   = lsu_we_i;
+          lsu_go         = 1'b1;         // decision to move forward with a request
+          lsu_go_goodcap = 1'b1;
+
+          if (data_gnt_i) begin
+            ctrl_update = 1'b1;
+            addr_update = 1'b1;
+            ls_fsm_ns   = CTX_WAIT_GNT2;
+          end else begin
+            ls_fsm_ns   = CTX_WAIT_GNT1;
+          end
+        end else if (cpu_req_valid) begin
+          // normal data access case
+          data_req_o    = 1'b1;
+          cheriot_err_d = 1'b0;
+          pmp_err_d     = data_pmp_err_i;
+          lsu_err_d     = 1'b0;
+          perf_load_o   = ~lsu_we_i;
+          perf_store_o  = lsu_we_i;
+          lsu_go        = 1'b1;         // decision to move forward with a request
 
           if (data_gnt_i) begin
             ctrl_update         = 1'b1;
@@ -31625,13 +35806,75 @@ module lowrisc_ibex_load_store_unit #(
         end
       end
 
+      CTX_WAIT_GNT1: begin
+        if (cheriot_enable_i == IbexMuBiOn) begin
+          addr_incr_req_o = 1'b0;
+          data_req_o      = 1'b1;
+          if (data_gnt_i) begin
+            ls_fsm_ns   = CTX_WAIT_GNT2;
+            ctrl_update = 1'b1;
+            addr_update = 1'b1;
+          end
+        end else begin
+          ls_fsm_ns = IDLE;
+        end
+      end
+
+      CTX_WAIT_GNT2: begin
+        if (cheriot_enable_i == IbexMuBiOn) begin
+          addr_incr_req_o = 1'b1;
+          data_req_o      = 1'b1;
+          if (data_gnt_i && (data_rvalid_i || (cap_rx_fsm_q == CRX_WAIT_RESP2))) begin
+            ls_fsm_ns = IDLE;
+          end else if (data_gnt_i) begin
+            ls_fsm_ns = CTX_WAIT_RESP;
+          end
+        end else begin
+          ls_fsm_ns = IDLE;
+        end
+      end
+
+      CTX_WAIT_RESP: begin        // only needed if mem allows 2 active req
+        if (cheriot_enable_i == IbexMuBiOn) begin
+          addr_incr_req_o = 1'b1;
+          data_req_o      = 1'b0;
+          if (data_rvalid_i) begin
+            ls_fsm_ns = IDLE;
+          end
+        end else begin
+          ls_fsm_ns = IDLE;
+        end
+      end
+
       default: begin
         ls_fsm_ns = IDLE;
       end
     endcase
   end
 
-  assign lsu_req_done_o = (lsu_req_i | (ls_fsm_cs != IDLE)) & (ls_fsm_ns == IDLE);
+  always_comb begin
+    cap_rx_fsm_d = cap_rx_fsm_q;
+
+    unique case (cap_rx_fsm_q)
+      CRX_IDLE:
+        if ((BaseIsa == BaseIsaRV32IorCHERIoT) & (cheriot_enable_i == IbexMuBiOn) & lsu_go_goodcap)
+          cap_rx_fsm_d = CRX_WAIT_RESP1;
+      CRX_WAIT_RESP1:
+        if (data_rvalid_i) cap_rx_fsm_d = CRX_WAIT_RESP2;
+      CRX_WAIT_RESP2:
+        if (data_rvalid_i && lsu_go_goodcap)
+          cap_rx_fsm_d = CRX_WAIT_RESP1;
+        else if (data_rvalid_i) cap_rx_fsm_d = CRX_IDLE;
+      default: cap_rx_fsm_d = CRX_IDLE;
+    endcase
+  end
+
+  // we assume ctrl will be held till req_done asserted
+  // (once req captured in IDLE, it can be deasserted)
+  logic lsu_req_done;
+
+  assign lsu_req_done   = (lsu_go | (ls_fsm_cs != IDLE)) & (ls_fsm_ns == IDLE);
+  assign lsu_req_done_o = lsu_req_done;
 
   // registers for FSM
   always_ff @(posedge clk_i or negedge rst_ni) begin
@@ -31640,11 +35883,44 @@ module lowrisc_ibex_load_store_unit #(
       handle_misaligned_q <= '0;
       pmp_err_q           <= '0;
       lsu_err_q           <= '0;
+      resp_is_cap_q       <= 1'b0;
+      resp_lc_clrperm_q   <= '0;
+      cheriot_err_q       <= 1'b0;
+      cap_rx_fsm_q        <= CRX_IDLE;
+      cap_lsw_err_q       <= 1'b0;
+      cap_lsw_data_q      <= '0;
+      cap_lsw_tag_q       <= 1'b0;
     end else begin
       ls_fsm_cs           <= ls_fsm_ns;
       handle_misaligned_q <= handle_misaligned_d;
       pmp_err_q           <= pmp_err_d;
       lsu_err_q           <= lsu_err_d;
+      cheriot_err_q       <= cheriot_err_d;
+
+      cap_rx_fsm_q        <= cap_rx_fsm_d;
+
+      // resp_is_cap_q aligns with responses on the data interface,
+      // lsu_is_cap_i aligns with requests
+      //   we use lsu_go to qualify this update
+      //   - note this implies that LSU only support a outstand request at a time
+      //   - new request can't be issued (go) until resp_valid
+      //   - also note resp_valid is gated by (ls_fsm_cs == IDLE)
+      if (lsu_go) begin
+        resp_is_cap_q     <= lsu_is_cap_i;
+        resp_lc_clrperm_q <= lsu_lc_clrperm_i;
+      end
+
+      if ((BaseIsa == BaseIsaRV32IorCHERIoT) & (cheriot_enable_i == IbexMuBiOn) &&
+          (cap_rx_fsm_q == CRX_WAIT_RESP1) && data_rvalid_i && (~data_we_q)) begin
+        cap_lsw_data_q <= data_rdata_i[31:0];
+        cap_lsw_tag_q  <= data_tag_i;
+      end
+
+      if ((BaseIsa == BaseIsaRV32IorCHERIoT) & (cheriot_enable_i == IbexMuBiOn) &&
+          (cap_rx_fsm_q == CRX_WAIT_RESP1) && data_rvalid_i) begin
+        cap_lsw_err_q <= data_bus_err_i;
+      end
+
     end
   end
 
@@ -31652,13 +35928,36 @@ module lowrisc_ibex_load_store_unit #(
   // Outputs //
   /////////////
 
-  assign data_or_pmp_err    = lsu_err_q | data_bus_err_i | pmp_err_q;
-  assign lsu_resp_valid_o   = (data_rvalid_i | pmp_err_q) & (ls_fsm_cs == IDLE);
-  assign lsu_rdata_valid_o  =
-    (ls_fsm_cs == IDLE) & data_rvalid_i & ~data_or_pmp_err & ~data_we_q & ~data_intg_err;
+  logic all_resp;
+  assign data_or_pmp_err    = lsu_err_q | data_bus_err_i | pmp_err_q |
+                              ((cheriot_enable_i == IbexMuBiOn) &
+                               (cheriot_err_q | (resp_is_cap_q & cap_lsw_err_q)));
+
+  assign all_resp           = data_rvalid_i | pmp_err_q |
+                              ((cheriot_enable_i == IbexMuBiOn) & cheriot_err_q);
+  assign lsu_resp_valid_o   = all_resp & (ls_fsm_cs == IDLE);
+
+  // this goes to wb as rf_we_lsu, so needs to be gated when data needs to go back to EX
+  assign lsu_rdata_valid_o  = (ls_fsm_cs == IDLE) & data_rvalid_i & ~data_or_pmp_err & ~data_we_q &
+                              ~data_intg_err;
 
   // output to register file
-  assign lsu_rdata_o = data_rdata_ext;
+  if (BaseIsa == BaseIsaRV32IorCHERIoT) begin : gen_memcap_rd
+    assign lsu_rdata_o = ((cheriot_enable_i == IbexMuBiOn) & resp_is_cap_q) ?
+                         cap_lsw_data_q : data_rdata_ext;
+    assign lsu_rcap_o  = ((cheriot_enable_i == IbexMuBiOn) && resp_is_cap_q &&
+                          data_rvalid_i && (cap_rx_fsm_q == CRX_WAIT_RESP2) &&
+                          (~data_or_pmp_err)) ?
+                         cheriot_mem_to_cap({data_tag_i, data_rdata_i[31:0]},
+                             {cap_lsw_tag_q, cap_lsw_data_q}, resp_lc_clrperm_q) :
+                         NULL_CAP;
+  end else begin : gen_no_cap_rd
+    assign lsu_rdata_o = data_rdata_ext;
+    assign lsu_rcap_o  = NULL_CAP;
+    logic unused_cap_rd_sigs;
+    assign unused_cap_rd_sigs = ^{resp_lc_clrperm_q, cap_lsw_data_q, cap_lsw_tag_q, data_tag_i};
+  end
+
 
   // output data address must be word aligned
   assign data_addr_w_aligned = {data_addr[31:2], 2'b00};
@@ -31675,19 +35974,21 @@ module lowrisc_ibex_load_store_unit #(
   // SEC_CM: BUS.INTEGRITY
   if (MemECC) begin : g_mem_wdata_ecc
     lowrisc_prim_secded_inv_39_32_enc u_data_gen (
-      .data_i (data_wdata),
+      .data_i (data_wdata_data),
       .data_o (data_wdata_o)
     );
   end else begin : g_no_mem_wdata_ecc
-    assign data_wdata_o = data_wdata;
+    assign data_wdata_o = data_wdata_data;
   end
 
+  assign data_tag_o = data_wdata_tag;
+
   // output to ID stage: mtval + AGU for misaligned transactions
-  assign addr_last_o   = addr_last_q;
+  assign addr_last_o = addr_last_q;
 
   // Signal a load or store error depending on the transaction type outstanding
-  assign load_err_o      = data_or_pmp_err & ~data_we_q & lsu_resp_valid_o;
-  assign store_err_o     = data_or_pmp_err &  data_we_q & lsu_resp_valid_o;
+  assign load_err_o  = data_or_pmp_err & ~data_we_q & lsu_resp_valid_o;
+  assign store_err_o = data_or_pmp_err &  data_we_q & lsu_resp_valid_o;
   // Integrity errors are their own category for timing reasons. load_err_o is factored directly
   // into data_req_o to enable synchronous exception on load errors without performance loss (An
   // upcoming load cannot request until the current load has seen its response, so the earliest
@@ -31698,6 +35999,9 @@ module lowrisc_ibex_load_store_unit #(
   // data_req_o which is undesirable.
   assign load_resp_intg_err_o  = data_intg_err & data_rvalid_i & ~data_we_q;
   assign store_resp_intg_err_o = data_intg_err & data_rvalid_i & data_we_q;
+
+  // Send to controller for mcause encoding.
+  assign lsu_err_is_cheriot_o  = (cheriot_enable_i == IbexMuBiOn) & cheriot_err_q;
 
   assign busy_o = (ls_fsm_cs != IDLE);
 
@@ -31728,6 +36032,10 @@ module lowrisc_ibex_load_store_unit #(
 
 
   // Address must be word aligned when request is sent.
+
+
+  // CHERIoT isolation: when CHERIoT is disabled, capability-specific inputs must be 0.
+
 
 
 endmodule
@@ -33259,6 +37567,8 @@ module lowrisc_ibex_prefetch_buffer #(
   output logic        err_o,
   output logic        err_plus2_o,
 
+  input  logic        cheriot_force_uc_i,
+
   // goes to instruction memory / instruction cache
   output logic        instr_req_o,
   input  logic        instr_gnt_i,
@@ -33321,23 +37631,24 @@ module lowrisc_ibex_prefetch_buffer #(
     .NUM_REQS (NUM_REQS),
     .ResetAll (ResetAll)
   ) fifo_i (
-      .clk_i                 ( clk_i             ),
-      .rst_ni                ( rst_ni            ),
+      .clk_i                 ( clk_i              ),
+      .rst_ni                ( rst_ni             ),
 
-      .clear_i               ( fifo_clear        ),
-      .busy_o                ( fifo_busy         ),
+      .clear_i               ( fifo_clear         ),
+      .busy_o                ( fifo_busy          ),
 
-      .in_valid_i            ( fifo_valid        ),
-      .in_addr_i             ( fifo_addr         ),
-      .in_rdata_i            ( instr_rdata_i     ),
-      .in_err_i              ( instr_err_i       ),
+      .in_valid_i            ( fifo_valid         ),
+      .in_addr_i             ( fifo_addr          ),
+      .in_rdata_i            ( instr_rdata_i      ),
+      .in_err_i              ( instr_err_i        ),
+      .cheriot_force_uc_i    ( cheriot_force_uc_i ),
 
-      .out_valid_o           ( valid_o           ),
-      .out_ready_i           ( ready_i           ),
-      .out_rdata_o           ( rdata_o           ),
-      .out_addr_o            ( addr_o            ),
-      .out_err_o             ( err_o             ),
-      .out_err_plus2_o       ( err_plus2_o       )
+      .out_valid_o           ( valid_o            ),
+      .out_ready_i           ( ready_i            ),
+      .out_rdata_o           ( rdata_o            ),
+      .out_addr_o            ( addr_o             ),
+      .out_err_o             ( err_o              ),
+      .out_err_plus2_o       ( err_plus2_o        )
   );
 
   //////////////
@@ -33828,6 +38139,7 @@ module lowrisc_ibex_pmp import lowrisc_ibex_pkg::*; #(
   assign unused_csr_pmp_mseccfg_rlb = csr_pmp_mseccfg_i.rlb;
 endmodule
 // Copyright lowRISC contributors.
+// Copyright Microsoft Corporation
 // Licensed under the Apache License, Version 2.0, see LICENSE for details.
 // SPDX-License-Identifier: Apache-2.0
 
@@ -34205,7 +38517,7 @@ endmodule
 
 
 
-module lowrisc_ibex_wb_stage #(
+module lowrisc_ibex_wb_stage import lowrisc_ibex_cheriot_pkg::*; #(
   parameter bit ResetAll          = 1'b0,
   parameter bit WritebackStage    = 1'b0,
   parameter bit DummyInstructions = 1'b0
@@ -34218,6 +38530,9 @@ module lowrisc_ibex_wb_stage #(
   input  logic [31:0]              pc_id_i,
   input  logic                     instr_is_compressed_id_i,
   input  logic                     instr_perf_count_id_i,
+  input  logic                     instr_is_cheriot_i,
+  input  logic                     cheriot_load_i,
+  input  logic                     cheriot_store_i,
 
   output logic                     ready_wb_o,
   output logic                     rf_write_wb_o,
@@ -34233,15 +38548,22 @@ module lowrisc_ibex_wb_stage #(
   input  logic [31:0]              rf_wdata_id_i,
   input  logic                     rf_we_id_i,
 
+  input  logic                     cheriot_rf_we_i,
+  input  logic [31:0]              cheriot_rf_wdata_i,
+  input  cap_t                     cheriot_rf_wcap_i,
+
   input  logic                     dummy_instr_id_i,
 
   input  logic [31:0]              rf_wdata_lsu_i,
+  input  cap_t                     rf_wcap_lsu_i,
   input  logic                     rf_we_lsu_i,
 
   output logic [31:0]              rf_wdata_fwd_wb_o,
+  output cap_t                     rf_wcap_fwd_wb_o,
 
   output logic [4:0]               rf_waddr_wb_o,
   output logic [31:0]              rf_wdata_wb_o,
+  output cap_t                     rf_wcap_wb_o,
   output logic                     rf_we_wb_o,
 
   output logic                     dummy_instr_wb_o,
@@ -34259,6 +38581,8 @@ module lowrisc_ibex_wb_stage #(
   logic [31:0] rf_wdata_wb_mux    [2];
   logic [1:0]  rf_wdata_wb_mux_we;
 
+  cap_t        rf_wcap_wb;
+
   if (WritebackStage) begin : g_writeback_stage
     logic [31:0]    rf_wdata_wb_q;
     logic           rf_we_wb_q;
@@ -34274,6 +38598,12 @@ module lowrisc_ibex_wb_stage #(
 
     logic           wb_valid_d;
 
+    logic           wb_is_cheriot_q;
+    logic           wb_cheriot_load_q, wb_cheriot_store_q;
+    logic           cheriot_rf_we_q;
+    logic [31:0]    cheriot_rf_wdata_q;
+    cap_t           cheriot_rf_wcap_q;
+
     // Stage becomes valid if an instruction enters for ID/EX and valid is cleared when instruction
     // is done
     assign wb_valid_d = (en_wb_i & ready_wb_o) | (wb_valid_q & ~wb_done);
@@ -34281,7 +38611,11 @@ module lowrisc_ibex_wb_stage #(
     // Writeback for non load/store instructions always completes in a cycle (so instantly done)
     // Writeback for load/store must wait for response to be received by the LSU
     // Signal only relevant if wb_valid_q set
-    assign wb_done = (wb_instr_type_q == WB_INSTR_OTHER) | lsu_resp_valid_i;
+
+    // note cheriot_load/store doesn't just come from the decoder, but includes
+    // bound/permission check results
+    assign wb_done = (wb_instr_type_q == WB_INSTR_OTHER && ~(wb_is_cheriot_q && (wb_cheriot_load_q |
+                      wb_cheriot_store_q))) | lsu_resp_valid_i;
 
     always_ff @(posedge clk_i or negedge rst_ni) begin
       if (!rst_ni) begin
@@ -34301,6 +38635,13 @@ module lowrisc_ibex_wb_stage #(
           wb_pc_q         <= '0;
           wb_compressed_q <= '0;
           wb_count_q      <= '0;
+
+          wb_is_cheriot_q    <= 1'b0;
+          wb_cheriot_load_q  <= 1'b0;
+          wb_cheriot_store_q <= 1'b0;
+          cheriot_rf_we_q    <= 1'b0;
+          cheriot_rf_wdata_q <= '0;
+          cheriot_rf_wcap_q  <= NULL_CAP;
         end else if (en_wb_i) begin
           rf_we_wb_q      <= rf_we_id_i;
           rf_waddr_wb_q   <= rf_waddr_id_i;
@@ -34309,6 +38650,13 @@ module lowrisc_ibex_wb_stage #(
           wb_pc_q         <= pc_id_i;
           wb_compressed_q <= instr_is_compressed_id_i;
           wb_count_q      <= instr_perf_count_id_i;
+
+          wb_is_cheriot_q    <= instr_is_cheriot_i;
+          wb_cheriot_load_q  <= cheriot_load_i;
+          wb_cheriot_store_q <= cheriot_store_i;
+          cheriot_rf_we_q    <= cheriot_rf_we_i;
+          cheriot_rf_wdata_q <= cheriot_rf_wdata_i;
+          cheriot_rf_wcap_q  <= cheriot_rf_wcap_i;
         end
       end
     end else begin : g_wb_regs_nr
@@ -34321,22 +38669,33 @@ module lowrisc_ibex_wb_stage #(
           wb_pc_q         <= pc_id_i;
           wb_compressed_q <= instr_is_compressed_id_i;
           wb_count_q      <= instr_perf_count_id_i;
+
+          wb_is_cheriot_q    <= instr_is_cheriot_i;
+          wb_cheriot_load_q  <= cheriot_load_i;
+          wb_cheriot_store_q <= cheriot_store_i;
+          cheriot_rf_we_q    <= cheriot_rf_we_i;
+          cheriot_rf_wdata_q <= cheriot_rf_wdata_i;
+          cheriot_rf_wcap_q  <= cheriot_rf_wcap_i;
         end
       end
     end
 
     assign rf_waddr_wb_o         = rf_waddr_wb_q;
-    assign rf_wdata_wb_mux[0]    = rf_wdata_wb_q;
-    assign rf_wdata_wb_mux_we[0] = rf_we_wb_q & wb_valid_q;
+    assign rf_wdata_wb_mux[0]    = wb_is_cheriot_q ? cheriot_rf_wdata_q : rf_wdata_wb_q;
+    assign rf_wdata_wb_mux_we[0] = (wb_is_cheriot_q ? cheriot_rf_we_q : rf_we_wb_q) & wb_valid_q;
 
     assign ready_wb_o = ~wb_valid_q | wb_done;
 
+    // This is used for determining RF read hazards & forwarding in ID/EX
     // Instruction in writeback will be writing to register file if either rf_we is set or writeback
-    // is awaiting load data. This is used for determining RF read hazards in ID/EX
-    assign rf_write_wb_o = wb_valid_q & (rf_we_wb_q | (wb_instr_type_q == WB_INSTR_LOAD));
+    // is awaiting load data.
+    assign rf_write_wb_o = wb_valid_q & (rf_we_wb_q | (wb_is_cheriot_q & cheriot_rf_we_q) |
+                                         (wb_instr_type_q == WB_INSTR_LOAD) | wb_cheriot_load_q);
 
-    assign outstanding_load_wb_o  = wb_valid_q & (wb_instr_type_q == WB_INSTR_LOAD);
-    assign outstanding_store_wb_o = wb_valid_q & (wb_instr_type_q == WB_INSTR_STORE);
+    assign outstanding_load_wb_o  = wb_valid_q
+                                  & ((wb_instr_type_q == WB_INSTR_LOAD)  | wb_cheriot_load_q);
+    assign outstanding_store_wb_o = wb_valid_q
+                                  & ((wb_instr_type_q == WB_INSTR_STORE) | wb_cheriot_store_q);
 
     assign pc_wb_o = wb_pc_q;
 
@@ -34355,7 +38714,10 @@ module lowrisc_ibex_wb_stage #(
     // Forward data that will be written to the RF back to ID to resolve data hazards. The flopped
     // rf_wdata_wb_q is used rather than rf_wdata_wb_o as the latter includes read data from memory
     // that returns too late to be used on the forwarding path.
-    assign rf_wdata_fwd_wb_o = rf_wdata_wb_q;
+    assign rf_wdata_fwd_wb_o = wb_is_cheriot_q ? cheriot_rf_wdata_q : rf_wdata_wb_q;
+    assign rf_wcap_fwd_wb_o  = wb_is_cheriot_q ? cheriot_rf_wcap_q : NULL_CAP;
+    assign rf_wcap_wb        = (wb_is_cheriot_q && ~wb_cheriot_load_q)
+                             ? cheriot_rf_wcap_q : NULL_CAP;
 
     assign rf_wdata_wb_mux_we[1] = rf_we_lsu_i;
 
@@ -34388,9 +38750,11 @@ module lowrisc_ibex_wb_stage #(
   end else begin : g_bypass_wb
     // without writeback stage just pass through register write signals
     assign rf_waddr_wb_o         = rf_waddr_id_i;
-    assign rf_wdata_wb_mux[0]    = rf_wdata_id_i;
-    assign rf_wdata_wb_mux_we[0] = rf_we_id_i;
+    assign rf_wdata_wb_mux[0]    = instr_is_cheriot_i ? cheriot_rf_wdata_i : rf_wdata_id_i;
+    assign rf_wdata_wb_mux_we[0] = instr_is_cheriot_i ? cheriot_rf_we_i : rf_we_id_i;
     assign rf_wdata_wb_mux_we[1] = rf_we_lsu_i;
+    assign rf_wcap_wb            = (instr_is_cheriot_i && ~cheriot_load_i)
+                                 ? cheriot_rf_wcap_i : NULL_CAP;
 
     assign dummy_instr_wb_o = dummy_instr_id_i;
 
@@ -34414,18 +38778,21 @@ module lowrisc_ibex_wb_stage #(
     wb_instr_type_e unused_instr_type_wb;
     logic [31:0]    unused_pc_id;
     logic           unused_dummy_instr_id;
+    logic           unused_cheriot_store;
 
     assign unused_clk            = clk_i;
     assign unused_rst            = rst_ni;
     assign unused_instr_type_wb  = instr_type_wb_i;
     assign unused_pc_id          = pc_id_i;
     assign unused_dummy_instr_id = dummy_instr_id_i;
+    assign unused_cheriot_store  = cheriot_store_i;
 
     assign outstanding_load_wb_o  = 1'b0;
     assign outstanding_store_wb_o = 1'b0;
     assign pc_wb_o                = '0;
     assign rf_write_wb_o          = 1'b0;
     assign rf_wdata_fwd_wb_o      = 32'b0;
+    assign rf_wcap_fwd_wb_o       = NULL_CAP;
     assign instr_done_wb_o        = 1'b0;
   end
 
@@ -34436,6 +38803,9 @@ module lowrisc_ibex_wb_stage #(
   assign rf_wdata_wb_o = ({32{rf_wdata_wb_mux_we[0]}} & rf_wdata_wb_mux[0]) |
                          ({32{rf_wdata_wb_mux_we[1]}} & rf_wdata_wb_mux[1]);
   assign rf_we_wb_o    = |rf_wdata_wb_mux_we;
+
+  assign rf_wcap_wb_o  = rf_wdata_wb_mux_we[0] ? rf_wcap_wb :
+                         (rf_wdata_wb_mux_we[1] ? rf_wcap_lsu_i : NULL_CAP);
 
 
 
@@ -34593,6 +38963,7 @@ module lowrisc_ibex_dummy_instr import lowrisc_ibex_pkg::*; #(
 endmodule
 // Copyright lowRISC contributors.
 // Copyright 2018 ETH Zurich and University of Bologna, see also CREDITS.md.
+// Copyright Microsoft Corporation
 // Licensed under the Apache License, Version 2.0, see LICENSE for details.
 // SPDX-License-Identifier: Apache-2.0
 
@@ -34966,7 +39337,8 @@ endmodule
 /**
  * Top level module of the ibex RISC-V core
  */
-module lowrisc_ibex_core import lowrisc_ibex_pkg::*; #(
+module lowrisc_ibex_core import lowrisc_ibex_pkg::*; import lowrisc_ibex_cheriot_pkg::*; #(
+  parameter base_isa_e              BaseIsa                     = BaseIsaRV32I,
   parameter bit                     PMPEnable                   = 1'b0,
   parameter int unsigned            PMPGranularity              = 0,
   parameter int unsigned            PMPNumRegions               = 4,
@@ -34997,6 +39369,7 @@ module lowrisc_ibex_core import lowrisc_ibex_pkg::*; #(
   parameter bit                     DummyInstructions           = 1'b0,
   parameter bit                     RegFileECC                  = 1'b0,
   parameter int unsigned            RegFileDataWidth            = 32,
+  parameter int unsigned            RegFileCapEccWidth          = REGCAP_W,
   parameter bit                     MemECC                      = 1'b0,
   parameter int unsigned            MemDataWidth                = MemECC ? 32 + 7 : 32,
   parameter int unsigned            DmBaseAddr                  = 32'h1A110000,
@@ -35014,6 +39387,7 @@ module lowrisc_ibex_core import lowrisc_ibex_pkg::*; #(
 
   input  logic [31:0]                  hart_id_i,
   input  logic [31:0]                  boot_addr_i,
+  input  ibex_mubi_t                   cheriot_enable_i,
 
   // Instruction memory interface
   output logic                         instr_req_o,
@@ -35031,7 +39405,9 @@ module lowrisc_ibex_core import lowrisc_ibex_pkg::*; #(
   output logic [3:0]                   data_be_o,
   output logic [31:0]                  data_addr_o,
   output logic [MemDataWidth-1:0]      data_wdata_o,
+  output logic                         data_tag_o,
   input  logic [MemDataWidth-1:0]      data_rdata_i,
+  input  logic                         data_tag_i,
   input  logic                         data_err_i,
 
   // Register file interface
@@ -35041,9 +39417,12 @@ module lowrisc_ibex_core import lowrisc_ibex_pkg::*; #(
   output logic [4:0]                   rf_raddr_b_o,
   output logic [4:0]                   rf_waddr_wb_o,
   output logic                         rf_we_wb_o,
-  output logic [RegFileDataWidth-1:0]  rf_wdata_wb_ecc_o,
-  input  logic [RegFileDataWidth-1:0]  rf_rdata_a_ecc_i,
-  input  logic [RegFileDataWidth-1:0]  rf_rdata_b_ecc_i,
+  output logic [RegFileDataWidth-1:0]   rf_wdata_wb_ecc_o,
+  input  logic [RegFileDataWidth-1:0]   rf_rdata_a_ecc_i,
+  input  logic [RegFileDataWidth-1:0]   rf_rdata_b_ecc_i,
+  output logic [RegFileCapEccWidth-1:0] rf_wcap_ecc_wb_o,
+  input  logic [RegFileCapEccWidth-1:0] rf_rcap_a_ecc_i,
+  input  logic [RegFileCapEccWidth-1:0] rf_rcap_b_ecc_i,
 
   // RAMs interface
   output logic [IC_NUM_WAYS-1:0]       ic_tag_req_o,
@@ -35089,11 +39468,11 @@ module lowrisc_ibex_core import lowrisc_ibex_pkg::*; #(
   output ibex_mubi_t                   core_busy_o
 );
 
-  localparam int unsigned PMPNumChan      = 3;
+  localparam int unsigned PMPNumChan    = 3;
   // SEC_CM: CORE.DATA_REG_SW.SCA
-  localparam bit          DataIndTiming     = SecureIbex;
-  localparam bit          PCIncrCheck       = SecureIbex;
-  localparam bit          ShadowCSR         = 1'b0;
+  localparam bit          DataIndTiming = SecureIbex;
+  localparam bit          PCIncrCheck   = SecureIbex;
+  localparam bit          ShadowCSR     = 1'b0;
 
   // IF/ID signals
   logic        dummy_instr_id;
@@ -35110,6 +39489,8 @@ module lowrisc_ibex_core import lowrisc_ibex_pkg::*; #(
   logic        instr_bp_taken_id;
   logic        instr_fetch_err;                // Bus error on instr fetch
   logic        instr_fetch_err_plus2;          // Instruction error is misaligned
+  logic        instr_fetch_cheriot_acc_vio;
+  logic        instr_fetch_cheriot_bound_vio;
   logic        illegal_c_insn_id;              // Illegal compressed instruction sent to ID stage
   logic [31:0] pc_if;                          // Program counter in IF stage
   logic [31:0] pc_id;                          // Program counter in ID stage
@@ -35128,6 +39509,7 @@ module lowrisc_ibex_core import lowrisc_ibex_pkg::*; #(
   logic        icache_ecc_error;
   logic        pc_mismatch_alert;
   logic        csr_shadow_err;
+  logic        cheriot_enable_mubi_err;
 
   logic        instr_first_cycle_id;
   logic        instr_valid_clear;
@@ -35143,6 +39525,7 @@ module lowrisc_ibex_core import lowrisc_ibex_pkg::*; #(
   logic        lsu_store_err, lsu_store_err_raw;
   logic        lsu_load_resp_intg_err;
   logic        lsu_store_resp_intg_err;
+  logic        lsu_err_is_cheriot;
 
   logic        expecting_load_resp_id;
   logic        expecting_store_resp_id;
@@ -35150,8 +39533,11 @@ module lowrisc_ibex_core import lowrisc_ibex_pkg::*; #(
   // LSU signals
   logic        lsu_addr_incr_req;
   logic [31:0] lsu_addr_last;
+  logic [31:0] lsu_addr;
 
   // Jump and branch target and decision (EX->IF)
+  logic [31:0] branch_target_ex_rv32;
+  logic [31:0] branch_target_ex_cheriot;
   logic [31:0] branch_target_ex;
   logic        branch_decision;
 
@@ -35169,10 +39555,23 @@ module lowrisc_ibex_core import lowrisc_ibex_pkg::*; #(
   logic        rf_ren_b;
   logic [4:0]  rf_waddr_wb;
   logic [31:0] rf_wdata_wb;
+
+  cap_t        rf_wcap_wb;
+
+  // Cap data extracted from unified ECC port (cap always in lower REGCAP_W bits)
+  cap_t        rf_rcap_a, rf_rcap_b;
+
+  assign rf_rcap_a = cheriot_vec_to_regcap(rf_rcap_a_ecc_i[REGCAP_W-1:0]);
+  assign rf_rcap_b = cheriot_vec_to_regcap(rf_rcap_b_ecc_i[REGCAP_W-1:0]);
+
   // Writeback register write data that can be used on the forwarding path (doesn't factor in memory
   // read data as this is too late for the forwarding path)
   logic [31:0] rf_wdata_fwd_wb;
+
+  cap_t        rf_wcap_fwd_wb;
+
   logic [31:0] rf_wdata_lsu;
+  cap_t        rf_wcap_lsu;
   logic        rf_we_wb;
   logic        rf_we_lsu;
   logic        rf_ecc_err_comb;
@@ -35223,6 +39622,7 @@ module lowrisc_ibex_core import lowrisc_ibex_pkg::*; #(
   logic        lsu_req;
   logic        lsu_rdata_valid;
   logic [31:0] lsu_wdata;
+  cap_t        lsu_wcap;
   logic        lsu_req_done;
 
   // stall control
@@ -35265,6 +39665,7 @@ module lowrisc_ibex_core import lowrisc_ibex_pkg::*; #(
   logic        csr_restore_mret_id;
   logic        csr_restore_dret_id;
   logic        csr_save_cause;
+  logic        csr_mepcc_clrtag;
   logic        csr_mtvec_init;
   logic [31:0] csr_mtvec;
   logic [31:0] csr_mtval;
@@ -35303,6 +39704,68 @@ module lowrisc_ibex_core import lowrisc_ibex_pkg::*; #(
 
   // for RVFI
   logic        illegal_insn_id, unused_illegal_insn_id; // ID stage sees an illegal instruction
+
+  decoded_cap_t     pcc_cap_r, pcc_cap_w;
+
+  logic                   cheriot_branch_req;
+  logic                   cheriot_branch_req_spec;
+  logic                   instr_is_cheriot_id;
+  logic                   instr_is_rv32lsu_id;
+  logic                   cheriot_exec_id;
+  logic [11:0]            cheriot_imm12;
+  logic [19:0]            cheriot_imm20;
+  logic [20:0]            cheriot_imm21;
+  logic  [4:0]            cheriot_cs2_dec;
+  cheriot_cap_field_e     cheriot_cap_field_sel;
+  cheriot_adder_a_sel_e   cheriot_adder_a_sel;
+  cheriot_adder_b_sel_e   cheriot_adder_b_sel;
+  cheriot_setaddr_sel_e   cheriot_setaddr_sel;
+  cheriot_setbounds_sel_e cheriot_setbounds_sel;
+  logic                   cheriot_load_id;
+  logic                   cheriot_store_id;
+  logic                   cheriot_rf_we;
+  logic [31:0]            cheriot_result_data;
+  cap_t                   cheriot_result_cap;
+  logic                   cheriot_ex_valid;
+  logic                   cheriot_ex_err;
+  logic [11:0]            cheriot_ex_err_info;
+  logic                   cheriot_wb_err;
+  logic [15:0]            cheriot_wb_err_info;
+  // verilator lint_off UNOPTFLAT
+  cheriot_op_t            cheriot_operator;
+  // verilator lint_on UNOPTFLAT
+
+  logic          rv32_lsu_req;
+  logic          rv32_lsu_we;
+  logic [1:0]    rv32_lsu_type;
+  logic [31:0]   rv32_lsu_wdata;
+  logic          rv32_lsu_sign_ext;
+  logic          rv32_lsu_addr_incr_req;
+  logic [31:0]   rv32_lsu_addr_last;
+
+  logic          cheriot_csr_access;
+  // verilator lint_off UNOPTFLAT
+  logic [4:0]    cheriot_csr_addr;
+  logic [31:0]   cheriot_csr_wdata;
+  // verilator lint_on UNOPTFLAT
+  cap_t          cheriot_csr_wcap;
+  cheriot_csr_op_e cheriot_csr_op;
+  logic          cheriot_csr_op_en;
+  logic [31:0]   cheriot_csr_rdata;
+  cap_t          cheriot_csr_rcap;
+  logic          cheriot_csr_set_mie;
+  logic          cheriot_csr_clr_mie;
+
+  logic          lsu_is_cap, lsu_cheriot_err;
+  cap_clrperm_t  lsu_lc_clrperm;
+
+  logic          csr_dbg_tclr_fault;
+  logic          cheriot_fatal_err;
+
+  logic [31:0]   csr_mshwm;
+  logic [31:0]   csr_mshwmb;
+  logic          csr_mshwm_set;
+  logic [31:0]   csr_mshwm_new;
 
   //////////////////////
   // Clock management //
@@ -35357,13 +39820,16 @@ module lowrisc_ibex_core import lowrisc_ibex_pkg::*; #(
     .RndCnstLfsrPerm      (RndCnstLfsrPerm),
     .BranchPredictor      (BranchPredictor),
     .MemECC               (MemECC),
-    .MemDataWidth         (MemDataWidth)
+    .MemDataWidth         (MemDataWidth),
+    .BaseIsa              (BaseIsa)
   ) if_stage_i (
     .clk_i (clk_i),
     .rst_ni(rst_ni),
 
-    .boot_addr_i(boot_addr_i),
-    .req_i      (instr_req_gated),  // instruction request control
+    .cheriot_enable_i (cheriot_enable_i),
+    .boot_addr_i      (boot_addr_i),
+    .req_i            (instr_req_gated),  // instruction request control
+    .debug_mode_i     (debug_mode),
 
     // instruction cache interface
     .instr_req_o       (instr_req_o),
@@ -35388,17 +39854,20 @@ module lowrisc_ibex_core import lowrisc_ibex_pkg::*; #(
     .ic_scr_key_req_o  (ic_scr_key_req_o),
 
     // outputs to ID stage
-    .instr_valid_id_o        (instr_valid_id),
-    .instr_new_id_o          (instr_new_id),
-    .instr_rdata_id_o        (instr_rdata_id),
-    .instr_rdata_alu_id_o    (instr_rdata_alu_id),
-    .instr_rdata_c_id_o      (instr_rdata_c_id),
-    .instr_is_compressed_id_o(instr_is_compressed_id),
-    .instr_gets_expanded_id_o(instr_gets_expanded_id),
-    .instr_expanded_id_o     (instr_expanded_id),
-    .instr_bp_taken_o        (instr_bp_taken_id),
-    .instr_fetch_err_o       (instr_fetch_err),
-    .instr_fetch_err_plus2_o (instr_fetch_err_plus2),
+    .instr_valid_id_o                (instr_valid_id),
+    .instr_new_id_o                  (instr_new_id),
+    .instr_rdata_id_o                (instr_rdata_id),
+    .instr_rdata_alu_id_o            (instr_rdata_alu_id),
+    .instr_rdata_c_id_o              (instr_rdata_c_id),
+    .instr_is_compressed_id_o        (instr_is_compressed_id),
+    .instr_gets_expanded_id_o        (instr_gets_expanded_id),
+    .instr_expanded_id_o             (instr_expanded_id),
+    .instr_bp_taken_o                (instr_bp_taken_id),
+    .instr_fetch_err_o               (instr_fetch_err),
+    .instr_fetch_err_plus2_o         (instr_fetch_err_plus2),
+    .instr_fetch_cheriot_acc_vio_o   (instr_fetch_cheriot_acc_vio),
+    .instr_fetch_cheriot_bound_vio_o (instr_fetch_cheriot_bound_vio),
+
     .illegal_c_insn_id_o     (illegal_c_insn_id),
     .dummy_instr_id_o        (dummy_instr_id),
     .pc_if_o                 (pc_if),
@@ -35435,7 +39904,8 @@ module lowrisc_ibex_core import lowrisc_ibex_pkg::*; #(
     .id_in_ready_i(id_in_ready),
 
     .pc_mismatch_alert_o(pc_mismatch_alert),
-    .if_busy_o          (if_busy)
+    .if_busy_o          (if_busy),
+    .pcc_cap_i          (pcc_cap_r)
   );
 
   // Core is waiting for the ISide when ID/EX stage is ready for a new instruction but none are
@@ -35476,10 +39946,13 @@ module lowrisc_ibex_core import lowrisc_ibex_pkg::*; #(
     .DataIndTiming  (DataIndTiming),
     .WritebackStage (WritebackStage),
     .BranchPredictor(BranchPredictor),
-    .MemECC         (MemECC)
+    .MemECC         (MemECC),
+    .BaseIsa        (BaseIsa)
   ) id_stage_i (
     .clk_i (clk_i),
     .rst_ni(rst_ni),
+
+    .cheriot_enable_i     (cheriot_enable_i),
 
     // Processor Enable
     .ctrl_busy_o   (ctrl_busy),
@@ -35491,6 +39964,7 @@ module lowrisc_ibex_core import lowrisc_ibex_pkg::*; #(
     .instr_rdata_alu_i    (instr_rdata_alu_id),
     .instr_rdata_c_i      (instr_rdata_c_id),
     .instr_is_compressed_i(instr_is_compressed_id),
+    .instr_gets_expanded_i(instr_gets_expanded_id),
     .instr_bp_taken_i     (instr_bp_taken_id),
 
     // Jumps and branches
@@ -35510,8 +39984,11 @@ module lowrisc_ibex_core import lowrisc_ibex_pkg::*; #(
     .exc_cause_o           (exc_cause),
     .icache_inval_o        (icache_inval),
 
-    .instr_fetch_err_i      (instr_fetch_err),
-    .instr_fetch_err_plus2_i(instr_fetch_err_plus2),
+    .instr_fetch_err_i               (instr_fetch_err),
+    .instr_fetch_err_plus2_i         (instr_fetch_err_plus2),
+    .instr_fetch_cheriot_acc_vio_i   (instr_fetch_cheriot_acc_vio),
+    .instr_fetch_cheriot_bound_vio_i (instr_fetch_cheriot_bound_vio),
+
     .illegal_c_insn_i       (illegal_c_insn_id),
 
     .pc_id_i(pc_id),
@@ -35552,27 +40029,30 @@ module lowrisc_ibex_core import lowrisc_ibex_pkg::*; #(
     .csr_restore_mret_id_o(csr_restore_mret_id),  // restore mstatus upon MRET
     .csr_restore_dret_id_o(csr_restore_dret_id),  // restore mstatus upon MRET
     .csr_save_cause_o     (csr_save_cause),
+    .csr_mepcc_clrtag_o   (csr_mepcc_clrtag),
     .csr_mtval_o          (csr_mtval),
     .priv_mode_i          (priv_mode_id),
     .csr_mstatus_tw_i     (csr_mstatus_tw),
     .illegal_csr_insn_i   (illegal_csr_insn_id),
     .data_ind_timing_i    (data_ind_timing),
+    .csr_pcc_perm_sr_i    (pcc_cap_r.perms.SR),
 
     // LSU
-    .lsu_req_o     (lsu_req),  // to load store unit
-    .lsu_we_o      (lsu_we),  // to load store unit
-    .lsu_type_o    (lsu_type),  // to load store unit
-    .lsu_sign_ext_o(lsu_sign_ext),  // to load store unit
-    .lsu_wdata_o   (lsu_wdata),  // to load store unit
+    .lsu_req_o     (rv32_lsu_req),  // to load store unit
+    .lsu_we_o      (rv32_lsu_we),  // to load store unit
+    .lsu_type_o    (rv32_lsu_type),  // to load store unit
+    .lsu_sign_ext_o(rv32_lsu_sign_ext),  // to load store unit
+    .lsu_wdata_o   (rv32_lsu_wdata),  // to load store unit
     .lsu_req_done_i(lsu_req_done),  // from load store unit
 
-    .lsu_addr_incr_req_i(lsu_addr_incr_req),
-    .lsu_addr_last_i    (lsu_addr_last),
+    .lsu_addr_incr_req_i(rv32_lsu_addr_incr_req),
+    .lsu_addr_last_i    (rv32_lsu_addr_last),
 
     .lsu_load_err_i           (lsu_load_err),
     .lsu_load_resp_intg_err_i (lsu_load_resp_intg_err),
     .lsu_store_err_i          (lsu_store_err),
     .lsu_store_resp_intg_err_i(lsu_store_resp_intg_err),
+    .lsu_err_is_cheriot_i     (lsu_err_is_cheriot),
 
     .expecting_load_resp_o (expecting_load_resp_id),
     .expecting_store_resp_o(expecting_store_resp_id),
@@ -35629,7 +40109,30 @@ module lowrisc_ibex_core import lowrisc_ibex_pkg::*; #(
     .perf_dside_wait_o(perf_dside_wait),
     .perf_mul_wait_o  (perf_mul_wait),
     .perf_div_wait_o  (perf_div_wait),
-    .instr_id_done_o  (instr_id_done)
+    .instr_id_done_o  (instr_id_done),
+
+    .cheriot_exec_id_o       (cheriot_exec_id),
+    .instr_is_cheriot_id_o   (instr_is_cheriot_id),
+    .instr_is_rv32lsu_id_o   (instr_is_rv32lsu_id),
+    .cheriot_imm12_o         (cheriot_imm12),
+    .cheriot_imm20_o         (cheriot_imm20),
+    .cheriot_imm21_o         (cheriot_imm21),
+    .cheriot_operator_o      (cheriot_operator),
+    .cheriot_cs2_dec_o       (cheriot_cs2_dec),
+    .cheriot_cap_field_sel_o (cheriot_cap_field_sel),
+    .cheriot_adder_a_sel_o   (cheriot_adder_a_sel),
+    .cheriot_adder_b_sel_o   (cheriot_adder_b_sel),
+    .cheriot_setaddr_sel_o   (cheriot_setaddr_sel),
+    .cheriot_setbounds_sel_o (cheriot_setbounds_sel),
+    .cheriot_load_o          (cheriot_load_id),
+    .cheriot_store_o         (cheriot_store_id),
+    .cheriot_ex_valid_i      (cheriot_ex_valid),
+    .cheriot_ex_err_i        (cheriot_ex_err),
+    .cheriot_ex_err_info_i   (cheriot_ex_err_info),
+    .cheriot_wb_err_i        (cheriot_wb_err),
+    .cheriot_wb_err_info_i   (cheriot_wb_err_info),
+    .cheriot_branch_req_i    (cheriot_branch_req_spec),
+    .cheriot_branch_target_i (branch_target_ex_cheriot)
   );
 
   // for RVFI only
@@ -35674,26 +40177,179 @@ module lowrisc_ibex_core import lowrisc_ibex_pkg::*; #(
     .alu_adder_result_ex_o(alu_adder_result_ex),  // to LSU
     .result_ex_o          (result_ex),  // to ID
 
-    .branch_target_o  (branch_target_ex),  // to IF
+    .branch_target_o  (branch_target_ex_rv32),  // to IF
     .branch_decision_o(branch_decision),  // to ID
 
     .ex_valid_o(ex_valid)
   );
 
+  //////////////
+  // cheriot EX //
+  //////////////
+  if (BaseIsa == BaseIsaRV32IorCHERIoT) begin : g_cheriot_ex
+    lowrisc_ibex_cheriot_ex #(
+      .WritebackStage          (WritebackStage)
+    ) u_ibex_cheriot_ex (
+      .clk_i                   (clk_i),
+      .rst_ni                  (rst_ni),
+      .cheriot_enable_i        (cheriot_enable_i),
+      .debug_mode_i            (debug_mode),
+      .fwd_we_i                (rf_write_wb),
+      .fwd_waddr_i             (rf_waddr_wb),
+      .fwd_wdata_i             (rf_wdata_fwd_wb),
+      .fwd_wcap_i              (rf_wcap_fwd_wb),
+      .rf_raddr_a_i            (rf_raddr_a),
+      .rf_rdata_a_i            (rf_rdata_a),
+      .rf_rcap_a_i             (rf_rcap_a),
+      .rf_raddr_b_i            (rf_raddr_b),
+      .rf_rdata_b_i            (rf_rdata_b),
+      .rf_rcap_b_i             (rf_rcap_b),
+      .rf_waddr_i              (rf_waddr_id),
+      .pcc_cap_i               (pcc_cap_r),
+      .pcc_cap_o               (pcc_cap_w),
+      .pc_id_i                 (pc_id),
+      .branch_req_o            (cheriot_branch_req),
+      .branch_req_spec_o       (cheriot_branch_req_spec),
+      .branch_target_o         (branch_target_ex_cheriot),
+      .cheriot_exec_id_i       (cheriot_exec_id),
+      .instr_valid_i           (instr_valid_id),
+      .instr_first_cycle_i     (instr_first_cycle_id),
+      .instr_is_cheriot_i      (instr_is_cheriot_id),
+      .instr_is_rv32lsu_i      (instr_is_rv32lsu_id),
+      .instr_is_compressed_i   (instr_is_compressed_id),
+      .cheriot_imm12_i         (cheriot_imm12),
+      .cheriot_imm20_i         (cheriot_imm20),
+      .cheriot_imm21_i         (cheriot_imm21),
+      .cheriot_operator_i      (cheriot_operator),
+      .cheriot_cs2_dec_i       (cheriot_cs2_dec),
+      .cheriot_cap_field_sel_i (cheriot_cap_field_sel),
+      .cheriot_adder_a_sel_i   (cheriot_adder_a_sel),
+      .cheriot_adder_b_sel_i   (cheriot_adder_b_sel),
+      .cheriot_setaddr_sel_i   (cheriot_setaddr_sel),
+      .cheriot_setbounds_sel_i (cheriot_setbounds_sel),
+      .cheriot_rf_we_o         (cheriot_rf_we),
+      .result_data_o           (cheriot_result_data),
+      .result_cap_o            (cheriot_result_cap),
+      .cheriot_ex_valid_o      (cheriot_ex_valid),
+      .cheriot_ex_err_o        (cheriot_ex_err),
+      .cheriot_ex_err_info_o   (cheriot_ex_err_info),
+      .cheriot_wb_err_o        (cheriot_wb_err),
+      .cheriot_wb_err_info_o   (cheriot_wb_err_info),
+      .lsu_req_o               (lsu_req),
+      .lsu_is_cap_o            (lsu_is_cap),
+      .lsu_lc_clrperm_o        (lsu_lc_clrperm),
+      .lsu_cheriot_err_o       (lsu_cheriot_err),
+      .lsu_we_o                (lsu_we),
+      .lsu_addr_o              (lsu_addr),
+      .lsu_type_o              (lsu_type),
+      .lsu_wdata_o             (lsu_wdata),
+      .lsu_wcap_o              (lsu_wcap),
+      .lsu_sign_ext_o          (lsu_sign_ext),
+      .addr_incr_req_i         (lsu_addr_incr_req),
+      .addr_last_i             (lsu_addr_last),
+      .rv32_lsu_req_i          (rv32_lsu_req),
+      .rv32_lsu_we_i           (rv32_lsu_we),
+      .rv32_lsu_type_i         (rv32_lsu_type),
+      .rv32_lsu_wdata_i        (rv32_lsu_wdata),
+      .rv32_lsu_sign_ext_i     (rv32_lsu_sign_ext),
+      .rv32_lsu_addr_i         (alu_adder_result_ex),
+      .rv32_addr_incr_req_o    (rv32_lsu_addr_incr_req),
+      .rv32_addr_last_o        (rv32_lsu_addr_last),
+      .csr_rdata_i             (cheriot_csr_rdata),
+      .csr_rcap_i              (cheriot_csr_rcap),
+      .csr_mstatus_mie_i       (csr_mstatus_mie),
+      .csr_access_o            (cheriot_csr_access),
+      .csr_addr_o              (cheriot_csr_addr),
+      .csr_wdata_o             (cheriot_csr_wdata),
+      .csr_wcap_o              (cheriot_csr_wcap),
+      .csr_op_o                (cheriot_csr_op),
+      .csr_op_en_o             (cheriot_csr_op_en),
+      .csr_set_mie_o           (cheriot_csr_set_mie),
+      .csr_clr_mie_o           (cheriot_csr_clr_mie),
+      .csr_mshwm_i             (csr_mshwm),
+      .csr_mshwmb_i            (csr_mshwmb),
+      .csr_mshwm_set_o         (csr_mshwm_set),
+      .csr_mshwm_new_o         (csr_mshwm_new),
+      .ztop_rdata_i            (32'h0),
+      .ztop_rcap_i             (NULL_CAP),
+      .csr_dbg_tclr_fault_i    (csr_dbg_tclr_fault)
+    );
+
+    assign branch_target_ex = (instr_valid_id & instr_is_cheriot_id) ?
+                              branch_target_ex_cheriot : branch_target_ex_rv32;
+  end else begin : gen_no_cheriot_ex
+
+    assign cheriot_branch_req       = 1'b0;
+    assign cheriot_branch_req_spec  = 1'b0;
+    assign branch_target_ex         = branch_target_ex_rv32;
+    assign pcc_cap_w                = NULL_DECODED_CAP;
+
+    assign cheriot_rf_we            = 1'b0;
+    assign cheriot_result_data      = 32'h0;
+    assign cheriot_result_cap       = NULL_CAP;
+
+    assign cheriot_ex_valid         = 1'b0;
+    assign cheriot_ex_err           = 1'b0;
+    assign cheriot_ex_err_info      = 12'h0;
+    assign cheriot_wb_err           = 1'b0;
+    assign cheriot_wb_err_info      = 16'h0;
+
+    assign lsu_req                  = rv32_lsu_req;
+    assign lsu_is_cap               = 1'b0;
+    assign lsu_lc_clrperm           = '0;
+    assign lsu_cheriot_err          = 1'b0;
+    assign lsu_we                   = rv32_lsu_we;
+    assign lsu_addr                 = alu_adder_result_ex;
+    assign lsu_type                 = rv32_lsu_type;
+    assign lsu_wdata                = rv32_lsu_wdata;
+    assign lsu_wcap                 = NULL_CAP;
+    assign lsu_sign_ext             = rv32_lsu_sign_ext;
+    assign rv32_lsu_addr_incr_req   = lsu_addr_incr_req;
+    assign rv32_lsu_addr_last       = lsu_addr_last;
+
+    assign cheriot_csr_access       = 1'b0;
+    assign cheriot_csr_addr         = 5'h0;
+    assign cheriot_csr_wdata        = 32'h0;
+    assign cheriot_csr_wcap         = NULL_CAP;
+    assign cheriot_csr_op           = CHERIOT_CSR_NULL;
+    assign cheriot_csr_op_en        = 1'b0;
+    assign cheriot_csr_set_mie      = 1'b0;
+    assign cheriot_csr_clr_mie      = 1'b0;
+
+    assign csr_mshwm_set            = 1'b0;
+    assign csr_mshwm_new            = 32'h0;
+
+    assign branch_target_ex_cheriot = 32'h0;
+
+    logic unused_cheriot_core_sigs;
+    assign unused_cheriot_core_sigs = (^rf_rcap_a_ecc_i) | (^rf_rcap_b_ecc_i) | cheriot_exec_id |
+                                      instr_is_rv32lsu_id | (^cheriot_imm12) | (^cheriot_imm20) |
+                                      (^cheriot_imm21) | (^cheriot_cs2_dec)  | (^cheriot_operator) |
+                                      (^cheriot_csr_rdata) | (^cheriot_csr_rcap) |
+                                      csr_dbg_tclr_fault | (^csr_mshwm) | (^csr_mshwmb) |
+                                      (^rf_wcap_fwd_wb) | (^cheriot_cap_field_sel) |
+                                      (^cheriot_adder_a_sel) | (^cheriot_adder_b_sel) |
+                                      (^cheriot_setaddr_sel) | (^cheriot_setbounds_sel) |
+                                      (^rf_rcap_a) | (^rf_rcap_b);
+  end
+
   /////////////////////
   // Load/store unit //
   /////////////////////
+
 
   assign data_req_o   = data_req_out & ~pmp_req_err[PMP_D];
   assign lsu_resp_err = lsu_load_err | lsu_store_err;
 
   lowrisc_ibex_load_store_unit #(
     .MemECC(MemECC),
-    .MemDataWidth(MemDataWidth)
+    .MemDataWidth(MemDataWidth),
+    .BaseIsa(BaseIsa)
   ) load_store_unit_i (
     .clk_i (clk_i),
     .rst_ni(rst_ni),
 
+    .cheriot_enable_i (cheriot_enable_i),
     // data interface
     .data_req_o    (data_req_out),
     .data_gnt_i    (data_gnt_i),
@@ -35705,32 +40361,38 @@ module lowrisc_ibex_core import lowrisc_ibex_pkg::*; #(
     .data_we_o        (data_we_o),
     .data_be_o        (data_be_o),
     .data_wdata_o     (data_wdata_o),
+    .data_tag_o       (data_tag_o),
     .data_rdata_i     (data_rdata_i),
+    .data_tag_i       (data_tag_i),
 
     // signals to/from ID/EX stage
     .lsu_we_i      (lsu_we),
     .lsu_type_i    (lsu_type),
     .lsu_wdata_i   (lsu_wdata),
+    .lsu_wcap_i    (lsu_wcap),
     .lsu_sign_ext_i(lsu_sign_ext),
 
     .lsu_rdata_o      (rf_wdata_lsu),
+    .lsu_rcap_o       (rf_wcap_lsu),
     .lsu_rdata_valid_o(lsu_rdata_valid),
     .lsu_req_i        (lsu_req),
-    .lsu_req_done_o   (lsu_req_done),
-
-    .adder_result_ex_i(alu_adder_result_ex),
+    .lsu_is_cap_i     (lsu_is_cap),
+    .lsu_lc_clrperm_i (lsu_lc_clrperm),
+    .lsu_cheriot_err_i(lsu_cheriot_err),
+    .adder_result_ex_i(lsu_addr),
 
     .addr_incr_req_o(lsu_addr_incr_req),
     .addr_last_o    (lsu_addr_last),
 
-
-    .lsu_resp_valid_o(lsu_resp_valid),
+    .lsu_req_done_o   (lsu_req_done),
+    .lsu_resp_valid_o (lsu_resp_valid),
 
     // exception signals
     .load_err_o           (lsu_load_err_raw),
     .load_resp_intg_err_o (lsu_load_resp_intg_err),
     .store_err_o          (lsu_store_err_raw),
     .store_resp_intg_err_o(lsu_store_resp_intg_err),
+    .lsu_err_is_cheriot_o (lsu_err_is_cheriot),
 
     .busy_o(lsu_busy),
 
@@ -35750,6 +40412,9 @@ module lowrisc_ibex_core import lowrisc_ibex_pkg::*; #(
     .pc_id_i                 (pc_id),
     .instr_is_compressed_id_i(instr_is_compressed_id),
     .instr_perf_count_id_i   (instr_perf_count_id),
+    .instr_is_cheriot_i      (instr_is_cheriot_id),
+    .cheriot_load_i          (cheriot_load_id),
+    .cheriot_store_i         (cheriot_store_id),
 
     .ready_wb_o                         (ready_wb),
     .rf_write_wb_o                      (rf_write_wb),
@@ -35767,13 +40432,20 @@ module lowrisc_ibex_core import lowrisc_ibex_pkg::*; #(
 
     .dummy_instr_id_i(dummy_instr_id),
 
+    .cheriot_rf_we_i    (cheriot_rf_we),
+    .cheriot_rf_wdata_i (cheriot_result_data),
+    .cheriot_rf_wcap_i  (cheriot_result_cap),
+
     .rf_wdata_lsu_i(rf_wdata_lsu),
+    .rf_wcap_lsu_i (rf_wcap_lsu),
     .rf_we_lsu_i   (rf_we_lsu),
 
     .rf_wdata_fwd_wb_o(rf_wdata_fwd_wb),
+    .rf_wcap_fwd_wb_o (rf_wcap_fwd_wb),
 
     .rf_waddr_wb_o(rf_waddr_wb),
     .rf_wdata_wb_o(rf_wdata_wb),
+    .rf_wcap_wb_o (rf_wcap_wb),
     .rf_we_wb_o   (rf_we_wb),
 
     .dummy_instr_wb_o(dummy_instr_wb),
@@ -35847,12 +40519,66 @@ module lowrisc_ibex_core import lowrisc_ibex_pkg::*; #(
     assign rf_rdata_a = rf_rdata_a_ecc_i[31:0];
     assign rf_rdata_b = rf_rdata_b_ecc_i[31:0];
 
-    // Calculate errors - qualify with WB forwarding to avoid xprop into the alert signal
-    assign rf_ecc_err_a_id = |rf_ecc_err_a & rf_ren_a & ~(rf_rd_a_wb_match & rf_write_wb);
-    assign rf_ecc_err_b_id = |rf_ecc_err_b & rf_ren_b & ~(rf_rd_b_wb_match & rf_write_wb);
+    if (BaseIsa == BaseIsaRV32IorCHERIoT) begin : gen_cheriot_cap_ecc
+      logic [1:0]  rf_cap_ecc_err_a, rf_cap_ecc_err_b;
+      logic [63:0] wcap_ecc_tmp;
+      logic [56:0] unused_wcap_ecc_tmp;
 
-    // Combined error
-    assign rf_ecc_err_comb = instr_valid_id & (rf_ecc_err_a_id | rf_ecc_err_b_id);
+      // Capability ECC checkbit generation
+      // 35 cap bits are zero-padded to 57 to use the available prim_secded_inv_64_57 primitive;
+      // only the 7 check bits [63:57] are stored in the shadow RF.
+      lowrisc_prim_secded_inv_64_57_enc regfile_cap_ecc_enc (
+        .data_i({22'b0, cheriot_regcap_to_vec(rf_wcap_wb)}),
+        .data_o(wcap_ecc_tmp)
+      );
+      // Unified output: {7 ECC bits [41:35], 35 cap data bits [34:0]}
+      assign rf_wcap_ecc_wb_o    = {wcap_ecc_tmp[63:57], cheriot_regcap_to_vec(rf_wcap_wb)};
+      assign unused_wcap_ecc_tmp = wcap_ecc_tmp[56:0];
+
+      // Capability ECC checking on register file rcap: reconstruct 64-bit codeword from
+      // the 7 ECC bits (upper) and 35 cap bits (lower) of the unified input, inserting the
+      // 22-bit zero-pad in between to match the encoding layout.
+      lowrisc_prim_secded_inv_64_57_dec regfile_cap_ecc_dec_a (
+        .data_i    ({rf_rcap_a_ecc_i[RegFileCapEccWidth-1:REGCAP_W], 22'b0,
+                     rf_rcap_a_ecc_i[REGCAP_W-1:0]}),
+        .data_o    (),
+        .syndrome_o(),
+        .err_o     (rf_cap_ecc_err_a)
+      );
+      lowrisc_prim_secded_inv_64_57_dec regfile_cap_ecc_dec_b (
+        .data_i    ({rf_rcap_b_ecc_i[RegFileCapEccWidth-1:REGCAP_W], 22'b0,
+                     rf_rcap_b_ecc_i[REGCAP_W-1:0]}),
+        .data_o    (),
+        .syndrome_o(),
+        .err_o     (rf_cap_ecc_err_b)
+      );
+
+      // Calculate errors - qualify with WB forwarding to avoid xprop into the alert signal.
+      // Capability ECC errors only apply when CHERIoT is enabled at runtime; otherwise the
+      // capability ECC fields may be uninitialized and must not propagate into the alert path.
+      assign rf_ecc_err_a_id = (|rf_ecc_err_a |
+                               ((cheriot_enable_i == IbexMuBiOn) & |rf_cap_ecc_err_a)) &
+                               rf_ren_a & ~(rf_rd_a_wb_match & rf_write_wb);
+      assign rf_ecc_err_b_id = (|rf_ecc_err_b |
+                               ((cheriot_enable_i == IbexMuBiOn) & |rf_cap_ecc_err_b)) &
+                               rf_ren_b & ~(rf_rd_b_wb_match & rf_write_wb);
+
+      // Combined error
+      assign rf_ecc_err_comb = instr_valid_id & (rf_ecc_err_a_id | rf_ecc_err_b_id);
+
+    end else begin : gen_no_cheriot_cap_ecc
+      logic unused_rf_cap_ecc_i;
+      assign unused_rf_cap_ecc_i = ^rf_rcap_a_ecc_i ^ ^rf_rcap_b_ecc_i;
+      // ECC bits are invalid (no CHERIoT cap ECC), but cap data is preserved in lower 35 bits
+      assign rf_wcap_ecc_wb_o = {7'b0, cheriot_regcap_to_vec(rf_wcap_wb)};
+
+      // Calculate errors - qualify with WB forwarding to avoid xprop into the alert signal
+      assign rf_ecc_err_a_id = |rf_ecc_err_a & rf_ren_a & ~(rf_rd_a_wb_match & rf_write_wb);
+      assign rf_ecc_err_b_id = |rf_ecc_err_b & rf_ren_b & ~(rf_rd_b_wb_match & rf_write_wb);
+
+      // Combined error
+      assign rf_ecc_err_comb = instr_valid_id & (rf_ecc_err_a_id | rf_ecc_err_b_id);
+    end
 
   end else begin : gen_no_regfile_ecc
     logic unused_rf_ren_a, unused_rf_ren_b;
@@ -35863,6 +40589,8 @@ module lowrisc_ibex_core import lowrisc_ibex_pkg::*; #(
     assign unused_rf_rd_a_wb_match = rf_rd_a_wb_match;
     assign unused_rf_rd_b_wb_match = rf_rd_b_wb_match;
     assign rf_wdata_wb_ecc_o       = rf_wdata_wb;
+    // RegFileCapEccWidth = REGCAP_W when ECC=0: plain cap data, no ECC
+    assign rf_wcap_ecc_wb_o        = cheriot_regcap_to_vec(rf_wcap_wb);
     assign rf_rdata_a              = rf_rdata_a_ecc_i;
     assign rf_rdata_b              = rf_rdata_b_ecc_i;
     assign rf_ecc_err_comb         = 1'b0;
@@ -35886,12 +40614,22 @@ module lowrisc_ibex_core import lowrisc_ibex_pkg::*; #(
   // Minor alert - core is in a recoverable state
   assign alert_minor_o = icache_ecc_error;
 
+  // Detect invalid MuBi encoding on cheriot_enable_i (neither On nor Off).
+  // Gated by instr_exec to not trigger alerts before all signals are initialized.
+  if (BaseIsa == BaseIsaRV32IorCHERIoT) begin : gen_cheriot_enable_check
+    assign cheriot_enable_mubi_err = instr_exec & !((cheriot_enable_i == IbexMuBiOn) ||
+                                                    (cheriot_enable_i == IbexMuBiOff));
+  end else begin : gen_no_cheriot_enable_check
+    assign cheriot_enable_mubi_err = 1'b0;
+  end
+
   // Major internal alert - core is unrecoverable
-  assign alert_major_internal_o = rf_ecc_err_comb | pc_mismatch_alert | csr_shadow_err;
+  assign alert_major_internal_o = rf_ecc_err_comb | pc_mismatch_alert | csr_shadow_err |
+                                  cheriot_fatal_err | cheriot_enable_mubi_err;
   // Major bus alert
   assign alert_major_bus_o = lsu_load_resp_intg_err | lsu_store_resp_intg_err | instr_intg_err;
 
-  // Explict INC_ASSERT block to avoid unused signal lint warnings were asserts are not included
+  // Explicit INC_ASSERT block to avoid unused signal lint warnings where asserts are not included
    // INC_ASSERT
 
   /////////////////////////////////////////
@@ -35919,10 +40657,13 @@ module lowrisc_ibex_core import lowrisc_ibex_pkg::*; #(
     .RV32M            (RV32M),
     .RV32B            (RV32B),
     .CsrMvendorId     (CsrMvendorId),
-    .CsrMimpId        (CsrMimpId)
+    .CsrMimpId        (CsrMimpId),
+    .BaseIsa          (BaseIsa)
   ) cs_registers_i (
     .clk_i (clk_i),
     .rst_ni(rst_ni),
+
+    .cheriot_enable_i (cheriot_enable_i),
 
     // Hart ID from outside
     .hart_id_i      (hart_id_i),
@@ -35941,6 +40682,22 @@ module lowrisc_ibex_core import lowrisc_ibex_pkg::*; #(
     .csr_op_i    (csr_op),
     .csr_op_en_i (csr_op_en),
     .csr_rdata_o (csr_rdata),
+
+    .cheriot_csr_access_i   (cheriot_csr_access),
+    .cheriot_csr_addr_i     (cheriot_csr_addr),
+    .cheriot_csr_wdata_i    (cheriot_csr_wdata),
+    .cheriot_csr_wcap_i     (cheriot_csr_wcap),
+    .cheriot_csr_op_i       (cheriot_csr_op),
+    .cheriot_csr_op_en_i    (cheriot_csr_op_en),
+    .cheriot_csr_set_mie_i  (cheriot_csr_set_mie),
+    .cheriot_csr_clr_mie_i  (cheriot_csr_clr_mie),
+    .cheriot_csr_rdata_o    (cheriot_csr_rdata),
+    .cheriot_csr_rcap_o     (cheriot_csr_rcap),
+
+    .csr_mshwm_o          (csr_mshwm),
+    .csr_mshwmb_o         (csr_mshwmb),
+    .csr_mshwm_set_i      (csr_mshwm_set),
+    .csr_mshwm_new_i      (csr_mshwm_new),
 
     // Interrupt related control signals
     .irq_software_i   (irq_software_i),
@@ -35991,6 +40748,7 @@ module lowrisc_ibex_core import lowrisc_ibex_pkg::*; #(
     .csr_restore_mret_i(csr_restore_mret_id),
     .csr_restore_dret_i(csr_restore_dret_id),
     .csr_save_cause_i  (csr_save_cause),
+    .csr_mepcc_clrtag_i(csr_mepcc_clrtag),
     .csr_mcause_i      (exc_cause),
     .csr_mtval_i       (csr_mtval),
     .illegal_csr_insn_o(illegal_csr_insn_id),
@@ -36010,7 +40768,14 @@ module lowrisc_ibex_core import lowrisc_ibex_pkg::*; #(
     .mem_store_i                (perf_store),
     .dside_wait_i               (perf_dside_wait),
     .mul_wait_i                 (perf_mul_wait),
-    .div_wait_i                 (perf_div_wait)
+    .div_wait_i                 (perf_div_wait),
+
+    .cheriot_branch_req_i     (cheriot_branch_req),
+    .cheriot_branch_target_i  (branch_target_ex_cheriot),
+    .pcc_cap_i                (pcc_cap_w),
+    .pcc_cap_o                (pcc_cap_r),
+    .csr_dbg_tclr_fault_o     (csr_dbg_tclr_fault),
+    .cheriot_fatal_err_o      (cheriot_fatal_err)
   );
 
   // These assertions are in top-level as instr_valid_id required as the enable term
@@ -36025,15 +40790,24 @@ module lowrisc_ibex_core import lowrisc_ibex_pkg::*; #(
     logic [PMP_ADDR_MSB:0] pmp_req_addr [PMPNumChan];
     pmp_req_e              pmp_req_type [PMPNumChan];
     priv_lvl_e             pmp_priv_lvl [PMPNumChan];
+    logic                  pmp_req_err_raw [PMPNumChan];
 
     assign pc_if_inc            = pc_if + 32'd2;
-    assign pmp_req_addr[PMP_I]  = {2'b00, pc_if};
+    // Gate address inputs to constants when CHERIoT is active to stop comparator switching.
+    if (BaseIsa == BaseIsaRV32IorCHERIoT) begin : g_pmp_addr_gate
+      assign pmp_req_addr[PMP_I]  = (cheriot_enable_i == IbexMuBiOn) ? '0 : {2'b00, pc_if};
+      assign pmp_req_addr[PMP_I2] = (cheriot_enable_i == IbexMuBiOn) ? '0 : {2'b00, pc_if_inc};
+      assign pmp_req_addr[PMP_D]  = (cheriot_enable_i == IbexMuBiOn)
+                                  ? '0 : {2'b00, data_addr_o[31:0]};
+    end else begin : g_pmp_addr_no_gate
+      assign pmp_req_addr[PMP_I]  = {2'b00, pc_if};
+      assign pmp_req_addr[PMP_I2] = {2'b00, pc_if_inc};
+      assign pmp_req_addr[PMP_D]  = {2'b00, data_addr_o[31:0]};
+    end
     assign pmp_req_type[PMP_I]  = PMP_ACC_EXEC;
     assign pmp_priv_lvl[PMP_I]  = priv_mode_id;
-    assign pmp_req_addr[PMP_I2] = {2'b00, pc_if_inc};
     assign pmp_req_type[PMP_I2] = PMP_ACC_EXEC;
     assign pmp_priv_lvl[PMP_I2] = priv_mode_id;
-    assign pmp_req_addr[PMP_D]  = {2'b00, data_addr_o[31:0]};
     assign pmp_req_type[PMP_D]  = data_we_o ? PMP_ACC_WRITE : PMP_ACC_READ;
     assign pmp_priv_lvl[PMP_D]  = priv_mode_lsu;
 
@@ -36053,8 +40827,20 @@ module lowrisc_ibex_core import lowrisc_ibex_pkg::*; #(
       // Access checking channels
       .pmp_req_addr_i   (pmp_req_addr),
       .pmp_req_type_i   (pmp_req_type),
-      .pmp_req_err_o    (pmp_req_err)
+      .pmp_req_err_o    (pmp_req_err_raw)
     );
+
+    // Gate PMP errors to zero in CHERIoT mode; CHERIoT capability checks replace ePMP.
+    if (BaseIsa == BaseIsaRV32IorCHERIoT) begin : g_pmp_cheriot_gate
+      assign pmp_req_err[PMP_I]  = (cheriot_enable_i == IbexMuBiOn) ? 1'b0 : pmp_req_err_raw[PMP_I];
+      assign pmp_req_err[PMP_I2] = (cheriot_enable_i == IbexMuBiOn)
+                                 ? 1'b0 : pmp_req_err_raw[PMP_I2];
+      assign pmp_req_err[PMP_D]  = (cheriot_enable_i == IbexMuBiOn) ? 1'b0 : pmp_req_err_raw[PMP_D];
+    end else begin : g_pmp_no_cheriot_gate
+      assign pmp_req_err[PMP_I]  = pmp_req_err_raw[PMP_I];
+      assign pmp_req_err[PMP_I2] = pmp_req_err_raw[PMP_I2];
+      assign pmp_req_err[PMP_D]  = pmp_req_err_raw[PMP_D];
+    end
   end else begin : g_no_pmp
     // Unused signal tieoff
     priv_lvl_e             unused_priv_lvl_ls;
@@ -36086,7 +40872,7 @@ module lowrisc_ibex_core import lowrisc_ibex_pkg::*; #(
 
 
   // If the ID stage signals its ready the mult/div FSMs must be idle in the following cycle
-
+  // `ASSERT(MultDivFSMIdleOnIdReady, id_in_ready |=> ex_block_i.sva_multdiv_fsm_idle)
 
   //////////
   // FCOV //
@@ -44109,6 +48895,10 @@ module lowrisc_prim_ram_1p_scr import lowrisc_prim_ram_1p_pkg::*; #(
     // Tie-off unused parameters.
     logic unused_params;
     assign unused_params = ^{DepthPow2, MinChunkDepth};
+
+    // Address scrambling is disabled, hence the upper nonce bits are unused.
+    logic unused_addr_scr_nonce;
+    assign unused_addr_scr_nonce = ^nonce_i[NonceWidth - AddrWidth +: AddrWidth];
   end
 
   // We latch the non-scrambled address for error reporting.
@@ -54615,17 +59405,350 @@ endmodule
 // SPDX-License-Identifier: Apache-2.0
 
 /**
- * RISC-V register file
+ * RISC-V Register File
  *
- * Register file with 31 or 15x 32 bit wide registers. Register 0 is fixed to 0.
- * This register file is based on flip flops. Use this register file when
- * targeting FPGA synthesis or Verilator simulation.
+ * Register file based on flip-flops. Register x0 is set to 0 (unless used for dummy instructions).
+ * Use this register file when targeting FPGA synthesis or Verilator simulation.
+ *
+ * Three key parameters influence the number and size of physical registers:
+ *
+ * 1. RV32E == 1:
+ *    Restricts the register file to 16 registers (x0–x15).
+ *
+ * 2. DummyInstructions == 1:
+ *    Implements x0 as a physical register used to write the results of dummy instructions.
+ *    It always reads back as zero for non-dummy instructions.
+ *
+ * 3. BaseIsa == BaseIsaRV32IorCHERIoT:
+ *    Allows dynamic switching between standard RV32I/E registers (configured by the parameters
+ *    above) and CHERIoT register mode when `cheriot_enable_i == IbexMuBiOn`.
+ *    In CHERIoT mode, the core operates on 16 registers (x0–x15). These registers are wider
+ *    because they include `CapWidth` capability metadata in addition to standard data bits.
+ *
+ *    To save area, the upper physical registers (x16–x31) from non-CHERIoT mode are re-purposed
+ *    as `rf_shared` storage to hold CHERIoT capability metadata. Therefore, `CapWidth` must be
+ *    >= `DataWidth` so that in non-CHERIoT mode, standard data writes to upper registers can be
+ *    zero-extended into `rf_shared`.
+ *
+ * These configuration options result in the following physical register allocations:
+ * +---------+-------+-------+--------------------+--------------------+-----------------------+
+ * | CHERIoT | Dummy | RV32E | rf_data Flops      | rf_shared Flops    | Total Storage (Flops) |
+ * +---------+-------+-------+--------------------+--------------------+-----------------------+
+ * |    1    |   1   |   0   | 16 x DataWidth     | 16 x CapWidth      | 16 x Data + 16 x Cap  |
+ * |    1    |   1   |   1   | 16 x DataWidth     | 16 x CapWidth      | 16 x Data + 16 x Cap  |
+ * |    1    |   0   |   0   | 15 x DataWidth     | 16 x CapWidth^     | 16 x Data^+ 15 x Cap^ |
+ * |    1    |   0   |   1   | 15 x DataWidth     | 15 x CapWidth      | 15 x Data + 15 x Cap  |
+ * |    0    |   1   |   0   | 32 x DataWidth     | N/A (plain array)  | 32 x Data             |
+ * |    0    |   1   |   1   | 16 x DataWidth     | N/A (plain array)  | 16 x Data             |
+ * |    0    |   0   |   0   | 31 x DataWidth     | N/A (plain array)  | 31 x Data             |
+ * |    0    |   0   |   1   | 15 x DataWidth     | N/A (plain array)  | 15 x Data             |
+ * +---------+-------+-------+--------------------+--------------------+-----------------------+
+ * ^In this mode, the x16 register (part of the rf_shared flops) is only DataWidth wide since it's
+ *  only used as a data register because it is the x0 register for the capability part in CHERIoT.
  */
-module lowrisc_ibex_register_file_ff #(
+
+// Copyright lowRISC contributors (OpenTitan project).
+// Licensed under the Apache License, Version 2.0, see LICENSE for details.
+// SPDX-License-Identifier: Apache-2.0
+
+// Macros and helper code for using assertions.
+//  - Provides default clk and rst options to simplify code
+//  - Provides boiler plate template for common assertions
+
+
+
+
+///////////////////
+// Helper macros //
+///////////////////
+
+// Default clk and reset signals used by assertion macros below.
+
+
+
+// Converts an arbitrary block of code into a Verilog string
+
+
+// ASSERT_ERROR logs an error message with either `uvm_error or with $error.
+//
+// This somewhat duplicates `DV_ERROR macro defined in hw/dv/sv/dv_utils/dv_macros.svh. The reason
+// for redefining it here is to avoid creating a dependency.
+
+
+// This macro is suitable for conditionally triggering lint errors, e.g., if a Sec parameter takes
+// on a non-default value. This may be required for pre-silicon/FPGA evaluation but we don't want
+// to allow this for tapeout.
+
+
+// Static assertions for checks inside SV packages. If the conditions is not true, this will
+// trigger an error during elaboration.
+
+
+// The basic helper macros are actually defined in "implementation headers". The macros should do
+// the same thing in each case (except for the dummy flavour), but in a way that the respective
+// tools support.
+//
+// If the tool supports assertions in some form, we also define INC_ASSERT (which can be used to
+// hide signal definitions that are only used for assertions).
+//
+// The list of basic macros supported is:
+//
+//  ASSERT_I:     Immediate assertion. Note that immediate assertions are sensitive to simulation
+//                glitches.
+//
+//  ASSERT_INIT:  Assertion in initial block. Can be used for things like parameter checking.
+//
+//  ASSERT_INIT_NET: Assertion in initial block. Can be used for initial value of a net.
+//
+//  ASSERT_FINAL: Assertion in final block. Can be used for things like queues being empty at end of
+//                sim, all credits returned at end of sim, state machines in idle at end of sim.
+//
+//  ASSERT_AT_RESET: Assertion just before reset. Can be used to check sum-like properties that get
+//                   cleared at reset.
+//                   Note that unless your simulation ends with a reset, the property does not get
+//                   checked at end of simulation; use ASSERT_AT_RESET_AND_FINAL if the property
+//                   should also get checked at end of simulation.
+//
+//  ASSERT_AT_RESET_AND_FINAL: Assertion just before reset and in final block. Can be used to check
+//                             sum-like properties before every reset and at the end of simulation.
+//
+//  ASSERT:       Assert a concurrent property directly. It can be called as a module (or
+//                interface) body item.
+//
+//                Note: We use (__rst !== '0) in the disable iff statements instead of (__rst ==
+//                '1). This properly disables the assertion in cases when reset is X at the
+//                beginning of a simulation. For that case, (reset == '1) does not disable the
+//                assertion.
+//
+//  ASSERT_NEVER: Assert a concurrent property NEVER happens
+//
+//  ASSERT_KNOWN: Assert that signal has a known value (each bit is either '0' or '1') after reset.
+//                It can be called as a module (or interface) body item.
+//
+//  COVER:        Cover a concurrent property
+//
+//  ASSUME:       Assume a concurrent property
+//
+//  ASSUME_I:     Assume an immediate property
+
+
+ // Copyright lowRISC contributors (OpenTitan project).
+// Licensed under the Apache License, Version 2.0, see LICENSE for details.
+// SPDX-License-Identifier: Apache-2.0
+
+// Macro bodies included by prim_assert.sv for tools that don't support assertions. See
+// prim_assert.sv for documentation for each of the macros.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+//////////////////////////////
+// Complex assertion macros //
+//////////////////////////////
+
+// Assert that signal is an active-high pulse with pulse length of 1 clock cycle
+
+
+// Assert that a property is true only when an enable signal is set.  It can be called as a module
+// (or interface) body item.
+
+
+// Assert that signal has a known value (each bit is either '0' or '1') after reset if enable is
+// set.  It can be called as a module (or interface) body item.
+
+
+//////////////////////////////////
+// For formal verification only //
+//////////////////////////////////
+
+// Note that the existing set of ASSERT macros specified above shall be used for FPV,
+// thereby ensuring that the assertions are evaluated during DV simulations as well.
+
+// ASSUME_FPV
+// Assume a concurrent property during formal verification only.
+
+
+// ASSUME_I_FPV
+// Assume a concurrent property during formal verification only.
+
+
+// COVER_FPV
+// Cover a concurrent property during formal verification
+
+
+// FPV assertion that proves that the FSM control flow is linear (no loops)
+// The sequence triggers whenever the state changes and stores the current state as "initial_state".
+// Then thereafter we must never see that state again until reset.
+// It is possible for the reset to release ahead of the clock.
+// Create a small "gray" window beyond the usual rst time to avoid
+// checking.
+
+
+// Copyright lowRISC contributors (OpenTitan project).
+// Licensed under the Apache License, Version 2.0, see LICENSE for details.
+// SPDX-License-Identifier: Apache-2.0
+
+// // Macros and helper code for security countermeasures.
+
+
+
+
+
+
+// When a named error signal rises, expect to see an associated error in at most MAX_CYCLES_ cycles.
+//
+// The NAME_ argument gets included in the name of the generated assertion, following an FpSecCm
+// prefix. The error signal should be at HIER_.ERR_NAME_ and the posedge is ignored if GATE_ is
+// true.
+//
+// This macro drives a magic "unused_assert_connected" signal, which is used for a static check to
+// ensure the assertions are in place.
+
+
+// When an error signal rises, expect to see the associated alert in at most MAX_CYCLE_ cycles.
+//
+// The NAME_, HIER_, GATE_, MAX_CYCLES_ and ERR_NAME_ arguments are the same as for
+// `ASSERT_ERROR_TRIGGER_ERR. The ALERT_ argument is the name of the alert that we expect to be
+// asserted.
+//
+// This macro adds an assumption that says the named error signal will stay low for the first 10
+// cycles after reset.
+
+
+// When an error signal rises, expect to see the associated ALERT_IN_ signal go high in at most
+// MAX_CYCLES_
+//
+// This is expected to cause an alert to be signalled, but avoids needing to reason about the
+// internals of the alert sender (which are checked with formal properties in the prim_alert_rxtx*
+// cores).
+//
+// The NAME_, HIER_, GATE_, MAX_CYCLES_ and ERR_NAME_ arguments are the same as for
+// `ASSERT_ERROR_TRIGGER_ERR.
+
+
+////////////////////////////////////////////////////////////////////////////////
+//
+// Assertions for CMs that trigger alerts
+//
+////////////////////////////////////////////////////////////////////////////////
+
+
+
+
+
+
+
+
+
+
+
+
+
+////////////////////////////////////////////////////////////////////////////////
+//
+// The input flavour of assertions for CMs that trigger alerts
+//
+// Note that the default value for MAX_CYCLES_ in these assertions is much smaller than
+// _SEC_CM_ALERT_MAX_CYC. Because we are asserting something about the *input* for the alert system,
+// the timing can be much tighter: we default to two cycles.
+//
+////////////////////////////////////////////////////////////////////////////////
+
+
+
+
+
+
+
+
+
+
+
+
+
+////////////////////////////////////////////////////////////////////////////////
+//
+// Assertions for CMs that trigger some other form of error
+//
+////////////////////////////////////////////////////////////////////////////////
+
+
+
+
+
+
+
+
+
+
+
+ // PRIM_ASSERT_SEC_CM_SVH
+
+// Copyright lowRISC contributors (OpenTitan project).
+// Licensed under the Apache License, Version 2.0, see LICENSE for details.
+// SPDX-License-Identifier: Apache-2.0
+
+
+
+
+/////////////////////////////////////
+// Default Values for Macros below //
+/////////////////////////////////////
+
+
+
+
+
+/////////////////////
+// Register Macros //
+/////////////////////
+
+// TODO: define other variations of register macros so that they can be used throughout all designs
+// to make the code more concise.
+
+// Register with asynchronous reset.
+
+
+///////////////////////////
+// Macro for Sparse FSMs //
+///////////////////////////
+
+// Simulation tools typically infer FSMs and report coverage for these separately. However, tools
+// like Xcelium and VCS seem to have problems inferring FSMs if the state register is not coded in
+// a behavioral always_ff block in the same hierarchy. To that end, this uses a modified variant
+// with a second behavioral register definition for RTL simulations so that FSMs can be inferred.
+// Note that in this variant, the __q output is disconnected from prim_sparse_fsm_flop and attached
+// to the behavioral flop. An assertion is added to ensure equivalence between the
+// prim_sparse_fsm_flop output and the behavioral flop output in that case.
+
+
+ // PRIM_FLOP_MACROS_SV
+
+
+ // PRIM_ASSERT_SV
+
+
+module lowrisc_ibex_register_file_ff import lowrisc_ibex_pkg::*; #(
+  parameter base_isa_e            BaseIsa           = BaseIsaRV32I,
   parameter bit                   RV32E             = 0,
   parameter int unsigned          DataWidth         = 32,
   parameter bit                   DummyInstructions = 0,
-  parameter logic [DataWidth-1:0] WordZeroVal       = '0
+  parameter logic [DataWidth-1:0] WordZeroVal       = '0,
+  // Capability port width
+  parameter int unsigned          CapWidth          = lowrisc_ibex_cheriot_pkg::REGCAP_W,
+  parameter logic [CapWidth-1:0]  CapWordZeroVal    = '0
 ) (
   // Clock and Reset
   input  logic                 clk_i,
@@ -54635,86 +59758,265 @@ module lowrisc_ibex_register_file_ff #(
   input  logic                 dummy_instr_id_i,
   input  logic                 dummy_instr_wb_i,
 
-  //Read port R1
+  input  ibex_mubi_t           cheriot_enable_i,
+
+  // Read port R1
   input  logic [4:0]           raddr_a_i,
   output logic [DataWidth-1:0] rdata_a_o,
+  output logic [CapWidth-1:0]  rcap_a_o,
 
-  //Read port R2
+  // Read port R2
   input  logic [4:0]           raddr_b_i,
   output logic [DataWidth-1:0] rdata_b_o,
-
+  output logic [CapWidth-1:0]  rcap_b_o,
 
   // Write port W1
   input  logic [4:0]           waddr_a_i,
   input  logic [DataWidth-1:0] wdata_a_i,
+  input  logic [CapWidth-1:0]  wcap_a_i,
   input  logic                 we_a_i
 );
 
-  localparam int unsigned ADDR_WIDTH = RV32E ? 4 : 5;
-  localparam int unsigned NUM_WORDS  = 2**ADDR_WIDTH;
+  if (BaseIsa == BaseIsaRV32IorCHERIoT) begin : g_cheriot_rf
 
-  logic [DataWidth-1:0] rf_reg   [NUM_WORDS];
-  logic [NUM_WORDS-1:0] we_a_dec;
+    // CapWidth must be larger than DataWidth to ensure no truncation in the non-CHERIoT mode
 
-  always_comb begin : we_a_decoder
-    for (int unsigned i = 0; i < NUM_WORDS; i++) begin
-      we_a_dec[i] = (waddr_a_i == 5'(i)) ? we_a_i : 1'b0;
-    end
-  end
 
-  logic unused_strobe;
-  assign unused_strobe = we_a_dec[0]; // this is never read from in this case
+    // Decode CHERIoT enable (full 4-bit MuBi comparison against IbexMuBiOn).
+    logic cheriot_enabled;
+    assign cheriot_enabled = (cheriot_enable_i == IbexMuBiOn);
 
-  // No flops for R0 as it's hard-wired to 0
-  for (genvar i = 1; i < NUM_WORDS; i++) begin : g_rf_flops
-    logic [DataWidth-1:0] rf_reg_q;
+    // Physical registers
+    logic [DataWidth-1:0] rf_data   [16]; // x0-x15 data (both modes)
+    logic [CapWidth-1:0]  rf_shared [16]; // shared: cap (CHERIoT) or x16-x31 data (!CHERIoT,!RV32E)
 
-    always_ff @(posedge clk_i or negedge rst_ni) begin
-      if (!rst_ni) begin
-        rf_reg_q <= WordZeroVal;
-      end else if (we_a_dec[i]) begin
-        rf_reg_q <= wdata_a_i;
+    // Write decode: waddr[3:0] indexes within a 16-entry bank.
+    // Bank select: waddr[4]=0 → rf_data and rf_shared cap (CHERIoT co-write);
+    //              waddr[4]=1 → rf_shared upper data (non-CHERIoT).
+    logic [15:0] we_a_dec;
+    always_comb begin : we_a_decoder
+      for (int unsigned i = 0; i < 16; i++) begin
+        we_a_dec[i] = (waddr_a_i[3:0] == 4'(i)) ? we_a_i : 1'b0;
       end
     end
 
-    assign rf_reg[i] = rf_reg_q;
-  end
+    // Write data for the shared bank: cap metadata in CHERIoT mode, zero-extended data otherwise.
+    logic [CapWidth-1:0] wshared_data;
+    assign wshared_data = cheriot_enabled ? wcap_a_i : CapWidth'(wdata_a_i);
 
-  // With dummy instructions enabled, R0 behaves as a real register but will always return 0 for
-  // real instructions.
-  if (DummyInstructions) begin : g_dummy_r0
-    // SEC_CM: CTRL_FLOW.UNPREDICTABLE
-    logic                 we_r0_dummy;
-    logic [DataWidth-1:0] rf_r0_q;
+    // Data flops for x1-x15 (lower bank, waddr[4]=0)
+    for (genvar i = 1; i < 16; i++) begin : g_rf_data_flops
+      logic [DataWidth-1:0] rf_reg_q;
+      always_ff @(posedge clk_i or negedge rst_ni) begin
+        if (!rst_ni) begin
+          rf_reg_q <= WordZeroVal;
+        end else if (we_a_dec[i] && !waddr_a_i[4]) begin
+          rf_reg_q <= wdata_a_i;
+        end
+      end
+      assign rf_data[i] = rf_reg_q;
+    end
 
-    // Write enable for dummy R0 register (waddr_a_i will always be 0 for dummy instructions)
-    assign we_r0_dummy = we_a_i & dummy_instr_wb_i;
+    // Shared flops:
+    //   CHERIoT mode:     Capability flops for x1-x15 (same enable as data write)
+    //   non-CHERIoT mode: Data flops for x16-x31 (only if RV32E == 0)
+    for (genvar i = 1; i < 16; i++) begin : g_rf_shared_flops
+      logic [CapWidth-1:0] rf_reg_q;
+      always_ff @(posedge clk_i or negedge rst_ni) begin
+        if (!rst_ni) begin
+          rf_reg_q <= CapWordZeroVal;
+        end else if ((cheriot_enabled && we_a_dec[i] && !waddr_a_i[4]) ||
+                     (!cheriot_enabled && !RV32E && we_a_dec[i] && waddr_a_i[4])) begin
+          rf_reg_q <= wshared_data;
+        end
+      end
+      assign rf_shared[i] = rf_reg_q;
+    end
 
-    always_ff @(posedge clk_i or negedge rst_ni) begin
-      if (!rst_ni) begin
-        rf_r0_q <= WordZeroVal;
-      end else if (we_r0_dummy) begin
-        rf_r0_q <= wdata_a_i;
+    // Entry 0: rf_data[0] (x0 data) and rf_shared[0] (x0 cap in CHERIoT / x16 data in non-CHERIoT).
+    logic [CapWidth-1:0] rcap_r0; // x0 cap read value (null or dummy-dependent)
+
+    // With dummy instructions enabled, R0 behaves as a real register but will always return 0 for
+    // real instructions.
+    // Implement
+    //   rf_data[0]   iff DummyInstruction defined (x0 dummy write data)
+    //   rf_shared[0] if DummyInstruction since CHERIoT==1 here (x0 dummy write capability)
+    //                if !RV32E (x16 register for RV32I)
+    if (DummyInstructions) begin : g_dummy_r0
+      // SEC_CM: CTRL_FLOW.UNPREDICTABLE
+      logic we_data_r0;
+      logic we_shared_r0;
+
+      // Write enable for dummy R0 register (waddr_a_i will always be 0 for dummy instructions)
+      assign we_data_r0   = we_a_dec[0] && !waddr_a_i[4] && dummy_instr_wb_i;
+      assign we_shared_r0 = cheriot_enabled ? we_data_r0 :
+                                              (!RV32E && we_a_dec[0] && waddr_a_i[4]);
+
+
+      logic [DataWidth-1:0] rf_data_r0_q;
+      always_ff @(posedge clk_i or negedge rst_ni) begin
+        if (!rst_ni) begin
+          rf_data_r0_q <= WordZeroVal;
+        end else if (we_data_r0) begin
+          rf_data_r0_q <= wdata_a_i;
+        end
+      end
+      // Output the dummy data for dummy instructions, otherwise R0 reads as zero
+      assign rf_data[0] = dummy_instr_id_i ? rf_data_r0_q : WordZeroVal;
+
+      logic [CapWidth-1:0] rf_shared_r0_q;
+      always_ff @(posedge clk_i or negedge rst_ni) begin
+        if (!rst_ni) begin
+          rf_shared_r0_q <= CapWordZeroVal;
+        end else if (we_shared_r0) begin
+          rf_shared_r0_q <= wshared_data;
+        end
+      end
+      // Output rf_shared[0] unconditionally for the x16 case
+      // Output the dummy capability only for dummy instructions, otherwise R0 reads as zero
+      assign rf_shared[0] = rf_shared_r0_q;
+      assign rcap_r0 = dummy_instr_id_i ? rf_shared[0] : CapWordZeroVal;
+
+    end else begin : g_normal_r0
+      assign rf_data[0] = WordZeroVal;
+      assign rcap_r0    = CapWordZeroVal;
+
+      logic unused_dummy_instr;
+      assign unused_dummy_instr = dummy_instr_id_i ^ dummy_instr_wb_i;
+
+      // rf_shared[0] needs a real flop when x16 exists (!RV32E). Without dummy instructions, this
+      // will never be used as a capability and only always for x16 data
+      if (!RV32E) begin : g_rf_shared0_x16
+        logic [DataWidth-1:0] rf_shared_r0_q;
+        always_ff @(posedge clk_i or negedge rst_ni) begin
+          if (!rst_ni) begin
+            rf_shared_r0_q <= WordZeroVal;
+          end else if (!cheriot_enabled && we_a_dec[0] && waddr_a_i[4]) begin
+            rf_shared_r0_q <= wdata_a_i;
+          end
+        end
+        assign rf_shared[0] = CapWidth'(rf_shared_r0_q);
+      end else begin : g_rf_shared0_no_x16
+        assign rf_shared[0] = CapWordZeroVal;
+
+        logic unused_we_a_dec0;
+        assign unused_we_a_dec0 = we_a_dec[0];
       end
     end
 
-    // Output the dummy data for dummy instructions, otherwise R0 reads as zero
-    assign rf_reg[0] = dummy_instr_id_i ? rf_r0_q : WordZeroVal;
+    // Read outputs
 
-  end else begin : g_normal_r0
-    logic unused_dummy_instr;
-    assign unused_dummy_instr = dummy_instr_id_i ^ dummy_instr_wb_i;
+    // Data: raddr[4]=0 → rf_data (x0-x15)
+    //       raddr[4]=1 → rf_shared lower DataWidth bits (x16-x31), non-CHERIoT only.
+    // The bank-select is AND-gated with !cheriot_enabled so a spurious raddr[4]=1 in CHERIoT
+    // mode reads from rf_data rather than returning capability bits as integer data.
+    assign rdata_a_o = (raddr_a_i[4] && !cheriot_enabled) ?
+    DataWidth'(rf_shared[raddr_a_i[3:0]]) : rf_data[raddr_a_i[3:0]];
+    assign rdata_b_o = (raddr_b_i[4] && !cheriot_enabled) ?
+    DataWidth'(rf_shared[raddr_b_i[3:0]]) : rf_data[raddr_b_i[3:0]];
 
-    // R0 is nil
-    assign rf_reg[0] = WordZeroVal;
+    // Cap: gated to CapWordZeroVal in non-CHERIoT mode.
+    assign rcap_a_o = cheriot_enabled ?
+    ((raddr_a_i[3:0] == '0) ? rcap_r0 : rf_shared[raddr_a_i[3:0]]) : CapWordZeroVal;
+    assign rcap_b_o = cheriot_enabled ?
+    ((raddr_b_i[3:0] == '0) ? rcap_r0 : rf_shared[raddr_b_i[3:0]]) : CapWordZeroVal;
+
+    logic unused_test_en;
+    assign unused_test_en = test_en_i;
+
+    // In CHERIoT mode all register addresses are 4-bit (implicit E extension). Hence, the MSB must
+    // never be set. The bank-select bit is anyway forced to 0.
+
+
+
+
+  end else begin : g_plain_rf
+
+    // BaseIsaRV32I: original flip-flop register file, no capability support
+    localparam int unsigned ADDR_WIDTH = RV32E ? 4 : 5;
+    localparam int unsigned NUM_WORDS  = 2**ADDR_WIDTH;
+
+    logic [DataWidth-1:0] rf_reg   [NUM_WORDS];
+    logic [NUM_WORDS-1:0] we_a_dec;
+
+    always_comb begin : we_a_decoder
+      for (int unsigned i = 0; i < NUM_WORDS; i++) begin
+        we_a_dec[i] = (waddr_a_i == 5'(i)) ? we_a_i : 1'b0;
+      end
+    end
+
+    logic unused_strobe;
+    assign unused_strobe = we_a_dec[0]; // this is never read from in this case
+
+    // No flops for R0 as it's hard-wired to 0
+    for (genvar i = 1; i < NUM_WORDS; i++) begin : g_rf_flops
+      logic [DataWidth-1:0] rf_reg_q;
+
+      always_ff @(posedge clk_i or negedge rst_ni) begin
+        if (!rst_ni) begin
+          rf_reg_q <= WordZeroVal;
+        end else if (we_a_dec[i]) begin
+          rf_reg_q <= wdata_a_i;
+        end
+      end
+
+      assign rf_reg[i] = rf_reg_q;
+    end
+
+    // With dummy instructions enabled, R0 behaves as a real register but will always return 0 for
+    // real instructions.
+    if (DummyInstructions) begin : g_dummy_r0
+      // SEC_CM: CTRL_FLOW.UNPREDICTABLE
+      logic                 we_r0_dummy;
+      logic [DataWidth-1:0] rf_r0_q;
+
+      // Write enable for dummy R0 register (waddr_a_i will always be 0 for dummy instructions)
+      assign we_r0_dummy = we_a_i & dummy_instr_wb_i;
+
+
+      always_ff @(posedge clk_i or negedge rst_ni) begin
+        if (!rst_ni) begin
+          rf_r0_q <= WordZeroVal;
+        end else if (we_r0_dummy) begin
+          rf_r0_q <= wdata_a_i;
+        end
+      end
+
+      // Output the dummy data for dummy instructions, otherwise R0 reads as zero
+      assign rf_reg[0] = dummy_instr_id_i ? rf_r0_q : WordZeroVal;
+
+    end else begin : g_normal_r0
+      logic unused_dummy_instr;
+      assign unused_dummy_instr = dummy_instr_id_i ^ dummy_instr_wb_i;
+
+      // R0 is nil
+      assign rf_reg[0] = WordZeroVal;
+    end
+
+    assign rdata_a_o = rf_reg[raddr_a_i[ADDR_WIDTH-1:0]];
+    assign rdata_b_o = rf_reg[raddr_b_i[ADDR_WIDTH-1:0]];
+
+    // When RV32E=1 the address space is 4 bits wide; bit [4] of the read ports is unused.
+    if (RV32E) begin : g_unused_raddr_msb
+      logic [1:0] unused_raddr_msb;
+      assign unused_raddr_msb = {raddr_a_i[4], raddr_b_i[4]};
+    end
+
+    // Signal not used in FF register file
+    logic unused_test_en;
+    assign unused_test_en = test_en_i;
+
+    // No capability support
+    assign rcap_a_o = CapWordZeroVal;
+    assign rcap_b_o = CapWordZeroVal;
+
+    logic unused_wcap_a;
+    assign unused_wcap_a = ^wcap_a_i;
+
+    logic unused_cheriot_enable;
+    assign unused_cheriot_enable = ^cheriot_enable_i;
+
   end
-
-  assign rdata_a_o = rf_reg[raddr_a_i];
-  assign rdata_b_o = rf_reg[raddr_b_i];
-
-  // Signal not used in FF register file
-  logic unused_test_en;
-  assign unused_test_en = test_en_i;
 
 endmodule
 // Copyright lowRISC contributors.
@@ -54723,18 +60025,335 @@ endmodule
 // SPDX-License-Identifier: Apache-2.0
 
 /**
- * RISC-V register file
+ * RISC-V Register File
  *
  * Register file with 31 or 15x 32 bit wide registers. Register 0 is fixed to 0.
  *
  * This register file is designed to make FPGA synthesis tools infer RAM primitives. For Xilinx
  * FPGA architectures, it will produce RAM32M primitives. Other vendors have not yet been tested.
+ *
+ * Three key parameters influence the number and size of physical registers:
+ *
+ * 1. RV32E == 1:
+ *    Restricts the register file to 16 registers (x0–x15).
+ *
+ * 2. DummyInstructions == 1:
+ *    Not implemented in this register file — the FPGA variant does not support dummy instructions.
+ *
+ * 3. BaseIsa == BaseIsaRV32IorCHERIoT:
+ *    Allows dynamic switching between standard RV32I/E registers (configured by the parameters
+ *    above) and CHERIoT register mode when `cheriot_enable_i == IbexMuBiOn`.
+ *    In CHERIoT mode, the core operates on 16 registers (x0–x15). These registers are wider
+ *    because they include `CapWidth` capability metadata in addition to standard data bits.
+ *
+ *    To save area, the upper physical registers (x16–x31) from non-CHERIoT mode are re-purposed
+ *    as `rf_shared` storage to hold CHERIoT capability metadata. Therefore, `CapWidth` must be
+ *    >= `DataWidth` so that in non-CHERIoT mode, standard data writes to upper registers can be
+ *    zero-extended into `rf_shared`.
  */
-module lowrisc_ibex_register_file_fpga #(
-    parameter bit                   RV32E             = 0,
-    parameter int unsigned          DataWidth         = 32,
-    parameter bit                   DummyInstructions = 0,
-    parameter logic [DataWidth-1:0] WordZeroVal       = '0
+
+ // Copyright lowRISC contributors (OpenTitan project).
+// Licensed under the Apache License, Version 2.0, see LICENSE for details.
+// SPDX-License-Identifier: Apache-2.0
+
+// Macros and helper code for using assertions.
+//  - Provides default clk and rst options to simplify code
+//  - Provides boiler plate template for common assertions
+
+
+
+
+///////////////////
+// Helper macros //
+///////////////////
+
+// Default clk and reset signals used by assertion macros below.
+
+
+
+// Converts an arbitrary block of code into a Verilog string
+
+
+// ASSERT_ERROR logs an error message with either `uvm_error or with $error.
+//
+// This somewhat duplicates `DV_ERROR macro defined in hw/dv/sv/dv_utils/dv_macros.svh. The reason
+// for redefining it here is to avoid creating a dependency.
+
+
+// This macro is suitable for conditionally triggering lint errors, e.g., if a Sec parameter takes
+// on a non-default value. This may be required for pre-silicon/FPGA evaluation but we don't want
+// to allow this for tapeout.
+
+
+// Static assertions for checks inside SV packages. If the conditions is not true, this will
+// trigger an error during elaboration.
+
+
+// The basic helper macros are actually defined in "implementation headers". The macros should do
+// the same thing in each case (except for the dummy flavour), but in a way that the respective
+// tools support.
+//
+// If the tool supports assertions in some form, we also define INC_ASSERT (which can be used to
+// hide signal definitions that are only used for assertions).
+//
+// The list of basic macros supported is:
+//
+//  ASSERT_I:     Immediate assertion. Note that immediate assertions are sensitive to simulation
+//                glitches.
+//
+//  ASSERT_INIT:  Assertion in initial block. Can be used for things like parameter checking.
+//
+//  ASSERT_INIT_NET: Assertion in initial block. Can be used for initial value of a net.
+//
+//  ASSERT_FINAL: Assertion in final block. Can be used for things like queues being empty at end of
+//                sim, all credits returned at end of sim, state machines in idle at end of sim.
+//
+//  ASSERT_AT_RESET: Assertion just before reset. Can be used to check sum-like properties that get
+//                   cleared at reset.
+//                   Note that unless your simulation ends with a reset, the property does not get
+//                   checked at end of simulation; use ASSERT_AT_RESET_AND_FINAL if the property
+//                   should also get checked at end of simulation.
+//
+//  ASSERT_AT_RESET_AND_FINAL: Assertion just before reset and in final block. Can be used to check
+//                             sum-like properties before every reset and at the end of simulation.
+//
+//  ASSERT:       Assert a concurrent property directly. It can be called as a module (or
+//                interface) body item.
+//
+//                Note: We use (__rst !== '0) in the disable iff statements instead of (__rst ==
+//                '1). This properly disables the assertion in cases when reset is X at the
+//                beginning of a simulation. For that case, (reset == '1) does not disable the
+//                assertion.
+//
+//  ASSERT_NEVER: Assert a concurrent property NEVER happens
+//
+//  ASSERT_KNOWN: Assert that signal has a known value (each bit is either '0' or '1') after reset.
+//                It can be called as a module (or interface) body item.
+//
+//  COVER:        Cover a concurrent property
+//
+//  ASSUME:       Assume a concurrent property
+//
+//  ASSUME_I:     Assume an immediate property
+
+
+ // Copyright lowRISC contributors (OpenTitan project).
+// Licensed under the Apache License, Version 2.0, see LICENSE for details.
+// SPDX-License-Identifier: Apache-2.0
+
+// Macro bodies included by prim_assert.sv for tools that don't support assertions. See
+// prim_assert.sv for documentation for each of the macros.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+//////////////////////////////
+// Complex assertion macros //
+//////////////////////////////
+
+// Assert that signal is an active-high pulse with pulse length of 1 clock cycle
+
+
+// Assert that a property is true only when an enable signal is set.  It can be called as a module
+// (or interface) body item.
+
+
+// Assert that signal has a known value (each bit is either '0' or '1') after reset if enable is
+// set.  It can be called as a module (or interface) body item.
+
+
+//////////////////////////////////
+// For formal verification only //
+//////////////////////////////////
+
+// Note that the existing set of ASSERT macros specified above shall be used for FPV,
+// thereby ensuring that the assertions are evaluated during DV simulations as well.
+
+// ASSUME_FPV
+// Assume a concurrent property during formal verification only.
+
+
+// ASSUME_I_FPV
+// Assume a concurrent property during formal verification only.
+
+
+// COVER_FPV
+// Cover a concurrent property during formal verification
+
+
+// FPV assertion that proves that the FSM control flow is linear (no loops)
+// The sequence triggers whenever the state changes and stores the current state as "initial_state".
+// Then thereafter we must never see that state again until reset.
+// It is possible for the reset to release ahead of the clock.
+// Create a small "gray" window beyond the usual rst time to avoid
+// checking.
+
+
+// Copyright lowRISC contributors (OpenTitan project).
+// Licensed under the Apache License, Version 2.0, see LICENSE for details.
+// SPDX-License-Identifier: Apache-2.0
+
+// // Macros and helper code for security countermeasures.
+
+
+
+
+
+
+// When a named error signal rises, expect to see an associated error in at most MAX_CYCLES_ cycles.
+//
+// The NAME_ argument gets included in the name of the generated assertion, following an FpSecCm
+// prefix. The error signal should be at HIER_.ERR_NAME_ and the posedge is ignored if GATE_ is
+// true.
+//
+// This macro drives a magic "unused_assert_connected" signal, which is used for a static check to
+// ensure the assertions are in place.
+
+
+// When an error signal rises, expect to see the associated alert in at most MAX_CYCLE_ cycles.
+//
+// The NAME_, HIER_, GATE_, MAX_CYCLES_ and ERR_NAME_ arguments are the same as for
+// `ASSERT_ERROR_TRIGGER_ERR. The ALERT_ argument is the name of the alert that we expect to be
+// asserted.
+//
+// This macro adds an assumption that says the named error signal will stay low for the first 10
+// cycles after reset.
+
+
+// When an error signal rises, expect to see the associated ALERT_IN_ signal go high in at most
+// MAX_CYCLES_
+//
+// This is expected to cause an alert to be signalled, but avoids needing to reason about the
+// internals of the alert sender (which are checked with formal properties in the prim_alert_rxtx*
+// cores).
+//
+// The NAME_, HIER_, GATE_, MAX_CYCLES_ and ERR_NAME_ arguments are the same as for
+// `ASSERT_ERROR_TRIGGER_ERR.
+
+
+////////////////////////////////////////////////////////////////////////////////
+//
+// Assertions for CMs that trigger alerts
+//
+////////////////////////////////////////////////////////////////////////////////
+
+
+
+
+
+
+
+
+
+
+
+
+
+////////////////////////////////////////////////////////////////////////////////
+//
+// The input flavour of assertions for CMs that trigger alerts
+//
+// Note that the default value for MAX_CYCLES_ in these assertions is much smaller than
+// _SEC_CM_ALERT_MAX_CYC. Because we are asserting something about the *input* for the alert system,
+// the timing can be much tighter: we default to two cycles.
+//
+////////////////////////////////////////////////////////////////////////////////
+
+
+
+
+
+
+
+
+
+
+
+
+
+////////////////////////////////////////////////////////////////////////////////
+//
+// Assertions for CMs that trigger some other form of error
+//
+////////////////////////////////////////////////////////////////////////////////
+
+
+
+
+
+
+
+
+
+
+
+ // PRIM_ASSERT_SEC_CM_SVH
+
+// Copyright lowRISC contributors (OpenTitan project).
+// Licensed under the Apache License, Version 2.0, see LICENSE for details.
+// SPDX-License-Identifier: Apache-2.0
+
+
+
+
+/////////////////////////////////////
+// Default Values for Macros below //
+/////////////////////////////////////
+
+
+
+
+
+/////////////////////
+// Register Macros //
+/////////////////////
+
+// TODO: define other variations of register macros so that they can be used throughout all designs
+// to make the code more concise.
+
+// Register with asynchronous reset.
+
+
+///////////////////////////
+// Macro for Sparse FSMs //
+///////////////////////////
+
+// Simulation tools typically infer FSMs and report coverage for these separately. However, tools
+// like Xcelium and VCS seem to have problems inferring FSMs if the state register is not coded in
+// a behavioral always_ff block in the same hierarchy. To that end, this uses a modified variant
+// with a second behavioral register definition for RTL simulations so that FSMs can be inferred.
+// Note that in this variant, the __q output is disconnected from prim_sparse_fsm_flop and attached
+// to the behavioral flop. An assertion is added to ensure equivalence between the
+// prim_sparse_fsm_flop output and the behavioral flop output in that case.
+
+
+ // PRIM_FLOP_MACROS_SV
+
+
+ // PRIM_ASSERT_SV
+
+
+module lowrisc_ibex_register_file_fpga import lowrisc_ibex_pkg::*; #(
+  parameter base_isa_e            BaseIsa           = BaseIsaRV32I,
+  parameter bit                   RV32E             = 0,
+  parameter int unsigned          DataWidth         = 32,
+  parameter bit                   DummyInstructions = 0,
+  parameter logic [DataWidth-1:0] WordZeroVal       = '0,
+  // Capability port width
+  parameter int unsigned          CapWidth          = lowrisc_ibex_cheriot_pkg::REGCAP_W,
+  parameter logic [CapWidth-1:0]  CapWordZeroVal    = '0
 ) (
   // Clock and Reset
   input  logic                 clk_i,
@@ -54744,60 +60363,163 @@ module lowrisc_ibex_register_file_fpga #(
   input  logic                 dummy_instr_id_i,
   input  logic                 dummy_instr_wb_i,
 
-  //Read port R1
-  input  logic [          4:0] raddr_a_i,
+  input  ibex_mubi_t           cheriot_enable_i,
+
+  // Read port R1
+  input  logic [4:0]           raddr_a_i,
   output logic [DataWidth-1:0] rdata_a_o,
-  //Read port R2
-  input  logic [          4:0] raddr_b_i,
+  output logic [CapWidth-1:0]  rcap_a_o,
+
+  // Read port R2
+  input  logic [4:0]           raddr_b_i,
   output logic [DataWidth-1:0] rdata_b_o,
+  output logic [CapWidth-1:0]  rcap_b_o,
+
   // Write port W1
-  input  logic [          4:0] waddr_a_i,
+  input  logic [4:0]           waddr_a_i,
   input  logic [DataWidth-1:0] wdata_a_i,
+  input  logic [CapWidth-1:0]  wcap_a_i,
   input  logic                 we_a_i
 );
 
-  localparam int ADDR_WIDTH = RV32E ? 4 : 5;
-  localparam int NUM_WORDS = 2 ** ADDR_WIDTH;
+  if (BaseIsa == BaseIsaRV32IorCHERIoT) begin : g_cheriot_rf
 
-  logic [DataWidth-1:0] mem[NUM_WORDS];
-  logic we; // write enable if writing to any register other than R0
+    // CapWidth must be larger than DataWidth to ensure no truncation in the non-CHERIoT mode
 
-  logic [DataWidth-1:0] mem_o_a, mem_o_b;
 
-  assign rdata_a_o = (raddr_a_i == '0) ? WordZeroVal : mem[raddr_a_i];
-  assign rdata_b_o = (raddr_b_i == '0) ? WordZeroVal : mem[raddr_b_i];
+    // Decode CHERIoT enable (full 4-bit MuBi comparison against IbexMuBiOn).
+    logic cheriot_enabled;
+    assign cheriot_enabled = (cheriot_enable_i == IbexMuBiOn);
 
-  // we select
-  assign we = (waddr_a_i == '0) ? 1'b0 : we_a_i;
+    // Physical registers
+    logic [DataWidth-1:0] rf_data   [16]; // x0-x15 data (both modes)
+    logic [CapWidth-1:0]  rf_shared [16]; // shared: cap (CHERIoT) or x16-x31 data (!CHERIoT,!RV32E)
 
-  // Note that the SystemVerilog LRM requires variables on the LHS of assignments within
-  // "always_ff" to not be written to by any other process. However, to enable the initialization
-  // of the inferred RAM32M primitives with non-zero values, below "initial" procedure is needed.
-  // Therefore, we use "always" instead of the generally preferred "always_ff" for the synchronous
-  // write procedure.
-  always @(posedge clk_i) begin : sync_write
-    if (we == 1'b1) begin
-      mem[waddr_a_i] <= wdata_a_i;
+    // DummyInstructions not supported in FPGA register file
+    logic unused_dummy_instr;
+    assign unused_dummy_instr = dummy_instr_id_i ^ dummy_instr_wb_i;
+
+    // Note that the SystemVerilog LRM requires variables on the LHS of assignments within
+    // "always_ff" to not be written to by any other process. However, to enable the initialization
+    // of the inferred RAM primitives with non-zero values, below "initial" procedures are needed.
+    // Therefore, we use "always" instead of the generally preferred "always_ff" for the synchronous
+    // write procedures.
+
+    // Data write: lower bank (waddr[4]=0), x1-x15 only (x0 is never written)
+    always @(posedge clk_i) begin : sync_data_write
+      if (we_a_i && !waddr_a_i[4] && (waddr_a_i[3:0] != '0)) begin
+        rf_data[waddr_a_i[3:0]] <= wdata_a_i;
+      end
+    end : sync_data_write
+
+    // Shared write:
+    //   CHERIoT mode:     Capability write for x1-x15 (co-write with data, waddr[4]=0)
+    //   non-CHERIoT mode: Data write for x16-x31 (waddr[4]=1, including x16 at index [0])
+    always @(posedge clk_i) begin : sync_shared_write
+      if (cheriot_enabled) begin
+        if (we_a_i && !waddr_a_i[4] && (waddr_a_i[3:0] != '0)) begin
+          rf_shared[waddr_a_i[3:0]] <= wcap_a_i;
+        end
+      end else if (!RV32E) begin
+        if (we_a_i && waddr_a_i[4]) begin
+          rf_shared[waddr_a_i[3:0]] <= CapWidth'(wdata_a_i);
+        end
+      end
+    end : sync_shared_write
+
+    // Make sure we initialize the RAM with the correct register reset values.
+    initial begin
+      for (int k = 0; k < 16; k++) begin
+        rf_data[k]   = WordZeroVal;
+        rf_shared[k] = CapWordZeroVal;
+      end
     end
-  end : sync_write
 
-  // Make sure we initialize the BRAM with the correct register reset value.
-  initial begin
-    for (int k = 0; k < NUM_WORDS; k++) begin
-      mem[k] = WordZeroVal;
+    // In CHERIoT mode all register addresses are 4-bit (implicit E extension). Hence, the MSB must
+    // never be set. The bank-select bit is anyway forced to 0.
+
+
+
+
+    // Data: raddr[4]=0 → rf_data (x0-x15)
+    //       raddr[4]=1 → rf_shared lower DataWidth bits (x16-x31), non-CHERIoT only.
+    // The bank-select is AND-gated with !cheriot_enabled so a spurious raddr[4]=1 in CHERIoT
+    // mode reads from rf_data rather than returning capability bits as integer data.
+    assign rdata_a_o = (raddr_a_i[4] && !cheriot_enabled) ?
+      DataWidth'(rf_shared[raddr_a_i[3:0]]) : rf_data[raddr_a_i[3:0]];
+    assign rdata_b_o = (raddr_b_i[4] && !cheriot_enabled) ?
+      DataWidth'(rf_shared[raddr_b_i[3:0]]) : rf_data[raddr_b_i[3:0]];
+
+    // Cap: gated to CapWordZeroVal in non-CHERIoT mode; x0 always returns CapWordZeroVal.
+    assign rcap_a_o = cheriot_enabled ?
+      ((raddr_a_i[3:0] == '0) ? CapWordZeroVal : rf_shared[raddr_a_i[3:0]]) : CapWordZeroVal;
+    assign rcap_b_o = cheriot_enabled ?
+      ((raddr_b_i[3:0] == '0) ? CapWordZeroVal : rf_shared[raddr_b_i[3:0]]) : CapWordZeroVal;
+
+    // Reset not used in this register file version
+    logic unused_rst_ni;
+    assign unused_rst_ni = rst_ni;
+
+    // Test enable signal not used in FPGA implementation
+    logic unused_test_en;
+    assign unused_test_en = test_en_i;
+
+  end else begin : g_plain_rf
+
+    // BaseIsaRV32I: original FPGA register file, no capability support
+    localparam int ADDR_WIDTH = RV32E ? 4 : 5;
+    localparam int NUM_WORDS  = 2 ** ADDR_WIDTH;
+
+    logic [DataWidth-1:0] mem[NUM_WORDS];
+    logic we; // write enable if writing to any register other than R0
+
+    assign rdata_a_o = (raddr_a_i == '0) ? WordZeroVal : mem[raddr_a_i];
+    assign rdata_b_o = (raddr_b_i == '0) ? WordZeroVal : mem[raddr_b_i];
+
+    // we select
+    assign we = (waddr_a_i == '0) ? 1'b0 : we_a_i;
+
+    // Note that the SystemVerilog LRM requires variables on the LHS of assignments within
+    // "always_ff" to not be written to by any other process. However, to enable the initialization
+    // of the inferred RAM32M primitives with non-zero values, below "initial" procedure is needed.
+    // Therefore, we use "always" instead of the generally preferred "always_ff" for the synchronous
+    // write procedure.
+    always @(posedge clk_i) begin : sync_write
+      if (we == 1'b1) begin
+        mem[waddr_a_i] <= wdata_a_i;
+      end
+    end : sync_write
+
+    // Make sure we initialize the BRAM with the correct register reset value.
+    initial begin
+      for (int k = 0; k < NUM_WORDS; k++) begin
+        mem[k] = WordZeroVal;
+      end
     end
+
+    // Reset not used in this register file version
+    logic unused_rst_ni;
+    assign unused_rst_ni = rst_ni;
+
+    // Dummy instruction changes not relevant for FPGA implementation
+    logic unused_dummy_instr;
+    assign unused_dummy_instr = dummy_instr_id_i ^ dummy_instr_wb_i;
+
+    // Test enable signal not used in FPGA implementation
+    logic unused_test_en;
+    assign unused_test_en = test_en_i;
+
+    // No capability support
+    assign rcap_a_o = CapWordZeroVal;
+    assign rcap_b_o = CapWordZeroVal;
+
+    logic unused_wcap_a;
+    assign unused_wcap_a = ^wcap_a_i;
+
+    logic unused_cheriot_enable;
+    assign unused_cheriot_enable = ^cheriot_enable_i;
+
   end
-
-  // Reset not used in this register file version
-  logic unused_rst_ni;
-  assign unused_rst_ni = rst_ni;
-
-  // Dummy instruction changes not relevant for FPGA implementation
-  logic unused_dummy_instr;
-  assign unused_dummy_instr = dummy_instr_id_i ^ dummy_instr_wb_i;
-  // Test enable signal not used in FPGA implementation
-  logic unused_test_en;
-  assign unused_test_en = test_en_i;
 
 endmodule
 // Copyright lowRISC contributors.
@@ -54806,18 +60528,335 @@ endmodule
 // SPDX-License-Identifier: Apache-2.0
 
 /**
- * RISC-V register file
+ * RISC-V Register File
  *
- * Register file with 31 or 15x 32 bit wide registers. Register 0 is fixed to 0.
- * This register file is based on latches and is thus smaller than the flip-flop
- * based RF. It requires a target technology-specific clock gating cell. Use this
- * register file when targeting ASIC synthesis or event-based simulators.
+ * Register file based on latches. Register 0 is set to 0 (unless used for dummy instructions).
+ * This register file requires a target technology-specific clock gating cell. Use this register
+ * file when targeting ASIC synthesis or event-based simulators.
+ *
+ * Three key parameters influence the number and size of physical registers:
+ *
+ * 1. RV32E == 1:
+ *    Restricts the register file to 16 registers (x0–x15).
+ *
+ * 2. DummyInstructions == 1:
+ *    Implements x0 as a physical register used to write the results of dummy instructions.
+ *    It always reads back as zero for non-dummy instructions.
+ *
+ * 3. BaseIsa == BaseIsaRV32IorCHERIoT:
+ *    Allows dynamic switching between standard RV32I/E registers (configured by the parameters
+ *    above) and CHERIoT register mode when `cheriot_enable_i == IbexMuBiOn`.
+ *    In CHERIoT mode, the core operates on 16 registers (x0–x15). These registers are wider
+ *    because they include `CapWidth` capability metadata in addition to standard data bits.
+ *
+ *    To save area, the upper physical registers (x16–x31) from non-CHERIoT mode are re-purposed
+ *    as `rf_shared` storage to hold CHERIoT capability metadata. Therefore, `CapWidth` must be
+ *    >= `DataWidth` so that in non-CHERIoT mode, standard data writes to upper registers can be
+ *    zero-extended into `rf_shared`.
  */
-module lowrisc_ibex_register_file_latch #(
+
+ // Copyright lowRISC contributors (OpenTitan project).
+// Licensed under the Apache License, Version 2.0, see LICENSE for details.
+// SPDX-License-Identifier: Apache-2.0
+
+// Macros and helper code for using assertions.
+//  - Provides default clk and rst options to simplify code
+//  - Provides boiler plate template for common assertions
+
+
+
+
+///////////////////
+// Helper macros //
+///////////////////
+
+// Default clk and reset signals used by assertion macros below.
+
+
+
+// Converts an arbitrary block of code into a Verilog string
+
+
+// ASSERT_ERROR logs an error message with either `uvm_error or with $error.
+//
+// This somewhat duplicates `DV_ERROR macro defined in hw/dv/sv/dv_utils/dv_macros.svh. The reason
+// for redefining it here is to avoid creating a dependency.
+
+
+// This macro is suitable for conditionally triggering lint errors, e.g., if a Sec parameter takes
+// on a non-default value. This may be required for pre-silicon/FPGA evaluation but we don't want
+// to allow this for tapeout.
+
+
+// Static assertions for checks inside SV packages. If the conditions is not true, this will
+// trigger an error during elaboration.
+
+
+// The basic helper macros are actually defined in "implementation headers". The macros should do
+// the same thing in each case (except for the dummy flavour), but in a way that the respective
+// tools support.
+//
+// If the tool supports assertions in some form, we also define INC_ASSERT (which can be used to
+// hide signal definitions that are only used for assertions).
+//
+// The list of basic macros supported is:
+//
+//  ASSERT_I:     Immediate assertion. Note that immediate assertions are sensitive to simulation
+//                glitches.
+//
+//  ASSERT_INIT:  Assertion in initial block. Can be used for things like parameter checking.
+//
+//  ASSERT_INIT_NET: Assertion in initial block. Can be used for initial value of a net.
+//
+//  ASSERT_FINAL: Assertion in final block. Can be used for things like queues being empty at end of
+//                sim, all credits returned at end of sim, state machines in idle at end of sim.
+//
+//  ASSERT_AT_RESET: Assertion just before reset. Can be used to check sum-like properties that get
+//                   cleared at reset.
+//                   Note that unless your simulation ends with a reset, the property does not get
+//                   checked at end of simulation; use ASSERT_AT_RESET_AND_FINAL if the property
+//                   should also get checked at end of simulation.
+//
+//  ASSERT_AT_RESET_AND_FINAL: Assertion just before reset and in final block. Can be used to check
+//                             sum-like properties before every reset and at the end of simulation.
+//
+//  ASSERT:       Assert a concurrent property directly. It can be called as a module (or
+//                interface) body item.
+//
+//                Note: We use (__rst !== '0) in the disable iff statements instead of (__rst ==
+//                '1). This properly disables the assertion in cases when reset is X at the
+//                beginning of a simulation. For that case, (reset == '1) does not disable the
+//                assertion.
+//
+//  ASSERT_NEVER: Assert a concurrent property NEVER happens
+//
+//  ASSERT_KNOWN: Assert that signal has a known value (each bit is either '0' or '1') after reset.
+//                It can be called as a module (or interface) body item.
+//
+//  COVER:        Cover a concurrent property
+//
+//  ASSUME:       Assume a concurrent property
+//
+//  ASSUME_I:     Assume an immediate property
+
+
+ // Copyright lowRISC contributors (OpenTitan project).
+// Licensed under the Apache License, Version 2.0, see LICENSE for details.
+// SPDX-License-Identifier: Apache-2.0
+
+// Macro bodies included by prim_assert.sv for tools that don't support assertions. See
+// prim_assert.sv for documentation for each of the macros.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+//////////////////////////////
+// Complex assertion macros //
+//////////////////////////////
+
+// Assert that signal is an active-high pulse with pulse length of 1 clock cycle
+
+
+// Assert that a property is true only when an enable signal is set.  It can be called as a module
+// (or interface) body item.
+
+
+// Assert that signal has a known value (each bit is either '0' or '1') after reset if enable is
+// set.  It can be called as a module (or interface) body item.
+
+
+//////////////////////////////////
+// For formal verification only //
+//////////////////////////////////
+
+// Note that the existing set of ASSERT macros specified above shall be used for FPV,
+// thereby ensuring that the assertions are evaluated during DV simulations as well.
+
+// ASSUME_FPV
+// Assume a concurrent property during formal verification only.
+
+
+// ASSUME_I_FPV
+// Assume a concurrent property during formal verification only.
+
+
+// COVER_FPV
+// Cover a concurrent property during formal verification
+
+
+// FPV assertion that proves that the FSM control flow is linear (no loops)
+// The sequence triggers whenever the state changes and stores the current state as "initial_state".
+// Then thereafter we must never see that state again until reset.
+// It is possible for the reset to release ahead of the clock.
+// Create a small "gray" window beyond the usual rst time to avoid
+// checking.
+
+
+// Copyright lowRISC contributors (OpenTitan project).
+// Licensed under the Apache License, Version 2.0, see LICENSE for details.
+// SPDX-License-Identifier: Apache-2.0
+
+// // Macros and helper code for security countermeasures.
+
+
+
+
+
+
+// When a named error signal rises, expect to see an associated error in at most MAX_CYCLES_ cycles.
+//
+// The NAME_ argument gets included in the name of the generated assertion, following an FpSecCm
+// prefix. The error signal should be at HIER_.ERR_NAME_ and the posedge is ignored if GATE_ is
+// true.
+//
+// This macro drives a magic "unused_assert_connected" signal, which is used for a static check to
+// ensure the assertions are in place.
+
+
+// When an error signal rises, expect to see the associated alert in at most MAX_CYCLE_ cycles.
+//
+// The NAME_, HIER_, GATE_, MAX_CYCLES_ and ERR_NAME_ arguments are the same as for
+// `ASSERT_ERROR_TRIGGER_ERR. The ALERT_ argument is the name of the alert that we expect to be
+// asserted.
+//
+// This macro adds an assumption that says the named error signal will stay low for the first 10
+// cycles after reset.
+
+
+// When an error signal rises, expect to see the associated ALERT_IN_ signal go high in at most
+// MAX_CYCLES_
+//
+// This is expected to cause an alert to be signalled, but avoids needing to reason about the
+// internals of the alert sender (which are checked with formal properties in the prim_alert_rxtx*
+// cores).
+//
+// The NAME_, HIER_, GATE_, MAX_CYCLES_ and ERR_NAME_ arguments are the same as for
+// `ASSERT_ERROR_TRIGGER_ERR.
+
+
+////////////////////////////////////////////////////////////////////////////////
+//
+// Assertions for CMs that trigger alerts
+//
+////////////////////////////////////////////////////////////////////////////////
+
+
+
+
+
+
+
+
+
+
+
+
+
+////////////////////////////////////////////////////////////////////////////////
+//
+// The input flavour of assertions for CMs that trigger alerts
+//
+// Note that the default value for MAX_CYCLES_ in these assertions is much smaller than
+// _SEC_CM_ALERT_MAX_CYC. Because we are asserting something about the *input* for the alert system,
+// the timing can be much tighter: we default to two cycles.
+//
+////////////////////////////////////////////////////////////////////////////////
+
+
+
+
+
+
+
+
+
+
+
+
+
+////////////////////////////////////////////////////////////////////////////////
+//
+// Assertions for CMs that trigger some other form of error
+//
+////////////////////////////////////////////////////////////////////////////////
+
+
+
+
+
+
+
+
+
+
+
+ // PRIM_ASSERT_SEC_CM_SVH
+
+// Copyright lowRISC contributors (OpenTitan project).
+// Licensed under the Apache License, Version 2.0, see LICENSE for details.
+// SPDX-License-Identifier: Apache-2.0
+
+
+
+
+/////////////////////////////////////
+// Default Values for Macros below //
+/////////////////////////////////////
+
+
+
+
+
+/////////////////////
+// Register Macros //
+/////////////////////
+
+// TODO: define other variations of register macros so that they can be used throughout all designs
+// to make the code more concise.
+
+// Register with asynchronous reset.
+
+
+///////////////////////////
+// Macro for Sparse FSMs //
+///////////////////////////
+
+// Simulation tools typically infer FSMs and report coverage for these separately. However, tools
+// like Xcelium and VCS seem to have problems inferring FSMs if the state register is not coded in
+// a behavioral always_ff block in the same hierarchy. To that end, this uses a modified variant
+// with a second behavioral register definition for RTL simulations so that FSMs can be inferred.
+// Note that in this variant, the __q output is disconnected from prim_sparse_fsm_flop and attached
+// to the behavioral flop. An assertion is added to ensure equivalence between the
+// prim_sparse_fsm_flop output and the behavioral flop output in that case.
+
+
+ // PRIM_FLOP_MACROS_SV
+
+
+ // PRIM_ASSERT_SV
+
+
+module lowrisc_ibex_register_file_latch import lowrisc_ibex_pkg::*; #(
+  parameter base_isa_e            BaseIsa           = BaseIsaRV32I,
   parameter bit                   RV32E             = 0,
   parameter int unsigned          DataWidth         = 32,
   parameter bit                   DummyInstructions = 0,
-  parameter logic [DataWidth-1:0] WordZeroVal       = '0
+  parameter logic [DataWidth-1:0] WordZeroVal       = '0,
+  // Capability port width
+  parameter int unsigned          CapWidth          = lowrisc_ibex_cheriot_pkg::REGCAP_W,
+  parameter logic [CapWidth-1:0]  CapWordZeroVal    = '0
 ) (
   // Clock and Reset
   input  logic                 clk_i,
@@ -54827,138 +60866,1084 @@ module lowrisc_ibex_register_file_latch #(
   input  logic                 dummy_instr_id_i,
   input  logic                 dummy_instr_wb_i,
 
-  //Read port R1
+  input  ibex_mubi_t           cheriot_enable_i,
+
+  // Read port R1
   input  logic [4:0]           raddr_a_i,
   output logic [DataWidth-1:0] rdata_a_o,
+  output logic [CapWidth-1:0]  rcap_a_o,
 
-  //Read port R2
+  // Read port R2
   input  logic [4:0]           raddr_b_i,
   output logic [DataWidth-1:0] rdata_b_o,
+  output logic [CapWidth-1:0]  rcap_b_o,
 
   // Write port W1
   input  logic [4:0]           waddr_a_i,
   input  logic [DataWidth-1:0] wdata_a_i,
+  input  logic [CapWidth-1:0]  wcap_a_i,
   input  logic                 we_a_i
 );
 
-  localparam int unsigned ADDR_WIDTH = RV32E ? 4 : 5;
-  localparam int unsigned NUM_WORDS  = 2**ADDR_WIDTH;
+  if (BaseIsa == BaseIsaRV32IorCHERIoT) begin : g_cheriot_rf
 
-  logic [DataWidth-1:0] mem[NUM_WORDS];
+    // CapWidth must be larger than DataWidth to ensure no truncation in the non-CHERIoT mode
 
-  logic [NUM_WORDS-1:0] waddr_onehot_a;
 
-  logic [NUM_WORDS-1:1] mem_clocks;
-  logic [DataWidth-1:0] wdata_a_q;
+    // Decode CHERIoT enable (full 4-bit MuBi comparison against IbexMuBiOn).
+    logic cheriot_enabled;
+    assign cheriot_enabled = (cheriot_enable_i == IbexMuBiOn);
 
-  // internal addresses
-  logic [ADDR_WIDTH-1:0] raddr_a_int, raddr_b_int, waddr_a_int;
+    // Physical registers
+    logic [DataWidth-1:0] rf_data   [16]; // x0-x15 data (both modes)
+    logic [CapWidth-1:0]  rf_shared [16]; // shared: cap (CHERIoT) or x16-x31 data (!CHERIoT,!RV32E)
 
-  assign raddr_a_int = raddr_a_i[ADDR_WIDTH-1:0];
-  assign raddr_b_int = raddr_b_i[ADDR_WIDTH-1:0];
-  assign waddr_a_int = waddr_a_i[ADDR_WIDTH-1:0];
+    logic clk_int;
 
-  logic clk_int;
+    ///////////
+    // WRITE //
+    ///////////
+    // Global clock gating
+    lowrisc_prim_clock_gating cg_we_global (
+        .clk_i     ( clk_i     ),
+        .en_i      ( we_a_i    ),
+        .test_en_i ( test_en_i ),
+        .clk_o     ( clk_int   )
+    );
 
-  //////////
-  // READ //
-  //////////
-  assign rdata_a_o = mem[raddr_a_int];
-  assign rdata_b_o = mem[raddr_b_int];
+    // Write decode: waddr[3:0] indexes within a 16-entry bank.
+    // Bank select: waddr[4]=0 → rf_data and rf_shared cap (CHERIoT co-write);
+    //              waddr[4]=1 → rf_shared upper data (non-CHERIoT).
+    logic [15:0] we_a_dec;
+    always_comb begin : we_a_decoder
+      for (int unsigned i = 0; i < 16; i++) begin
+        we_a_dec[i] = (waddr_a_i[3:0] == 4'(i)) ? we_a_i : 1'b0;
+      end
+    end
 
-  ///////////
-  // WRITE //
-  ///////////
-  // Global clock gating
-  lowrisc_prim_clock_gating cg_we_global (
-      .clk_i     ( clk_i     ),
-      .en_i      ( we_a_i    ),
-      .test_en_i ( test_en_i ),
-      .clk_o     ( clk_int   )
-  );
+    // Write data for the shared bank: cap metadata in CHERIoT mode, zero-extended data otherwise.
+    logic [CapWidth-1:0] wshared_data;
+    assign wshared_data = cheriot_enabled ? wcap_a_i : CapWidth'(wdata_a_i);
 
-  // Sample input data
-  // Use clk_int here, since otherwise we don't want to write anything anyway.
-  always_ff @(posedge clk_int or negedge rst_ni) begin : sample_wdata
-    if (!rst_ni) begin
-      wdata_a_q   <= WordZeroVal;
-    end else begin
-      if (we_a_i) begin
+    // Sample input data: data and shared (cap or upper data).
+    // Use clk_int here, since otherwise we don't want to write anything anyway.
+    logic [DataWidth-1:0] wdata_a_q;
+    logic [CapWidth-1:0]  wshared_a_q;
+
+    always_ff @(posedge clk_int or negedge rst_ni) begin : sample_wdata
+      if (!rst_ni) begin
+        wdata_a_q <= WordZeroVal;
+      end else if (we_a_i) begin
         wdata_a_q <= wdata_a_i;
       end
     end
-  end
 
-  // Write address decoding
-  always_comb begin : wad
-    for (int i = 0; i < NUM_WORDS; i++) begin : wad_word_iter
-      if (we_a_i && (waddr_a_int == 5'(i))) begin
-        waddr_onehot_a[i] = 1'b1;
+    always_ff @(posedge clk_int or negedge rst_ni) begin : sample_wshared
+      if (!rst_ni) begin
+        wshared_a_q <= CapWordZeroVal;
+      end else if (we_a_i) begin
+        wshared_a_q <= wshared_data;
+      end
+    end
+
+    logic [15:1] data_clocks;
+    logic [15:1] shared_clocks;
+
+    // Individual clock gating for data bank (x1-x15): waddr[4]=0
+    for (genvar x = 1; x < 16; x++) begin : gen_data_cg_word_iter
+      lowrisc_prim_clock_gating cg_i (
+          .clk_i     ( clk_int                      ),
+          .en_i      ( we_a_dec[x] && !waddr_a_i[4] ),
+          .test_en_i ( test_en_i                    ),
+          .clk_o     ( data_clocks[x]               )
+      );
+    end
+
+    // Individual clock gating for shared bank (x1-x15):
+    //   CHERIoT mode:     cap co-write with data (waddr[4]=0)
+    //   non-CHERIoT mode: upper-data write (waddr[4]=1, only if !RV32E)
+    for (genvar x = 1; x < 16; x++) begin : gen_shared_cg_word_iter
+      lowrisc_prim_clock_gating cg_i (
+          .clk_i     ( clk_int                                                     ),
+          .en_i      ( ( cheriot_enabled && we_a_dec[x] && !waddr_a_i[4]) ||
+                       (!cheriot_enabled && !RV32E && we_a_dec[x] && waddr_a_i[4]) ),
+          .test_en_i ( test_en_i                                                   ),
+          .clk_o     ( shared_clocks[x]                                            )
+      );
+    end
+
+    // Data latches x1-x15
+    for (genvar i = 1; i < 16; i++) begin : g_rf_data_latches
+      always_latch begin
+        if (data_clocks[i]) begin
+          rf_data[i] = wdata_a_q;
+        end
+      end
+    end
+
+    // Shared latches x1-x15
+    for (genvar i = 1; i < 16; i++) begin : g_rf_shared_latches
+      always_latch begin
+        if (shared_clocks[i]) begin
+          rf_shared[i] = wshared_a_q;
+        end
+      end
+    end
+
+    // Entry 0: rf_data[0] (x0 data) and rf_shared[0] (x0 cap in CHERIoT / x16 data in non-CHERIoT).
+    logic [CapWidth-1:0] rcap_r0; // x0 cap read value (null or dummy-dependent)
+
+    // With dummy instructions enabled, R0 behaves as a real register but will always return 0 for
+    // real instructions.
+    if (DummyInstructions) begin : g_dummy_r0
+      // SEC_CM: CTRL_FLOW.UNPREDICTABLE
+      logic we_data_r0;
+      logic we_shared_r0;
+
+      // Write enable for dummy R0 register (waddr_a_i will always be 0 for dummy instructions)
+      assign we_data_r0   = we_a_dec[0] && !waddr_a_i[4] && dummy_instr_wb_i;
+      assign we_shared_r0 = cheriot_enabled ? we_data_r0 :
+                                              (!RV32E && we_a_dec[0] && waddr_a_i[4]);
+
+
+      logic r0_data_clock;
+      logic r0_shared_clock;
+
+      lowrisc_prim_clock_gating cg_r0_data (
+          .clk_i     ( clk_int       ),
+          .en_i      ( we_data_r0    ),
+          .test_en_i ( test_en_i     ),
+          .clk_o     ( r0_data_clock )
+      );
+
+      lowrisc_prim_clock_gating cg_r0_shared (
+          .clk_i     ( clk_int         ),
+          .en_i      ( we_shared_r0    ),
+          .test_en_i ( test_en_i       ),
+          .clk_o     ( r0_shared_clock )
+      );
+
+      logic [DataWidth-1:0] rf_data_r0;
+      logic [CapWidth-1:0]  rf_shared_r0;
+
+      always_latch begin : latch_data_r0
+        if (r0_data_clock) begin
+          rf_data_r0 = wdata_a_q;
+        end
+      end
+
+      always_latch begin : latch_shared_r0
+        if (r0_shared_clock) begin
+          rf_shared_r0 = wshared_a_q;
+        end
+      end
+
+      // Output the dummy data for dummy instructions, otherwise R0 reads as zero
+      assign rf_data[0]   = dummy_instr_id_i ? rf_data_r0 : WordZeroVal;
+      // Output rf_shared[0] unconditionally for the x16 case
+      assign rf_shared[0] = rf_shared_r0;
+      // Output the dummy capability only for dummy instructions, otherwise R0 cap reads as zero
+      assign rcap_r0      = dummy_instr_id_i ? rf_shared[0] : CapWordZeroVal;
+
+    end else begin : g_normal_r0
+      assign rf_data[0] = WordZeroVal;
+      assign rcap_r0    = CapWordZeroVal;
+
+      logic unused_dummy_instr;
+      assign unused_dummy_instr = dummy_instr_id_i ^ dummy_instr_wb_i;
+
+      // rf_shared[0] needs a real latch when x16 exists (!RV32E). Without dummy instructions, this
+      // will never be used as a capability and only ever for x16 data.
+      if (!RV32E) begin : g_rf_shared0_x16
+        logic r0_shared_clock;
+        logic [DataWidth-1:0] rf_shared_r0;
+
+        lowrisc_prim_clock_gating cg_r0_shared (
+            .clk_i     ( clk_int                                          ),
+            .en_i      ( we_a_dec[0] && waddr_a_i[4] && !cheriot_enabled ),
+            .test_en_i ( test_en_i                                        ),
+            .clk_o     ( r0_shared_clock                                  )
+        );
+
+        always_latch begin : latch_shared_r0
+          if (r0_shared_clock) begin
+            rf_shared_r0 = wdata_a_q;
+          end
+        end
+
+        assign rf_shared[0] = CapWidth'(rf_shared_r0);
+      end else begin : g_rf_shared0_no_x16
+        assign rf_shared[0] = CapWordZeroVal;
+
+        logic unused_we_a_dec0;
+        assign unused_we_a_dec0 = we_a_dec[0];
+      end
+    end
+
+    // In CHERIoT mode all register addresses are 4-bit (implicit E extension). Hence, the MSB must
+    // never be set. The bank-select bit is anyway forced to 0.
+
+
+
+
+    //////////
+    // READ //
+    //////////
+    // Data: raddr[4]=0 → rf_data (x0-x15)
+    //       raddr[4]=1 → rf_shared lower DataWidth bits (x16-x31), non-CHERIoT only.
+    assign rdata_a_o = (raddr_a_i[4] && !cheriot_enabled) ?
+      DataWidth'(rf_shared[raddr_a_i[3:0]]) : rf_data[raddr_a_i[3:0]];
+    assign rdata_b_o = (raddr_b_i[4] && !cheriot_enabled) ?
+      DataWidth'(rf_shared[raddr_b_i[3:0]]) : rf_data[raddr_b_i[3:0]];
+
+    // Cap: gated to CapWordZeroVal in non-CHERIoT mode.
+    assign rcap_a_o = cheriot_enabled ?
+      ((raddr_a_i[3:0] == '0) ? rcap_r0 : rf_shared[raddr_a_i[3:0]]) : CapWordZeroVal;
+    assign rcap_b_o = cheriot_enabled ?
+      ((raddr_b_i[3:0] == '0) ? rcap_r0 : rf_shared[raddr_b_i[3:0]]) : CapWordZeroVal;
+
+  end else begin : g_plain_rf
+
+    // BaseIsaRV32I: original latch-based register file, no capability support
+    localparam int unsigned ADDR_WIDTH = RV32E ? 4 : 5;
+    localparam int unsigned NUM_WORDS  = 2**ADDR_WIDTH;
+
+    logic [DataWidth-1:0] mem[NUM_WORDS];
+
+    logic [NUM_WORDS-1:0] waddr_onehot_a;
+
+    logic [NUM_WORDS-1:1] mem_clocks;
+    logic [DataWidth-1:0] wdata_a_q;
+
+    // internal addresses
+    logic [ADDR_WIDTH-1:0] raddr_a_int, raddr_b_int, waddr_a_int;
+
+    assign raddr_a_int = raddr_a_i[ADDR_WIDTH-1:0];
+    assign raddr_b_int = raddr_b_i[ADDR_WIDTH-1:0];
+    assign waddr_a_int = waddr_a_i[ADDR_WIDTH-1:0];
+
+    logic clk_int;
+
+    //////////
+    // READ //
+    //////////
+    assign rdata_a_o = mem[raddr_a_int];
+    assign rdata_b_o = mem[raddr_b_int];
+    assign rcap_a_o  = CapWordZeroVal;
+    assign rcap_b_o  = CapWordZeroVal;
+
+    logic unused_wcap_a;
+    assign unused_wcap_a = ^wcap_a_i;
+
+    logic unused_cheriot_enable;
+    assign unused_cheriot_enable = ^cheriot_enable_i;
+
+    ///////////
+    // WRITE //
+    ///////////
+    // Global clock gating
+    lowrisc_prim_clock_gating cg_we_global (
+        .clk_i     ( clk_i     ),
+        .en_i      ( we_a_i    ),
+        .test_en_i ( test_en_i ),
+        .clk_o     ( clk_int   )
+    );
+
+    // Sample input data
+    // Use clk_int here, since otherwise we don't want to write anything anyway.
+    always_ff @(posedge clk_int or negedge rst_ni) begin : sample_wdata
+      if (!rst_ni) begin
+        wdata_a_q <= WordZeroVal;
       end else begin
-        waddr_onehot_a[i] = 1'b0;
+        if (we_a_i) begin
+          wdata_a_q <= wdata_a_i;
+        end
+      end
+    end
+
+    // Write address decoding
+    always_comb begin : wad
+      for (int i = 0; i < NUM_WORDS; i++) begin : wad_word_iter
+        if (we_a_i && (waddr_a_int == 5'(i))) begin
+          waddr_onehot_a[i] = 1'b1;
+        end else begin
+          waddr_onehot_a[i] = 1'b0;
+        end
+      end
+    end
+
+    logic unused_strobe;
+    assign unused_strobe = waddr_onehot_a[0]; // this is never read from in this case
+
+    // Individual clock gating (if integrated clock-gating cells are available)
+    for (genvar x = 1; x < NUM_WORDS; x++) begin : gen_cg_word_iter
+      lowrisc_prim_clock_gating cg_i (
+          .clk_i     ( clk_int           ),
+          .en_i      ( waddr_onehot_a[x] ),
+          .test_en_i ( test_en_i         ),
+          .clk_o     ( mem_clocks[x]     )
+      );
+    end
+
+    // Actual write operation:
+    // Generate the sequential process for the NUM_WORDS words of the memory.
+    // The process is synchronized with the clocks mem_clocks[i], i = 1, ..., NUM_WORDS-1.
+    for (genvar i = 1; i < NUM_WORDS; i++) begin : g_rf_latches
+      always_latch begin
+        if (mem_clocks[i]) begin
+          mem[i] = wdata_a_q;
+        end
+      end
+    end
+
+    // With dummy instructions enabled, R0 behaves as a real register but will always return 0 for
+    // real instructions.
+    if (DummyInstructions) begin : g_dummy_r0
+      // SEC_CM: CTRL_FLOW.UNPREDICTABLE
+      logic                 we_r0_dummy;
+      logic                 r0_clock;
+      logic [DataWidth-1:0] mem_r0;
+
+      // Write enable for dummy R0 register (waddr_a_i will always be 0 for dummy instructions)
+      assign we_r0_dummy = we_a_i & dummy_instr_wb_i;
+
+
+      // R0 clock gate
+      lowrisc_prim_clock_gating cg_i (
+          .clk_i     ( clk_int     ),
+          .en_i      ( we_r0_dummy ),
+          .test_en_i ( test_en_i   ),
+          .clk_o     ( r0_clock    )
+      );
+
+      always_latch begin : latch_wdata
+        if (r0_clock) begin
+          mem_r0 = wdata_a_q;
+        end
+      end
+
+      // Output the dummy data for dummy instructions, otherwise R0 reads as zero
+      assign mem[0] = dummy_instr_id_i ? mem_r0 : WordZeroVal;
+
+    end else begin : g_normal_r0
+      logic unused_dummy_instr;
+      assign unused_dummy_instr = dummy_instr_id_i ^ dummy_instr_wb_i;
+
+      assign mem[0] = WordZeroVal;
+    end
+
+  end
+
+
+
+endmodule
+// Copyright lowRISC contributors (OpenTitan project).
+// Licensed under the Apache License, Version 2.0, see LICENSE for details.
+// SPDX-License-Identifier: Apache-2.0
+
+// Copyright lowRISC contributors (OpenTitan project).
+// Licensed under the Apache License, Version 2.0, see LICENSE for details.
+// SPDX-License-Identifier: Apache-2.0
+
+// Macros and helper code for using assertions.
+//  - Provides default clk and rst options to simplify code
+//  - Provides boiler plate template for common assertions
+
+
+
+
+///////////////////
+// Helper macros //
+///////////////////
+
+// Default clk and reset signals used by assertion macros below.
+
+
+
+// Converts an arbitrary block of code into a Verilog string
+
+
+// ASSERT_ERROR logs an error message with either `uvm_error or with $error.
+//
+// This somewhat duplicates `DV_ERROR macro defined in hw/dv/sv/dv_utils/dv_macros.svh. The reason
+// for redefining it here is to avoid creating a dependency.
+
+
+// This macro is suitable for conditionally triggering lint errors, e.g., if a Sec parameter takes
+// on a non-default value. This may be required for pre-silicon/FPGA evaluation but we don't want
+// to allow this for tapeout.
+
+
+// Static assertions for checks inside SV packages. If the conditions is not true, this will
+// trigger an error during elaboration.
+
+
+// The basic helper macros are actually defined in "implementation headers". The macros should do
+// the same thing in each case (except for the dummy flavour), but in a way that the respective
+// tools support.
+//
+// If the tool supports assertions in some form, we also define INC_ASSERT (which can be used to
+// hide signal definitions that are only used for assertions).
+//
+// The list of basic macros supported is:
+//
+//  ASSERT_I:     Immediate assertion. Note that immediate assertions are sensitive to simulation
+//                glitches.
+//
+//  ASSERT_INIT:  Assertion in initial block. Can be used for things like parameter checking.
+//
+//  ASSERT_INIT_NET: Assertion in initial block. Can be used for initial value of a net.
+//
+//  ASSERT_FINAL: Assertion in final block. Can be used for things like queues being empty at end of
+//                sim, all credits returned at end of sim, state machines in idle at end of sim.
+//
+//  ASSERT_AT_RESET: Assertion just before reset. Can be used to check sum-like properties that get
+//                   cleared at reset.
+//                   Note that unless your simulation ends with a reset, the property does not get
+//                   checked at end of simulation; use ASSERT_AT_RESET_AND_FINAL if the property
+//                   should also get checked at end of simulation.
+//
+//  ASSERT_AT_RESET_AND_FINAL: Assertion just before reset and in final block. Can be used to check
+//                             sum-like properties before every reset and at the end of simulation.
+//
+//  ASSERT:       Assert a concurrent property directly. It can be called as a module (or
+//                interface) body item.
+//
+//                Note: We use (__rst !== '0) in the disable iff statements instead of (__rst ==
+//                '1). This properly disables the assertion in cases when reset is X at the
+//                beginning of a simulation. For that case, (reset == '1) does not disable the
+//                assertion.
+//
+//  ASSERT_NEVER: Assert a concurrent property NEVER happens
+//
+//  ASSERT_KNOWN: Assert that signal has a known value (each bit is either '0' or '1') after reset.
+//                It can be called as a module (or interface) body item.
+//
+//  COVER:        Cover a concurrent property
+//
+//  ASSUME:       Assume a concurrent property
+//
+//  ASSUME_I:     Assume an immediate property
+
+
+ // Copyright lowRISC contributors (OpenTitan project).
+// Licensed under the Apache License, Version 2.0, see LICENSE for details.
+// SPDX-License-Identifier: Apache-2.0
+
+// Macro bodies included by prim_assert.sv for tools that don't support assertions. See
+// prim_assert.sv for documentation for each of the macros.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+//////////////////////////////
+// Complex assertion macros //
+//////////////////////////////
+
+// Assert that signal is an active-high pulse with pulse length of 1 clock cycle
+
+
+// Assert that a property is true only when an enable signal is set.  It can be called as a module
+// (or interface) body item.
+
+
+// Assert that signal has a known value (each bit is either '0' or '1') after reset if enable is
+// set.  It can be called as a module (or interface) body item.
+
+
+//////////////////////////////////
+// For formal verification only //
+//////////////////////////////////
+
+// Note that the existing set of ASSERT macros specified above shall be used for FPV,
+// thereby ensuring that the assertions are evaluated during DV simulations as well.
+
+// ASSUME_FPV
+// Assume a concurrent property during formal verification only.
+
+
+// ASSUME_I_FPV
+// Assume a concurrent property during formal verification only.
+
+
+// COVER_FPV
+// Cover a concurrent property during formal verification
+
+
+// FPV assertion that proves that the FSM control flow is linear (no loops)
+// The sequence triggers whenever the state changes and stores the current state as "initial_state".
+// Then thereafter we must never see that state again until reset.
+// It is possible for the reset to release ahead of the clock.
+// Create a small "gray" window beyond the usual rst time to avoid
+// checking.
+
+
+// Copyright lowRISC contributors (OpenTitan project).
+// Licensed under the Apache License, Version 2.0, see LICENSE for details.
+// SPDX-License-Identifier: Apache-2.0
+
+// // Macros and helper code for security countermeasures.
+
+
+
+
+
+
+// When a named error signal rises, expect to see an associated error in at most MAX_CYCLES_ cycles.
+//
+// The NAME_ argument gets included in the name of the generated assertion, following an FpSecCm
+// prefix. The error signal should be at HIER_.ERR_NAME_ and the posedge is ignored if GATE_ is
+// true.
+//
+// This macro drives a magic "unused_assert_connected" signal, which is used for a static check to
+// ensure the assertions are in place.
+
+
+// When an error signal rises, expect to see the associated alert in at most MAX_CYCLE_ cycles.
+//
+// The NAME_, HIER_, GATE_, MAX_CYCLES_ and ERR_NAME_ arguments are the same as for
+// `ASSERT_ERROR_TRIGGER_ERR. The ALERT_ argument is the name of the alert that we expect to be
+// asserted.
+//
+// This macro adds an assumption that says the named error signal will stay low for the first 10
+// cycles after reset.
+
+
+// When an error signal rises, expect to see the associated ALERT_IN_ signal go high in at most
+// MAX_CYCLES_
+//
+// This is expected to cause an alert to be signalled, but avoids needing to reason about the
+// internals of the alert sender (which are checked with formal properties in the prim_alert_rxtx*
+// cores).
+//
+// The NAME_, HIER_, GATE_, MAX_CYCLES_ and ERR_NAME_ arguments are the same as for
+// `ASSERT_ERROR_TRIGGER_ERR.
+
+
+////////////////////////////////////////////////////////////////////////////////
+//
+// Assertions for CMs that trigger alerts
+//
+////////////////////////////////////////////////////////////////////////////////
+
+
+
+
+
+
+
+
+
+
+
+
+
+////////////////////////////////////////////////////////////////////////////////
+//
+// The input flavour of assertions for CMs that trigger alerts
+//
+// Note that the default value for MAX_CYCLES_ in these assertions is much smaller than
+// _SEC_CM_ALERT_MAX_CYC. Because we are asserting something about the *input* for the alert system,
+// the timing can be much tighter: we default to two cycles.
+//
+////////////////////////////////////////////////////////////////////////////////
+
+
+
+
+
+
+
+
+
+
+
+
+
+////////////////////////////////////////////////////////////////////////////////
+//
+// Assertions for CMs that trigger some other form of error
+//
+////////////////////////////////////////////////////////////////////////////////
+
+
+
+
+
+
+
+
+
+
+
+ // PRIM_ASSERT_SEC_CM_SVH
+
+// Copyright lowRISC contributors (OpenTitan project).
+// Licensed under the Apache License, Version 2.0, see LICENSE for details.
+// SPDX-License-Identifier: Apache-2.0
+
+
+
+
+/////////////////////////////////////
+// Default Values for Macros below //
+/////////////////////////////////////
+
+
+
+
+
+/////////////////////
+// Register Macros //
+/////////////////////
+
+// TODO: define other variations of register macros so that they can be used throughout all designs
+// to make the code more concise.
+
+// Register with asynchronous reset.
+
+
+///////////////////////////
+// Macro for Sparse FSMs //
+///////////////////////////
+
+// Simulation tools typically infer FSMs and report coverage for these separately. However, tools
+// like Xcelium and VCS seem to have problems inferring FSMs if the state register is not coded in
+// a behavioral always_ff block in the same hierarchy. To that end, this uses a modified variant
+// with a second behavioral register definition for RTL simulations so that FSMs can be inferred.
+// Note that in this variant, the __q output is disconnected from prim_sparse_fsm_flop and attached
+// to the behavioral flop. An assertion is added to ensure equivalence between the
+// prim_sparse_fsm_flop output and the behavioral flop output in that case.
+
+
+ // PRIM_FLOP_MACROS_SV
+
+
+ // PRIM_ASSERT_SV
+
+
+// Assumes a tagged capability load always arrives downstream as exactly two consecutive,
+// uninterrupted 32-bit responses from a single, in-order requester.
+module lowrisc_ibex_trvk #(
+  // The number of outstanding transaction the IP supports
+  parameter int unsigned NumOutstanding     = 32'd4,
+  // The width of the meta memory byte address space used to store the revocation bits
+  parameter int unsigned RevBitmapAddrWidth = 32'd11,
+  // The base byte address of the meta SRAM holding the revocation bitmap
+  parameter int unsigned RevBitmapBaseAddr  = 32'h0000_0000,
+  // Enable ECC checking on the revocation bitmap memory port
+  parameter bit          MemECC             = 1'b1
+)(
+  input  logic clk_i,
+  input  logic rst_ni,
+
+  // The base address of the (heap) memory where to be revocable capabilities point to
+  input logic [31:0] heap_base_addr_i,
+
+  // Upstream port
+  input  logic        upstream_req_i,
+  output logic        upstream_gnt_o,
+  output logic        upstream_rvalid_o,
+  input  logic        upstream_we_i,
+  input  logic [3:0]  upstream_be_i,
+  input  logic [31:0] upstream_addr_i,
+  input  logic [31:0] upstream_wdata_i,
+  input  logic [6:0]  upstream_wdata_intg_i,
+  output logic [31:0] upstream_rdata_o,
+  output logic [6:0]  upstream_rdata_intg_o,
+  output logic        upstream_err_o,
+  input  logic        upstream_tag_i,
+  output logic        upstream_tag_o,
+
+  // Downstream port
+  output logic        downstream_req_o,
+  input  logic        downstream_gnt_i,
+  input  logic        downstream_rvalid_i,
+  output logic        downstream_we_o,
+  output logic [3:0]  downstream_be_o,
+  output logic [31:0] downstream_addr_o,
+  output logic [31:0] downstream_wdata_o,
+  output logic [6:0]  downstream_wdata_intg_o,
+  input  logic [31:0] downstream_rdata_i,
+  input  logic [6:0]  downstream_rdata_intg_i,
+  input  logic        downstream_err_i,
+  output logic        downstream_tag_o,
+  input  logic        downstream_tag_i,
+
+  // Revocation bitmap memory port
+  output logic        revbm_req_o,
+  input  logic        revbm_gnt_i,
+  input  logic        revbm_rvalid_i,
+  output logic [31:0] revbm_addr_o,
+  input  logic [31:0] revbm_rdata_i,
+  input  logic [6:0]  revbm_rdata_intg_i,
+  input  logic        revbm_err_i,
+
+  // Error signals
+  output logic revbm_data_intg_error_o,
+  output logic revbm_device_error_o
+);
+
+  import lowrisc_ibex_cheriot_pkg::*;
+
+  ///////////
+  // Types //
+  ///////////
+
+  localparam int unsigned RevBitmapWordAddrWidth = RevBitmapAddrWidth - 32'd2;
+
+  // Revocation bitmap word address type
+  typedef logic [RevBitmapWordAddrWidth-1:0] revbm_addr_t;
+
+  // Local capability metadata type to facilitate parsing of the fields.
+  typedef struct packed {
+    exp_t    exponent;
+    cbound_t base;
+    otype_t  otype;
+    cperms_t cperms;
+  } cap_meta_t;
+
+  // Local downstream response type
+  typedef struct packed {
+    logic [31:0] data;
+    logic [6:0]  intg;
+    logic        tag;
+    logic        err;
+  } ds_rsp_t;
+
+
+  /////////////
+  // Signals //
+  /////////////
+
+  // Signals connecting the request to the alignment store.
+  logic align_fork_valid;
+  logic align_fork_ready;
+
+  // Alignment store output
+  logic misalign_flag_out;
+  logic misalign_flag_out_valid;
+  logic misalign_flag_out_ready;
+
+  // Pointer store signals
+  logic [31:0] ptr_storage_q;
+  logic        ptr_storage_valid_q;
+  logic        ptr_storage_enable;
+
+  // Downstream response store output
+  ds_rsp_t downstream_rsp_in;
+  ds_rsp_t downstream_rsp_out;
+  logic    downstream_rsp_out_valid;
+  logic    downstream_rsp_out_ready;
+  logic    downstream_rsp_wready;
+  logic    unused_downstream_rsp_wready;
+
+  // Base (address) calculation
+  cap_meta_t    cap_meta;
+  logic         unused_cap_meta;
+  logic         is_sealing_cap;
+  logic [32:0]  cap_base_33;
+  logic         unused_cap_base_33;
+  logic [31:0]  cap_base;
+  cbound_t      addr_mid;
+  cap_cor_t     cap_correction;
+  logic         unused_cap_correction;
+
+  // Revocation bitmap addressing
+  logic [31:0] revbm_cap_addr;
+  logic [31:0] revbm_bit_addr;
+  logic [ 4:0] revbm_bit_select;
+  revbm_addr_t revbm_addr;
+  logic        revbm_out_of_range;
+
+  // Revocation bitmap signals
+  logic revbm_req_required;
+  logic revbm_rsp_ready;
+  logic revbm_outstanding_q;
+  logic revbm_revoked;
+
+  // Bitmap response ECC signals
+  logic [1:0] revbm_rsp_data_intg_error;
+
+
+  //////////////////////////////////////
+  // Upstream to Downstream Intercept //
+  //////////////////////////////////////
+
+  // Both the downstream port and the alignment store need to handshake for
+  // the stream to advance.
+  lowrisc_stream_fork #(
+    .N_OUP(32'd2)
+  ) u_stream_fork_us2ds (
+    .clk_i,
+    .rst_ni,
+    .valid_i(upstream_req_i),
+    .ready_o(upstream_gnt_o),
+    .valid_o({align_fork_valid, downstream_req_o}),
+    .ready_i({align_fork_ready, downstream_gnt_i})
+  );
+
+  // The upstream port and on lookup the revocation bitmap must handshake to advance the stream
+  // We use `revbm_req_required` as a section signal here. If there is a bitmap lookup required,
+  // this signal gets asserted beyond the request handshake completion until the response arrives.
+  lowrisc_stream_join_dynamic #(
+    .N_INP(32'd2)
+  ) u_stream_join_dynamic_ds2us (
+    .inp_valid_i({revbm_rvalid_i,     downstream_rsp_out_valid}),
+    .inp_ready_o({revbm_rsp_ready,    downstream_rsp_out_ready}),
+    .sel_i      ({revbm_req_required, 1'b1                    }),
+    .oup_valid_o(upstream_rvalid_o),
+    .oup_ready_i(1'b1)
+  );
+
+  // Forward OBI payload between upstream and downstream
+  assign downstream_we_o         = upstream_we_i;
+  assign downstream_be_o         = upstream_be_i;
+  assign downstream_addr_o       = upstream_addr_i;
+  assign downstream_wdata_o      = upstream_wdata_i;
+  assign downstream_wdata_intg_o = upstream_wdata_intg_i;
+  assign upstream_rdata_o        = downstream_rsp_out.data;
+  assign upstream_rdata_intg_o   = downstream_rsp_out.intg;
+  assign upstream_err_o          = downstream_rsp_out.err;
+
+  // Forward upstream to downstream CHERIoT tag without changes
+  assign downstream_tag_o = upstream_tag_i;
+
+  // Tag handling; always return tag except if we do a revocation bitmap lookup
+  assign upstream_tag_o = (revbm_rvalid_i ? !revbm_revoked : 1'b1) & downstream_rsp_out.tag;
+
+  // 64-bit alignment store
+  lowrisc_prim_fifo_sync #(
+    .Width(32'd1),
+    .Pass(1'b0),
+    .Depth(NumOutstanding),
+    .NeverClears(1'b1),
+    .Secure(1'b0)
+  ) u_prim_fifo_sync_align (
+    .clk_i,
+    .rst_ni,
+    .clr_i   (1'b0),
+    .wvalid_i(align_fork_valid),
+    .wready_o(align_fork_ready),
+    .wdata_i (upstream_addr_i[2]),
+    .rvalid_o(misalign_flag_out_valid),
+    .rready_i(misalign_flag_out_ready),
+    .rdata_o (misalign_flag_out),
+    .full_o  (),
+    .depth_o (),
+    .err_o   ()
+  );
+
+  // Element is consumed, if upstream handshakes response
+  assign misalign_flag_out_ready = upstream_rvalid_o;
+
+
+  ///////////////////
+  // Pointer Store //
+  ///////////////////
+
+  // Pointer valid store. Pointer, `ptr` refers here to the lower word of a capability, which
+  // corresponds to the C pointer. The 32-bit OBI interconnect first passes the pointer, which
+  // is stored in `ptr_storage_q` with a valid signal in `ptr_storage_valid_q`.
+
+  // Pointer buffer could be filled iff tag valid & 64-bit aligned.
+  assign ptr_storage_enable = downstream_rsp_out.tag && !misalign_flag_out &&
+                            misalign_flag_out_valid;
+
+  // Pointer store
+  always_ff @(posedge clk_i or negedge rst_ni) begin : proc_pointer_store
+    if(!rst_ni) begin
+      ptr_storage_q <= '0;
+    end else begin
+      if (misalign_flag_out_ready && ptr_storage_enable) begin
+        ptr_storage_q <= downstream_rsp_out.data;
+      end
+    end
+  end
+
+  // Pointer valid store
+  always_ff @(posedge clk_i or negedge rst_ni) begin : proc_pointer_valid_store
+    if(!rst_ni) begin
+      ptr_storage_valid_q <= 1'b0;
+    end else begin
+      if (misalign_flag_out_ready) begin
+        ptr_storage_valid_q <= ptr_storage_enable;
       end
     end
   end
 
 
-  logic unused_strobe;
-  assign unused_strobe = waddr_onehot_a[0]; // this is never read from in this case
+  //////////////////////////////////
+  // Downstream Response Latching //
+  //////////////////////////////////
 
-  // Individual clock gating (if integrated clock-gating cells are available)
-  for (genvar x = 1; x < NUM_WORDS; x++) begin : gen_cg_word_iter
-    lowrisc_prim_clock_gating cg_i (
-        .clk_i     ( clk_int           ),
-        .en_i      ( waddr_onehot_a[x] ),
-        .test_en_i ( test_en_i         ),
-        .clk_o     ( mem_clocks[x]     )
+  assign downstream_rsp_in = '{
+    data: downstream_rdata_i,
+    intg: downstream_rdata_intg_i,
+    tag:  downstream_tag_i,
+    err:  downstream_err_i
+  };
+
+  // downstream response store
+  lowrisc_prim_fifo_sync #(
+    .Width($bits(ds_rsp_t)),
+    .Pass(1'b1),
+    .Depth(NumOutstanding),
+    .NeverClears(1'b1),
+    .Secure(1'b0)
+  ) u_prim_fifo_ds_rsp_store (
+    .clk_i,
+    .rst_ni,
+    .clr_i   (1'b0),
+    .wvalid_i(downstream_rvalid_i),
+    .wready_o(downstream_rsp_wready),
+    .wdata_i (downstream_rsp_in),
+    .rvalid_o(downstream_rsp_out_valid),
+    .rready_i(downstream_rsp_out_ready),
+    .rdata_o (downstream_rsp_out),
+    .full_o  (),
+    .depth_o (),
+    .err_o   ()
+  );
+
+
+  ////////////////////////////////
+  // Bitmap Address Calculation //
+  ////////////////////////////////
+
+  assign cap_meta = '{
+    base:     downstream_rsp_out.data[8:0],
+    exponent: cheriot_expand_exp(downstream_rsp_out.data[21:18]),
+    otype:    downstream_rsp_out.data[24:22],
+    cperms:   downstream_rsp_out.data[30:25]
+  };
+
+  // Not all fields are used
+  assign unused_cap_meta = ^{cap_meta.otype, cap_meta.cperms[5]};
+
+  // Check if cap is sealing cap
+  assign is_sealing_cap = cheriot_is_sealing_cap(cap_meta.cperms);
+
+  // Extract the middle field from the pointer, bounds depend on exponent, width fixed
+  assign addr_mid = cbound_t'(ptr_storage_q >> cap_meta.exponent);
+
+  // Fetch the correction values, we are only interested in the base correction value (1 bit)
+  // top-related inputs are set to zero, top-related outputs ignored
+  assign cap_correction = cheriot_compute_corrections('0, cap_meta.base, addr_mid);
+
+  // Calculate the base address of the capability as a 33-bit value
+  assign cap_base_33 = cheriot_expand_bound33(cap_meta.base,
+                                              cheriot_get_base_correction(cap_correction),
+                                              cap_meta.exponent, ptr_storage_q);
+
+  // We don't need the correction bits corresponding to the top address
+  assign unused_cap_correction = ^cap_correction;
+
+  // The MSB is unused in our case
+  assign {unused_cap_base_33, cap_base} = cap_base_33;
+
+  // Address in the revocation bitmap
+  assign revbm_cap_addr = cap_base - heap_base_addr_i;
+
+  // Bit address in the revocation bitmap (every bit corresponds to one 64-bit capability)
+  assign revbm_bit_addr = revbm_cap_addr >> $clog2(64/8);
+
+  // Word address of the revocation bitmap
+  assign revbm_addr = revbm_bit_addr[RevBitmapWordAddrWidth+$clog2(32)-1:$clog2(32)];
+
+  // Bit select
+  assign revbm_bit_select = revbm_bit_addr[$clog2(32)-1:0];
+
+  // Capability base is outside of the bitmap range
+  assign revbm_out_of_range = |(revbm_bit_addr[31:RevBitmapWordAddrWidth+$clog2(32)]);
+
+
+  //////////////////////
+  // Bitmap Interface //
+  //////////////////////
+
+  // We have loaded valid capability pointer, now we see valid metadata, not a sealing cap,
+  // and are pointing into the revocation bitmap
+  assign revbm_req_required = !is_sealing_cap          && // Not sealing cap
+                              ptr_storage_valid_q      && // The pointer stored is valid
+                              downstream_rsp_out.tag   && // We are looking at a capability
+                              downstream_rsp_out_valid && // The stored response is valid
+                              misalign_flag_out        && // We are on the second word of the cap
+                              misalign_flag_out_valid  && // The latched alignment bits are valid
+                              !revbm_out_of_range;        // We hit the heap range
+
+  // Assemble read-only request
+  assign revbm_req_o  = revbm_req_required && !revbm_outstanding_q;
+  assign revbm_addr_o = RevBitmapBaseAddr +
+                         {{32 - RevBitmapWordAddrWidth - 2{1'b0}}, revbm_addr, 2'b00};
+
+  // Is the current capability marked as revoked?
+  assign revbm_revoked = revbm_rdata_i[revbm_bit_select] || revbm_err_i ||
+                         (|revbm_rsp_data_intg_error);
+
+  // Did we receive a device error?
+  assign revbm_device_error_o = revbm_rvalid_i && revbm_err_i;
+
+  // Check the bitmap response data integrity
+  if (MemECC) begin : gen_revbm_intg_check
+    lowrisc_prim_secded_inv_39_32_dec u_prim_secded_inv_39_32_dec_bm_rsp_data (
+      .data_i    ({revbm_rdata_intg_i, revbm_rdata_i}),
+      .data_o    (),
+      .syndrome_o(),
+      .err_o     (revbm_rsp_data_intg_error)
     );
+
+    // Mask response integrity error if response is not being handshaked
+    assign revbm_data_intg_error_o = revbm_rvalid_i && (|revbm_rsp_data_intg_error);
+  end else begin : gen_no_revbm_intg_check
+    logic unused_revbm_rdata_intg;
+    assign unused_revbm_rdata_intg = ^revbm_rdata_intg_i;
+
+    assign revbm_rsp_data_intg_error = 2'b00;
+    assign revbm_data_intg_error_o   = 1'b0;
   end
 
-  // Actual write operation:
-  // Generate the sequential process for the NUM_WORDS words of the memory.
-  // The process is synchronized with the clocks mem_clocks[i], i = 1, ..., NUM_WORDS-1.
-  for (genvar i = 1; i < NUM_WORDS; i++) begin : g_rf_latches
-    always_latch begin
-      if (mem_clocks[i]) begin
-        mem[i] = wdata_a_q;
+  // One outstanding request
+  always_ff @(posedge clk_i or negedge rst_ni) begin : proc_rev_req_store
+    if(!rst_ni) begin
+      revbm_outstanding_q <= 1'b0;
+    end else begin
+      if (revbm_rvalid_i && revbm_rsp_ready) begin
+        revbm_outstanding_q <= 1'b0;
+      end else if (revbm_req_o && revbm_gnt_i) begin
+        revbm_outstanding_q <= 1'b1;
       end
     end
   end
 
-  // With dummy instructions enabled, R0 behaves as a real register but will always return 0 for
-  // real instructions.
-  if (DummyInstructions) begin : g_dummy_r0
-    // SEC_CM: CTRL_FLOW.UNPREDICTABLE
-    logic                 we_r0_dummy;
-    logic                 r0_clock;
-    logic [DataWidth-1:0] mem_r0;
+  // downstream_rsp_wready is only used for the assertion
+  assign unused_downstream_rsp_wready = downstream_rsp_wready;
 
-    // Write enable for dummy R0 register (waddr_a_i will always be 0 for dummy instructions)
-    assign we_r0_dummy = we_a_i & dummy_instr_wb_i;
+  ////////////////
+  // Assertions //
+  ////////////////
 
-    // R0 clock gate
-    lowrisc_prim_clock_gating cg_i (
-        .clk_i     ( clk_int     ),
-        .en_i      ( we_r0_dummy ),
-        .test_en_i ( test_en_i   ),
-        .clk_o     ( r0_clock    )
-    );
+  // Every delivered response has its alignment information available.
 
-    always_latch begin : latch_wdata
-      if (r0_clock) begin
-        mem_r0 = wdata_a_q;
-      end
-    end
+  // The downstream response store never overflows.
 
-    // Output the dummy data for dummy instructions, otherwise R0 reads as zero
-    assign mem[0] = dummy_instr_id_i ? mem_r0 : WordZeroVal;
+  // No unsolicited bitmap response; this is what keeps `upstream_tag_o` safe.
 
-  end else begin : g_normal_r0
-    logic unused_dummy_instr;
-    assign unused_dummy_instr = dummy_instr_id_i ^ dummy_instr_wb_i;
+  // OBI request stability on the bitmap port.
 
-    assign mem[0] = WordZeroVal;
-  end
+
 
 
 
@@ -54973,7 +61958,8 @@ endmodule
 // LockstepOffset cycles.
 
 // SEC_CM: LOGIC.SHADOW
-module lowrisc_ibex_lockstep import lowrisc_ibex_pkg::*; #(
+module lowrisc_ibex_lockstep import lowrisc_ibex_pkg::*; import lowrisc_ibex_cheriot_pkg::*; #(
+  parameter base_isa_e              BaseIsa                     = BaseIsaRV32I,
   parameter int unsigned            LockstepOffset              = 1,
   parameter bit                     PMPEnable                   = 1'b0,
   parameter int unsigned            PMPGranularity              = 0,
@@ -55006,6 +61992,7 @@ module lowrisc_ibex_lockstep import lowrisc_ibex_pkg::*; #(
   parameter bit                     RegFileECC                  = 1'b0,
   parameter int unsigned            RegFileDataWidth            = 32,
   parameter int unsigned            RegFileDataEccWidth         = 39,
+  parameter int unsigned            RegFileCapEccWidth          = REGCAP_W + 7,
   parameter regfile_e               RegFile                     = RegFileFF,
   parameter bit                     MemECC                      = 1'b0,
   parameter int unsigned            MemDataWidth                = MemECC ? 32 + 7 : 32,
@@ -55023,6 +62010,7 @@ module lowrisc_ibex_lockstep import lowrisc_ibex_pkg::*; #(
 
   input  logic [31:0]                  hart_id_i,
   input  logic [31:0]                  boot_addr_i,
+  input  ibex_mubi_t                   cheriot_enable_i,
 
   input  logic                         instr_req_i,
   input  logic                         instr_gnt_i,
@@ -55038,11 +62026,17 @@ module lowrisc_ibex_lockstep import lowrisc_ibex_pkg::*; #(
   input  logic [3:0]                   data_be_i,
   input  logic [31:0]                  data_addr_i,
   input  logic [31:0]                  data_wdata_i,
+  input  logic                         data_tag_i,
   input  logic [MemDataWidth-1:0]      data_rdata_i,
+  input  logic                         data_rdata_tag_i,
   input  logic                         data_err_i,
 
   input  logic [RegFileDataWidth-1:0]  rf_rdata_a_i,
   input  logic [RegFileDataWidth-1:0]  rf_rdata_b_i,
+
+  input  cap_t                         rf_wcap_wb_i,
+  input  cap_t                         rf_rcap_a_i,
+  input  cap_t                         rf_rcap_b_i,
 
   input  logic [IC_NUM_WAYS-1:0]       ic_tag_req_i,
   input  logic                         ic_tag_write_i,
@@ -55089,6 +62083,7 @@ module lowrisc_ibex_lockstep import lowrisc_ibex_pkg::*; #(
 );
 
   import lowrisc_prim_secded_pkg::SecdedInv3932ZeroWord;
+  import lowrisc_prim_secded_pkg::SecdedInv6457ZeroEcc;
 
   localparam int unsigned LockstepOffsetW = lowrisc_prim_util_pkg::vbits(LockstepOffset);
   // Core outputs are delayed for an extra cycle due to shadow output registers
@@ -55203,6 +62198,7 @@ module lowrisc_ibex_lockstep import lowrisc_ibex_pkg::*; #(
     logic                        data_gnt;
     logic                        data_rvalid;
     logic [MemDataWidth-1:0]     data_rdata;
+    logic                        data_rdata_tag;
     logic                        data_err;
     logic [RegFileDataWidth-1:0] rf_rdata_a;
     logic [RegFileDataWidth-1:0] rf_rdata_b;
@@ -55215,6 +62211,9 @@ module lowrisc_ibex_lockstep import lowrisc_ibex_pkg::*; #(
     ibex_mubi_t                  fetch_enable;
     ibex_mubi_t                  mcounteren_writable;
     logic                        ic_scr_key_valid;
+    ibex_mubi_t                  cheriot_enable;
+    cap_t                        rf_rcap_a;
+    cap_t                        rf_rcap_b;
   } delayed_inputs_t;
 
   delayed_inputs_t [LockstepOffset-1:0] shadow_inputs_q;
@@ -55284,6 +62283,7 @@ module lowrisc_ibex_lockstep import lowrisc_ibex_pkg::*; #(
   assign shadow_inputs_in.data_gnt            = data_gnt_i;
   assign shadow_inputs_in.data_rvalid         = data_rvalid_i;
   assign shadow_inputs_in.data_rdata          = data_rdata_i;
+  assign shadow_inputs_in.data_rdata_tag      = data_rdata_tag_i;
   assign shadow_inputs_in.data_err            = data_err_i;
   assign shadow_inputs_in.rf_rdata_a          = rf_rdata_a_i;
   assign shadow_inputs_in.rf_rdata_b          = rf_rdata_b_i;
@@ -55296,6 +62296,9 @@ module lowrisc_ibex_lockstep import lowrisc_ibex_pkg::*; #(
   assign shadow_inputs_in.fetch_enable        = fetch_enable_i;
   assign shadow_inputs_in.mcounteren_writable = mcounteren_writable_i;
   assign shadow_inputs_in.ic_scr_key_valid    = ic_scr_key_valid_i;
+  assign shadow_inputs_in.cheriot_enable      = cheriot_enable_i;
+  assign shadow_inputs_in.rf_rcap_a           = rf_rcap_a_i;
+  assign shadow_inputs_in.rf_rcap_b           = rf_rcap_b_i;
 
   ///////////////////
   // Output delays //
@@ -55309,6 +62312,7 @@ module lowrisc_ibex_lockstep import lowrisc_ibex_pkg::*; #(
     logic [3:0]              data_be;
     logic [31:0]             data_addr;
     logic [31:0]             data_wdata;
+    logic                    data_tag;
     logic [IC_NUM_WAYS-1:0]  ic_tag_req;
     logic                    ic_tag_write;
     logic [IC_INDEX_W-1:0]   ic_tag_addr;
@@ -55322,6 +62326,7 @@ module lowrisc_ibex_lockstep import lowrisc_ibex_pkg::*; #(
     crash_dump_t             crash_dump;
     logic                    double_fault_seen;
     ibex_mubi_t              core_busy;
+    cap_t                    rf_wcap_wb;
   } delayed_outputs_t;
 
   delayed_outputs_t [OutputsOffset-1:0]  core_outputs_q;
@@ -55336,6 +62341,7 @@ module lowrisc_ibex_lockstep import lowrisc_ibex_pkg::*; #(
   assign core_outputs_in.data_be             = data_be_i;
   assign core_outputs_in.data_addr           = data_addr_i;
   assign core_outputs_in.data_wdata          = data_wdata_i;
+  assign core_outputs_in.data_tag            = data_tag_i;
   assign core_outputs_in.ic_tag_req          = ic_tag_req_i;
   assign core_outputs_in.ic_tag_write        = ic_tag_write_i;
   assign core_outputs_in.ic_tag_addr         = ic_tag_addr_i;
@@ -55349,6 +62355,7 @@ module lowrisc_ibex_lockstep import lowrisc_ibex_pkg::*; #(
   assign core_outputs_in.crash_dump          = crash_dump_i;
   assign core_outputs_in.double_fault_seen   = double_fault_seen_i;
   assign core_outputs_in.core_busy           = core_busy_i;
+  assign core_outputs_in.rf_wcap_wb          = rf_wcap_wb_i;
 
   // Delay the outputs
   always_ff @(posedge clk_i) begin
@@ -55374,6 +62381,7 @@ module lowrisc_ibex_lockstep import lowrisc_ibex_pkg::*; #(
   // The following output does not need to be checked in the lockstep comparison as we anyways
   // check the data_wdata itself.
   logic [6:0]                     shadow_data_wdata_intg;
+  logic [MemDataWidth-1:0]        shadow_data_wdata_full;
 
   ///////////////////////////////
   // Shadow core instantiation //
@@ -55382,6 +62390,9 @@ module lowrisc_ibex_lockstep import lowrisc_ibex_pkg::*; #(
   logic shadow_alert_minor, shadow_alert_major_internal, shadow_alert_major_bus;
   logic [RegFileDataEccWidth - RegFileDataWidth - 1:0] shadow_rf_rdata_a_intg;
   logic [RegFileDataEccWidth - RegFileDataWidth - 1:0] shadow_rf_rdata_b_intg;
+  logic [RegFileCapEccWidth-1:0] shadow_rf_wcap_ecc_wb;
+  logic [6:0] shadow_rf_rcap_a_ecc;
+  logic [6:0] shadow_rf_rcap_b_ecc;
 
   lowrisc_ibex_core #(
     .PMPEnable            ( PMPEnable            ),
@@ -55414,6 +62425,7 @@ module lowrisc_ibex_lockstep import lowrisc_ibex_pkg::*; #(
     .DummyInstructions    ( DummyInstructions    ),
     .RegFileECC           ( RegFileECC           ),
     .RegFileDataWidth     ( RegFileDataEccWidth  ),
+    .RegFileCapEccWidth   ( RegFileCapEccWidth   ),
     .MemECC               ( MemECC               ),
     .MemDataWidth         ( MemDataWidth         ),
     .DmBaseAddr           ( DmBaseAddr           ),
@@ -55421,13 +62433,16 @@ module lowrisc_ibex_lockstep import lowrisc_ibex_pkg::*; #(
     .DmHaltAddr           ( DmHaltAddr           ),
     .DmExceptionAddr      ( DmExceptionAddr      ),
     .CsrMvendorId         ( CsrMvendorId         ),
-    .CsrMimpId            ( CsrMimpId            )
+    .CsrMimpId            ( CsrMimpId            ),
+    .BaseIsa              ( BaseIsa              )
   ) u_shadow_core (
     .clk_i               (clk_i),
     .rst_ni              (rst_shadow_n),
 
     .hart_id_i           (hart_id_i),
     .boot_addr_i         (boot_addr_i),
+
+    .cheriot_enable_i    (shadow_inputs_q[0].cheriot_enable),
 
     .instr_req_o         (shadow_outputs_d.instr_req),
     .instr_gnt_i         (shadow_inputs_q[0].instr_gnt),
@@ -55442,8 +62457,10 @@ module lowrisc_ibex_lockstep import lowrisc_ibex_pkg::*; #(
     .data_we_o           (shadow_outputs_d.data_we),
     .data_be_o           (shadow_outputs_d.data_be),
     .data_addr_o         (shadow_outputs_d.data_addr),
-    .data_wdata_o        ({shadow_data_wdata_intg, shadow_outputs_d.data_wdata}),
+    .data_wdata_o        (shadow_data_wdata_full),
+    .data_tag_o          (shadow_outputs_d.data_tag),
     .data_rdata_i        (shadow_inputs_q[0].data_rdata),
+    .data_tag_i          (shadow_inputs_q[0].data_rdata_tag),
     .data_err_i          (shadow_inputs_q[0].data_err),
 
     .dummy_instr_id_o    (shadow_dummy_instr_id),
@@ -55455,6 +62472,12 @@ module lowrisc_ibex_lockstep import lowrisc_ibex_pkg::*; #(
     .rf_wdata_wb_ecc_o   (shadow_rf_wdata_wb_ecc),
     .rf_rdata_a_ecc_i    ({shadow_rf_rdata_a_intg, shadow_inputs_q[0].rf_rdata_a}),
     .rf_rdata_b_ecc_i    ({shadow_rf_rdata_b_intg, shadow_inputs_q[0].rf_rdata_b}),
+
+    .rf_wcap_ecc_wb_o    (shadow_rf_wcap_ecc_wb),
+    .rf_rcap_a_ecc_i     ({shadow_rf_rcap_a_ecc,
+                           cheriot_regcap_to_vec(shadow_inputs_q[0].rf_rcap_a)}),
+    .rf_rcap_b_ecc_i     ({shadow_rf_rcap_b_ecc,
+                           cheriot_regcap_to_vec(shadow_inputs_q[0].rf_rcap_b)}),
 
     .ic_tag_req_o        (shadow_outputs_d.ic_tag_req),
     .ic_tag_write_o      (shadow_outputs_d.ic_tag_write),
@@ -55490,6 +62513,17 @@ module lowrisc_ibex_lockstep import lowrisc_ibex_pkg::*; #(
     .core_busy_o            (shadow_outputs_d.core_busy)
   );
 
+  // Extract cap data from shadow core's unified cap ECC output (cap in lower REGCAP_W bits)
+  assign shadow_outputs_d.rf_wcap_wb = cheriot_vec_to_regcap(shadow_rf_wcap_ecc_wb[REGCAP_W-1:0]);
+
+  // Extract data_wdata and ECC bits from shadow core's combined output
+  assign shadow_outputs_d.data_wdata = shadow_data_wdata_full[31:0];
+  if (MemECC) begin : gen_shadow_wdata_ecc
+    assign shadow_data_wdata_intg = shadow_data_wdata_full[MemDataWidth-1:32];
+  end else begin : gen_shadow_wdata_no_ecc
+    assign shadow_data_wdata_intg = '0;
+  end
+
   // Register the shadow core outputs
   always_ff @(posedge clk_i) begin
     shadow_outputs_q <= shadow_outputs_d;
@@ -55506,10 +62540,13 @@ module lowrisc_ibex_lockstep import lowrisc_ibex_pkg::*; #(
   // SEC_CM: DATA_REG_SW.GLITCH_DETECT
   if (RegFile == RegFileFF) begin : gen_shadow_regfile_ff
     lowrisc_ibex_register_file_ff #(
+      .BaseIsa          (BaseIsa),
       .RV32E            (RV32E),
       .DataWidth        (RegFileDataEccWidth - RegFileDataWidth),
       .DummyInstructions(DummyInstructions),
-      .WordZeroVal      (SecdedInv3932ZeroWord[RegFileDataEccWidth-1:RegFileDataWidth])
+      .WordZeroVal      (SecdedInv3932ZeroWord[RegFileDataEccWidth-1:RegFileDataWidth]),
+      .CapWidth         (7),
+      .CapWordZeroVal   (SecdedInv6457ZeroEcc)
     ) register_file_shadow_i (
       .clk_i            (clk_i),
       .rst_ni           (rst_shadow_n),
@@ -55517,21 +62554,28 @@ module lowrisc_ibex_lockstep import lowrisc_ibex_pkg::*; #(
       .test_en_i        (test_en_i),
       .dummy_instr_id_i (shadow_dummy_instr_id),
       .dummy_instr_wb_i (shadow_dummy_instr_wb),
+      .cheriot_enable_i (shadow_inputs_q[0].cheriot_enable),
 
       .raddr_a_i        (shadow_rf_raddr_a),
       .rdata_a_o        (shadow_rf_rdata_a_intg),
+      .rcap_a_o         (shadow_rf_rcap_a_ecc),
       .raddr_b_i        (shadow_rf_raddr_b),
       .rdata_b_o        (shadow_rf_rdata_b_intg),
+      .rcap_b_o         (shadow_rf_rcap_b_ecc),
       .waddr_a_i        (shadow_rf_waddr_wb),
       .wdata_a_i        (shadow_rf_wdata_wb_ecc[RegFileDataEccWidth-1:RegFileDataWidth]),
+      .wcap_a_i         (shadow_rf_wcap_ecc_wb[RegFileCapEccWidth-1:REGCAP_W]),
       .we_a_i           (shadow_rf_we_wb)
     );
   end else if (RegFile == RegFileFPGA) begin : gen_regfile_fpga
     lowrisc_ibex_register_file_fpga #(
+      .BaseIsa          (BaseIsa),
       .RV32E            (RV32E),
       .DataWidth        (RegFileDataEccWidth - RegFileDataWidth),
       .DummyInstructions(DummyInstructions),
-      .WordZeroVal      (SecdedInv3932ZeroWord[RegFileDataEccWidth-1:RegFileDataWidth])
+      .WordZeroVal      (SecdedInv3932ZeroWord[RegFileDataEccWidth-1:RegFileDataWidth]),
+      .CapWidth         (7),
+      .CapWordZeroVal   (SecdedInv6457ZeroEcc)
     ) register_file_shadow_i (
       .clk_i            (clk_i),
       .rst_ni           (rst_shadow_n),
@@ -55539,21 +62583,28 @@ module lowrisc_ibex_lockstep import lowrisc_ibex_pkg::*; #(
       .test_en_i        (test_en_i),
       .dummy_instr_id_i (shadow_dummy_instr_id),
       .dummy_instr_wb_i (shadow_dummy_instr_wb),
+      .cheriot_enable_i (shadow_inputs_q[0].cheriot_enable),
 
       .raddr_a_i        (shadow_rf_raddr_a),
       .rdata_a_o        (shadow_rf_rdata_a_intg),
+      .rcap_a_o         (shadow_rf_rcap_a_ecc),
       .raddr_b_i        (shadow_rf_raddr_b),
       .rdata_b_o        (shadow_rf_rdata_b_intg),
+      .rcap_b_o         (shadow_rf_rcap_b_ecc),
       .waddr_a_i        (shadow_rf_waddr_wb),
       .wdata_a_i        (shadow_rf_wdata_wb_ecc[RegFileDataEccWidth-1:RegFileDataWidth]),
+      .wcap_a_i         (shadow_rf_wcap_ecc_wb[RegFileCapEccWidth-1:REGCAP_W]),
       .we_a_i           (shadow_rf_we_wb)
     );
   end else if (RegFile == RegFileLatch) begin : gen_regfile_latch
     lowrisc_ibex_register_file_latch #(
+      .BaseIsa          (BaseIsa),
       .RV32E            (RV32E),
       .DataWidth        (RegFileDataEccWidth - RegFileDataWidth),
       .DummyInstructions(DummyInstructions),
-      .WordZeroVal      (SecdedInv3932ZeroWord[RegFileDataEccWidth-1:RegFileDataWidth])
+      .WordZeroVal      (SecdedInv3932ZeroWord[RegFileDataEccWidth-1:RegFileDataWidth]),
+      .CapWidth         (7),
+      .CapWordZeroVal   (SecdedInv6457ZeroEcc)
     ) register_file_shadow_i (
       .clk_i            (clk_i),
       .rst_ni           (rst_shadow_n),
@@ -55561,13 +62612,17 @@ module lowrisc_ibex_lockstep import lowrisc_ibex_pkg::*; #(
       .test_en_i        (test_en_i),
       .dummy_instr_id_i (shadow_dummy_instr_id),
       .dummy_instr_wb_i (shadow_dummy_instr_wb),
+      .cheriot_enable_i (shadow_inputs_q[0].cheriot_enable),
 
       .raddr_a_i        (shadow_rf_raddr_a),
       .rdata_a_o        (shadow_rf_rdata_a_intg),
+      .rcap_a_o         (shadow_rf_rcap_a_ecc),
       .raddr_b_i        (shadow_rf_raddr_b),
       .rdata_b_o        (shadow_rf_rdata_b_intg),
+      .rcap_b_o         (shadow_rf_rcap_b_ecc),
       .waddr_a_i        (shadow_rf_waddr_wb),
       .wdata_a_i        (shadow_rf_wdata_wb_ecc[RegFileDataEccWidth-1:RegFileDataWidth]),
+      .wcap_a_i         (shadow_rf_wcap_ecc_wb[RegFileCapEccWidth-1:REGCAP_W]),
       .we_a_i           (shadow_rf_we_wb)
     );
   end
@@ -55901,7 +62956,8 @@ endmodule
 /**
  * Top level module of the ibex RISC-V core
  */
-module lowrisc_ibex_top import lowrisc_ibex_pkg::*; #(
+module lowrisc_ibex_top import lowrisc_ibex_pkg::*; import lowrisc_ibex_cheriot_pkg::*; #(
+  parameter lowrisc_ibex_pkg::base_isa_e    BaseIsa                      = lowrisc_ibex_pkg::BaseIsaRV32I,
   parameter bit                     PMPEnable                    = 1'b0,
   parameter int unsigned            PMPGranularity               = 0,
   parameter int unsigned            PMPNumRegions                = 4,
@@ -55910,6 +62966,8 @@ module lowrisc_ibex_top import lowrisc_ibex_pkg::*; #(
   parameter lowrisc_ibex_pkg::pmp_cfg_t     PMPRstCfg[PMP_MAX_REGIONS]   = lowrisc_ibex_pkg::PmpCfgRst,
   parameter logic [PMP_ADDR_MSB:0]  PMPRstAddr[PMP_MAX_REGIONS]  = lowrisc_ibex_pkg::PmpAddrRst,
   parameter lowrisc_ibex_pkg::pmp_mseccfg_t PMPRstMsecCfg                = lowrisc_ibex_pkg::PmpMseccfgRst,
+  parameter int unsigned            CheriotRevBitmapAddrWidth    = 32'd11,
+  parameter int unsigned            CheriotRevBitmapBaseAddr     = 32'h0,
   parameter bit                     RV32E                        = 1'b0,
   parameter rv32m_e                 RV32M                        = RV32MFast,
   parameter rv32b_e                 RV32B                        = RV32BNone,
@@ -55959,8 +63017,12 @@ module lowrisc_ibex_top import lowrisc_ibex_pkg::*; #(
   input  lowrisc_prim_ram_1p_pkg::ram_1p_cfg_req_t [lowrisc_ibex_pkg::IC_NUM_WAYS-1:0] ram_cfg_icache_data_i,
   output lowrisc_prim_ram_1p_pkg::ram_1p_cfg_rsp_t [lowrisc_ibex_pkg::IC_NUM_WAYS-1:0] ram_cfg_icache_data_o,
 
+  input  ibex_mubi_t                                                   cheriot_enable_i,
+
   input  logic [31:0]                                                  hart_id_i,
   input  logic [31:0]                                                  boot_addr_i,
+
+  input  logic [31:0]                                                  trvk_heap_base_addr_i,
 
   // Instruction memory interface
   output logic                                                         instr_req_o,
@@ -55980,9 +63042,20 @@ module lowrisc_ibex_top import lowrisc_ibex_pkg::*; #(
   output logic [31:0]                                                  data_addr_o,
   output logic [31:0]                                                  data_wdata_o,
   output logic [6:0]                                                   data_wdata_intg_o,
+  output logic                                                         data_tag_o,
   input  logic [31:0]                                                  data_rdata_i,
   input  logic [6:0]                                                   data_rdata_intg_i,
+  input  logic                                                         data_tag_i,
   input  logic                                                         data_err_i,
+
+  // TRVK revocation bitmap read interface
+  output logic                                                         trvk_revbm_req_o,
+  input  logic                                                         trvk_revbm_gnt_i,
+  input  logic                                                         trvk_revbm_rvalid_i,
+  output logic [31:0]                                                  trvk_revbm_addr_o,
+  input  logic [31:0]                                                  trvk_revbm_rdata_i,
+  input  logic [6:0]                                                   trvk_revbm_rdata_intg_i,
+  input  logic                                                         trvk_revbm_err_i,
 
   // Interrupt inputs
   input  logic                                                         irq_software_i,
@@ -56038,10 +63111,11 @@ module lowrisc_ibex_top import lowrisc_ibex_pkg::*; #(
   localparam bit          Lockstep              = SecureIbex;
   localparam bit          ResetAll              = Lockstep;
   localparam bit          DummyInstructions     = SecureIbex;
-  localparam bit          RegFileECC            = 0;
+  localparam bit          RegFileECC            = 1'b0;
   localparam bit          RegFileLockstepECC    = Lockstep;
   localparam int unsigned RegFileDataWidth      = 32;
   localparam int unsigned RegFileDataEccWidth   = 32 + 7;
+  localparam int unsigned RegFileCapEccWidth    = REGCAP_W + 7;
   // Icache parameters
   localparam int unsigned BusSizeECC        = ICacheECC ? (BUS_SIZE + IC_DATA_ECC_SIZE) :
                                                            BUS_SIZE;
@@ -56050,6 +63124,12 @@ module lowrisc_ibex_top import lowrisc_ibex_pkg::*; #(
                                                            IC_TAG_SIZE;
   // Scrambling Parameter
   localparam int unsigned NumAddrScrRounds  = ICacheScramble ? 2 : 0;
+
+  // Ibex can have a maximum of 2 accesses outstanding on the DSide. This is because it does not
+  // speculative data accesses so the only requests that can be in flight must relate to a single
+  // ongoing load or store instruction. Due to unaligned access support a single load or store can
+  // generate 2 accesses.
+  localparam int unsigned MaxOutstandingDSideAccesses = 2;
 
   // Clock signals
   logic                        clk;
@@ -56066,11 +63146,29 @@ module lowrisc_ibex_top import lowrisc_ibex_pkg::*; #(
   logic [RegFileDataWidth-1:0] rf_wdata_wb;
   logic [RegFileDataWidth-1:0] rf_rdata_a;
   logic [RegFileDataWidth-1:0] rf_rdata_b;
+  logic [REGCAP_W-1:0]         rf_rcap_a, rf_rcap_b, rf_wcap;
 
   // Combined data and integrity for data and instruction busses
   logic [MemDataWidth-1:0]     data_wdata_core;
   logic [MemDataWidth-1:0]     data_rdata_core;
   logic [MemDataWidth-1:0]     instr_rdata_core;
+
+  // Core <-> TRVK connection
+  logic        trvk_req;
+  logic        trvk_gnt;
+  logic        trvk_rvalid;
+  logic        trvk_we;
+  logic [3:0]  trvk_be;
+  logic [31:0] trvk_addr;
+  logic [31:0] trvk_wdata;
+  logic [6:0]  trvk_wdata_intg;
+  logic        trvk_wtag;
+  logic [31:0] trvk_rdata;
+  logic [6:0]  trvk_rdata_intg;
+  logic        trvk_rtag;
+  logic        trvk_err;
+  logic        trvk_revbm_data_intg_error;
+  logic        trvk_revbm_device_error;
 
   // Core <-> RAMs signals
   logic [IC_NUM_WAYS-1:0]      ic_tag_req;
@@ -56155,16 +63253,16 @@ module lowrisc_ibex_top import lowrisc_ibex_pkg::*; #(
 
   // ibex_core takes integrity and data bits together. Combine the separate integrity and data
   // inputs here.
-  assign data_rdata_core[31:0] = data_rdata_i;
+  assign data_rdata_core[31:0] = trvk_rdata;
   assign instr_rdata_core[31:0] = instr_rdata_i;
 
   if (MemECC) begin : gen_mem_rdata_ecc
-    assign data_rdata_core[38:32] = data_rdata_intg_i;
-    assign instr_rdata_core[38:32] = instr_rdata_intg_i;
+    assign data_rdata_core[MemDataWidth-1:32] = trvk_rdata_intg;
+    assign instr_rdata_core[MemDataWidth-1:32] = instr_rdata_intg_i;
   end else begin : gen_non_mem_rdata_ecc
     logic unused_intg;
 
-    assign unused_intg = ^{instr_rdata_intg_i, data_rdata_intg_i};
+    assign unused_intg = ^{instr_rdata_intg_i, trvk_rdata_intg};
   end
 
   lowrisc_ibex_core #(
@@ -56198,6 +63296,7 @@ module lowrisc_ibex_top import lowrisc_ibex_pkg::*; #(
     .DummyInstructions    (DummyInstructions),
     .RegFileECC           (RegFileECC),
     .RegFileDataWidth     (RegFileDataWidth),
+    .RegFileCapEccWidth   (REGCAP_W),
     .MemECC               (MemECC),
     .MemDataWidth         (MemDataWidth),
     .DmBaseAddr           (DmBaseAddr),
@@ -56205,13 +63304,15 @@ module lowrisc_ibex_top import lowrisc_ibex_pkg::*; #(
     .DmHaltAddr           (DmHaltAddr),
     .DmExceptionAddr      (DmExceptionAddr),
     .CsrMvendorId         (CsrMvendorId),
-    .CsrMimpId            (CsrMimpId)
+    .CsrMimpId            (CsrMimpId),
+    .BaseIsa              (BaseIsa)
   ) u_ibex_core (
     .clk_i(clk),
     .rst_ni,
 
     .hart_id_i,
     .boot_addr_i,
+    .cheriot_enable_i,
 
     .instr_req_o,
     .instr_gnt_i,
@@ -56220,15 +63321,17 @@ module lowrisc_ibex_top import lowrisc_ibex_pkg::*; #(
     .instr_rdata_i(instr_rdata_core),
     .instr_err_i,
 
-    .data_req_o,
-    .data_gnt_i,
-    .data_rvalid_i,
-    .data_we_o,
-    .data_be_o,
-    .data_addr_o,
-    .data_wdata_o(data_wdata_core),
-    .data_rdata_i(data_rdata_core),
-    .data_err_i,
+    .data_req_o   (trvk_req),
+    .data_gnt_i   (trvk_gnt),
+    .data_rvalid_i(trvk_rvalid),
+    .data_we_o    (trvk_we),
+    .data_be_o    (trvk_be),
+    .data_addr_o  (trvk_addr),
+    .data_wdata_o (data_wdata_core),
+    .data_tag_o   (trvk_wtag),
+    .data_rdata_i (data_rdata_core),
+    .data_tag_i   (trvk_rtag),
+    .data_err_i   (trvk_err),
 
     .dummy_instr_id_o (dummy_instr_id),
     .dummy_instr_wb_o (dummy_instr_wb),
@@ -56239,6 +63342,9 @@ module lowrisc_ibex_top import lowrisc_ibex_pkg::*; #(
     .rf_wdata_wb_ecc_o(rf_wdata_wb),
     .rf_rdata_a_ecc_i (rf_rdata_a),
     .rf_rdata_b_ecc_i (rf_rdata_b),
+    .rf_wcap_ecc_wb_o (rf_wcap),
+    .rf_rcap_a_ecc_i  (rf_rcap_a),
+    .rf_rcap_b_ecc_i  (rf_rcap_b),
 
     .ic_tag_req_o      (ic_tag_req),
     .ic_tag_write_o    (ic_tag_write),
@@ -56277,9 +63383,10 @@ module lowrisc_ibex_top import lowrisc_ibex_pkg::*; #(
   /////////////////////////////////
   // Register file Instantiation //
   /////////////////////////////////
-
   if (RegFile == RegFileFF) begin : gen_regfile_ff
+
     lowrisc_ibex_register_file_ff #(
+      .BaseIsa          (BaseIsa),
       .RV32E            (RV32E),
       .DataWidth        (RegFileDataWidth),
       .DummyInstructions(DummyInstructions),
@@ -56288,20 +63395,26 @@ module lowrisc_ibex_top import lowrisc_ibex_pkg::*; #(
       .clk_i (clk),
       .rst_ni(rst_ni),
 
-      .test_en_i       (test_en_i),
-      .dummy_instr_id_i(dummy_instr_id),
-      .dummy_instr_wb_i(dummy_instr_wb),
+      .test_en_i        (test_en_i),
+      .dummy_instr_id_i (dummy_instr_id),
+      .dummy_instr_wb_i (dummy_instr_wb),
+      .cheriot_enable_i (cheriot_enable_i),
 
       .raddr_a_i(rf_raddr_a),
       .rdata_a_o(rf_rdata_a),
+      .rcap_a_o (rf_rcap_a),
       .raddr_b_i(rf_raddr_b),
       .rdata_b_o(rf_rdata_b),
+      .rcap_b_o (rf_rcap_b),
       .waddr_a_i(rf_waddr_wb),
       .wdata_a_i(rf_wdata_wb),
+      .wcap_a_i (rf_wcap),
       .we_a_i   (rf_we_wb)
     );
+
   end else if (RegFile == RegFileFPGA) begin : gen_regfile_fpga
     lowrisc_ibex_register_file_fpga #(
+      .BaseIsa          (BaseIsa),
       .RV32E            (RV32E),
       .DataWidth        (RegFileDataWidth),
       .DummyInstructions(DummyInstructions),
@@ -56313,17 +63426,23 @@ module lowrisc_ibex_top import lowrisc_ibex_pkg::*; #(
       .test_en_i       (test_en_i),
       .dummy_instr_id_i(dummy_instr_id),
       .dummy_instr_wb_i(dummy_instr_wb),
+      .cheriot_enable_i (cheriot_enable_i),
 
       .raddr_a_i(rf_raddr_a),
       .rdata_a_o(rf_rdata_a),
+      .rcap_a_o (rf_rcap_a),
       .raddr_b_i(rf_raddr_b),
       .rdata_b_o(rf_rdata_b),
+      .rcap_b_o (rf_rcap_b),
       .waddr_a_i(rf_waddr_wb),
       .wdata_a_i(rf_wdata_wb),
+      .wcap_a_i (rf_wcap),
       .we_a_i   (rf_we_wb)
     );
+
   end else if (RegFile == RegFileLatch) begin : gen_regfile_latch
     lowrisc_ibex_register_file_latch #(
+      .BaseIsa          (BaseIsa),
       .RV32E            (RV32E),
       .DataWidth        (RegFileDataWidth),
       .DummyInstructions(DummyInstructions),
@@ -56335,15 +63454,20 @@ module lowrisc_ibex_top import lowrisc_ibex_pkg::*; #(
       .test_en_i       (test_en_i),
       .dummy_instr_id_i(dummy_instr_id),
       .dummy_instr_wb_i(dummy_instr_wb),
+      .cheriot_enable_i (cheriot_enable_i),
 
       .raddr_a_i(rf_raddr_a),
       .rdata_a_o(rf_rdata_a),
+      .rcap_a_o (rf_rcap_a),
       .raddr_b_i(rf_raddr_b),
       .rdata_b_o(rf_rdata_b),
+      .rcap_b_o (rf_rcap_b),
       .waddr_a_i(rf_waddr_wb),
       .wdata_a_i(rf_wdata_wb),
+      .wcap_a_i (rf_wcap),
       .we_a_i   (rf_we_wb)
     );
+
   end
 
   ///////////////////////////////
@@ -56560,15 +63684,15 @@ module lowrisc_ibex_top import lowrisc_ibex_pkg::*; #(
     assign icache_data_alert = '{default:'b0};
   end
 
-  assign data_wdata_o = data_wdata_core[31:0];
+  assign trvk_wdata = data_wdata_core[31:0];
 
   if (MemECC) begin : gen_mem_wdata_ecc
     lowrisc_prim_buf #(.Width(7)) u_prim_buf_data_wdata_intg (
-      .in_i (data_wdata_core[38:32]),
-      .out_o(data_wdata_intg_o)
+      .in_i (data_wdata_core[MemDataWidth-1:32]),
+      .out_o(trvk_wdata_intg)
     );
   end else begin : gen_no_mem_ecc
-    assign data_wdata_intg_o = '0;
+    assign trvk_wdata_intg = '0;
   end
 
   // Redundant lockstep core implementation
@@ -56579,8 +63703,7 @@ module lowrisc_ibex_top import lowrisc_ibex_pkg::*; #(
     // This is achieved by manually buffering each bit using prim_buf.
     // Our Xilinx and DC synthesis flows make sure that these buffers cannot be optimized away
     // using keep attributes (Vivado) and size_only constraints (DC).
-
-    localparam int NumBufferBits = $bits({
+    localparam int unsigned NumBufferBits = $bits({
       hart_id_i,
       boot_addr_i,
       instr_req_o,
@@ -56589,15 +63712,17 @@ module lowrisc_ibex_top import lowrisc_ibex_pkg::*; #(
       instr_addr_o,
       instr_rdata_core,
       instr_err_i,
-      data_req_o,
-      data_gnt_i,
-      data_rvalid_i,
-      data_we_o,
-      data_be_o,
-      data_addr_o,
-      data_wdata_o,
+      trvk_req,
+      trvk_gnt,
+      trvk_rvalid,
+      trvk_we,
+      trvk_be,
+      trvk_addr,
+      trvk_wdata,
+      trvk_wtag,
       data_rdata_core,
-      data_err_i,
+      trvk_rtag,
+      trvk_err,
       rf_rdata_a,
       rf_rdata_b,
       ic_tag_req,
@@ -56621,7 +63746,11 @@ module lowrisc_ibex_top import lowrisc_ibex_pkg::*; #(
       double_fault_seen_o,
       fetch_enable_i,
       mcounteren_writable_i,
-      core_busy_d
+      core_busy_d,
+      cheriot_enable_i,
+      rf_wcap,
+      rf_rcap_a,
+      rf_rcap_b
     });
 
     logic [NumBufferBits-1:0] buf_in, buf_out;
@@ -56643,11 +63772,19 @@ module lowrisc_ibex_top import lowrisc_ibex_pkg::*; #(
     logic [3:0]                   data_be_local;
     logic [31:0]                  data_addr_local;
     logic [31:0]                  data_wdata_local;
+    logic                         data_tag_local;
     logic [MemDataWidth-1:0]      data_rdata_local;
+    logic                         data_rdata_tag_local;
     logic                         data_err_local;
 
     logic [RegFileDataWidth-1:0]  rf_rdata_a_local;
     logic [RegFileDataWidth-1:0]  rf_rdata_b_local;
+
+    ibex_mubi_t                   cheriot_enable_local;
+    logic [REGCAP_W-1:0]          rf_wcap_vec_local;
+    logic [REGCAP_W-1:0]          rf_rcap_a_vec_local;
+    logic [REGCAP_W-1:0]          rf_rcap_b_vec_local;
+    cap_t                         rf_wcap_local, rf_rcap_a_local, rf_rcap_b_local;
 
     logic [IC_NUM_WAYS-1:0]       ic_tag_req_local;
     logic                         ic_tag_write_local;
@@ -56684,15 +63821,17 @@ module lowrisc_ibex_top import lowrisc_ibex_pkg::*; #(
       instr_addr_o,
       instr_rdata_core,
       instr_err_i,
-      data_req_o,
-      data_gnt_i,
-      data_rvalid_i,
-      data_we_o,
-      data_be_o,
-      data_addr_o,
-      data_wdata_o,
+      trvk_req,
+      trvk_gnt,
+      trvk_rvalid,
+      trvk_we,
+      trvk_be,
+      trvk_addr,
+      trvk_wdata,
+      trvk_wtag,
       data_rdata_core,
-      data_err_i,
+      trvk_rtag,
+      trvk_err,
       rf_rdata_a,
       rf_rdata_b,
       ic_tag_req,
@@ -56716,7 +63855,11 @@ module lowrisc_ibex_top import lowrisc_ibex_pkg::*; #(
       double_fault_seen_o,
       fetch_enable_i,
       mcounteren_writable_i,
-      core_busy_d
+      core_busy_d,
+      cheriot_enable_i,
+      rf_wcap,
+      rf_rcap_a,
+      rf_rcap_b
     };
 
     assign {
@@ -56735,7 +63878,9 @@ module lowrisc_ibex_top import lowrisc_ibex_pkg::*; #(
       data_be_local,
       data_addr_local,
       data_wdata_local,
+      data_tag_local,
       data_rdata_local,
+      data_rdata_tag_local,
       data_err_local,
       rf_rdata_a_local,
       rf_rdata_b_local,
@@ -56760,8 +63905,16 @@ module lowrisc_ibex_top import lowrisc_ibex_pkg::*; #(
       double_fault_seen_local,
       fetch_enable_local,
       mcounteren_writable_local,
-      core_busy_local
+      core_busy_local,
+      cheriot_enable_local,
+      rf_wcap_vec_local,
+      rf_rcap_a_vec_local,
+      rf_rcap_b_vec_local
     } = buf_out;
+
+    assign rf_wcap_local   = cheriot_vec_to_regcap(rf_wcap_vec_local);
+    assign rf_rcap_a_local = cheriot_vec_to_regcap(rf_rcap_a_vec_local);
+    assign rf_rcap_b_local = cheriot_vec_to_regcap(rf_rcap_b_vec_local);
 
     // Manually buffer all input signals.
     lowrisc_prim_buf #(.Width(NumBufferBits)) u_signals_prim_buf (
@@ -56818,6 +63971,7 @@ module lowrisc_ibex_top import lowrisc_ibex_pkg::*; #(
       .RegFileECC           (RegFileLockstepECC),
       .RegFileDataWidth     (RegFileDataWidth),
       .RegFileDataEccWidth  (RegFileDataEccWidth),
+      .RegFileCapEccWidth   (RegFileCapEccWidth),
       .RegFile              (RegFile),
       .MemECC               (MemECC),
       .DmBaseAddr           (DmBaseAddr),
@@ -56825,13 +63979,15 @@ module lowrisc_ibex_top import lowrisc_ibex_pkg::*; #(
       .DmHaltAddr           (DmHaltAddr),
       .DmExceptionAddr      (DmExceptionAddr),
       .CsrMvendorId         (CsrMvendorId),
-      .CsrMimpId            (CsrMimpId)
+      .CsrMimpId            (CsrMimpId),
+      .BaseIsa              (BaseIsa)
     ) u_ibex_lockstep (
       .clk_i                    (clk),
       .rst_ni                   (rst_ni),
 
       .hart_id_i                (hart_id_local),
       .boot_addr_i              (boot_addr_local),
+      .cheriot_enable_i         (cheriot_enable_local),
 
       .instr_req_i              (instr_req_local),
       .instr_gnt_i              (instr_gnt_local),
@@ -56847,11 +64003,17 @@ module lowrisc_ibex_top import lowrisc_ibex_pkg::*; #(
       .data_be_i                (data_be_local),
       .data_addr_i              (data_addr_local),
       .data_wdata_i             (data_wdata_local),
+      .data_tag_i               (data_tag_local),
       .data_rdata_i             (data_rdata_local),
+      .data_rdata_tag_i         (data_rdata_tag_local),
       .data_err_i               (data_err_local),
 
       .rf_rdata_a_i             (rf_rdata_a_local),
       .rf_rdata_b_i             (rf_rdata_b_local),
+
+      .rf_wcap_wb_i             (rf_wcap_local),
+      .rf_rcap_a_i              (rf_rcap_a_local),
+      .rf_rcap_b_i              (rf_rcap_b_local),
 
       .ic_tag_req_i             (ic_tag_req_local),
       .ic_tag_write_i           (ic_tag_write_local),
@@ -56931,15 +64093,105 @@ module lowrisc_ibex_top import lowrisc_ibex_pkg::*; #(
     assign unused_scan = scan_rst_ni;
   end
 
+
+  //////////
+  // TRVK //
+  //////////
+
+  if (BaseIsa == BaseIsaRV32IorCHERIoT) begin : gen_cheriot_trvk
+    lowrisc_ibex_trvk #(
+      .NumOutstanding(MaxOutstandingDSideAccesses),
+      .MemECC(MemECC),
+      .RevBitmapAddrWidth(CheriotRevBitmapAddrWidth),
+      .RevBitmapBaseAddr(CheriotRevBitmapBaseAddr)
+    ) i_ibex_trvk (
+      .clk_i                  (clk),
+      .rst_ni                 (rst_ni),
+      .heap_base_addr_i       (trvk_heap_base_addr_i),
+      .upstream_req_i         (trvk_req),
+      .upstream_gnt_o         (trvk_gnt),
+      .upstream_rvalid_o      (trvk_rvalid),
+      .upstream_we_i          (trvk_we),
+      .upstream_be_i          (trvk_be),
+      .upstream_addr_i        (trvk_addr),
+      .upstream_wdata_i       (trvk_wdata),
+      .upstream_wdata_intg_i  (trvk_wdata_intg),
+      .upstream_rdata_o       (trvk_rdata),
+      .upstream_rdata_intg_o  (trvk_rdata_intg),
+      .upstream_err_o         (trvk_err),
+      .upstream_tag_i         (trvk_wtag),
+      .upstream_tag_o         (trvk_rtag),
+      .downstream_req_o       (data_req_o),
+      .downstream_gnt_i       (data_gnt_i),
+      .downstream_rvalid_i    (data_rvalid_i),
+      .downstream_we_o        (data_we_o),
+      .downstream_be_o        (data_be_o),
+      .downstream_addr_o      (data_addr_o),
+      .downstream_wdata_o     (data_wdata_o),
+      .downstream_wdata_intg_o(data_wdata_intg_o),
+      .downstream_rdata_i     (data_rdata_i),
+      .downstream_rdata_intg_i(data_rdata_intg_i),
+      .downstream_err_i       (data_err_i),
+      .downstream_tag_o       (data_tag_o),
+      .downstream_tag_i       (data_tag_i),
+      .revbm_req_o            (trvk_revbm_req_o),
+      .revbm_gnt_i            (trvk_revbm_gnt_i),
+      .revbm_rvalid_i         (trvk_revbm_rvalid_i),
+      .revbm_addr_o           (trvk_revbm_addr_o),
+      .revbm_rdata_i          (trvk_revbm_rdata_i),
+      .revbm_rdata_intg_i     (trvk_revbm_rdata_intg_i),
+      .revbm_err_i            (trvk_revbm_err_i),
+      .revbm_data_intg_error_o(trvk_revbm_data_intg_error),
+      .revbm_device_error_o   (trvk_revbm_device_error)
+    );
+  end else begin : gen_no_cheriot_trvk
+
+    logic unused_trvk;
+
+    assign trvk_revbm_req_o           = '0;
+    assign trvk_revbm_addr_o          = '0;
+    assign trvk_rtag                  = 1'b0;
+    assign data_tag_o                 = 1'b0;
+    assign trvk_revbm_data_intg_error = 1'b0;
+    assign trvk_revbm_device_error    = 1'b0;
+    assign unused_trvk = ^{
+      trvk_heap_base_addr_i,
+      trvk_revbm_gnt_i,
+      trvk_revbm_rvalid_i,
+      trvk_revbm_rdata_i,
+      trvk_revbm_rdata_intg_i,
+      trvk_revbm_err_i,
+      trvk_wtag,
+      data_tag_i
+    };
+
+    // Through-connect TRVK
+    assign data_req_o        = trvk_req;
+    assign trvk_gnt          = data_gnt_i;
+    assign trvk_rvalid       = data_rvalid_i;
+    assign data_we_o         = trvk_we;
+    assign data_be_o         = trvk_be;
+    assign data_addr_o       = trvk_addr;
+    assign data_wdata_o      = trvk_wdata;
+    assign data_wdata_intg_o = trvk_wdata_intg;
+    assign trvk_rdata        = data_rdata_i;
+    assign trvk_rdata_intg   = data_rdata_intg_i;
+    assign trvk_err          = data_err_i;
+  end
+
+
   // Enable or disable iCache multi bit encoding checking error generation.
   // If enabled and a MuBi encoding error is detected, raise a major alert.
   logic icache_alert_major_internal;
   assign icache_alert_major_internal = (|icache_tag_alert) | (|icache_data_alert);
 
-  assign alert_major_internal_o = core_alert_major_internal |
+  assign alert_major_internal_o = core_alert_major_internal     |
                                   lockstep_alert_major_internal |
                                   icache_alert_major_internal;
-  assign alert_major_bus_o      = core_alert_major_bus | lockstep_alert_major_bus;
+  assign alert_major_bus_o      = core_alert_major_bus       |
+                                  lockstep_alert_major_bus   |
+                                  trvk_revbm_data_intg_error |
+                                  trvk_revbm_device_error;
   assign alert_minor_o          = core_alert_minor | lockstep_alert_minor;
 
   // X checks for top-level outputs
@@ -56962,7 +64214,22 @@ module lowrisc_ibex_top import lowrisc_ibex_pkg::*; #(
 
 
 
+
+
+
+
+
+
   // X check for top-level inputs
+
+
+
+
+
+
+
+
+
 
 
 
@@ -60661,9 +67928,6 @@ module lowrisc_prim_sync_reqack #(
   // Assertions //
   ////////////////
 
-
-
-  // DST domain cannot assert ACK without REQ.
 
 
   if (EnRstChks) begin : gen_assert_en_rst_chks
@@ -68782,6 +76046,7 @@ package lowrisc_keymgr_dpe_reg_pkg;
   parameter int NumSwBindingReg = 8;
   parameter int NumOutReg = 8;
   parameter int NumKeyVersion = 1;
+  parameter int NumMaxHwSlot = 8;
   parameter int NumAlerts = 2;
 
   // Address widths within the block
@@ -69341,32 +76606,9 @@ package lowrisc_keymgr_dpe_pkg;
   // Most of the parameters are directly reused from keymgr_pkg
   import lowrisc_keymgr_pkg::*;
 
-  parameter int DpeNumSlots = 8;
-  parameter int DpeNumSlotsWidth = lowrisc_prim_util_pkg::vbits(DpeNumSlots);
-
-  // Default number of ROM digest inputs.
-  parameter int DpeNumRomDigestInputs = 2;
-
   // Chip Device ID
   parameter int DeviceIdWidth = 256;
   typedef logic [DeviceIdWidth-1:0] keymgr_dpe_device_id_t;
-
-  // keymgr and keymgr_dpe have different maximum KMAC input widths. The below widths correspond to
-  // the following inputs to advance to the creator root key state:
-  //   - Software binding
-  //   - Revision seed
-  //   - OTP device ID
-  //   - LC keymgr diversification value
-  //   - ROM digests
-  //   - Creator seed
-  function automatic int dpe_adv_data_width(int num_rom_digest_inputs);
-    return SwBindingWidth + KeyWidth + DeviceIdWidth +
-        lowrisc_lc_ctrl_pkg::LcKeymgrDivWidth + KeyWidth*num_rom_digest_inputs + KeyWidth;
-  endfunction
-
-  parameter int DpeAdvDataWidth = dpe_adv_data_width(DpeNumRomDigestInputs);
-
-  typedef logic [DpeNumSlotsWidth-1:0] keymgr_dpe_slot_idx_e;
 
   // Enumeration for operation
   typedef enum logic [2:0] {
@@ -69471,9 +76713,10 @@ package lowrisc_keymgr_dpe_pkg;
   // advance calls.
   parameter int DpeBootStagesWidth = 2;
   typedef enum logic [DpeBootStagesWidth-1:0] {
-    BootStageCreator = 0,
-    BootStageOwner   = 1,
-    BootStageRuntime = 2
+    BootStageCreator  = 0,
+    BootStageOwnerInt = 1,
+    BootStageOwner    = 2,
+    BootStageRuntime  = 3
   } keymgr_dpe_boot_stage_e;
 
   // An internal secret key slot
@@ -76721,6 +83964,7 @@ module lowrisc_tlul_adapter_sram_racl
 #(
   parameter int SramAw            = 12,
   parameter int SramDw            = 32,         // Must be multiple of the TL width
+  parameter int SramDepth         = 2**SramAw,  // Must be <= 2**SramAw
   parameter int Outstanding       = 1,          // Only one request is accepted
   parameter int SramBusBankAW     = 12,         // SRAM bus address width of the SRAM bank. Only
                                                 // used when DataXorAddr=1.
@@ -76799,6 +84043,7 @@ module lowrisc_tlul_adapter_sram_racl
   lowrisc_tlul_adapter_sram #(
     .SramAw            ( SramAw            ),
     .SramDw            ( SramDw            ),
+    .SramDepth         ( SramDepth         ),
     .Outstanding       ( Outstanding       ),
     .SramBusBankAW     ( SramBusBankAW     ),
     .ByteAccess        ( ByteAccess        ),
@@ -76900,6 +84145,10 @@ package lowrisc_otbn_reg_pkg;
     struct packed {
       logic        q;
       logic        qe;
+    } urnd_ctrl_enabled;
+    struct packed {
+      logic        q;
+      logic        qe;
     } wfi_enabled;
     struct packed {
       logic        q;
@@ -76994,6 +84243,9 @@ package lowrisc_otbn_reg_pkg;
   } otbn_hw2reg_intr_state_reg_t;
 
   typedef struct packed {
+    struct packed {
+      logic        d;
+    } urnd_ctrl_enabled;
     struct packed {
       logic        d;
     } wfi_enabled;
@@ -77106,12 +84358,12 @@ package lowrisc_otbn_reg_pkg;
 
   // Register -> HW type
   typedef struct packed {
-    otbn_reg2hw_intr_state_reg_t intr_state; // [120:120]
-    otbn_reg2hw_intr_enable_reg_t intr_enable; // [119:119]
-    otbn_reg2hw_intr_test_reg_t intr_test; // [118:117]
-    otbn_reg2hw_alert_test_reg_t alert_test; // [116:113]
-    otbn_reg2hw_cmd_reg_t cmd; // [112:104]
-    otbn_reg2hw_ctrl_reg_t ctrl; // [103:100]
+    otbn_reg2hw_intr_state_reg_t intr_state; // [122:122]
+    otbn_reg2hw_intr_enable_reg_t intr_enable; // [121:121]
+    otbn_reg2hw_intr_test_reg_t intr_test; // [120:119]
+    otbn_reg2hw_alert_test_reg_t alert_test; // [118:115]
+    otbn_reg2hw_cmd_reg_t cmd; // [114:106]
+    otbn_reg2hw_ctrl_reg_t ctrl; // [105:100]
     otbn_reg2hw_err_bits_reg_t err_bits; // [99:66]
     otbn_reg2hw_insn_cnt_reg_t insn_cnt; // [65:33]
     otbn_reg2hw_load_checksum_reg_t load_checksum; // [32:0]
@@ -77119,8 +84371,8 @@ package lowrisc_otbn_reg_pkg;
 
   // HW -> register type
   typedef struct packed {
-    otbn_hw2reg_intr_state_reg_t intr_state; // [109:108]
-    otbn_hw2reg_ctrl_reg_t ctrl; // [107:106]
+    otbn_hw2reg_intr_state_reg_t intr_state; // [110:109]
+    otbn_hw2reg_ctrl_reg_t ctrl; // [108:106]
     otbn_hw2reg_status_reg_t status; // [105:97]
     otbn_hw2reg_err_bits_reg_t err_bits; // [96:80]
     otbn_hw2reg_fatal_alert_cause_reg_t fatal_alert_cause; // [79:64]
@@ -77149,9 +84401,10 @@ package lowrisc_otbn_reg_pkg;
   parameter logic [0:0] OTBN_ALERT_TEST_RECOV_RESVAL = 1'h 0;
   parameter logic [7:0] OTBN_CMD_RESVAL = 8'h 0;
   parameter logic [7:0] OTBN_CMD_CMD_RESVAL = 8'h 0;
-  parameter logic [1:0] OTBN_CTRL_RESVAL = 2'h 0;
+  parameter logic [2:0] OTBN_CTRL_RESVAL = 3'h 0;
   parameter logic [0:0] OTBN_CTRL_SOFTWARE_ERRS_FATAL_RESVAL = 1'h 0;
   parameter logic [0:0] OTBN_CTRL_WFI_ENABLED_RESVAL = 1'h 0;
+  parameter logic [0:0] OTBN_CTRL_URND_CTRL_ENABLED_RESVAL = 1'h 0;
   parameter logic [23:0] OTBN_ERR_BITS_RESVAL = 24'h 0;
   parameter logic [0:0] OTBN_ERR_BITS_BAD_DATA_ADDR_RESVAL = 1'h 0;
   parameter logic [0:0] OTBN_ERR_BITS_BAD_INSN_ADDR_RESVAL = 1'h 0;
@@ -77587,6 +84840,9 @@ package lowrisc_otbn_pkg;
   // A wide register (WDR or WSR) split into base words with integrity and data each.
   typedef otbn_base_intg_word_t [BaseWordsPerWLEN-1:0] otbn_wide_intg_word_t;
 
+  // The URND partial seed width depends on the EDN interface.
+  parameter int unsigned UrndPartialSeedWidth = lowrisc_edn_pkg::ENDPOINT_BUS_WIDTH;
+
   // Toplevel constants ============================================================================
 
   parameter int AlertFatal = 0;
@@ -77921,6 +85177,7 @@ package lowrisc_otbn_pkg;
     CsrMod6        = 12'h7D6,
     CsrMod7        = 12'h7D7,
     CsrRndPrefetch = 12'h7D8,
+    CsrUrndCtrl    = 12'h7D9,
     CsrKmacStatus  = 12'h7db,
     CsrKmacCtrl    = 12'h7dc,
     CsrKmacCfg     = 12'h7dd,
@@ -77930,12 +85187,13 @@ package lowrisc_otbn_pkg;
     // 0xFC0-0xFFF Custom read-only
     CsrRnd         = 12'hFC0,
     CsrUrnd        = 12'hFC1,
+    CsrUrndStatus  = 12'hFC2,
     CsrInsnCnt     = 12'hFC3,
     CsrMaiStatus   = 12'hFCA
   } csr_e;
 
   // Wide Special Purpose Registers (WSRs)
-  parameter int NWsr = 16; // Number of WSRs
+  parameter int NWsr = 17; // Number of WSRs
   parameter int WsrNumWidth = $clog2(NWsr);
   typedef enum logic [WsrNumWidth-1:0] {
     WsrMod        = 'd0,
@@ -77953,13 +85211,14 @@ package lowrisc_otbn_pkg;
     WsrMaiIn0S0   = 'd12,
     WsrMaiIn0S1   = 'd13,
     WsrMaiIn1S0   = 'd14,
-    WsrMaiIn1S1   = 'd15
+    WsrMaiIn1S1   = 'd15,
+    WsrUrndState  = 'd16
   } wsr_e;
 
   // Internal Special Purpose Registers (ISPRs)
   // CSRs and WSRs have some overlap into what they map into. ISPRs are the actual registers in the
   // design which CSRs and WSRs are mapped on to.
-  parameter int NIspr = 24;
+  parameter int NIspr = 27;
   parameter int IsprNumWidth = $clog2(NIspr);
   typedef enum logic [IsprNumWidth-1:0] {
     IsprMod        = 'd0,
@@ -77985,7 +85244,10 @@ package lowrisc_otbn_pkg;
     IsprKmacCtrl   = 'd20,
     IsprKmacCfg    = 'd21,
     IsprKmacStrb   = 'd22,
-    IsprInsnCnt    = 'd23
+    IsprInsnCnt    = 'd23,
+    IsprUrndState  = 'd24,
+    IsprUrndCtrl   = 'd25,
+    IsprUrndStatus = 'd26
   } ispr_e;
 
   typedef logic [$clog2(NFlagGroups)-1:0] flag_group_t;
@@ -78161,6 +85423,7 @@ package lowrisc_otbn_pkg;
     logic                  is_lane;
     logic [2:0]            lane_index;
     mac_elen_e             elen;
+    logic [1:0]            shuffle_offset;
     logic [VLEN/QWLEN-1:0] adder_carry_sel;
     logic                  acc_add_en;
     logic [1:0]            op_a_qw_sel;      // Both (a, b) are predecoded to optimize timing
@@ -78346,7 +85609,8 @@ typedef enum logic [StateScrambleCtrlWidth-1:0] {
   typedef logic [63:0] otbn_dmem_nonce_t;
   typedef logic [63:0] otbn_imem_nonce_t;
 
-  // Permutation for the URND permutation in BN MAC used for register clearing.
+  // Permutation for the URND permutation in BN MAC used for register clearing and shuffling.
+  // Keep in sync with dv/otbnsim/sim/constants.py::BN_MAC_PERMUTATION.
   // These parameters have been generated with
   // $ ./util/design/gen-lfsr-seed.py --width 256 --seed 3357506447 --prefix "BnMac"
   // and replaced "Lfsr" with "UrndPerm" and "lfsr_" with "urnd_".
@@ -100847,6 +108111,7 @@ module lowrisc_aes_prng_masking import lowrisc_aes_pkg::*;
    .seed_state_partial_i(entropy_i),
 
    .key_o(prng_key),
+   .state_o(), // Not used.
    .err_o(prng_err)
   );
 
@@ -118109,6 +125374,9 @@ module lowrisc_hmac
   input  lowrisc_prim_alert_pkg::alert_rx_t [NumAlerts-1:0] alert_rx_i,
   output lowrisc_prim_alert_pkg::alert_tx_t [NumAlerts-1:0] alert_tx_o,
 
+  // Key manager (keymgr) key sideload interface
+  input  lowrisc_keymgr_pkg::hw_key_req_t keymgr_key_i,
+
   output logic intr_hmac_done_o,
   output logic intr_fifo_empty_o,
   output logic intr_hmac_err_o,
@@ -118116,6 +125384,15 @@ module lowrisc_hmac
   output lowrisc_prim_mubi_pkg::mubi4_t idle_o
 );
 
+  // TODO(#31026): Consume the key from the keymgr_dpe
+  localparam int NumInBufBits = $bits(lowrisc_keymgr_pkg::hw_key_req_t);
+  lowrisc_keymgr_pkg::hw_key_req_t unused_key;
+  lowrisc_prim_buf #(
+    .Width  (NumInBufBits)
+  ) u_anchor_buf (
+    .in_i   (keymgr_key_i),
+    .out_o  (unused_key)
+  );
 
   /////////////////////////
   // Signal declarations //
@@ -139598,6 +146875,8 @@ module lowrisc_sram_ctrl
   // PRINCE has 5 half rounds in its original form, which corresponds to 2*5 + 1 effective rounds.
   // Setting this to 3 lowers this to approximately 7 effective rounds.
   parameter int NumPrinceRoundsHalf                        = 3,
+  // Number of address scrambling rounds. Setting this to 0 disables address scrambling.
+  parameter int NumAddrScrRounds                           = 2,
   // Number of outstanding TLUL transfers
   parameter int Outstanding                                = 2,
   // Enable single-bit error correction and error logging
@@ -139662,6 +146941,10 @@ module lowrisc_sram_ctrl
   import lowrisc_prim_mubi_pkg::MuBi4True;
   import lowrisc_prim_mubi_pkg::MuBi4False;
   import lowrisc_prim_mubi_pkg::mubi8_test_true_strict;
+
+  // The memory can have a non-power-of-2 size (checked inside prim_ram_1p_scr) but the size needs
+  // to be divisible by 4.
+
 
   // This is later on pruned to the correct width at the SRAM wrapper interface.
   localparam int unsigned Depth = MemSizeRam >> 2;
@@ -140100,6 +147383,7 @@ module lowrisc_sram_ctrl
   lowrisc_tlul_adapter_sram_racl #(
     .SramAw(AddrWidth),
     .SramDw(DataWidth - lowrisc_tlul_pkg::DataIntgWidth),
+    .SramDepth(Depth),
     .Outstanding(Outstanding),
     .ByteAccess(1),
     .CmdIntgCheck(1),
@@ -140253,7 +147537,8 @@ module lowrisc_sram_ctrl
     .InstDepth(InstDepth),
     .EnableParity(0),
     .DataBitsPerMask(DataWidth),
-    .NumPrinceRoundsHalf(NumPrinceRoundsHalf)
+    .NumPrinceRoundsHalf(NumPrinceRoundsHalf),
+    .NumAddrScrRounds(NumAddrScrRounds)
   ) u_prim_ram_1p_scr (
     .clk_i,
     .rst_ni,
@@ -185759,53 +193044,52 @@ endmodule // rv_core_ibex_addr_trans
  * Instruction and data bus are 32 bit wide TileLink-UL (TL-UL).
  */
 module lowrisc_rv_core_ibex
+  import lowrisc_ibex_pkg::*;
   import lowrisc_rv_core_ibex_pkg::*;
   import lowrisc_rv_core_ibex_reg_pkg::*;
 #(
-  parameter logic [NumAlerts-1:0]   AlertAsyncOn        = {NumAlerts{1'b1}},
+  parameter logic [NumAlerts-1:0]           AlertAsyncOn                = {NumAlerts{1'b1}},
   // Number of cycles a differential skew is tolerated on the alert and escalation signal
-  parameter int unsigned            AlertSkewCycles     = 1,
-  parameter bit                     PMPEnable           = 1'b1,
-  parameter int unsigned            PMPGranularity      = 0,
-  parameter int unsigned            PMPNumRegions       = 16,
-  parameter int unsigned            MHPMCounterNum      = 10,
-  parameter int unsigned            MHPMCounterWidth    = 32,
-  parameter lowrisc_ibex_pkg::pmp_cfg_t     PMPRstCfg[16]       = lowrisc_ibex_pkg::PmpCfgRst,
-  parameter logic [33:0]            PMPRstAddr[16]      = lowrisc_ibex_pkg::PmpAddrRst,
-  parameter lowrisc_ibex_pkg::pmp_mseccfg_t PMPRstMsecCfg       = lowrisc_ibex_pkg::PmpMseccfgRst,
-  parameter bit                     RV32E               = 0,
-  parameter lowrisc_ibex_pkg::rv32m_e       RV32M               = lowrisc_ibex_pkg::RV32MSingleCycle,
-  parameter lowrisc_ibex_pkg::rv32b_e       RV32B               = lowrisc_ibex_pkg::RV32BOTEarlGrey,
-  parameter lowrisc_ibex_pkg::rv32zc_e      RV32ZC              = lowrisc_ibex_pkg::RV32ZcaZcbZcmp,
-  parameter lowrisc_ibex_pkg::regfile_e     RegFile             = lowrisc_ibex_pkg::RegFileFF,
-  parameter bit                     BranchTargetALU     = 1'b1,
-  parameter bit                     WritebackStage      = 1'b1,
-  parameter bit                     ICache              = 1'b1,
-  parameter bit                     ICacheECC           = 1'b1,
-  parameter bit                     ICacheScramble      = 1'b1,
-  parameter int unsigned            ICacheNWays         = 2,
-  parameter bit                     BranchPredictor     = 1'b0,
-  parameter bit                     DbgTriggerEn        = 1'b1,
-  parameter int unsigned            DbgHwBreakNum       = 4,
-  parameter bit                     SecureIbex          = 1'b1,
-  parameter int unsigned            LockstepOffset      = 1,
-  parameter lowrisc_ibex_pkg::lfsr_seed_t   RndCnstLfsrSeed     = lowrisc_ibex_pkg::RndCnstLfsrSeedDefault,
-  parameter lowrisc_ibex_pkg::lfsr_perm_t   RndCnstLfsrPerm     = lowrisc_ibex_pkg::RndCnstLfsrPermDefault,
-  parameter int unsigned            DmBaseAddr          = 32'h1A110000,
-  parameter int unsigned            DmAddrMask          = 32'h00000FFF,
-  parameter int unsigned            DmHaltAddr          = 32'h1A110800,
-  parameter int unsigned            DmExceptionAddr     = 32'h1A110808,
-  parameter bit                     PipeLine            = 1'b0,
-  parameter bit                     InstructionPipeline = 1'b0,
-  parameter logic [lowrisc_ibex_pkg::SCRAMBLE_KEY_W-1:0] RndCnstIbexKeyDefault =
-      lowrisc_ibex_pkg::RndCnstIbexKeyDefault,
-  parameter logic [lowrisc_ibex_pkg::SCRAMBLE_NONCE_W-1:0] RndCnstIbexNonceDefault =
-      lowrisc_ibex_pkg::RndCnstIbexNonceDefault,
-  parameter int unsigned                    NEscalationSeverities = 4,
-  parameter int unsigned                    WidthPingCounter      = 16,
-  parameter logic [lowrisc_tlul_pkg::RsvdWidth-1:0] TlulHostUserRsvdBits   = 0,
-  parameter logic [31:0]            CsrMvendorId                   = 32'b0,
-  parameter logic [31:0]            CsrMimpId                      = 32'b0
+  parameter int unsigned                    AlertSkewCycles             = 1,
+  parameter bit                             PMPEnable                   = 1'b1,
+  parameter int unsigned                    PMPGranularity              = 0,
+  parameter int unsigned                    PMPNumRegions               = 16,
+  parameter int unsigned                    MHPMCounterNum              = 10,
+  parameter int unsigned                    MHPMCounterWidth            = 32,
+  parameter pmp_cfg_t                       PMPRstCfg[PMP_MAX_REGIONS]  = PmpCfgRst,
+  parameter logic [PMP_ADDR_MSB:0]          PMPRstAddr[PMP_MAX_REGIONS] = PmpAddrRst,
+  parameter pmp_mseccfg_t                   PMPRstMsecCfg               = PmpMseccfgRst,
+  parameter bit                             RV32E                       = 0,
+  parameter rv32m_e                         RV32M                       = RV32MSingleCycle,
+  parameter rv32b_e                         RV32B                       = RV32BOTEarlGrey,
+  parameter rv32zc_e                        RV32ZC                      = RV32ZcaZcbZcmp,
+  parameter regfile_e                       RegFile                     = RegFileFF,
+  parameter bit                             BranchTargetALU             = 1'b1,
+  parameter bit                             WritebackStage              = 1'b1,
+  parameter bit                             ICache                      = 1'b1,
+  parameter bit                             ICacheECC                   = 1'b1,
+  parameter bit                             ICacheScramble              = 1'b1,
+  parameter int unsigned                    ICacheNWays                 = 2,
+  parameter bit                             BranchPredictor             = 1'b0,
+  parameter bit                             DbgTriggerEn                = 1'b1,
+  parameter int unsigned                    DbgHwBreakNum               = 4,
+  parameter bit                             SecureIbex                  = 1'b1,
+  parameter int unsigned                    LockstepOffset              = 1,
+  parameter lfsr_seed_t                     RndCnstLfsrSeed             = RndCnstLfsrSeedDefault,
+  parameter lfsr_perm_t                     RndCnstLfsrPerm             = RndCnstLfsrPermDefault,
+  parameter int unsigned                    DmBaseAddr                  = 32'h1A110000,
+  parameter int unsigned                    DmAddrMask                  = 32'h00000FFF,
+  parameter int unsigned                    DmHaltAddr                  = 32'h1A110800,
+  parameter int unsigned                    DmExceptionAddr             = 32'h1A110808,
+  parameter bit                             PipeLine                    = 1'b0,
+  parameter bit                             InstructionPipeline         = 1'b0,
+  parameter logic [SCRAMBLE_KEY_W-1:0]      RndCnstIbexKey              = RndCnstIbexKeyDefault,
+  parameter logic [SCRAMBLE_NONCE_W-1:0]    RndCnstIbexNonce            = RndCnstIbexNonceDefault,
+  parameter int unsigned                    NEscalationSeverities       = 4,
+  parameter int unsigned                    WidthPingCounter            = 16,
+  parameter logic [lowrisc_tlul_pkg::RsvdWidth-1:0] TlulHostUserRsvdBits        = 0,
+  parameter logic [31:0]                    CsrMvendorId                = 32'b0,
+  parameter logic [31:0]                    CsrMimpId                   = 32'b0
 ) (
   // Clock and Reset
   input  logic        clk_i,
@@ -185934,7 +193218,7 @@ module lowrisc_rv_core_ibex
   logic [6:0]  shadow_core_data_wdata_intg;
 
   // Lockstep interface
-  logic [3:0]  core_lockstep_cmp_en;
+  lowrisc_ibex_pkg::ibex_mubi_t core_lockstep_cmp_en;
 
   // Pipeline interfaces
   tl_h2d_t tl_i_ibex2fifo;
@@ -186153,6 +193437,7 @@ module lowrisc_rv_core_ibex
 
   lowrisc_ibex_pkg::crash_dump_t crash_dump;
   lowrisc_ibex_top #(
+    .BaseIsa                     ( lowrisc_ibex_pkg::BaseIsaRV32I   ),
     .PMPEnable                   ( PMPEnable                ),
     .PMPGranularity              ( PMPGranularity           ),
     .PMPNumRegions               ( PMPNumRegions            ),
@@ -186191,8 +193476,8 @@ module lowrisc_rv_core_ibex
     .LockstepOffset              ( LockstepOffset           ),
     .RndCnstLfsrSeed             ( RndCnstLfsrSeed          ),
     .RndCnstLfsrPerm             ( RndCnstLfsrPerm          ),
-    .RndCnstIbexKey              ( RndCnstIbexKeyDefault    ),
-    .RndCnstIbexNonce            ( RndCnstIbexNonceDefault  ),
+    .RndCnstIbexKey              ( RndCnstIbexKey           ),
+    .RndCnstIbexNonce            ( RndCnstIbexNonce         ),
     .DmBaseAddr                  ( DmBaseAddr               ),
     .DmAddrMask                  ( DmAddrMask               ),
     .DmHaltAddr                  ( DmHaltAddr               ),
@@ -186215,6 +193500,9 @@ module lowrisc_rv_core_ibex
     .hart_id_i,
     .boot_addr_i,
 
+    .cheriot_enable_i     (lowrisc_ibex_pkg::IbexMuBiOff),
+    .trvk_heap_base_addr_i('0), // Unused, CHERIoT not available
+
     .instr_req_o        (main_core_instr_req),
     .instr_gnt_i        (main_core_instr_gnt_ibex),
     .instr_rvalid_i     (main_core_instr_rvalid),
@@ -186231,9 +193519,19 @@ module lowrisc_rv_core_ibex
     .data_addr_o        (main_core_data_addr),
     .data_wdata_o       (main_core_data_wdata),
     .data_wdata_intg_o  (main_core_data_wdata_intg),
+    .data_tag_o         (),
     .data_rdata_i       (main_core_data_rdata),
     .data_rdata_intg_i  (main_core_data_rdata_intg),
+    .data_tag_i         ('0),
     .data_err_i         (main_core_data_err),
+
+    .trvk_revbm_req_o       (),
+    .trvk_revbm_gnt_i       ('0),
+    .trvk_revbm_rvalid_i    ('0),
+    .trvk_revbm_addr_o      (),
+    .trvk_revbm_rdata_i     ('0),
+    .trvk_revbm_rdata_intg_i('0),
+    .trvk_revbm_err_i       ('0),
 
     .irq_software_i     ( irq_software     ),
     .irq_timer_i        ( irq_timer        ),
@@ -194302,8 +201600,9 @@ module lowrisc_xbar_main (
                   ~(ADDR_MASK_ROM_CTRL__REGS)) == ADDR_SPACE_ROM_CTRL__REGS) begin
       dev_sel_s1n_37 = 3'd2;
 
-    end else if (((tl_s1n_37_us_h2d.a_address < (ADDR_SPACE_SRAM_CTRL_MAIN__RAM + ADDR_SIZE_SRAM_CTRL_MAIN__RAM)) &&
-       (tl_s1n_37_us_h2d.a_address >= ADDR_SPACE_SRAM_CTRL_MAIN__RAM))) begin
+    end else if (
+      (tl_s1n_37_us_h2d.a_address < (ADDR_SPACE_SRAM_CTRL_MAIN__RAM + ADDR_SIZE_SRAM_CTRL_MAIN__RAM)) &&
+      (tl_s1n_37_us_h2d.a_address >= ADDR_SPACE_SRAM_CTRL_MAIN__RAM)) begin
       dev_sel_s1n_37 = 3'd3;
 end
   end
@@ -194331,8 +201630,9 @@ end
                   ~(ADDR_MASK_SRAM_CTRL_MAIN__REGS)) == ADDR_SPACE_SRAM_CTRL_MAIN__REGS) begin
       dev_sel_s1n_42 = 5'd4;
 
-    end else if (((tl_s1n_42_us_h2d.a_address < (ADDR_SPACE_SRAM_CTRL_MAIN__RAM + ADDR_SIZE_SRAM_CTRL_MAIN__RAM)) &&
-       (tl_s1n_42_us_h2d.a_address >= ADDR_SPACE_SRAM_CTRL_MAIN__RAM))) begin
+    end else if (
+      (tl_s1n_42_us_h2d.a_address < (ADDR_SPACE_SRAM_CTRL_MAIN__RAM + ADDR_SIZE_SRAM_CTRL_MAIN__RAM)) &&
+      (tl_s1n_42_us_h2d.a_address >= ADDR_SPACE_SRAM_CTRL_MAIN__RAM)) begin
       dev_sel_s1n_42 = 5'd5;
 
     end else if ((tl_s1n_42_us_h2d.a_address &
@@ -194456,8 +201756,9 @@ end
                   ~(ADDR_MASK_SRAM_CTRL_MAIN__REGS)) == ADDR_SPACE_SRAM_CTRL_MAIN__REGS) begin
       dev_sel_s1n_76 = 5'd3;
 
-    end else if (((tl_s1n_76_us_h2d.a_address < (ADDR_SPACE_SRAM_CTRL_MAIN__RAM + ADDR_SIZE_SRAM_CTRL_MAIN__RAM)) &&
-       (tl_s1n_76_us_h2d.a_address >= ADDR_SPACE_SRAM_CTRL_MAIN__RAM))) begin
+    end else if (
+      (tl_s1n_76_us_h2d.a_address < (ADDR_SPACE_SRAM_CTRL_MAIN__RAM + ADDR_SIZE_SRAM_CTRL_MAIN__RAM)) &&
+      (tl_s1n_76_us_h2d.a_address >= ADDR_SPACE_SRAM_CTRL_MAIN__RAM)) begin
       dev_sel_s1n_76 = 5'd4;
 
     end else if ((tl_s1n_76_us_h2d.a_address &
@@ -194561,8 +201862,9 @@ end
   always_comb begin
     // default steering to generate error response if address is not within the range
     dev_sel_s1n_77 = 2'd3;
-    if (((tl_s1n_77_us_h2d.a_address < (ADDR_SPACE_SRAM_CTRL_MAIN__RAM + ADDR_SIZE_SRAM_CTRL_MAIN__RAM)) &&
-       (tl_s1n_77_us_h2d.a_address >= ADDR_SPACE_SRAM_CTRL_MAIN__RAM))) begin
+    if (
+      (tl_s1n_77_us_h2d.a_address < (ADDR_SPACE_SRAM_CTRL_MAIN__RAM + ADDR_SIZE_SRAM_CTRL_MAIN__RAM)) &&
+      (tl_s1n_77_us_h2d.a_address >= ADDR_SPACE_SRAM_CTRL_MAIN__RAM)) begin
       dev_sel_s1n_77 = 2'd0;
 
     end else if ((tl_s1n_77_us_h2d.a_address &
@@ -194578,8 +201880,9 @@ end
   always_comb begin
     // default steering to generate error response if address is not within the range
     dev_sel_s1n_78 = 1'd1;
-    if (((tl_s1n_78_us_h2d.a_address < (ADDR_SPACE_SRAM_CTRL_MAIN__RAM + ADDR_SIZE_SRAM_CTRL_MAIN__RAM)) &&
-       (tl_s1n_78_us_h2d.a_address >= ADDR_SPACE_SRAM_CTRL_MAIN__RAM))) begin
+    if (
+      (tl_s1n_78_us_h2d.a_address < (ADDR_SPACE_SRAM_CTRL_MAIN__RAM + ADDR_SIZE_SRAM_CTRL_MAIN__RAM)) &&
+      (tl_s1n_78_us_h2d.a_address >= ADDR_SPACE_SRAM_CTRL_MAIN__RAM)) begin
       dev_sel_s1n_78 = 1'd0;
 end
   end
@@ -194587,8 +201890,9 @@ end
   always_comb begin
     // default steering to generate error response if address is not within the range
     dev_sel_s1n_79 = 1'd1;
-    if (((tl_s1n_79_us_h2d.a_address < (ADDR_SPACE_SRAM_CTRL_MAIN__RAM + ADDR_SIZE_SRAM_CTRL_MAIN__RAM)) &&
-       (tl_s1n_79_us_h2d.a_address >= ADDR_SPACE_SRAM_CTRL_MAIN__RAM))) begin
+    if (
+      (tl_s1n_79_us_h2d.a_address < (ADDR_SPACE_SRAM_CTRL_MAIN__RAM + ADDR_SIZE_SRAM_CTRL_MAIN__RAM)) &&
+      (tl_s1n_79_us_h2d.a_address >= ADDR_SPACE_SRAM_CTRL_MAIN__RAM)) begin
       dev_sel_s1n_79 = 1'd0;
 end
   end
@@ -231624,7 +238928,7 @@ module lowrisc_kmac_app
   // Encoded output length for the KMAC operation. The length is based upon the full app interface
   // response width.
   assign encoded_outlen      = EncodedOutLen[SelDigSize];
-  assign encoded_outlen_strb = EncodedOutLenStrb[SelKeySize];
+  assign encoded_outlen_strb = EncodedOutLenStrb[SelDigSize];
 
   // Data mux
   // This is the main datapath part of the app interface logic.
@@ -232730,6 +240034,7 @@ module lowrisc_kmac_entropy
    .seed_state_partial_i(seed),
 
    .key_o(prng_data),
+   .state_o(), // Not used.
    .err_o()
   );
 
@@ -243306,6 +250611,14 @@ module lowrisc_otbn_controller
         ispr_addr_base      = IsprUrnd;
         ispr_word_addr_base = '0;
       end
+      CsrUrndCtrl: begin
+        ispr_addr_base      = IsprUrndCtrl;
+        ispr_word_addr_base = '0;
+      end
+      CsrUrndStatus: begin
+        ispr_addr_base      = IsprUrndStatus;
+        ispr_word_addr_base = '0;
+      end
       CsrKmacStatus: begin
         ispr_addr_base      = IsprKmacStatus;
         ispr_word_addr_base = '0;
@@ -243485,6 +250798,7 @@ module lowrisc_otbn_controller
       WsrMaiIn1S1:   ispr_addr_bignum = IsprMaiIn1S1;
       WsrKmacDataS0: ispr_addr_bignum = IsprKmacDataS0;
       WsrKmacDataS1: ispr_addr_bignum = IsprKmacDataS1;
+      WsrUrndState:  ispr_addr_bignum = IsprUrndState;
       default: wsr_illegal_addr = 1'b1;
     endcase
   end
@@ -246191,6 +253505,8 @@ module lowrisc_otbn_predecode
         CsrMod4, CsrMod5, CsrMod6, CsrMod7: ispr_addr = IsprMod;
         CsrRnd:                             ispr_addr = IsprRnd;
         CsrUrnd:                            ispr_addr = IsprUrnd;
+        CsrUrndCtrl:                        ispr_addr = IsprUrndCtrl;
+        CsrUrndStatus:                      ispr_addr = IsprUrndStatus;
         CsrKmacStatus:                      ispr_addr = IsprKmacStatus;
         CsrKmacCtrl:                        ispr_addr = IsprKmacCtrl;
         CsrKmacCfg:                         ispr_addr = IsprKmacCfg;
@@ -246218,6 +253534,7 @@ module lowrisc_otbn_predecode
         WsrMaiIn0S1:   ispr_addr = IsprMaiIn0S1;
         WsrMaiIn1S0:   ispr_addr = IsprMaiIn1S0;
         WsrMaiIn1S1:   ispr_addr = IsprMaiIn1S1;
+        WsrUrndState:  ispr_addr = IsprUrndState;
         default: ;
       endcase
     end
@@ -246283,6 +253600,7 @@ module lowrisc_otbn_predecode
   assign mac_bignum_predec_raw_o.mul_merger_en       = '0;
   assign mac_bignum_predec_raw_o.add_res_en          = '0;
   assign mac_bignum_predec_raw_o.operation_valid_raw = '0;
+  assign mac_bignum_predec_raw_o.shuffle_offset      = '0;
 
   assign insn_rs1 = imem_rdata_i[19:15];
   assign insn_rs2 = imem_rdata_i[24:20];
@@ -246655,6 +253973,7 @@ module lowrisc_otbn_instruction_fetch
   import lowrisc_otbn_pkg::*;
 #(
   parameter int ImemSizeByte = 4096,
+  parameter bit SecFixMacOpSeq = 1'b0,
 
   localparam int ImemAddrWidth = lowrisc_prim_util_pkg::vbits(ImemSizeByte)
 ) (
@@ -246686,6 +254005,9 @@ module lowrisc_otbn_instruction_fetch
   output mac_bignum_predec_t       mac_bignum_predec_o,
   output logic                     lsu_addr_en_predec_o,
 
+  // A signal indicating that URND will be used in the next cycle.
+  output logic urnd_will_be_consumed_o,
+
   input logic [NWdr-1:0] rf_bignum_rd_a_indirect_onehot_i,
   input logic [NWdr-1:0] rf_bignum_rd_b_indirect_onehot_i,
   input logic [NWdr-1:0] rf_bignum_wr_indirect_onehot_i,
@@ -246705,7 +254027,9 @@ module lowrisc_otbn_instruction_fetch
   input logic [4:0]               sec_wipe_wdr_addr_i,
   input logic                     sec_wipe_mac_urnd_i,
 
-  input logic                     zero_flags_i
+  input logic zero_flags_i,
+
+  input logic [1:0] mac_bignum_shuffle_offset_i
 );
 
   function automatic logic insn_is_branch(logic [31:0] insn_data);
@@ -246737,6 +254061,7 @@ module lowrisc_otbn_instruction_fetch
   ispr_bignum_predec_t ispr_bignum_predec;
   mac_bignum_predec_t  mac_bignum_predec, mac_bignum_predec_raw, mac_bignum_predec_to_fsm;
   mac_bignum_predec_t  mac_bignum_predec_q, mac_bignum_predec_d;
+  mac_bignum_contrl_t  mac_bignum_contrl;
   logic                mac_bignum_is_busy;
   logic                lsu_addr_en_predec_q, lsu_addr_en_predec_d;
   logic                lsu_addr_en_predec_insn;
@@ -246808,7 +254133,8 @@ module lowrisc_otbn_instruction_fetch
     // forwarded immediately or during a later state. Therefore, we can ignore the state error
     // here. This ensures that all multi-cycle multiplications escalate at the earliest when they
     // are executed.
-    .EnableAlertTriggerSVA(0)
+    .EnableAlertTriggerSVA(0),
+    .SecFixMacOpSeq(SecFixMacOpSeq)
   ) u_mac_bignum_fsm (
     .clk_i,
     .rst_ni,
@@ -246826,8 +254152,9 @@ module lowrisc_otbn_instruction_fetch
     .op_a_qw_sel_i    (mac_bignum_predec_to_fsm.op_a_qw_sel),
     .op_b_elem0_sel_i (mac_bignum_predec_to_fsm.op_b_elem0_sel),
     .op_b_elem1_sel_i (mac_bignum_predec_to_fsm.op_b_elem1_sel),
+    .shuffle_offset_i (mac_bignum_shuffle_offset_i),
 
-    .contrl_o (/* unused here */),
+    .contrl_o (mac_bignum_contrl),
     .predec_o (mac_bignum_predec),
     .is_busy_o(mac_bignum_is_busy),
 
@@ -246849,8 +254176,33 @@ module lowrisc_otbn_instruction_fetch
     mac_bignum_predec_to_fsm.mul_shift_en,
     mac_bignum_predec_to_fsm.mul_merger_en,
     mac_bignum_predec_to_fsm.add_res_en,
-    mac_bignum_predec_to_fsm.operation_valid_raw
+    mac_bignum_predec_to_fsm.operation_valid_raw,
+    mac_bignum_predec_to_fsm.shuffle_offset
   };
+
+  // We must generate a URND used signal already here so that a stopped PRNG is advanced once URND
+  // is used and not with one cycle delay (URND is the flopped PRNG output).
+  // URND is used by an instruction when (there are other users):
+  // - The BN MAC clears its internal registers during a multiplication insn.
+  // - URND is read
+  // If the PRNG is stopped, sampling the BN MAC shuffling offset does not advance the PRNG. We
+  // would have to signal the advance one cycle before we predecode. This is not feasible. Not
+  // advancing the PRNG is however ok because any instruction will advance the PRNG when clearing
+  // the registers. In addition, the shuffling bits are separate bits (not used for clearing).
+  logic mac_bignum_will_consume_urnd;
+  assign mac_bignum_will_consume_urnd = mac_bignum_contrl.acc_clear_en ||
+                                        mac_bignum_contrl.c_clear_en   ||
+                                        mac_bignum_contrl.tmp_clear_en;
+
+  logic unused_mac_bignum_contrl;
+  assign unused_mac_bignum_contrl = ^{
+    mac_bignum_contrl.acc_wr_en_raw,
+    mac_bignum_contrl.c_wr_en_raw,
+    mac_bignum_contrl.tmp_wr_en_raw
+  };
+
+  assign urnd_will_be_consumed_o = mac_bignum_will_consume_urnd ||
+                                   ispr_bignum_predec_d.ispr_rd_en[IsprUrnd];
 
   lowrisc_prim_onehot_enc #(
     .OneHotWidth(NWdr)
@@ -250192,6 +257544,13 @@ module lowrisc_otbn_alu_bignum
   output logic                        ispr_kmac_data_s0_rd_o,
   output logic                        ispr_kmac_data_s1_rd_o,
 
+  output logic                            ispr_urnd_ctrl_wr_o,
+  output logic [31:0]                     ispr_urnd_ctrl_wdata_o,
+  input  logic [31:0]                     ispr_urnd_status_rdata_i,
+  output logic                            ispr_urnd_state_wr_o,
+  output logic [UrndPartialSeedWidth-1:0] ispr_urnd_state_wdata_o,
+  input  logic [WLEN-1:0]                 ispr_urnd_state_rdata_i,
+
   output logic                        reg_intg_violation_err_o,
 
   input  logic                        sec_wipe_mod_urnd_i,
@@ -250654,6 +258013,33 @@ module lowrisc_otbn_alu_bignum
   assign ispr_kmac_data_s0_rd_o = ispr_bignum_predec_i.ispr_rd_en[IsprKmacDataS0];
   assign ispr_kmac_data_s1_rd_o = ispr_bignum_predec_i.ispr_rd_en[IsprKmacDataS1];
 
+  ////////////////
+  // URND Write //
+  ////////////////
+  // No blanker is required in front of a register holding known control values when writing values
+  // from base registers.
+  assign ispr_urnd_ctrl_wr_o = ispr_bignum_predec_i.ispr_wr_en[IsprUrndCtrl];
+  assign ispr_urnd_ctrl_wdata_o = ispr_base_wdata_i;
+
+  // We drop the integrity towards the rnd module. SW can verify the update by reading back the
+  // state.
+  logic [WLEN-1:0] ispr_urnd_state_wdata_no_intg;
+  for (genvar i = 0; i < BaseWordsPerWLEN; i++) begin : g_urnd_state_drop_intg
+    assign ispr_urnd_state_wdata_no_intg[i * 32 +: 32] =
+        ispr_bignum_wdata_intg_i[i * BaseIntgWidth +: 32];
+  end
+
+  assign ispr_urnd_state_wr_o = ispr_bignum_predec_i.ispr_wr_en[IsprUrndState];
+  // SEC_CM: DATA_REG_SW.SCA
+  lowrisc_prim_blanker #(.Width(UrndPartialSeedWidth)) u_ispr_urnd_state_wdata_blanker (
+    .in_i (ispr_urnd_state_wdata_no_intg[UrndPartialSeedWidth-1:0]),
+    .en_i (ispr_urnd_state_wr_o),
+    .out_o(ispr_urnd_state_wdata_o)
+  );
+
+  logic unused_urnd_state_wdata;
+  assign unused_urnd_state_wdata = ^ispr_urnd_state_wdata_no_intg[WLEN-1:UrndPartialSeedWidth];
+
   ///////////////
   // ISPR Read //
   ///////////////
@@ -250664,7 +258050,7 @@ module lowrisc_otbn_alu_bignum
   // 2. Select between the ISPRs that have integrity bits and the result of the first stage.
 
   // Number of ISPRs that have no integrity protection
-  localparam int NNoIntgIspr = 13;
+  localparam int NNoIntgIspr = 15;
   // IDs for ISPRs without integrity
   localparam int IsprRndNoIntg = 0;
   localparam int IsprUrndNoIntg = 1;
@@ -250679,6 +258065,9 @@ module lowrisc_otbn_alu_bignum
   localparam int IsprKmacCfgNoIntg = 10;
   localparam int IsprKmacStrbNoIntg = 11;
   localparam int IsprInsnCntNoIntg = 12;
+  localparam int IsprUrndStateNoIntg = 13;
+  localparam int IsprUrndStatusNoIntg = 14;
+  // KMAC_CTRL and URND_CTRL always read as '0. Thus we do not need a mux input.
 
   logic [NNoIntgIspr-1:0] ispr_rdata_no_intg_mux_sel;
 
@@ -250705,6 +258094,9 @@ module lowrisc_otbn_alu_bignum
   // First stage
   assign ispr_rdata_no_intg_mux_in[IsprRndNoIntg]       = rnd_data_i;
   assign ispr_rdata_no_intg_mux_in[IsprUrndNoIntg]      = urnd_data_i;
+  assign ispr_rdata_no_intg_mux_in[IsprUrndStateNoIntg] = ispr_urnd_state_rdata_i;
+  assign ispr_rdata_no_intg_mux_in[IsprUrndStatusNoIntg] =
+      {{(WLEN - 32){1'b0}}, ispr_urnd_status_rdata_i};
   assign ispr_rdata_no_intg_mux_in[IsprMaiCtrlNoIntg]   =
       {{(WLEN - 32){1'b0}}, ispr_mai_ctrl_rdata_i};
   assign ispr_rdata_no_intg_mux_in[IsprMaiStatusNoIntg] =
@@ -250732,6 +258124,10 @@ module lowrisc_otbn_alu_bignum
       ispr_bignum_predec_i.ispr_rd_en[IsprRnd];
   assign ispr_rdata_no_intg_mux_sel[IsprUrndNoIntg]       =
       ispr_bignum_predec_i.ispr_rd_en[IsprUrnd];
+  assign ispr_rdata_no_intg_mux_sel[IsprUrndStateNoIntg]  =
+      ispr_bignum_predec_i.ispr_rd_en[IsprUrndState];
+  assign ispr_rdata_no_intg_mux_sel[IsprUrndStatusNoIntg] =
+      ispr_bignum_predec_i.ispr_rd_en[IsprUrndStatus];
   assign ispr_rdata_no_intg_mux_sel[IsprMaiCtrlNoIntg]    =
       ispr_bignum_predec_i.ispr_rd_en[IsprMaiCtrl];
   assign ispr_rdata_no_intg_mux_sel[IsprMaiStatusNoIntg]  =
@@ -250752,8 +258148,9 @@ module lowrisc_otbn_alu_bignum
       ispr_bignum_predec_i.ispr_rd_en[IsprKmacCfg];
   assign ispr_rdata_no_intg_mux_sel[IsprKmacStrbNoIntg]   =
       ispr_bignum_predec_i.ispr_rd_en[IsprKmacStrb];
-  // KMAC_CTRL always reads as '0. We use the onehot MUX to output '0 by not factoring in the
-  // KMAC_CTRL read enable signal into its select signal.
+  // KMAC_CTRL and URND_CTRL always read as '0. We use the onehot MUX to output '0 by not having an
+  // input for these. We thus also don't need to factor in their read enable signals into the MUX
+  // select signal.
 
   assign ispr_rdata_no_intg_mux_sel[IsprInsnCntNoIntg]  =
       ispr_bignum_predec_i.ispr_rd_en[IsprInsnCnt];
@@ -250816,6 +258213,9 @@ module lowrisc_otbn_alu_bignum
 
   assign ispr_rdata_intg_mux_sel[IsprNoIntg] =
     |{ispr_bignum_predec_i.ispr_rd_en[IsprInsnCnt],
+      ispr_bignum_predec_i.ispr_rd_en[IsprUrndState],
+      ispr_bignum_predec_i.ispr_rd_en[IsprUrndStatus],
+      ispr_bignum_predec_i.ispr_rd_en[IsprUrndCtrl],
       ispr_bignum_predec_i.ispr_rd_en[IsprKmacStrb],
       ispr_bignum_predec_i.ispr_rd_en[IsprKmacCfg],
       ispr_bignum_predec_i.ispr_rd_en[IsprKmacCtrl],
@@ -250851,7 +258251,6 @@ module lowrisc_otbn_alu_bignum
   ////////////////////////
   // ISPR PreDec Checks //
   ////////////////////////
-
   lowrisc_prim_onehot_enc #(
     .OneHotWidth (NIspr)
   ) u_expected_ispr_rd_en_enc (
@@ -251826,7 +259225,8 @@ module lowrisc_otbn_mac_bignum_fsm
   import lowrisc_otbn_pkg::*;
 #(
   // This enforces that there is an assertion which checks that state_err_o generates an alert.
-  parameter bit EnableAlertTriggerSVA = 1
+  parameter bit EnableAlertTriggerSVA = 1,
+  parameter bit SecFixMacOpSeq = 1'b0
 )
 (
   input  logic clk_i,
@@ -251844,6 +259244,7 @@ module lowrisc_otbn_mac_bignum_fsm
   input  logic [1:0]            op_a_qw_sel_i,
   input  logic [2:0]            op_b_elem0_sel_i,
   input  logic [2:0]            op_b_elem1_sel_i,
+  input  logic [1:0]            shuffle_offset_i,
 
   output mac_bignum_contrl_t contrl_o,
   output mac_bignum_predec_t predec_o,
@@ -251868,19 +259269,21 @@ module lowrisc_otbn_mac_bignum_fsm
    *
    * The following tables show the progression of the "dynamic" control signals for all
    * multi-cycle operations. There are additional control signals which do not change during the
-   * execution.
+   * execution. Note, for signals marked with a * the start value is randomized based on bits of
+   * URND. This shuffles the execution, giving additional protection against SCA.
    *
    * Dynamic control signals for vectorized multiplication (QW = quad word = 64 bits). In lane mode
    * the op_b_elemX_sel signals are overwritten by the FSM based upon decoded signals.
+   *
    *
    * | Signal              |     Cycles (0-3)      | Predecoded |
    * |---------------------|-----------------------|------------|
    * | Step                | QW0 | QW1 | QW2 | QW3 |            |
    * |---------------------|-----|-----|-----|-----|------------|
-   * | op_a_qw_sel         |   0 |   1 |   2 |   3 |        yes |
-   * | op_b_elem0_sel      |   0 |   2 |   4 |   6 |        yes |
-   * | op_b_elem1_sel      |   1 |   3 |   5 |   7 |        yes |
-   * | acc_qw_sel          |   0 |   1 |   2 |   3 |        yes |
+   * | op_a_qw_sel *       |   0 |   1 |   2 |   3 |        yes |
+   * | op_b_elem0_sel *    |   0 |   2 |   4 |   6 |        yes |
+   * | op_b_elem1_sel *    |   1 |   3 |   5 |   7 |        yes |
+   * | acc_qw_sel *        |   0 |   1 |   2 |   3 |        yes |
    * | acc_wr_en_raw       |   1 |   1 |   1 |   0 |         no |
    * | acc_clear_en        |   0 |   0 |   0 |   1 |         no |
    * | acc_merger_en       |   1 |   1 |   1 |   1 |        yes |
@@ -251897,16 +259300,16 @@ module lowrisc_otbn_mac_bignum_fsm
    * | Processed quad word |        QW0      ||       QW1       || QW2 ||    QW3    |            |
    * | Montgomery cycle    |  C0 |  C1 |  C2 ||  C0 |  C1 |  C2 || ... || ... |  C2 |            |
    * |---------------------|-----|-----|-----||-----|-----|-----||-----||-----|-----|------------|
-   * | op_a_qw_sel         |   0 |   0 |   0 ||   1 |   1 |   1 ||     ||     |   3 |        yes |
-   * | op_b_elem0_sel      |   0 |   0 |   0 ||   2 |   2 |   2 ||     ||     |   6 |        yes |
-   * | op_b_elem1_sel      |   1 |   1 |   1 ||   3 |   3 |   3 ||     ||     |   7 |        yes |
+   * | op_a_qw_sel *       |   0 |   0 |   0 ||   1 |   1 |   1 ||     ||     |   3 |        yes |
+   * | op_b_elem0_sel *    |   0 |   0 |   0 ||   2 |   2 |   2 ||     ||     |   6 |        yes |
+   * | op_b_elem1_sel *    |   1 |   1 |   1 ||   3 |   3 |   3 ||     ||     |   7 |        yes |
    * | mul_op_a_tmp_sel    |   A | TMP | TMP ||   A | TMP | TMP ||     ||     | TMP |        yes |
    * | mul_op_b_sel        |   B |  Mu |   Q ||   B |  Mu |   Q ||     ||     |   Q |        yes |
    * | tmp_wr_en_raw       |   1 |   1 |   0 ||   1 |   1 |   0 ||     ||     |   0 |         no |
    * | tmp_clear_en        |   0 |   0 |   1 ||   0 |   0 |   1 ||     ||     |   1 |         no |
    * | c_wr_en_raw         |   1 |   0 |   0 ||   1 |   0 |   0 ||     ||     |   0 |         no |
    * | c_clear_en          |   0 |   0 |   1 ||   0 |   0 |   1 ||     ||     |   1 |         no |
-   * | acc_qw_sel          |   0 |   0 |   0 ||   1 |   1 |   1 ||     ||     |   3 |        yes |
+   * | acc_qw_sel *        |   0 |   0 |   0 ||   1 |   1 |   1 ||     ||     |   3 |        yes |
    * | acc_wr_en_raw       |   0 |   0 |   1 ||   0 |   0 |   1 ||     ||     |   0 |         no |
    * | acc_clear_en        |   0 |   0 |   0 ||   0 |   0 |   0 ||     ||     |   1 |         no |
    * | mul_add_en          |   0 |   0 |   1 ||   0 |   0 |   1 ||     ||     |   1 |        yes |
@@ -251928,6 +259331,27 @@ module lowrisc_otbn_mac_bignum_fsm
    * In the following, the first part generates these signal combinations. The second part then is
    * the actual logic stepping through the cycles.
    */
+
+  /////////////////////
+  // Shuffling logic //
+  /////////////////////
+  // This captures the shuffle offset when an instruction starts and provides the signal generation
+  // with the offset value.
+  logic [1:0] shuffle_offset_d, shuffle_offset_q;
+  logic [1:0] shuffle_offset;
+
+  assign shuffle_offset_d = is_busy_o ? shuffle_offset_q : shuffle_offset_i;
+
+  // Do not shuffle if it is disabled.
+  assign shuffle_offset = SecFixMacOpSeq ? 2'b0 : shuffle_offset_d;
+
+  always_ff @(posedge clk_i or negedge rst_ni) begin
+    if (!rst_ni) begin
+      shuffle_offset_q <= '0;
+    end else begin
+      shuffle_offset_q <= shuffle_offset_d;
+    end
+  end
 
   ///////////////////////////////////////////
   // Multi-cycle control signal generation //
@@ -251991,16 +259415,20 @@ module lowrisc_otbn_mac_bignum_fsm
   mac_bignum_contrl_t     contrl_vec[LatencyVec];
   mac_bignum_predec_dyn_t predec_vec[LatencyVec];
 
+  logic [1:0] elem_idx_vec[LatencyVec];
+
   always_comb begin
     contrl_vec = '{default: ControlDefault};
     predec_vec = '{default: PredecDynDefault};
 
     for (int unsigned cycle = 0; cycle < LatencyVec; cycle++) begin
+      elem_idx_vec[cycle] = 2'(cycle) + shuffle_offset;
+
       contrl_vec[cycle].acc_wr_en_raw  = 1'b1;
-      predec_vec[cycle].op_a_qw_sel    = 2'(cycle);
-      predec_vec[cycle].op_b_elem0_sel = 3'(2 * cycle);
-      predec_vec[cycle].op_b_elem1_sel = 3'(2 * cycle + 1);
-      predec_vec[cycle].acc_qw_sel     = (VLEN/QWLEN)'(unsigned'(1) << cycle);
+      predec_vec[cycle].op_a_qw_sel    = elem_idx_vec[cycle];
+      predec_vec[cycle].op_b_elem0_sel = 3'({elem_idx_vec[cycle], 1'b0});
+      predec_vec[cycle].op_b_elem1_sel = 3'({elem_idx_vec[cycle], 1'b1});
+      predec_vec[cycle].acc_qw_sel     = (VLEN/QWLEN)'(unsigned'(1) << elem_idx_vec[cycle]);
       predec_vec[cycle].acc_merger_en  = 1'b1;
     end
 
@@ -252017,6 +259445,8 @@ module lowrisc_otbn_mac_bignum_fsm
   mac_bignum_predec_dyn_t predec_mod_mul[LatencyMontgMul];
   mac_bignum_contrl_t     contrl_mod[LatencyMod];
   mac_bignum_predec_dyn_t predec_mod[LatencyMod];
+
+  logic [1:0] elem_idx_mod[LatencyMod];
 
   always_comb begin
     contrl_mod_mul = '{default: ControlDefault};
@@ -252044,12 +259474,14 @@ module lowrisc_otbn_mac_bignum_fsm
 
     // Construct the 4 * 3 = 12 cycles and set the correct qword selection
     for (int unsigned cycle = 0; cycle < LatencyMod; cycle++) begin
+      elem_idx_mod[cycle] = 2'(cycle / LatencyMontgMul) + shuffle_offset;
+
       contrl_mod[cycle]                = contrl_mod_mul[cycle % LatencyMontgMul];
       predec_mod[cycle]                = predec_mod_mul[cycle % LatencyMontgMul];
-      predec_mod[cycle].op_a_qw_sel    = 2'(cycle / LatencyMontgMul);
-      predec_mod[cycle].op_b_elem0_sel = 3'(2 * (cycle / LatencyMontgMul));
-      predec_mod[cycle].op_b_elem1_sel = 3'(2 * (cycle / LatencyMontgMul) + 1);
-      predec_mod[cycle].acc_qw_sel     = (VLEN/QWLEN)'(unsigned'(1)) << (cycle / LatencyMontgMul);
+      predec_mod[cycle].op_a_qw_sel    = elem_idx_mod[cycle];
+      predec_mod[cycle].op_b_elem0_sel = 3'({elem_idx_mod[cycle], 1'b0});
+      predec_mod[cycle].op_b_elem1_sel = 3'({elem_idx_mod[cycle], 1'b1});
+      predec_mod[cycle].acc_qw_sel     = (VLEN/QWLEN)'(unsigned'(1)) << elem_idx_mod[cycle];
     end
 
     // Clear ACC in the last cycle with randomness
@@ -252137,6 +259569,7 @@ module lowrisc_otbn_mac_bignum_fsm
     is_lane:             is_lane_i,
     lane_index:          lane_index_i,
     elen:                elen_i,
+    shuffle_offset:      shuffle_offset,
     adder_carry_sel:     adder_carry_sel_i,
     acc_add_en:          acc_add_en_i,
     op_a_qw_sel:         predec_dyn.op_a_qw_sel,
@@ -252579,21 +260012,23 @@ endmodule
  * As described, the ACC WSR and the two hidden registers are cleared using randomness. The ACC WSR
  * is directly cleared by writing the current value of URND to it. The two hidden registers are
  * cleared with a permutation of URND as shown below. The permutation is based on a netlist secret.
+ * The remaining permuted bits are used as shuffling index which the predecoding logic samples.
  *
  *              +-------------+
- * URND --+---->| Permutation |-----+----------+
- *        |     +-------------+     |          |
- *        |                      [127:0]   [192:128]
- *        v                         v          v
- *     +-----+                   +-----+    +-----+
- *     | ACC |                   |  C  |    | TMP |
- *     +-----+                   +-----+    +-----+
+ * URND --+---->| Permutation |-----+----------+----------+
+ *        |     +-------------+     |          |          |
+ *        |                      [127:0]   [192:128]   [194:193]
+ *        v                         v          v           v
+ *     +-----+                   +-----+    +-----+     Used as
+ *     | ACC |                   |  C  |    | TMP |    shuffling
+ *     +-----+                   +-----+    +-----+      index
  */
 module lowrisc_otbn_mac_bignum
   import lowrisc_otbn_pkg::*;
 #(
   // Compile-time permutation for URND permutation
-  parameter bn_mac_urnd_perm_t RndCnstBnMacUrndPerm = RndCnstBnMacUrndPermDefault
+  parameter bn_mac_urnd_perm_t RndCnstBnMacUrndPerm = RndCnstBnMacUrndPermDefault,
+  parameter bit SecFixMacOpSeq = 1'b0
 ) (
   input logic clk_i,
   input logic rst_ni,
@@ -252617,10 +260052,7 @@ module lowrisc_otbn_mac_bignum
   input  logic            sec_wipe_urnd_i,
   input  logic            sec_wipe_running_i,
   output logic            sec_wipe_err_o,
-
-  // Signals whenever the URND input is used to clear any of the internal registers. This is
-  // required to advance the URND PRNG if the SecMuteUrnd parameter is set.
-  output logic urnd_used_o,
+  output logic [1:0]      shuffle_offset_o,
 
   output logic [ExtWLEN-1:0] ispr_acc_intg_o,
   input  logic [ExtWLEN-1:0] ispr_acc_wr_data_intg_i,
@@ -252643,11 +260075,12 @@ module lowrisc_otbn_mac_bignum
     assign urnd_permutation[i] = urnd_data_i[RndCnstBnMacUrndPerm[i]];
   end
 
-  assign acc_clear_data = urnd_data_i;
-  assign c_clear_data   = urnd_permutation[HWLEN-1:0];
-  assign tmp_clear_data = urnd_permutation[HWLEN+:QWLEN];
+  assign acc_clear_data   = urnd_data_i;
+  assign c_clear_data     = urnd_permutation[HWLEN-1:0];
+  assign tmp_clear_data   = urnd_permutation[HWLEN         +: QWLEN];
+  assign shuffle_offset_o = urnd_permutation[HWLEN + QWLEN +: 2];
 
-  assign unused_urnd_permutation = ^urnd_permutation[HWLEN + QWLEN +: QWLEN];
+  assign unused_urnd_permutation = ^urnd_permutation[HWLEN + QWLEN + 2 +: QWLEN - 2];
 
   //////////////////
   // ACC Register //
@@ -253142,7 +260575,9 @@ module lowrisc_otbn_mac_bignum
   mac_bignum_contrl_t contrl;
   mac_bignum_predec_t expected_predec;
 
-  lowrisc_otbn_mac_bignum_fsm u_mac_bignum_fsm (
+  lowrisc_otbn_mac_bignum_fsm #(
+    .SecFixMacOpSeq(SecFixMacOpSeq)
+  ) u_mac_bignum_fsm (
     .clk_i,
     .rst_ni,
 
@@ -253160,6 +260595,12 @@ module lowrisc_otbn_mac_bignum
     .op_a_qw_sel_i    (operation_i.op_a_qw_sel_raw),
     .op_b_elem0_sel_i (operation_i.op_b_elem0_sel_raw),
     .op_b_elem1_sel_i (operation_i.op_b_elem1_sel_raw),
+    // We cannot recompute the shuffling index here because we don't have the URND bits from the
+    // last cycle. Instead we just use the value from the predecoder. This means deterministic URND
+    // bits in the predecoder (e.g., when attacked) will make the shuffling deterministic. But that
+    // is acceptable as the shuffling is a SCA countermeasure on top of the masking expected to be
+    // implemented in software.
+    .shuffle_offset_i (predec_i.shuffle_offset),
 
     .sec_wipe_i(sec_wipe_urnd_i),
 
@@ -253183,10 +260624,6 @@ module lowrisc_otbn_mac_bignum
   assign c_clear_en    = contrl.c_clear_en;
   assign acc_wr_en_raw = contrl.acc_wr_en_raw;
   assign acc_clear_en  = contrl.acc_clear_en;
-
-  // We must signal that we used URND so the PRNG is advanced even if the SecMuteUrnd parameter is
-  // set.
-  assign urnd_used_o = tmp_clear_en || c_clear_en || acc_clear_en;
 
   //////////////////////
   // Result selection //
@@ -253594,6 +261031,9 @@ module lowrisc_otbn_mai
   // Connection to MOD register with integrity data
   input  logic [ExtWLEN-1:0] ispr_mod_intg_i,
 
+  // Signal to URND control that the MAI will use bits from URND so the PRNG should advance.
+  output logic will_use_urnd_o,
+
   // Error
   output logic mai_software_error_o,
   output logic mai_reg_intg_violation_err_o,
@@ -253673,7 +261113,7 @@ module lowrisc_otbn_mai
   logic                 ma_in_ready;
   logic                 ma_in_consume;
   logic                 ma_out_ready;
-  logic                 ma_busy_q;
+  logic                 ma_busy_q, ma_busy_d;
   ma_sharing_t          ma_in0;
   ma_sharing_t          ma_in1;
   ma_sharing_t          ma_remask_rand;
@@ -253960,6 +261400,10 @@ module lowrisc_otbn_mai
   assign ispr_mai_status.busy        = ma_busy_q;
   assign ispr_mai_status_rdata_o     = ispr_mai_status;
 
+  // Tell the URND advance control that the MAI is or will be using URND. This then ensures that
+  // the PRNG is advanced and provides fresh randomness in each cycle.
+  assign will_use_urnd_o = ispr_mai_status.busy || ma_busy_d;
+
   // Control read
   assign ispr_mai_ctrl_r.rsvd  = '0;
   assign ispr_mai_ctrl_r.start = 1'b0;
@@ -253993,15 +261437,14 @@ module lowrisc_otbn_mai
   end
 
   // Busy control
+  assign ma_busy_d = out_cnt_set ? 1'b0 :
+                     ma_start    ? 1'b1 : ma_busy_q;
+
   always_ff @(posedge clk_i or negedge rst_ni) begin : proc_busy_control_state
     if (!rst_ni) begin
       ma_busy_q <= 1'b0;
     end else begin
-      if (out_cnt_set) begin
-        ma_busy_q <= 1'b0;
-      end else if (ma_start) begin
-        ma_busy_q <= 1'b1;
-      end
+      ma_busy_q <= ma_busy_d;
     end
   end
 
@@ -254497,7 +261940,8 @@ endmodule
 //
 // Rejection sampling (EnRejSampling=1, BoolToArith only):
 //   wready_o is deasserted whenever mask_mod >= mod_i. The caller must hold wvalid_i high until
-//   wready_o rises. Set EnRejSampling=0 for SCA analysis to avoid trace misalignment.
+//   wready_o rises. Assert sec_wipe_running_i for SCA analysis to avoid trace misalignment, or set
+//   EnRejSampling=0 for CocoAlma verification.
 //
 // Interface:
 //   wvalid_i / wready_o : Input handshake following the 'valid locked-in' principle: once wvalid_i
@@ -257287,8 +264731,10 @@ endmodule
  * OTBN random number coordination
  *
  * This module implements the RND, RND_PREFETCH and URND CSRs/WSRs. The EDN (entropy distribution
- * network) provides the bits for random numbers. RND gives direct access to EDN bits. URND provides
- * bits from a PRNG that is seeded with bits from the EDN.
+ * network) provides the bits for random numbers. RND gives direct access to EDN bits. URND
+ * provides bits from a PRNG that is seeded with bits from the EDN. The PRNG can be stopped and
+ * resumed by SW at runtime via the URND control interface. This interface also allows SW to save
+ * and restore a PRNG state.
  */
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -257318,12 +264764,31 @@ module lowrisc_otbn_rnd import lowrisc_otbn_pkg::*;
   output logic            rnd_fips_err_o,
 
   // Request URND PRNG reseed from the EDN
-  input  logic               urnd_reseed_req_i,
+  input  logic urnd_reseed_req_i,
   // Acknowledge URND PRNG reseed from the EDN
-  output logic               urnd_reseed_ack_o,
-  // When asserted PRNG state advances. It is permissible to advance the state whilst
-  // reseeding.
-  input  logic               urnd_advance_i,
+  output logic urnd_reseed_ack_o,
+
+  // Signals if URND control interface is active. Must stay constant whilst OTBN is executing.
+  input  logic urnd_ctrl_enabled_i,
+  // When asserted, PRNG state advances except it is stopped by SW. It is permissible to advance
+  // the state whilst reseeding.
+  input  logic urnd_advance_i,
+  // When asserted, PRNG state advances independently of what SW commanded via URND CTRL.
+  input  logic urnd_must_advance_i,
+
+  // CSRs for URND control
+  input  logic        ispr_urnd_ctrl_wr_i,
+  input  logic [31:0] ispr_urnd_ctrl_wdata_i,
+  output logic [31:0] ispr_urnd_status_rdata_o,
+
+  // WSR for URND control
+  // The read state is zero padded to WLEN. The write path is limited to the partial seed width to
+  // reduce the WSR write blanker width. There is no integrity checked, SW should read back the
+  // state to verify the update.
+  output logic [WLEN-1:0]                 ispr_urnd_state_rdata_o,
+  input  logic                            ispr_urnd_state_wr_i,
+  input  logic [UrndPartialSeedWidth-1:0] ispr_urnd_state_wdata_i,
+
   // URND data from PRNG
   output logic [UrndLen-1:0] urnd_data_o,
   // URND lockup state detected
@@ -257339,6 +264804,29 @@ module lowrisc_otbn_rnd import lowrisc_otbn_pkg::*;
   output lowrisc_edn_pkg::edn_req_t       edn_urnd_o,
   input  lowrisc_edn_pkg::edn_rsp_t       edn_urnd_i
 );
+  localparam int unsigned StateWidth = lowrisc_prim_trivium_pkg::BiviumStateWidth;
+
+  // Types to represent the information in URND_STATUS and URND_CTRL. Keep in sync with
+  // data/csr.yml.
+  typedef logic [5:0] urnd_restore_info_width_t;
+  typedef logic [9:0] urnd_state_info_width_t;
+
+  typedef struct packed {
+    urnd_restore_info_width_t urnd_restore_width;
+    urnd_state_info_width_t   urnd_state_width;
+    logic [11:0]              rsvd;
+    logic                     used_while_stopped;
+    logic                     restoring;
+    logic                     stopped;
+    logic                     urnd_ctrl_enabled;
+  } ispr_urnd_status_t;
+
+  typedef struct packed {
+    logic [31-3:0] rsvd;
+    logic restore;
+    logic start;
+    logic stop;
+  } ispr_urnd_ctrl_t;
 
   logic rnd_valid_q, rnd_valid_d;
   logic [WLEN-1:0] rnd_data_q, rnd_data_d;
@@ -257354,9 +264842,9 @@ module lowrisc_otbn_rnd import lowrisc_otbn_pkg::*;
   logic rnd_req_queued_d, rnd_req_queued_q;
   logic edn_rnd_data_ignore_d, edn_rnd_data_ignore_q;
 
-  logic urnd_reseed_req_q;
+  logic urnd_reseed_req_d, urnd_reseed_req_q;
   logic urnd_reseed_ack_d, urnd_reseed_ack_q;
-  logic seed_en_d, seed_en_q;
+  logic start_reseeding_d, start_reseeding_q;
 
   logic [UrndLen-1:0] urnd_data_d, urnd_data_q;
 
@@ -257445,52 +264933,162 @@ module lowrisc_otbn_rnd import lowrisc_otbn_pkg::*;
   assign rnd_rep_err_o = rnd_req_complete & rnd_err_q;
   assign rnd_fips_err_o = rnd_req_complete & ~rnd_fips_q;
 
+  //////////////////
+  // URND control //
+  //////////////////
+  // This part implements the CSRs and control logic to start and stop the PRNG. It also implements
+  // the logic triggering a restore process. See the PRNG implementation section for how a restore
+  // is implemented.
+  logic urnd_ctrl_wr, stop_cmd, start_cmd, restore_cmd;
+  logic urnd_stopped_d, urnd_stopped_q;
+  logic urnd_advance;
+  logic used_while_stopped, used_while_stopped_d, used_while_stopped_q;
+  logic start_restoring;
+  logic restoring_d, restoring_q;
+  logic seed_from_edn_d, seed_from_edn_q;
+  logic seed_req, seed_ack;
+  logic sw_seed_ack;
+  logic seed_done;
+
+  ispr_urnd_status_t ispr_urnd_status_r;
+  assign ispr_urnd_status_rdata_o = ispr_urnd_status_r;
+
+  assign ispr_urnd_status_r = '{
+    urnd_restore_width: urnd_restore_info_width_t'(UrndPartialSeedWidth),
+    urnd_state_width:   urnd_state_info_width_t'(StateWidth),
+    rsvd:               '0,
+    used_while_stopped: used_while_stopped_q,
+    restoring:          restoring_q,
+    stopped:            urnd_stopped_q,
+    urnd_ctrl_enabled:  urnd_ctrl_enabled_i
+  };
+
+  ispr_urnd_ctrl_t ispr_urnd_ctrl_w;
+  assign ispr_urnd_ctrl_w = ispr_urnd_ctrl_wdata_i;
+
+  // A command is only effective if the interface is enabled.
+  assign urnd_ctrl_wr = ispr_urnd_ctrl_wr_i & urnd_ctrl_enabled_i;
+  assign stop_cmd     = urnd_ctrl_wr & ispr_urnd_ctrl_w.stop;
+  assign start_cmd    = urnd_ctrl_wr & ispr_urnd_ctrl_w.start;
+  assign restore_cmd  = urnd_ctrl_wr & ispr_urnd_ctrl_w.restore;
+
+  // Each execution starts with a running PRNG. Start has higher prio than stop. If this changes
+  // the used while stopped logic probably need to be adapted as well, see below.
+  assign urnd_stopped_d = opn_start_i ? 1'b0 :
+                          start_cmd   ? 1'b0 :
+                          stop_cmd    ? 1'b1 : urnd_stopped_q;
+
+  // The main advance / state update control signal. Based on current instruction because the URND
+  // output is registered. Otherwise we would still perform two updates.
+  assign urnd_advance = urnd_must_advance_i || (urnd_advance_i && !urnd_stopped_d);
+
+  // Detect a forced advance whilst stopped. Some must advance sources trigger one cycle before
+  // URND is used such that the registered URND is advanced in time. However, if we start now, then
+  // this early "must advance" signal can be ignored.
+  // ATTENTION: This logic relies on the fact that a START command has higher priority than STOP.
+  assign used_while_stopped = urnd_must_advance_i && urnd_stopped_q && !start_cmd;
+
+  // A stop does only clear previous errors. But if the next insn after stop reads it, then we must
+  // still set the flag.
+
+  // We keep track of usages whilst stopped with a sticky flag. The flag is cleared once a new
+  // OTBN execution starts or the PRNG is stopped. However, because instructions reading URND
+  // enforce an advance one cycle before they execute, the flag must be set if:
+  // The PRNG is running, a stop command is issued, and the next instruction will read URND.
+  assign used_while_stopped_d = opn_start_i                                 ? 1'b0 :
+                                used_while_stopped                          ? 1'b1 :
+                                !urnd_stopped_q && stop_cmd && urnd_advance ? 1'b1 :
+                                stop_cmd                                    ? 1'b0 :
+                                                                              used_while_stopped_q;
+
+  // Signal the start of a restoring process only if no reseed is ongoing. A URND reseed can only
+  // happen during a secure wipe, i.e., before or after software executes.
+  assign start_restoring = restore_cmd & ~restoring_q & ~seed_from_edn_q;
+
+  // Keep track if a restore process is ongoing. If a restore process is taken over by a reseed
+  // process we clear the flag once the reseed has ended (see below).
+  assign restoring_d   = opn_start_i     ? 1'b0       :
+                         restoring_q     ? ~seed_done :
+                         start_restoring ? 1'b1       : restoring_q;
+
+  // During a restore each write to URND_STATE supplies one seed word and acts as an ack for a seed
+  // request.
+  assign sw_seed_ack = ispr_urnd_state_wr_i & restoring_q & seed_req;
+
+  always_ff @(posedge clk_i or negedge rst_ni) begin : proc_urnd_ctrl
+    if (~rst_ni) begin
+      used_while_stopped_q <= 1'b0;
+      urnd_stopped_q       <= 1'b0;
+      restoring_q          <= 1'b0;
+    end else begin
+      used_while_stopped_q <= used_while_stopped_d;
+      urnd_stopped_q       <= urnd_stopped_d;
+      restoring_q          <= restoring_d;
+    end
+  end
+
   /////////////////////////
   // PRNG Implementation //
   /////////////////////////
+  // There are two processes which make use of the PRNG reseed interface. There is a reseed process
+  // issued by the OTBN start stop controller which reseeds the PRNG with values from EDN. And
+  // there is a restore process issued by OTBN SW to restore a URND context. Any reseed process has
+  // priority over a restore process. Both processes share the actual reseed interface which
+  // accepts partial seed values over multiple cycles. If a reseed process is issued whilst a
+  // restore is ongoing, the reseeding continues the restoring process but then provides seeds from
+  // EDN. All already provided seed parts are kept. As a consequence, in the worst case only the
+  // final reseed word comes from EDN. However, this is ok due to the relatively large Bivium state
+  // size, as well as the wide output width and the strong diffusion characteristics. Note, a
+  // restore process can only be running once SW executes, so the initial secure wipe will always
+  // fully reseed the PRNG with randomness from EDN. And during a secure wipe in case the program
+  // execution failed, the PRNG will be reseeded twice. So only the first reseed can be affected.
+  logic [UrndPartialSeedWidth-1:0] partial_seed;
+  logic [StateWidth-1:0] current_state;
+  logic [StateWidth-1:0] current_state_blanked;
 
   lowrisc_prim_trivium #(
     .BiviumVariant(1'b1),
     .OutputWidth(UrndLen),
     .StrictLockupProtection(1'b1),
     .SeedType(lowrisc_prim_trivium_pkg::SeedTypeStatePartial),
-    .PartialSeedWidth(lowrisc_edn_pkg::ENDPOINT_BUS_WIDTH),
+    .PartialSeedWidth(UrndPartialSeedWidth),
     .RndCnstTriviumLfsrSeed(RndCnstUrndPrngSeed)
   ) u_prim_trivium (
     .clk_i,
     .rst_ni,
-    .en_i                (urnd_advance_i),
+    .en_i                (urnd_advance),
     .allow_lockup_i      (1'b0),
-    .seed_en_i           (seed_en_q),
-    .seed_done_o         (urnd_reseed_ack_d),
-    .seed_req_o          (edn_urnd_o.edn_req),
-    .seed_ack_i          (edn_urnd_i.edn_ack),
+    .seed_en_i           (start_reseeding_q | start_restoring),
+    .seed_done_o         (seed_done),
+    .seed_req_o          (seed_req),
+    .seed_ack_i          (seed_ack),
     .seed_key_i          ('0), // Not connected
     .seed_iv_i           ('0), // Not connected
     .seed_state_full_i   ('0), // Not connected
-    .seed_state_partial_i(edn_urnd_i.edn_bus),
+    .seed_state_partial_i(partial_seed),
     .key_o               (urnd_data_d),
+    .state_o             (current_state),
     .err_o               (urnd_all_zero_o)
   );
 
-  // Buffer Bivium's output to relax timing and to prevent glitching on the URND signals.
-  always_ff @(posedge clk_i) begin : proc_bivium_output_buffer
-    urnd_data_q <= urnd_data_d;
-  end
-  assign urnd_data_o = urnd_data_q;
-
   // Signal urnd_reseed_req_i is high even during reset. Ensure we do not start until
-  // reset has been completed
-  always_ff @(posedge clk_i or negedge rst_ni) begin : proc_gate_seed_en
-    if (~rst_ni) begin
-      urnd_reseed_req_q <= 1'b0;
-      seed_en_q         <= 1'b0;
-    end else begin
-      urnd_reseed_req_q <= urnd_reseed_req_i;
-      seed_en_q         <= seed_en_d;
-    end
-  end
-  assign seed_en_d = !urnd_reseed_req_q & urnd_reseed_req_i;
+  // reset has been completed by registering it with a resettable flop.
+  assign urnd_reseed_req_d = urnd_reseed_req_i;
+  assign start_reseeding_d = !urnd_reseed_req_q & urnd_reseed_req_i;
+
+  // Keep track if the current seeding is a reseed or restore process.
+  assign seed_from_edn_d = start_reseeding_d ? 1'b1 :
+                           seed_done         ? 1'b0 : seed_from_edn_q;
+
+  // Mux the seed value request depending on the type of seed process. The Bivium instance already
+  // handles the case when the last seed part is narrower than the seed interface.
+  assign partial_seed       = seed_from_edn_q ? edn_urnd_i.edn_bus : ispr_urnd_state_wdata_i;
+  assign seed_ack           = seed_from_edn_q ? edn_urnd_i.edn_ack : sw_seed_ack;
+  assign edn_urnd_o.edn_req = seed_from_edn_q ? seed_req : 1'b0;
+
+  // Only a reseed acknowledges the reseed request from the start/stop controller. Otherwise a
+  // restore would be flagged as spurious reseed ack.
+  assign urnd_reseed_ack_d = seed_done & seed_from_edn_q;
 
   // The logic around the previous PRNG (xoshiro256pp) has acknowledged the reseeding
   // operation one cycle after fetching the seed data from EDN. This cut emulates
@@ -257504,9 +265102,40 @@ module lowrisc_otbn_rnd import lowrisc_otbn_pkg::*;
   end
   assign urnd_reseed_ack_o = urnd_reseed_ack_q;
 
+  // If URND Control is enabled, expose the current PRNG state, zero padded to WLEN. Otherwise just
+  // output all-zero. The URND control signal directly originates from the CTRL register flop. And
+  // it can only be changed whilst OTBN is idle, so it is guaranteed to be constant.
+  lowrisc_prim_blanker #(.Width(StateWidth)) u_state_blanker (
+    .in_i (current_state),
+    .en_i (urnd_ctrl_enabled_i),
+    .out_o(current_state_blanked)
+  );
+
+  assign ispr_urnd_state_rdata_o = {{{WLEN - StateWidth}{1'b0}}, current_state_blanked};
+
+  // Buffer Bivium's output to relax timing and to prevent glitching on the URND signals.
+  always_ff @(posedge clk_i) begin : proc_bivium_output_buffer
+    urnd_data_q <= urnd_data_d;
+  end
+  assign urnd_data_o = urnd_data_q;
+
+  always_ff @(posedge clk_i or negedge rst_ni) begin : proc_seed_ctrl
+    if (~rst_ni) begin
+      urnd_reseed_req_q <= 1'b0;
+      start_reseeding_q <= 1'b0;
+      seed_from_edn_q   <= 1'b0;
+    end else begin
+      urnd_reseed_req_q <= urnd_reseed_req_d;
+      start_reseeding_q <= start_reseeding_d;
+      seed_from_edn_q   <= seed_from_edn_d;
+    end
+  end
+
   // Unused signals
-  logic unused_trivium;
-  assign unused_trivium = ^edn_urnd_i.edn_fips;
+  logic unused_signals;
+  assign unused_signals =
+      ^{edn_urnd_i.edn_fips,
+        ispr_urnd_ctrl_w.rsvd};
 
 
 
@@ -258720,8 +266349,6 @@ module lowrisc_otbn_start_stop_control
   import lowrisc_otbn_pkg::*;
   import lowrisc_prim_mubi_pkg::*;
 #(
-  // Disable URND advance when not in use. Useful for SCA only.
-  parameter bit SecMuteUrnd = 1'b0,
   // Skip URND re-seed at the start of the operation. Useful for SCA only.
   parameter bit SecSkipUrndReseedAtStart = 1'b0
 ) (
@@ -258738,7 +266365,12 @@ module lowrisc_otbn_start_stop_control
   output logic urnd_reseed_req_o,
   input  logic urnd_reseed_ack_i,
   output logic urnd_reseed_err_o,
+  // The urnd advance signal controls whether the URND PRNG should advance its state in this cycle.
+  // This can be over-steered by SW using the URND control feature / CSR. However, during secure
+  // wipes we must ensure that this control logic is disabled / the PRNG is always advanced. This
+  // is controlled via the must advance signal.
   output logic urnd_advance_o,
+  output logic urnd_must_advance_o,
 
   input   logic secure_wipe_req_i,
   output  logic secure_wipe_ack_o,
@@ -258771,13 +266403,7 @@ module lowrisc_otbn_start_stop_control
   output logic fatal_error_o
 );
 
-  // Create lint errors to reduce the risk of accidentally enabling these features.
-
-  localparam int OtbnSecMuteUrndNonDefault = (SecMuteUrnd == 0) ? 1 : 2;
-  always_comb begin
-    logic unused_assert_static_lint_error;
-    unused_assert_static_lint_error = OtbnSecMuteUrndNonDefault'(1'b1);
-  end
+  // Create a lint error to reduce the risk of accidentally enabling this feature.
 
   localparam int OtbnSecSkipUrndReseedAtStartNonDefault = (SecSkipUrndReseedAtStart == 0) ? 1 : 2;
   always_comb begin
@@ -258792,6 +266418,7 @@ module lowrisc_otbn_start_stop_control
   logic state_error_q, state_error_d;
   logic mubi_err_q, mubi_err_d;
   logic urnd_reseed_err_q, urnd_reseed_err_d;
+  logic urnd_control_allowed;
   logic secure_wipe_error_q, secure_wipe_error_d;
   logic secure_wipe_running_q, secure_wipe_running_d;
   logic skip_reseed_q;
@@ -258879,6 +266506,7 @@ module lowrisc_otbn_start_stop_control
   always_comb begin
     urnd_reseed_req_o            = 1'b0;
     urnd_advance_o               = 1'b0;
+    urnd_control_allowed         = 1'b0;
     state_d                      = state_q;
     ispr_init_o                  = 1'b0;
     state_reset_o                = 1'b0;
@@ -258986,8 +266614,9 @@ module lowrisc_otbn_start_stop_control
         end
       end
       OtbnStartStopStateRunning: begin
-        urnd_advance_o    = ~SecMuteUrnd;
-        allow_secure_wipe = 1'b1;
+        urnd_advance_o       = 1'b1;
+        urnd_control_allowed = 1'b1;
+        allow_secure_wipe    = 1'b1;
 
         if (stop) begin
           secure_wipe_running_d = 1'b1;
@@ -259216,6 +266845,9 @@ module lowrisc_otbn_start_stop_control
   assign urnd_reseed_err_d = spurious_urnd_ack_error ? 1'b1 // set
                                                      : urnd_reseed_err_q; // hold
   assign urnd_reseed_err_o = urnd_reseed_err_d;
+
+  // Enforce that URND is advanced when URND control is not allowed, i.e., during a secure wipe.
+  assign urnd_must_advance_o = !urnd_control_allowed && urnd_advance_o;
 
   assign fatal_error_o = urnd_reseed_err_o | state_error_d | secure_wipe_error_q | mubi_err_q;
 
@@ -259547,11 +267179,11 @@ module lowrisc_otbn_core
   // Default seed for URND PRNG
   parameter urnd_prng_seed_t RndCnstUrndPrngSeed = RndCnstUrndPrngSeedDefault,
 
-  // Disable URND reseed and advance when not in use. Useful for SCA only.
-  parameter bit SecMuteUrnd = 1'b0,
   parameter bit SecSkipUrndReseedAtStart = 1'b0,
   // Masking accelerator interface will not randomize operand start indexes.
   parameter bit SecFixMaiOpSeq = 1'b0,
+  // MAC bignum instruction will not randomize operand start indexes.
+  parameter bit SecFixMacOpSeq = 1'b0,
 
   // Masking accelerator is not present. Useful for resource-bound targets only.
   parameter bit FeatStubMai = 1'b0,
@@ -259606,6 +267238,9 @@ module lowrisc_otbn_core
   output logic wfi_pending_o,
   input  logic wfi_resume_i,
 
+  // URND control enable from CTRL register
+  input  logic urnd_ctrl_enabled_i,
+
   output logic [31:0] insn_cnt_o,
   input  logic        insn_cnt_clear_i,
 
@@ -259635,14 +267270,6 @@ module lowrisc_otbn_core
   input  lowrisc_kmac_pkg::app_rsp_t kmac_app_rsp_i
 );
   import lowrisc_prim_mubi_pkg::*;
-
-  // Create a lint error to reduce the risk of accidentally enabling this feature.
-
-  localparam int OtbnSecMuteUrndNonDefault = (SecMuteUrnd == 0) ? 1 : 2;
-  always_comb begin
-    logic unused_assert_static_lint_error;
-    unused_assert_static_lint_error = OtbnSecMuteUrndNonDefault'(1'b1);
-  end
 
   // Fetch request (the next instruction)
   logic [ImemAddrWidth-1:0] insn_fetch_req_addr;
@@ -259756,7 +267383,7 @@ module lowrisc_otbn_core
   logic                  mac_bignum_commit;
   logic                  mac_bignum_reg_intg_violation_err;
   logic                  mac_bignum_sec_wipe_err;
-  logic                  mac_bignum_urnd_used;
+  logic [1:0]            mac_bignum_shuffle_offset;
 
   ispr_e                       ispr_addr;
   logic [31:0]                 ispr_base_wdata;
@@ -259816,6 +267443,13 @@ module lowrisc_otbn_core
   logic [ExtWLEN-1:0] ispr_kmac_data_s1_rdata;
   logic               ispr_kmac_data_s1_rd;
 
+  logic                            ispr_urnd_ctrl_wr;
+  logic [31:0]                     ispr_urnd_ctrl_wdata;
+  logic [31:0]                     ispr_urnd_status_rdata;
+  logic                            ispr_urnd_state_wr;
+  logic [UrndPartialSeedWidth-1:0] ispr_urnd_state_wdata;
+  logic [WLEN-1:0]                 ispr_urnd_state_rdata;
+
   logic            rnd_req;
   logic            rnd_prefetch_req;
   logic            rnd_valid;
@@ -259827,7 +267461,10 @@ module lowrisc_otbn_core
   logic               urnd_reseed_ack;
   logic               urnd_reseed_err;
   logic               urnd_advance;
+  logic               urnd_must_advance;
   logic               urnd_advance_start_stop_control;
+  logic               urnd_must_advance_start_stop_control;
+  logic               urnd_will_be_consumed;
   logic [UrndLen-1:0] urnd_data;
   logic               urnd_all_zero_d, urnd_all_zero;
 
@@ -259882,9 +267519,10 @@ module lowrisc_otbn_core
   logic rd_predec_error, predec_error_d, predec_error;
   logic mac_bignum_state_error_d, mac_bignum_state_error;
 
+  logic mai_will_use_urnd;
   logic mai_software_error;
   logic mai_reg_intg_violation_err;
-  logic mai_state_err;
+  logic mai_state_err, mai_state_err_d;
 
   logic kmac_sec_wipe_err;
   logic kmac_reg_intg_violation_err;
@@ -259895,7 +267533,6 @@ module lowrisc_otbn_core
   // Start stop control start OTBN execution when requested and deals with any pre start or post
   // stop actions.
   lowrisc_otbn_start_stop_control #(
-    .SecMuteUrnd(SecMuteUrnd),
     .SecSkipUrndReseedAtStart(SecSkipUrndReseedAtStart)
   ) u_otbn_start_stop_control (
     .clk_i,
@@ -259908,10 +267545,11 @@ module lowrisc_otbn_core
 
     .controller_start_o(controller_start),
 
-    .urnd_reseed_req_o (urnd_reseed_req),
-    .urnd_reseed_ack_i (urnd_reseed_ack),
-    .urnd_reseed_err_o (urnd_reseed_err),
-    .urnd_advance_o    (urnd_advance_start_stop_control),
+    .urnd_reseed_req_o  (urnd_reseed_req),
+    .urnd_reseed_ack_i  (urnd_reseed_ack),
+    .urnd_reseed_err_o  (urnd_reseed_err),
+    .urnd_advance_o     (urnd_advance_start_stop_control),
+    .urnd_must_advance_o(urnd_must_advance_start_stop_control),
 
     .secure_wipe_req_i (secure_wipe_req),
     .secure_wipe_ack_o (secure_wipe_ack),
@@ -259956,7 +267594,8 @@ module lowrisc_otbn_core
 
   // Instruction fetch unit
   lowrisc_otbn_instruction_fetch #(
-    .ImemSizeByte(ImemSizeByte)
+    .ImemSizeByte(ImemSizeByte),
+    .SecFixMacOpSeq(SecFixMacOpSeq)
   ) u_otbn_instruction_fetch (
     .clk_i,
     .rst_ni,
@@ -259980,13 +267619,15 @@ module lowrisc_otbn_core
     .insn_fetch_err_o       (insn_fetch_err),
     .insn_addr_err_o        (insn_addr_err_d),
 
-    .rf_bignum_predec_o       (rf_bignum_predec),
-    .alu_bignum_predec_o      (alu_bignum_predec),
-    .ctrl_flow_predec_o       (ctrl_flow_predec),
-    .ctrl_flow_target_predec_o(ctrl_flow_target_predec),
-    .ispr_bignum_predec_o     (ispr_bignum_predec),
-    .mac_bignum_predec_o      (mac_bignum_predec),
-    .lsu_addr_en_predec_o     (lsu_addr_en_predec),
+    .rf_bignum_predec_o        (rf_bignum_predec),
+    .alu_bignum_predec_o       (alu_bignum_predec),
+    .ctrl_flow_predec_o        (ctrl_flow_predec),
+    .ctrl_flow_target_predec_o (ctrl_flow_target_predec),
+    .ispr_bignum_predec_o      (ispr_bignum_predec),
+    .mac_bignum_predec_o       (mac_bignum_predec),
+    .lsu_addr_en_predec_o      (lsu_addr_en_predec),
+
+    .urnd_will_be_consumed_o(urnd_will_be_consumed),
 
     .rf_bignum_rd_a_indirect_onehot_i(rf_bignum_rd_a_indirect_onehot),
     .rf_bignum_rd_b_indirect_onehot_i(rf_bignum_rd_b_indirect_onehot),
@@ -260004,7 +267645,9 @@ module lowrisc_otbn_core
     .sec_wipe_wdr_addr_i(sec_wipe_addr),
     .sec_wipe_mac_urnd_i(sec_wipe_mac_urnd),
 
-    .zero_flags_i(zero_flags)
+    .zero_flags_i(zero_flags),
+
+    .mac_bignum_shuffle_offset_i(mac_bignum_shuffle_offset)
   );
 
   // Instruction decoder
@@ -260259,6 +267902,7 @@ module lowrisc_otbn_core
       non_controller_reg_intg_violation <= '0;
       insn_addr_err                     <= '0;
       mac_bignum_state_error            <= '0;
+      mai_state_err                     <= '0;
       kmac_state_err                    <= '0;
     end else begin
       urnd_all_zero                     <= urnd_all_zero_d;
@@ -260268,6 +267912,7 @@ module lowrisc_otbn_core
       non_controller_reg_intg_violation <= non_controller_reg_intg_violation_d;
       insn_addr_err                     <= insn_addr_err_d;
       mac_bignum_state_error            <= mac_bignum_state_error_d;
+      mai_state_err                     <= mai_state_err_d;
       kmac_state_err                    <= kmac_state_err_d;
     end
   end
@@ -260579,6 +268224,13 @@ module lowrisc_otbn_core
     .ispr_kmac_data_s0_rd_o   (ispr_kmac_data_s0_rd),
     .ispr_kmac_data_s1_rd_o   (ispr_kmac_data_s1_rd),
 
+    .ispr_urnd_ctrl_wr_o     (ispr_urnd_ctrl_wr),
+    .ispr_urnd_ctrl_wdata_o  (ispr_urnd_ctrl_wdata),
+    .ispr_urnd_status_rdata_i(ispr_urnd_status_rdata),
+    .ispr_urnd_state_wr_o    (ispr_urnd_state_wr),
+    .ispr_urnd_state_wdata_o (ispr_urnd_state_wdata),
+    .ispr_urnd_state_rdata_i (ispr_urnd_state_rdata),
+
     .reg_intg_violation_err_o(alu_bignum_reg_intg_violation_err),
 
     .sec_wipe_mod_urnd_i(sec_wipe_mod_urnd),
@@ -260599,7 +268251,8 @@ module lowrisc_otbn_core
   );
 
   lowrisc_otbn_mac_bignum #(
-    .RndCnstBnMacUrndPerm(RndCnstBnMacUrndPerm)
+    .RndCnstBnMacUrndPerm(RndCnstBnMacUrndPerm),
+    .SecFixMacOpSeq(SecFixMacOpSeq)
   ) u_otbn_mac_bignum (
     .clk_i,
     .rst_ni,
@@ -260618,8 +268271,7 @@ module lowrisc_otbn_core
     .sec_wipe_urnd_i   (sec_wipe_mac_urnd),
     .sec_wipe_running_i(secure_wipe_running_o),
     .sec_wipe_err_o    (mac_bignum_sec_wipe_err),
-
-    .urnd_used_o(mac_bignum_urnd_used),
+    .shuffle_offset_o  (mac_bignum_shuffle_offset),
 
     .mac_en_i    (mac_bignum_en),
     .mac_commit_i(mac_bignum_commit),
@@ -260700,9 +268352,10 @@ module lowrisc_otbn_core
       .ispr_mai_res_s0_rdata_o     (ispr_mai_res_s0_rdata),
       .ispr_mai_res_s1_rdata_o     (ispr_mai_res_s1_rdata),
       .ispr_mod_intg_i             (ispr_mod_intg),
+      .will_use_urnd_o             (mai_will_use_urnd),
       .mai_software_error_o        (mai_software_error),
       .mai_reg_intg_violation_err_o(mai_reg_intg_violation_err),
-      .mai_state_err_o             (mai_state_err),
+      .mai_state_err_o             (mai_state_err_d),
       .urnd_data_i                 (urnd_data)
     );
   end
@@ -260763,11 +268416,21 @@ module lowrisc_otbn_core
     .rnd_rep_err_o     (rnd_rep_err),
     .rnd_fips_err_o    (rnd_fips_err),
 
-    .urnd_reseed_req_i (urnd_reseed_req),
-    .urnd_reseed_ack_o (urnd_reseed_ack),
-    .urnd_advance_i    (urnd_advance),
-    .urnd_data_o       (urnd_data),
-    .urnd_all_zero_o   (urnd_all_zero_d),
+    .urnd_reseed_req_i  (urnd_reseed_req),
+    .urnd_reseed_ack_o  (urnd_reseed_ack),
+    .urnd_ctrl_enabled_i,
+    .urnd_advance_i     (urnd_advance),
+    .urnd_must_advance_i(urnd_must_advance),
+
+    .ispr_urnd_ctrl_wr_i     (ispr_urnd_ctrl_wr),
+    .ispr_urnd_ctrl_wdata_i  (ispr_urnd_ctrl_wdata),
+    .ispr_urnd_status_rdata_o(ispr_urnd_status_rdata),
+    .ispr_urnd_state_rdata_o (ispr_urnd_state_rdata),
+    .ispr_urnd_state_wr_i    (ispr_urnd_state_wr),
+    .ispr_urnd_state_wdata_i (ispr_urnd_state_wdata),
+
+    .urnd_data_o    (urnd_data),
+    .urnd_all_zero_o(urnd_all_zero_d),
 
     .edn_rnd_req_o,
     .edn_rnd_ack_i,
@@ -260779,21 +268442,25 @@ module lowrisc_otbn_core
     .edn_urnd_i
   );
 
-  // Advance URND either when the start_stop_control commands it or when temporary secure wipe keys
-  // are requested.
-  // When SecMuteUrnd is enabled, signal urnd_advance_start_stop_control is muted. Therefore, it is
-  // necessary to enable urnd_advance using ispr_bignum_predec.ispr_rd_en[IsprUrnd] whenever URND
-  // data are consumed by the BN ALU or the BN MAC clears any of its internal registers with data
-  // from URND (includes the ACC WSR).
-  assign urnd_advance = urnd_advance_start_stop_control || req_sec_wipe_urnd_keys_q ||
-                        (SecMuteUrnd && (ispr_bignum_predec.ispr_rd_en[IsprUrnd] ||
-                                         mac_bignum_urnd_used));
+  // Advance URND when the start_stop_control commands it. This can be over-steered depending on
+  // the URND control settings. However, in certain cases we must ignore the control settings. For
+  // this we generate a 'must advance' signal below.
+  assign urnd_advance = urnd_advance_start_stop_control;
 
-  // The signal mac_bignum_urnd_used is only used when muting the URND.
-  if (!SecMuteUrnd) begin : gen_unused_mac_urnd_used
-    logic unused_mac_bignum_urnd_used;
-    assign unused_mac_bignum_urnd_used = ^mac_bignum_urnd_used;
-  end
+  // Enforce URND to advance due to security reasons when:
+  // - Temporary scrambling keys for secure wipe are requested
+  // - The start stop controller enforces an URND advance during a secure wipe.
+  // - The MAI is busy executing and uses URND for masking purposes. This ensures any MAI operation
+  //   is always properly masked.
+  // - The URND is stopped by the URND control interface but SW actively uses URND. This is the case
+  //   when (1) SW reads URND or (2) BN MAC clears some internal state during a multi-cycle
+  //   multiplication instruction.
+  //   - This is detected by the predecoder so a fresh URND value is provided when the instruction
+  //     executes.
+  assign urnd_must_advance = req_sec_wipe_urnd_keys_q             ||
+                             urnd_must_advance_start_stop_control ||
+                             mai_will_use_urnd                    ||
+                             urnd_will_be_consumed;
 
   always_ff @(posedge clk_i or negedge rst_ni) begin
     if (!rst_ni) begin
@@ -262684,6 +270351,8 @@ module lowrisc_otbn_reg_top (
   logic ctrl_software_errs_fatal_wd;
   logic ctrl_wfi_enabled_qs;
   logic ctrl_wfi_enabled_wd;
+  logic ctrl_urnd_ctrl_enabled_qs;
+  logic ctrl_urnd_ctrl_enabled_wd;
   logic [7:0] status_qs;
   logic err_bits_re;
   logic err_bits_we;
@@ -262874,7 +270543,7 @@ module lowrisc_otbn_reg_top (
 
   // R[ctrl]: V(True)
   logic ctrl_qe;
-  logic [1:0] ctrl_flds_we;
+  logic [2:0] ctrl_flds_we;
   assign ctrl_qe = &ctrl_flds_we;
   //   F[software_errs_fatal]: 0:0
   lowrisc_prim_subreg_ext #(
@@ -262907,6 +270576,22 @@ module lowrisc_otbn_reg_top (
     .qs     (ctrl_wfi_enabled_qs)
   );
   assign reg2hw.ctrl.wfi_enabled.qe = ctrl_qe;
+
+  //   F[urnd_ctrl_enabled]: 2:2
+  lowrisc_prim_subreg_ext #(
+    .DW    (1)
+  ) u_ctrl_urnd_ctrl_enabled (
+    .re     (ctrl_re),
+    .we     (ctrl_we),
+    .wd     (ctrl_urnd_ctrl_enabled_wd),
+    .d      (hw2reg.ctrl.urnd_ctrl_enabled.d),
+    .qre    (),
+    .qe     (ctrl_flds_we[2]),
+    .q      (reg2hw.ctrl.urnd_ctrl_enabled.q),
+    .ds     (),
+    .qs     (ctrl_urnd_ctrl_enabled_qs)
+  );
+  assign reg2hw.ctrl.urnd_ctrl_enabled.qe = ctrl_qe;
 
 
   // R[status]: V(False)
@@ -263530,6 +271215,8 @@ module lowrisc_otbn_reg_top (
   assign ctrl_software_errs_fatal_wd = reg_wdata[0];
 
   assign ctrl_wfi_enabled_wd = reg_wdata[1];
+
+  assign ctrl_urnd_ctrl_enabled_wd = reg_wdata[2];
   assign err_bits_re = addr_hit[7] & reg_re & !reg_error;
   assign err_bits_we = addr_hit[7] & reg_we & !reg_error;
 
@@ -263618,6 +271305,7 @@ module lowrisc_otbn_reg_top (
       addr_hit[5]: begin
         reg_rdata_next[0] = ctrl_software_errs_fatal_qs;
         reg_rdata_next[1] = ctrl_wfi_enabled_qs;
+        reg_rdata_next[2] = ctrl_urnd_ctrl_enabled_qs;
       end
 
       addr_hit[6]: begin
@@ -264615,12 +272303,13 @@ module lowrisc_otbn
   // Default seed for URND PRNG
   parameter urnd_prng_seed_t RndCnstUrndPrngSeed = RndCnstUrndPrngSeedDefault,
 
-  // Disable URND advance when not in use. Useful for SCA only.
-  parameter bit SecMuteUrnd = 1'b0,
   // Skip URND re-seed at the start of an operation. Useful for SCA only.
   parameter bit SecSkipUrndReseedAtStart = 1'b0,
   // Masking accelerator interface will not randomize operand start indexes.
   parameter bit SecFixMaiOpSeq = 1'b0,
+  // BN MAC will not randomize the order in which the vector elements are processed for vectorized
+  // multiplication instructions.
+  parameter bit SecFixMacOpSeq = 1'b0,
 
   // Masking accelerator is not present. Useful for resource-bound targets only.
   parameter bit FeatStubMai = 1'b0,
@@ -264739,6 +272428,7 @@ module lowrisc_otbn
 
   logic software_errs_fatal_q, software_errs_fatal_d;
   logic wfi_enabled_q, wfi_enabled_d;
+  logic urnd_ctrl_enabled_q, urnd_ctrl_enabled_d;
 
   otbn_reg2hw_t reg2hw;
   otbn_hw2reg_t hw2reg;
@@ -265531,18 +273221,27 @@ module lowrisc_otbn
     reg2hw.ctrl.wfi_enabled.qe && (status_q == StatusIdle) ?
         reg2hw.ctrl.wfi_enabled.q : wfi_enabled_q;
 
+  // The URND control enable bit must be stable during an OTBN execution because it is used to
+  // control a blanker inside otbn_rnd.sv
+  assign urnd_ctrl_enabled_d =
+    reg2hw.ctrl.urnd_ctrl_enabled.qe && (status_q == StatusIdle) ?
+        reg2hw.ctrl.urnd_ctrl_enabled.q : urnd_ctrl_enabled_q;
+
   always_ff @(posedge clk_i or negedge rst_ni) begin
     if (!rst_ni) begin
       software_errs_fatal_q <= 1'b0;
       wfi_enabled_q         <= 1'b0;
+      urnd_ctrl_enabled_q   <= 1'b0;
     end else begin
       software_errs_fatal_q <= software_errs_fatal_d;
       wfi_enabled_q         <= wfi_enabled_d;
+      urnd_ctrl_enabled_q   <= urnd_ctrl_enabled_d;
     end
   end
 
   assign hw2reg.ctrl.software_errs_fatal.d = software_errs_fatal_q;
   assign hw2reg.ctrl.wfi_enabled.d         = wfi_enabled_q;
+  assign hw2reg.ctrl.urnd_ctrl_enabled.d   = urnd_ctrl_enabled_q;
 
   // ERR_BITS register
   // The error bits for an OTBN operation get stored on the cycle that done is
@@ -265763,8 +273462,8 @@ module lowrisc_otbn
     .DmemSizeByte(DmemSizeByte),
     .ImemSizeByte(ImemSizeByte),
     .RndCnstUrndPrngSeed(RndCnstUrndPrngSeed),
-    .SecMuteUrnd(SecMuteUrnd),
     .SecFixMaiOpSeq(SecFixMaiOpSeq),
+    .SecFixMacOpSeq(SecFixMacOpSeq),
     .FeatStubMai(FeatStubMai),
     .SecSkipUrndReseedAtStart(SecSkipUrndReseedAtStart),
     .RndCnstBnMacUrndPerm(RndCnstBnMacUrndPerm)
@@ -265807,6 +273506,8 @@ module lowrisc_otbn
     .wfi_enabled_i               (wfi_enabled_q),
     .wfi_pending_o               (wfi_pending),
     .wfi_resume_i                (wfi_resume_q),
+
+    .urnd_ctrl_enabled_i         (urnd_ctrl_enabled_q),
 
     .insn_cnt_o                  (insn_cnt),
     .insn_cnt_clear_i            (insn_cnt_clear),
@@ -265971,6 +273672,17 @@ module lowrisc_otbn
 
 
 
+
+
+
+
+
+
+
+
+  // The data part of the request directly originates from WSRs. These are non resettable flops.
+  // When a simulation starts, these are still X as only a secure wipe will set a value. We thus
+  // only check whether the data is known when the valid is set.
 
 
 
@@ -270968,12 +278680,12 @@ package lowrisc_top_peppermint_rnd_cnst_pkg;
   };
 
   // Default icache scrambling key
-  parameter logic [lowrisc_ibex_pkg::SCRAMBLE_KEY_W-1:0] RndCnstRvCoreIbexIbexKeyDefault = {
+  parameter logic [lowrisc_ibex_pkg::SCRAMBLE_KEY_W-1:0] RndCnstRvCoreIbexIbexKey = {
     128'h78BC92EB_252479EC_E1502F2C_333B1543
   };
 
   // Default icache scrambling nonce
-  parameter logic [lowrisc_ibex_pkg::SCRAMBLE_NONCE_W-1:0] RndCnstRvCoreIbexIbexNonceDefault = {
+  parameter logic [lowrisc_ibex_pkg::SCRAMBLE_NONCE_W-1:0] RndCnstRvCoreIbexIbexNonce = {
     64'h64FD06D4_CEB894C6
   };
 
@@ -271287,7 +278999,6 @@ module lowrisc_keymgr_dpe
   // Number of cycles a differential skew is tolerated on the alert signal
   parameter int unsigned AlertSkewCycles       = 1,
   parameter bit KmacEnMasking                  = 1'b1,
-  parameter int NumRomDigestInputs             = DpeNumRomDigestInputs,
   parameter lfsr_seed_t RndCnstLfsrSeed        = RndCnstLfsrSeedDefault,
   parameter lfsr_perm_t RndCnstLfsrPerm        = RndCnstLfsrPermDefault,
   parameter rand_perm_t RndCnstRandPerm        = RndCnstRandPermDefault,
@@ -271297,7 +279008,13 @@ module lowrisc_keymgr_dpe
   parameter seed_t RndCnstNoneSeed             = RndCnstNoneSeedDefault,
   parameter seed_t RndCnstAesSeed              = RndCnstAesSeedDefault,
   parameter seed_t RndCnstOtbnSeed             = RndCnstOtbnSeedDefault,
-  parameter seed_t RndCnstKmacSeed             = RndCnstKmacSeedDefault
+  parameter seed_t RndCnstKmacSeed             = RndCnstKmacSeedDefault,
+  // Number of instantiated HW slots
+  parameter int unsigned NumInstHwSlot         = 4,
+  // Number of available boot stages
+  parameter int unsigned NumBootStages         = 3,
+  // Number of ROM digest inputs
+  parameter int unsigned NumRomDigestInputs    = 1
 ) (
   input clk_i,
   input rst_ni,
@@ -271312,6 +279029,7 @@ module lowrisc_keymgr_dpe
   // key interface to crypto modules
   output hw_key_req_t aes_key_o,
   output hw_key_req_t kmac_key_o,
+  output hw_key_req_t hmac_key_o,
   output otbn_key_req_t otbn_key_o,
 
   // data interface to/from crypto modules
@@ -271346,18 +279064,43 @@ module lowrisc_keymgr_dpe
   output lowrisc_prim_alert_pkg::alert_tx_t [lowrisc_keymgr_reg_pkg::NumAlerts-1:0] alert_tx_o
 );
 
-  // KMAC advance-message width for the configured number of ROM digest inputs.
-  localparam int AdvDataWidth = dpe_adv_data_width(NumRomDigestInputs);
+  // Advance width calculation
+  // When deriving from the UDS the following data are consumed (Not ordered):
+  //   - Software binding
+  //   - Revision seed
+  //   - OTP device ID
+  //   - LC keymgr diversification value
+  //   - ROM digests
+  //   - Creator seed (only if boot stage equals two)
+  localparam int DpeAdvDataWidth = SwBindingWidth + KeyWidth + DeviceIdWidth +
+      lowrisc_lc_ctrl_pkg::LcKeymgrDivWidth + KeyWidth * NumRomDigestInputs +
+      KeyWidth * (NumBootStages == 2);
+
+  // Determine the width of the data consumed by the KMAC IF during the inital
+  // derivation of the CreatorRootKey.
 
 
 
 
+  // Determine the actual signal width to address all the hw slots
+  localparam int NumInstHwSlotWidth = lowrisc_prim_util_pkg::vbits(NumInstHwSlot);
+  localparam int NumMaxHwSlotWidth = lowrisc_prim_util_pkg::vbits(NumMaxHwSlot);
+  typedef logic [NumInstHwSlotWidth-1:0] keymgr_dpe_slot_idx_e;
 
   import lowrisc_prim_mubi_pkg::mubi4_test_true_strict;
   import lowrisc_prim_mubi_pkg::mubi4_test_false_strict;
   import lowrisc_lc_ctrl_pkg::lc_tx_test_true_strict;
   import lowrisc_lc_ctrl_pkg::lc_tx_test_false_loose;
   import lowrisc_lc_ctrl_pkg::lc_tx_t;
+
+  // TODO(#31026): Provide a sideload key to the hmac
+  localparam int NumOutBufBits = $bits(hw_key_req_t);
+  lowrisc_prim_buf #(
+    .Width  (NumOutBufBits)
+  ) u_anchor_buf (
+    .in_i   ('0),
+    .out_o  (hmac_key_o)
+  );
 
   /////////////////////////////////////
   // Anchor incoming seeds and constants
@@ -271553,7 +279296,34 @@ module lowrisc_keymgr_dpe
   logic op_start;
   assign op_start = reg2hw.start.q;
   logic invalid_advance;
-  lowrisc_keymgr_dpe_ctrl u_ctrl (
+
+  // TODO(#30682): Remove this assertion
+  // Raise an assertion if the source / destination field provided by the
+  // sw register is out of bounds.
+
+
+  keymgr_dpe_slot_idx_e slot_src_sel_trunc, slot_dst_sel_trunc;
+  assign slot_src_sel_trunc =
+      keymgr_dpe_slot_idx_e'(reg2hw.control_shadowed.slot_src_sel.q);
+  assign slot_dst_sel_trunc =
+      keymgr_dpe_slot_idx_e'(reg2hw.control_shadowed.slot_dst_sel.q);
+
+  // AscentLint: Tie off upper bits of the slot selection register field if not the
+  // full register width is used.
+  if (NumInstHwSlotWidth < lowrisc_prim_util_pkg::vbits(NumMaxHwSlot)) begin : gen_unused_slot_sel_bits
+    logic unused_dst_slot_sel;
+    logic unused_src_slot_sel;
+    assign unused_dst_slot_sel = ^reg2hw.control_shadowed.slot_dst_sel.q[
+      NumMaxHwSlotWidth-1:NumInstHwSlotWidth];
+    assign unused_src_slot_sel = ^reg2hw.control_shadowed.slot_src_sel.q[
+      NumMaxHwSlotWidth-1:NumInstHwSlotWidth];
+  end
+
+  lowrisc_keymgr_dpe_ctrl # (
+    .NumInstHwSlot(NumInstHwSlot),
+    .NumInstHwSlotWidth(NumInstHwSlotWidth),
+    .NumBootStages(NumBootStages)
+  ) u_ctrl (
     .clk_i,
     .rst_ni,
     .en_i(lc_tx_test_true_strict(lc_keymgr_en[KeymgrDpeEnCtrl])),
@@ -271572,8 +279342,8 @@ module lowrisc_keymgr_dpe
     .load_key_lock_i(reg2hw.load_key_lock.q),
     // TODO(#384): Add assertions to check that we are not losing some bits by casting
     // slot_src/dst_sel bits to enum type
-    .slot_src_sel_i(keymgr_dpe_slot_idx_e'(reg2hw.control_shadowed.slot_src_sel.q)),
-    .slot_dst_sel_i(keymgr_dpe_slot_idx_e'(reg2hw.control_shadowed.slot_dst_sel.q)),
+    .slot_src_sel_i(slot_src_sel_trunc),
+    .slot_dst_sel_i(slot_dst_sel_trunc),
     .slot_policy_i(keymgr_dpe_policy_t'(reg2hw.slot_policy)),
     .max_key_version_i(reg2hw.max_key_ver_shadowed),
     .key_version_i(reg2hw.key_version),
@@ -271696,7 +279466,7 @@ module lowrisc_keymgr_dpe
 
   // The various arrays of inputs for each operation
   logic rom_digest_vld;
-  logic [2 ** DpeBootStagesWidth-1:0][AdvDataWidth-1:0] adv_matrix;
+  logic [2 ** DpeBootStagesWidth-1:0][DpeAdvDataWidth-1:0] adv_matrix;
   logic [2 ** DpeBootStagesWidth-1:0] adv_dvalid;
   logic [GenDataWidth-1:0] gen_in;
 
@@ -271735,24 +279505,51 @@ module lowrisc_keymgr_dpe
   assign unused_owner_seed = ^{owner_seed_i.seed_valid};
   assign owner_seed = owner_seed_i.seed;
 
+  // If the system support only two boot stages then the creator seed is
+  // consumed in BootStageCreator.
+  logic [DpeAdvDataWidth-1:0] adv_data_creator;
+  logic adv_data_creator_valid;
+  logic [DpeAdvDataWidth-1:0] adv_data_owner_int;
+  logic adv_data_owner_int_valid;
+  if (NumBootStages == 2) begin : gen_adv_matrix_for_two_boot_stages
+    assign adv_data_creator = DpeAdvDataWidth'({sw_binding,
+                                                revision_seed,
+                                                device_id_i,
+                                                lc_keymgr_div_i,
+                                                rom_digests,
+                                                creator_seed});
+    assign adv_data_creator_valid = devid_vld &
+                                    health_state_vld &
+                                    rom_digest_vld &
+                                    creator_seed_vld;
+    assign adv_data_owner_int = '0;
+    assign adv_data_owner_int_valid = '0;
+  end else begin : gen_adv_matrix_for_three_boot_stages
+    assign adv_data_creator = DpeAdvDataWidth'({sw_binding,
+                                                device_id_i,
+                                                lc_keymgr_div_i,
+                                                rom_digests,
+                                                revision_seed});
+    assign adv_data_creator_valid = devid_vld &
+                                    health_state_vld &
+                                    rom_digest_vld;
+    assign adv_data_owner_int = DpeAdvDataWidth'({sw_binding,
+                                                  creator_seed});
+    assign adv_data_owner_int_valid = creator_seed_vld;
+  end
+
   always_comb begin : gen_adv_matrix_all
     // One default only use SW binding
-    adv_matrix = {(2 ** DpeBootStagesWidth){AdvDataWidth'(sw_binding)}};
+    adv_matrix = {(2 ** DpeBootStagesWidth){DpeAdvDataWidth'(sw_binding)}};
     adv_dvalid = {(2 ** DpeBootStagesWidth){1'b1}};
 
     if (reg2hw.control_shadowed.sw_binding_only.q == 1'b0) begin
-      // For (0 = Creator) and (1 = OwnerInt), check seed validity
-      adv_matrix[BootStageCreator] = AdvDataWidth'({sw_binding,
-                                                      revision_seed,
-                                                      device_id_i,
-                                                      lc_keymgr_div_i,
-                                                      rom_digests,
-                                                      creator_seed});
-      adv_dvalid[BootStageCreator] = creator_seed_vld &
-                                    devid_vld         &
-                                    health_state_vld  &
-                                    rom_digest_vld;
-      adv_matrix[BootStageOwner] = AdvDataWidth'({sw_binding,owner_seed});
+      // For (0 = Creator) / (1 = OwnerInt) / (2 = Owner), check seed validity
+      adv_matrix[BootStageCreator] = adv_data_creator;
+      adv_dvalid[BootStageCreator] = adv_data_creator_valid;
+      adv_matrix[BootStageOwnerInt] = adv_data_owner_int;
+      adv_dvalid[BootStageOwnerInt] = adv_data_owner_int_valid;
+      adv_matrix[BootStageOwner] = DpeAdvDataWidth'({sw_binding, owner_seed});
       adv_dvalid[BootStageOwner] = owner_seed_vld;
     end
   end
@@ -271816,18 +279613,29 @@ module lowrisc_keymgr_dpe
   assign hw2reg.debug.inactive_lc_en.d        = lc_tx_test_false_loose(
                                                   lc_keymgr_en[KeymgrDpeEnDebug]);
 
-  // creator_seed, dev_id, health_state and rom digest are used when boot_stage is incremented from
-  // 0 (= Creator) to 1 (= OwnerInt), so only latch them during consumption.
+  // Only latch required signals to advance the bootstage during consumption.
   logic is_creator_boot_stage, is_owner_boot_stage;
-  assign is_creator_boot_stage = active_key_slot.boot_stage == BootStageCreator;
-  assign is_owner_boot_stage   = active_key_slot.boot_stage == BootStageOwner;
+  assign is_creator_boot_stage   = active_key_slot.boot_stage == BootStageCreator;
+  assign is_owner_boot_stage     = active_key_slot.boot_stage == BootStageOwner;
 
-  assign hw2reg.debug.invalid_creator_seed.de = adv_en & is_creator_boot_stage;
+  // dev_id, health_state and rom digest is used when boot_stage is incremented
+  // from 0 (= Creator) to 1 (= OwnerInt)
   assign hw2reg.debug.invalid_dev_id.de       = adv_en & is_creator_boot_stage;
   assign hw2reg.debug.invalid_health_state.de = adv_en & is_creator_boot_stage;
   assign hw2reg.debug.invalid_digest.de       = adv_en & is_creator_boot_stage;
 
-  // owner_seed is used when boot_stage is incremented from 1 (= OwnerInt) to 2 (= Owner).
+  // creator_seed is consumed when boot_stage is incremented from 1 (= OwnerInt)
+  // to 2 (= Owner) in the three-stage configuration, or from 0 (= Creator) to
+  // 2 (= Owner) in the two-stage configuration (where OwnerInt is omitted).
+  if (NumBootStages == 2) begin : gen_invalid_creator_seed_for_2_boot_stages
+    assign hw2reg.debug.invalid_creator_seed.de =
+        adv_en & is_creator_boot_stage;
+  end else begin : gen_invalid_creator_seed_for_3_boot_stages
+    assign hw2reg.debug.invalid_creator_seed.de =
+        adv_en & (active_key_slot.boot_stage == BootStageOwnerInt);
+  end
+
+  // owner_seed is used when boot_stage is incremented from 2 (= Owner) to 3 (= Runtime).
   assign hw2reg.debug.invalid_owner_seed.de    = adv_en & is_owner_boot_stage;
 
   // key validity and versions are checked regardless of the boot stage, when there is an ongoing
@@ -271857,7 +279665,7 @@ module lowrisc_keymgr_dpe
   // Keymgr DPE does not have id generation, so assign '0 to `id_en`
   assign id_en = 1'b0;
   lowrisc_keymgr_kmac_if #(
-    .MaxAdvDataWidth(AdvDataWidth)
+    .MaxAdvDataWidth(DpeAdvDataWidth)
   ) u_kmac_if (
     .clk_i,
     .rst_ni,
@@ -272081,6 +279889,8 @@ module lowrisc_keymgr_dpe
 
 
 
+
+
   // kmac parameter consistency
   // Both modules must be consistent with regards to masking assumptions
   logic unused_kmac_en_masking;
@@ -272093,6 +279903,14 @@ module lowrisc_keymgr_dpe
   assign unused_active_policy = active_key_slot.key_policy;
   assign unused_active_key_version = active_key_slot.max_key_version;
 
+
+
+  // Verify supported number of boot stage
+
+
+  // Verify the number of instanciated HW slots
+
+  // Only a power-of-two for the NumInstHwSlot is supported
 
 
 
@@ -272464,7 +280282,13 @@ module lowrisc_keymgr_dpe_ctrl
   import lowrisc_keymgr_dpe_pkg::*;
   import lowrisc_keymgr_dpe_reg_pkg::*;
 // TODO(#384): Bring back KmacEnMasking parameter
-(
+#(
+  // Number of instantiated HW slots
+  parameter int unsigned NumInstHwSlot = 4,
+  parameter int unsigned NumInstHwSlotWidth = 2,
+  // Number of available boot stages
+  parameter int unsigned NumBootStages = 3
+) (
   input clk_i,
   input rst_ni,
 
@@ -272484,8 +280308,8 @@ module lowrisc_keymgr_dpe_ctrl
   input op_start_i,
   input keymgr_dpe_ops_e op_i,
   input load_key_lock_i,
-  input [DpeNumSlotsWidth-1:0] slot_src_sel_i,
-  input [DpeNumSlotsWidth-1:0] slot_dst_sel_i,
+  input [NumInstHwSlotWidth-1:0] slot_src_sel_i,
+  input [NumInstHwSlotWidth-1:0] slot_dst_sel_i,
   input keymgr_dpe_policy_t slot_policy_i,
    // `max_key_version_i` is stored during advance to be compared with `key_version_i` during
    // generate calls
@@ -272562,8 +280386,8 @@ module lowrisc_keymgr_dpe_ctrl
 
   logic [EntropyRndWidth-1:0] cnt;
 
-  keymgr_dpe_slot_t [DpeNumSlots-1:0] key_slots_q;
-  keymgr_dpe_slot_t [DpeNumSlots-1:0] key_slots_d;
+  keymgr_dpe_slot_t [NumInstHwSlot-1:0] key_slots_q;
+  keymgr_dpe_slot_t [NumInstHwSlot-1:0] key_slots_d;
 
   // error conditions
   logic invalid_kmac_out;
@@ -272734,6 +280558,20 @@ module lowrisc_keymgr_dpe_ctrl
   logic destination_slot_valid;
   assign destination_slot_valid = key_slots_q[slot_dst_sel_i].valid;
 
+  // Determine the boot stage for the next DPE context derivation.
+  // If there are only two boot stages, BootStageOwnerInt will be omitted
+  keymgr_dpe_boot_stage_e next_boot_stage;
+  if (NumBootStages == 2) begin : gen_two_boot_stage
+    assign next_boot_stage =
+        (active_key_slot_o.boot_stage == BootStageCreator) ? BootStageOwner :
+        BootStageRuntime;
+  end else begin : gen_three_boot_stage
+    assign next_boot_stage =
+        (active_key_slot_o.boot_stage == BootStageCreator) ? BootStageOwnerInt :
+        (active_key_slot_o.boot_stage == BootStageOwnerInt) ? BootStageOwner :
+        BootStageRuntime;
+  end
+
   /////////////////////////
   // Keymgr slots MUX
   /////////////////////////
@@ -272772,8 +280610,7 @@ module lowrisc_keymgr_dpe_ctrl
         key_slots_d[slot_dst_sel_i].valid = 1;
         key_slots_d[slot_dst_sel_i].key = kmac_data_i;
         key_slots_d[slot_dst_sel_i].max_key_version = max_key_version_i;
-        key_slots_d[slot_dst_sel_i].boot_stage =
-          (active_key_slot_o.boot_stage == BootStageCreator) ? BootStageOwner : BootStageRuntime;
+        key_slots_d[slot_dst_sel_i].boot_stage = next_boot_stage;
         key_slots_d[slot_dst_sel_i].key_policy = slot_policy_i;
       end
 
@@ -272798,7 +280635,7 @@ module lowrisc_keymgr_dpe_ctrl
       // sideload interfaces, but that is outside the scope of this mux.)
       SlotWipeAll,
       SlotWipeInternalOnly: begin
-        for (int i = 0; i < DpeNumSlots; i++) begin
+        for (int i = 0; i < NumInstHwSlot; i++) begin
           // Note that '0 for `key_policy` is a safe default, as it is the most restrictive policy
           key_slots_d[i] = '0;
           for (int j = 0; j < Shares; j++) begin
@@ -273209,6 +281046,10 @@ module lowrisc_keymgr_dpe_ctrl
 
   // This assertion will not work if fault_status ever takes on metafields such as
   // qe / re etc.
+
+
+  // verify supported number of boot stage
+
 
 
   // // stage select should always be Disable whenever it is not enabled
@@ -290734,6 +298575,7 @@ module lowrisc_top_peppermint #(
   parameter int SramCtrlRetNumRamInst = 1,
   parameter bit SramCtrlRetInstrExec = 0,
   parameter int SramCtrlRetNumPrinceRoundsHalf = 3,
+  parameter int SramCtrlRetNumAddrScrRounds = 2,
   parameter bit SramCtrlRetEccCorrection = 0,
   // parameters for otp_macro
   parameter OtpMacroMemInitFile = "",
@@ -290769,13 +298611,12 @@ module lowrisc_top_peppermint #(
   // parameters for otbn
   parameter bit OtbnStub = 0,
   parameter lowrisc_otbn_pkg::regfile_e OtbnRegFile = lowrisc_otbn_pkg::RegFileFF,
-  parameter bit SecOtbnMuteUrnd = 0,
   parameter bit SecOtbnFixMaiOpSeq = 0,
+  parameter bit SecOtbnFixMacOpSeq = 0,
   parameter bit SecOtbnSkipUrndReseedAtStart = 0,
   parameter bit OtbnFeatStubMai = 0,
   // parameters for keymgr_dpe
   parameter bit KeymgrDpeKmacEnMasking = 1,
-  parameter int KeymgrDpeNumRomDigestInputs = 1,
   // parameters for csrng
   parameter lowrisc_aes_pkg::sbox_impl_e CsrngSBoxImpl = lowrisc_aes_pkg::SBoxImplCanright,
   // parameters for entropy_src
@@ -290788,6 +298629,7 @@ module lowrisc_top_peppermint #(
   parameter int SramCtrlMainNumRamInst = 1,
   parameter bit SramCtrlMainInstrExec = 1,
   parameter int SramCtrlMainNumPrinceRoundsHalf = 2,
+  parameter int SramCtrlMainNumAddrScrRounds = 2,
   parameter bit SramCtrlMainEccCorrection = 0,
   // parameters for rom_ctrl
   parameter RomCtrlBootRomInitFile = "",
@@ -290985,12 +298827,11 @@ module lowrisc_top_peppermint #(
   .KmacAppCfg(KmacAppCfg),
   .OtbnStub(OtbnStub),
   .OtbnRegFile(OtbnRegFile),
-  .SecOtbnMuteUrnd(SecOtbnMuteUrnd),
   .SecOtbnFixMaiOpSeq(SecOtbnFixMaiOpSeq),
+  .SecOtbnFixMacOpSeq(SecOtbnFixMacOpSeq),
   .SecOtbnSkipUrndReseedAtStart(SecOtbnSkipUrndReseedAtStart),
   .OtbnFeatStubMai(OtbnFeatStubMai),
   .KeymgrDpeKmacEnMasking(KeymgrDpeKmacEnMasking),
-  .KeymgrDpeNumRomDigestInputs(KeymgrDpeNumRomDigestInputs),
   .CsrngSBoxImpl(CsrngSBoxImpl),
   .EntropySrcRngBusWidth(EntropySrcRngBusWidth),
   .EntropySrcRngBusBitSelWidth(EntropySrcRngBusBitSelWidth),
@@ -291000,6 +298841,7 @@ module lowrisc_top_peppermint #(
   .SramCtrlMainNumRamInst(SramCtrlMainNumRamInst),
   .SramCtrlMainInstrExec(SramCtrlMainInstrExec),
   .SramCtrlMainNumPrinceRoundsHalf(SramCtrlMainNumPrinceRoundsHalf),
+  .SramCtrlMainNumAddrScrRounds(SramCtrlMainNumAddrScrRounds),
   .SramCtrlMainEccCorrection(SramCtrlMainEccCorrection),
   .RomCtrlBootRomInitFile(RomCtrlBootRomInitFile),
   .SecRomCtrlDisableScrambling(SecRomCtrlDisableScrambling),
@@ -291141,6 +298983,7 @@ module lowrisc_top_peppermint #(
   .SramCtrlRetNumRamInst(SramCtrlRetNumRamInst),
   .SramCtrlRetInstrExec(SramCtrlRetInstrExec),
   .SramCtrlRetNumPrinceRoundsHalf(SramCtrlRetNumPrinceRoundsHalf),
+  .SramCtrlRetNumAddrScrRounds(SramCtrlRetNumAddrScrRounds),
   .SramCtrlRetEccCorrection(SramCtrlRetEccCorrection)
   ) peppermint_pd_aon (
     .rst_aon_ni,
@@ -291562,13 +299405,12 @@ module lowrisc_peppermint_pd_main #(
   // parameters for otbn
   parameter bit OtbnStub = 0,
   parameter lowrisc_otbn_pkg::regfile_e OtbnRegFile = lowrisc_otbn_pkg::RegFileFF,
-  parameter bit SecOtbnMuteUrnd = 0,
   parameter bit SecOtbnFixMaiOpSeq = 0,
+  parameter bit SecOtbnFixMacOpSeq = 0,
   parameter bit SecOtbnSkipUrndReseedAtStart = 0,
   parameter bit OtbnFeatStubMai = 0,
   // parameters for keymgr_dpe
   parameter bit KeymgrDpeKmacEnMasking = 1,
-  parameter int KeymgrDpeNumRomDigestInputs = 1,
   // parameters for csrng
   parameter lowrisc_aes_pkg::sbox_impl_e CsrngSBoxImpl = lowrisc_aes_pkg::SBoxImplCanright,
   // parameters for entropy_src
@@ -291581,6 +299423,7 @@ module lowrisc_peppermint_pd_main #(
   parameter int SramCtrlMainNumRamInst = 1,
   parameter bit SramCtrlMainInstrExec = 1,
   parameter int SramCtrlMainNumPrinceRoundsHalf = 2,
+  parameter int SramCtrlMainNumAddrScrRounds = 2,
   parameter bit SramCtrlMainEccCorrection = 0,
   // parameters for rom_ctrl
   parameter RomCtrlBootRomInitFile = "",
@@ -291722,6 +299565,10 @@ module lowrisc_peppermint_pd_main #(
   // Local Parameters
   // local parameters for lc_ctrl
   localparam int LcCtrlNumRmaAckSigs = 1;
+  // local parameters for keymgr_dpe
+  localparam int KeymgrDpeNumInstHwSlot = 4;
+  localparam int KeymgrDpeNumBootStages = 3;
+  localparam int KeymgrDpeNumRomDigestInputs = 1;
   // local parameters for entropy_src
   localparam int EntropySrcEsFifoDepth = 3;
   localparam int unsigned EntropySrcDistrFifoDepth = 3;
@@ -292330,6 +300177,7 @@ module lowrisc_peppermint_pd_main #(
 
     // Inter-module signals
     .idle_o(),
+    .keymgr_key_i(lowrisc_keymgr_pkg::HW_KEY_REQ_DEFAULT),
     .tl_i(hmac_tl_req),
     .tl_o(hmac_tl_rsp)
   );
@@ -292384,8 +300232,8 @@ module lowrisc_peppermint_pd_main #(
     .Stub(OtbnStub),
     .RegFile(OtbnRegFile),
     .RndCnstUrndPrngSeed(RndCnstOtbnUrndPrngSeed),
-    .SecMuteUrnd(SecOtbnMuteUrnd),
     .SecFixMaiOpSeq(SecOtbnFixMaiOpSeq),
+    .SecFixMacOpSeq(SecOtbnFixMacOpSeq),
     .SecSkipUrndReseedAtStart(SecOtbnSkipUrndReseedAtStart),
     .FeatStubMai(OtbnFeatStubMai),
     .RndCnstBnMacUrndPerm(RndCnstOtbnBnMacUrndPerm),
@@ -292444,6 +300292,8 @@ module lowrisc_peppermint_pd_main #(
     .RndCnstKmacSeed(RndCnstKeymgrDpeKmacSeed),
     .RndCnstOtbnSeed(RndCnstKeymgrDpeOtbnSeed),
     .RndCnstNoneSeed(RndCnstKeymgrDpeNoneSeed),
+    .NumInstHwSlot(KeymgrDpeNumInstHwSlot),
+    .NumBootStages(KeymgrDpeNumBootStages),
     .NumRomDigestInputs(KeymgrDpeNumRomDigestInputs)
   ) u_keymgr_dpe (
     // Clock and reset connections
@@ -292466,6 +300316,7 @@ module lowrisc_peppermint_pd_main #(
     .edn_i(edn0_edn_rsp[0]),
     .aes_key_o(keymgr_dpe_aes_key),
     .kmac_key_o(keymgr_dpe_kmac_key),
+    .hmac_key_o(),
     .otbn_key_o(keymgr_dpe_otbn_key),
     .kmac_data_o(kmac_app_req[0]),
     .kmac_data_i(kmac_app_rsp[0]),
@@ -292624,6 +300475,7 @@ module lowrisc_peppermint_pd_main #(
     .NumRamInst(SramCtrlMainNumRamInst),
     .InstrExec(SramCtrlMainInstrExec),
     .NumPrinceRoundsHalf(SramCtrlMainNumPrinceRoundsHalf),
+    .NumAddrScrRounds(SramCtrlMainNumAddrScrRounds),
     .Outstanding(SramCtrlMainOutstanding),
     .EccCorrection(SramCtrlMainEccCorrection)
   ) u_sram_ctrl_main (
@@ -292815,8 +300667,8 @@ module lowrisc_peppermint_pd_main #(
     .AlertSkewCycles(lowrisc_top_pkg::AlertSkewCycles),
     .RndCnstLfsrSeed(RndCnstRvCoreIbexLfsrSeed),
     .RndCnstLfsrPerm(RndCnstRvCoreIbexLfsrPerm),
-    .RndCnstIbexKeyDefault(RndCnstRvCoreIbexIbexKeyDefault),
-    .RndCnstIbexNonceDefault(RndCnstRvCoreIbexIbexNonceDefault),
+    .RndCnstIbexKey(RndCnstRvCoreIbexIbexKey),
+    .RndCnstIbexNonce(RndCnstRvCoreIbexIbexNonce),
     .NEscalationSeverities(AlertHandlerEscNumSeverities),
     .WidthPingCounter(AlertHandlerEscPingCountWidth),
     .PMPEnable(RvCoreIbexPMPEnable),
@@ -293467,6 +301319,7 @@ module lowrisc_peppermint_pd_aon #(
   parameter int SramCtrlRetNumRamInst = 1,
   parameter bit SramCtrlRetInstrExec = 0,
   parameter int SramCtrlRetNumPrinceRoundsHalf = 3,
+  parameter int SramCtrlRetNumAddrScrRounds = 2,
   parameter bit SramCtrlRetEccCorrection = 0
 ) (
   // Inter-module Signal External type
@@ -294146,6 +301999,7 @@ module lowrisc_peppermint_pd_aon #(
     .NumRamInst(SramCtrlRetNumRamInst),
     .InstrExec(SramCtrlRetInstrExec),
     .NumPrinceRoundsHalf(SramCtrlRetNumPrinceRoundsHalf),
+    .NumAddrScrRounds(SramCtrlRetNumAddrScrRounds),
     .Outstanding(SramCtrlRetOutstanding),
     .EccCorrection(SramCtrlRetEccCorrection)
   ) u_sram_ctrl_ret (
