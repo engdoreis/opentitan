@@ -1960,14 +1960,14 @@ package lowrisc_top_peppermint_pkg;
   parameter int unsigned TOP_PEPPERMINT_ALERT_HANDLER_SIZE_BYTES = 32'h800;
 
   /**
-   * Peripheral base address for regs device on sram_ctrl_ret_aon in top peppermint.
+   * Peripheral base address for regs device on sram_ctrl_ret in top peppermint.
    */
-  parameter int unsigned TOP_PEPPERMINT_SRAM_CTRL_RET_AON_REGS_BASE_ADDR = 32'h40460000;
+  parameter int unsigned TOP_PEPPERMINT_SRAM_CTRL_RET_REGS_BASE_ADDR = 32'h40460000;
 
   /**
-   * Peripheral size in bytes for regs device on sram_ctrl_ret_aon in top peppermint.
+   * Peripheral size in bytes for regs device on sram_ctrl_ret in top peppermint.
    */
-  parameter int unsigned TOP_PEPPERMINT_SRAM_CTRL_RET_AON_REGS_SIZE_BYTES = 32'h40;
+  parameter int unsigned TOP_PEPPERMINT_SRAM_CTRL_RET_REGS_SIZE_BYTES = 32'h40;
 
   /**
    * Peripheral base address for core device on otp_ctrl in top peppermint.
@@ -2190,14 +2190,14 @@ package lowrisc_top_peppermint_pkg;
   parameter int unsigned TOP_PEPPERMINT_RV_CORE_IBEX_CFG_SIZE_BYTES = 32'h800;
 
   /**
-   * Memory base address for ram memory on sram_ctrl_ret_aon in top peppermint.
+   * Memory base address for ram memory on sram_ctrl_ret in top peppermint.
    */
-  parameter int unsigned TOP_PEPPERMINT_SRAM_CTRL_RET_AON_RAM_BASE_ADDR = 32'h40470000;
+  parameter int unsigned TOP_PEPPERMINT_SRAM_CTRL_RET_RAM_BASE_ADDR = 32'h40470000;
 
   /**
-   * Memory size for ram memory on sram_ctrl_ret_aon in top peppermint.
+   * Memory size for ram memory on sram_ctrl_ret in top peppermint.
    */
-  parameter int unsigned TOP_PEPPERMINT_SRAM_CTRL_RET_AON_RAM_SIZE_BYTES = 32'h2000;
+  parameter int unsigned TOP_PEPPERMINT_SRAM_CTRL_RET_RAM_SIZE_BYTES = 32'h2000;
 
   /**
    * Memory base address for ram memory on sram_ctrl_main in top peppermint.
@@ -2235,7 +2235,7 @@ package lowrisc_top_peppermint_pkg;
     TopPeppermintAlertPeripheralPwrmgr = 0,
     TopPeppermintAlertPeripheralRstmgr = 1,
     TopPeppermintAlertPeripheralClkmgr = 2,
-    TopPeppermintAlertPeripheralSramCtrlRetAon = 3,
+    TopPeppermintAlertPeripheralSramCtrlRet = 3,
     TopPeppermintAlertPeripheralOtpCtrl = 4,
     TopPeppermintAlertPeripheralLcCtrl = 5,
     TopPeppermintAlertPeripheralRvDm = 6,
@@ -2266,7 +2266,7 @@ package lowrisc_top_peppermint_pkg;
     TopPeppermintAlertIdRstmgrFatalCnstyFault = 2,
     TopPeppermintAlertIdClkmgrRecovFault = 3,
     TopPeppermintAlertIdClkmgrFatalFault = 4,
-    TopPeppermintAlertIdSramCtrlRetAonFatalError = 5,
+    TopPeppermintAlertIdSramCtrlRetFatalError = 5,
     TopPeppermintAlertIdOtpCtrlFatalMacroError = 6,
     TopPeppermintAlertIdOtpCtrlFatalCheckError = 7,
     TopPeppermintAlertIdOtpCtrlFatalBusIntegError = 8,
@@ -2447,7 +2447,7 @@ package lowrisc_top_peppermint_pkg;
     PeripheralRvPlic,
     PeripheralRvTimer,
     PeripheralSramCtrlMain,
-    PeripheralSramCtrlRetAon,
+    PeripheralSramCtrlRet,
     PeripheralCount
   } peripheral_e;
 

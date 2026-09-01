@@ -193265,19 +193265,19 @@ endmodule
 
 package lowrisc_tl_aon_pkg;
 
-  localparam logic [31:0] ADDR_SPACE_PWRMGR                  = 32'h 40400000;
-  localparam logic [31:0] ADDR_SPACE_RSTMGR                  = 32'h 40410000;
-  localparam logic [31:0] ADDR_SPACE_CLKMGR                  = 32'h 40420000;
-  localparam logic [31:0] ADDR_SPACE_ALERT_HANDLER           = 32'h 40450000;
-  localparam logic [31:0] ADDR_SPACE_SRAM_CTRL_RET_AON__REGS = 32'h 40460000;
-  localparam logic [31:0] ADDR_SPACE_SRAM_CTRL_RET_AON__RAM  = 32'h 40470000;
+  localparam logic [31:0] ADDR_SPACE_PWRMGR              = 32'h 40400000;
+  localparam logic [31:0] ADDR_SPACE_RSTMGR              = 32'h 40410000;
+  localparam logic [31:0] ADDR_SPACE_CLKMGR              = 32'h 40420000;
+  localparam logic [31:0] ADDR_SPACE_ALERT_HANDLER       = 32'h 40450000;
+  localparam logic [31:0] ADDR_SPACE_SRAM_CTRL_RET__REGS = 32'h 40460000;
+  localparam logic [31:0] ADDR_SPACE_SRAM_CTRL_RET__RAM  = 32'h 40470000;
 
-  localparam logic [31:0] ADDR_MASK_PWRMGR                  = 32'h 0000007f;
-  localparam logic [31:0] ADDR_MASK_RSTMGR                  = 32'h 0000003f;
-  localparam logic [31:0] ADDR_MASK_CLKMGR                  = 32'h 0000003f;
-  localparam logic [31:0] ADDR_MASK_ALERT_HANDLER           = 32'h 000007ff;
-  localparam logic [31:0] ADDR_MASK_SRAM_CTRL_RET_AON__REGS = 32'h 0000003f;
-  localparam logic [31:0] ADDR_MASK_SRAM_CTRL_RET_AON__RAM  = 32'h 00001fff;
+  localparam logic [31:0] ADDR_MASK_PWRMGR              = 32'h 0000007f;
+  localparam logic [31:0] ADDR_MASK_RSTMGR              = 32'h 0000003f;
+  localparam logic [31:0] ADDR_MASK_CLKMGR              = 32'h 0000003f;
+  localparam logic [31:0] ADDR_MASK_ALERT_HANDLER       = 32'h 000007ff;
+  localparam logic [31:0] ADDR_MASK_SRAM_CTRL_RET__REGS = 32'h 0000003f;
+  localparam logic [31:0] ADDR_MASK_SRAM_CTRL_RET__RAM  = 32'h 00001fff;
 
   localparam int N_HOST   = 1;
   localparam int N_DEVICE = 6;
@@ -193287,8 +193287,8 @@ package lowrisc_tl_aon_pkg;
     TlRstmgr = 1,
     TlClkmgr = 2,
     TlAlertHandler = 3,
-    TlSramCtrlRetAonRegs = 4,
-    TlSramCtrlRetAonRam = 5
+    TlSramCtrlRetRegs = 4,
+    TlSramCtrlRetRam = 5
   } tl_device_e;
 
   typedef enum int {
@@ -193310,8 +193310,8 @@ endpackage
 //     -> rstmgr
 //     -> clkmgr
 //     -> alert_handler
-//     -> sram_ctrl_ret_aon.regs
-//     -> sram_ctrl_ret_aon.ram
+//     -> sram_ctrl_ret.regs
+//     -> sram_ctrl_ret.ram
 
 module lowrisc_xbar_aon (
   input clk_aon_i,
@@ -193330,10 +193330,10 @@ module lowrisc_xbar_aon (
   input  lowrisc_tlul_pkg::tl_d2h_t tl_clkmgr_i,
   output lowrisc_tlul_pkg::tl_h2d_t tl_alert_handler_o,
   input  lowrisc_tlul_pkg::tl_d2h_t tl_alert_handler_i,
-  output lowrisc_tlul_pkg::tl_h2d_t tl_sram_ctrl_ret_aon__regs_o,
-  input  lowrisc_tlul_pkg::tl_d2h_t tl_sram_ctrl_ret_aon__regs_i,
-  output lowrisc_tlul_pkg::tl_h2d_t tl_sram_ctrl_ret_aon__ram_o,
-  input  lowrisc_tlul_pkg::tl_d2h_t tl_sram_ctrl_ret_aon__ram_i,
+  output lowrisc_tlul_pkg::tl_h2d_t tl_sram_ctrl_ret__regs_o,
+  input  lowrisc_tlul_pkg::tl_d2h_t tl_sram_ctrl_ret__regs_i,
+  output lowrisc_tlul_pkg::tl_h2d_t tl_sram_ctrl_ret__ram_o,
+  input  lowrisc_tlul_pkg::tl_d2h_t tl_sram_ctrl_ret__ram_i,
 
   input lowrisc_prim_mubi_pkg::mubi4_t scanmode_i
 );
@@ -193370,11 +193370,11 @@ module lowrisc_xbar_aon (
   assign tl_alert_handler_o = tl_s1n_7_ds_h2d[3];
   assign tl_s1n_7_ds_d2h[3] = tl_alert_handler_i;
 
-  assign tl_sram_ctrl_ret_aon__regs_o = tl_s1n_7_ds_h2d[4];
-  assign tl_s1n_7_ds_d2h[4] = tl_sram_ctrl_ret_aon__regs_i;
+  assign tl_sram_ctrl_ret__regs_o = tl_s1n_7_ds_h2d[4];
+  assign tl_s1n_7_ds_d2h[4] = tl_sram_ctrl_ret__regs_i;
 
-  assign tl_sram_ctrl_ret_aon__ram_o = tl_s1n_7_ds_h2d[5];
-  assign tl_s1n_7_ds_d2h[5] = tl_sram_ctrl_ret_aon__ram_i;
+  assign tl_sram_ctrl_ret__ram_o = tl_s1n_7_ds_h2d[5];
+  assign tl_s1n_7_ds_d2h[5] = tl_sram_ctrl_ret__ram_i;
 
   assign tl_s1n_7_us_h2d = tl_main_i;
   assign tl_main_o = tl_s1n_7_us_d2h;
@@ -193399,11 +193399,11 @@ module lowrisc_xbar_aon (
       dev_sel_s1n_7 = 3'd3;
 
     end else if ((tl_s1n_7_us_h2d.a_address &
-                  ~(ADDR_MASK_SRAM_CTRL_RET_AON__REGS)) == ADDR_SPACE_SRAM_CTRL_RET_AON__REGS) begin
+                  ~(ADDR_MASK_SRAM_CTRL_RET__REGS)) == ADDR_SPACE_SRAM_CTRL_RET__REGS) begin
       dev_sel_s1n_7 = 3'd4;
 
     end else if ((tl_s1n_7_us_h2d.a_address &
-                  ~(ADDR_MASK_SRAM_CTRL_RET_AON__RAM)) == ADDR_SPACE_SRAM_CTRL_RET_AON__RAM) begin
+                  ~(ADDR_MASK_SRAM_CTRL_RET__RAM)) == ADDR_SPACE_SRAM_CTRL_RET__RAM) begin
       dev_sel_s1n_7 = 3'd5;
 end
   end
@@ -270273,25 +270273,25 @@ package lowrisc_top_peppermint_rnd_cnst_pkg;
   };
 
   ////////////////////////////////////////////
-  // sram_ctrl_ret_aon
+  // sram_ctrl_ret
   ////////////////////////////////////////////
   // Compile-time random reset value for SRAM scrambling key.
-  parameter lowrisc_otp_ctrl_pkg::sram_key_t RndCnstSramCtrlRetAonSramKey = {
+  parameter lowrisc_otp_ctrl_pkg::sram_key_t RndCnstSramCtrlRetSramKey = {
     128'h5FC12BE3_C5333D77_AEE81229_AD96C8C5
   };
 
   // Compile-time random reset value for SRAM scrambling nonce.
-  parameter lowrisc_otp_ctrl_pkg::sram_nonce_t RndCnstSramCtrlRetAonSramNonce = {
+  parameter lowrisc_otp_ctrl_pkg::sram_nonce_t RndCnstSramCtrlRetSramNonce = {
     128'h96EDA91A_2485301A_48907C59_639294C3
   };
 
   // Compile-time random bits for initial LFSR seed
-  parameter lowrisc_sram_ctrl_pkg::lfsr_seed_t RndCnstSramCtrlRetAonLfsrSeed = {
+  parameter lowrisc_sram_ctrl_pkg::lfsr_seed_t RndCnstSramCtrlRetLfsrSeed = {
     64'h3B5F713F_DEFA9C76
   };
 
   // Compile-time random permutation for LFSR output
-  parameter lowrisc_sram_ctrl_pkg::lfsr_perm_t RndCnstSramCtrlRetAonLfsrPerm = {
+  parameter lowrisc_sram_ctrl_pkg::lfsr_perm_t RndCnstSramCtrlRetLfsrPerm = {
     128'hE6A5D33D_9F50F213_8C074BF8_35A6250D,
     256'h27301FF8_96EAC015_B85ED4FB_1DEB7D18_0AB75A1B_2369A31A_7CDD08BA_4425E932
   };
@@ -290553,12 +290553,12 @@ module lowrisc_top_peppermint #(
   // parameters for alert_handler
   parameter int AlertHandlerEscNumSeverities = 4,
   parameter int AlertHandlerEscPingCountWidth = 16,
-  // parameters for sram_ctrl_ret_aon
-  parameter int SramCtrlRetAonInstSize = 8192,
-  parameter int SramCtrlRetAonNumRamInst = 1,
-  parameter bit SramCtrlRetAonInstrExec = 0,
-  parameter int SramCtrlRetAonNumPrinceRoundsHalf = 3,
-  parameter bit SramCtrlRetAonEccCorrection = 0,
+  // parameters for sram_ctrl_ret
+  parameter int SramCtrlRetInstSize = 8192,
+  parameter int SramCtrlRetNumRamInst = 1,
+  parameter bit SramCtrlRetInstrExec = 0,
+  parameter int SramCtrlRetNumPrinceRoundsHalf = 3,
+  parameter bit SramCtrlRetEccCorrection = 0,
   // parameters for otp_macro
   parameter OtpMacroMemInitFile = "",
   // parameters for lc_ctrl
@@ -290939,11 +290939,11 @@ module lowrisc_top_peppermint #(
   .SecRstmgrMaxSyncDelay(SecRstmgrMaxSyncDelay),
   .AlertHandlerEscNumSeverities(AlertHandlerEscNumSeverities),
   .AlertHandlerEscPingCountWidth(AlertHandlerEscPingCountWidth),
-  .SramCtrlRetAonInstSize(SramCtrlRetAonInstSize),
-  .SramCtrlRetAonNumRamInst(SramCtrlRetAonNumRamInst),
-  .SramCtrlRetAonInstrExec(SramCtrlRetAonInstrExec),
-  .SramCtrlRetAonNumPrinceRoundsHalf(SramCtrlRetAonNumPrinceRoundsHalf),
-  .SramCtrlRetAonEccCorrection(SramCtrlRetAonEccCorrection)
+  .SramCtrlRetInstSize(SramCtrlRetInstSize),
+  .SramCtrlRetNumRamInst(SramCtrlRetNumRamInst),
+  .SramCtrlRetInstrExec(SramCtrlRetInstrExec),
+  .SramCtrlRetNumPrinceRoundsHalf(SramCtrlRetNumPrinceRoundsHalf),
+  .SramCtrlRetEccCorrection(SramCtrlRetEccCorrection)
   ) peppermint_pd_aon (
     .rst_aon_ni,
     .power_main_req_o,
@@ -293221,12 +293221,12 @@ module lowrisc_peppermint_pd_aon #(
   // parameters for alert_handler
   parameter int AlertHandlerEscNumSeverities = 4,
   parameter int AlertHandlerEscPingCountWidth = 16,
-  // parameters for sram_ctrl_ret_aon
-  parameter int SramCtrlRetAonInstSize = 8192,
-  parameter int SramCtrlRetAonNumRamInst = 1,
-  parameter bit SramCtrlRetAonInstrExec = 0,
-  parameter int SramCtrlRetAonNumPrinceRoundsHalf = 3,
-  parameter bit SramCtrlRetAonEccCorrection = 0
+  // parameters for sram_ctrl_ret
+  parameter int SramCtrlRetInstSize = 8192,
+  parameter int SramCtrlRetNumRamInst = 1,
+  parameter bit SramCtrlRetInstrExec = 0,
+  parameter int SramCtrlRetNumPrinceRoundsHalf = 3,
+  parameter bit SramCtrlRetEccCorrection = 0
 ) (
   // Inter-module Signal External type
   output lowrisc_pwrmgr_pkg::pwr_otp_req_t       pwrmgr_pwr_otp_req_o,
@@ -293314,8 +293314,8 @@ module lowrisc_peppermint_pd_aon #(
   import lowrisc_top_peppermint_rnd_cnst_pkg::*;
 
   // Local Parameters
-  // local parameters for sram_ctrl_ret_aon
-  localparam int SramCtrlRetAonOutstanding = 2;
+  // local parameters for sram_ctrl_ret
+  localparam int SramCtrlRetOutstanding = 2;
 
   // Signals
 
@@ -293471,10 +293471,10 @@ module lowrisc_peppermint_pd_aon #(
   lowrisc_tlul_pkg::tl_d2h_t       clkmgr_tl_rsp;
   lowrisc_tlul_pkg::tl_h2d_t       alert_handler_tl_req;
   lowrisc_tlul_pkg::tl_d2h_t       alert_handler_tl_rsp;
-  lowrisc_tlul_pkg::tl_h2d_t       sram_ctrl_ret_aon_regs_tl_req;
-  lowrisc_tlul_pkg::tl_d2h_t       sram_ctrl_ret_aon_regs_tl_rsp;
-  lowrisc_tlul_pkg::tl_h2d_t       sram_ctrl_ret_aon_ram_tl_req;
-  lowrisc_tlul_pkg::tl_d2h_t       sram_ctrl_ret_aon_ram_tl_rsp;
+  lowrisc_tlul_pkg::tl_h2d_t       sram_ctrl_ret_regs_tl_req;
+  lowrisc_tlul_pkg::tl_d2h_t       sram_ctrl_ret_regs_tl_rsp;
+  lowrisc_tlul_pkg::tl_h2d_t       sram_ctrl_ret_ram_tl_req;
+  lowrisc_tlul_pkg::tl_d2h_t       sram_ctrl_ret_ram_tl_rsp;
   lowrisc_clkmgr_pkg::clkmgr_out_t       clkmgr_clocks;
   lowrisc_clkmgr_pkg::clkmgr_cg_en_t       clkmgr_cg_en;
   lowrisc_rstmgr_pkg::rstmgr_out_t       rstmgr_resets;
@@ -293817,18 +293817,18 @@ module lowrisc_peppermint_pd_aon #(
   lowrisc_sram_ctrl #(
     .AlertAsyncOn(lowrisc_alert_handler_reg_pkg::AsyncOn[5]),
     .AlertSkewCycles(lowrisc_top_pkg::AlertSkewCycles),
-    .RndCnstSramKey(RndCnstSramCtrlRetAonSramKey),
-    .RndCnstSramNonce(RndCnstSramCtrlRetAonSramNonce),
-    .RndCnstLfsrSeed(RndCnstSramCtrlRetAonLfsrSeed),
-    .RndCnstLfsrPerm(RndCnstSramCtrlRetAonLfsrPerm),
+    .RndCnstSramKey(RndCnstSramCtrlRetSramKey),
+    .RndCnstSramNonce(RndCnstSramCtrlRetSramNonce),
+    .RndCnstLfsrSeed(RndCnstSramCtrlRetLfsrSeed),
+    .RndCnstLfsrPerm(RndCnstSramCtrlRetLfsrPerm),
     .MemSizeRam(8192),
-    .InstSize(SramCtrlRetAonInstSize),
-    .NumRamInst(SramCtrlRetAonNumRamInst),
-    .InstrExec(SramCtrlRetAonInstrExec),
-    .NumPrinceRoundsHalf(SramCtrlRetAonNumPrinceRoundsHalf),
-    .Outstanding(SramCtrlRetAonOutstanding),
-    .EccCorrection(SramCtrlRetAonEccCorrection)
-  ) u_sram_ctrl_ret_aon (
+    .InstSize(SramCtrlRetInstSize),
+    .NumRamInst(SramCtrlRetNumRamInst),
+    .InstrExec(SramCtrlRetInstrExec),
+    .NumPrinceRoundsHalf(SramCtrlRetNumPrinceRoundsHalf),
+    .Outstanding(SramCtrlRetOutstanding),
+    .EccCorrection(SramCtrlRetEccCorrection)
+  ) u_sram_ctrl_ret (
     // Clock and reset connections
     .clk_i(clk_aon_i),
     .clk_otp_i(clk_main_i),
@@ -293853,10 +293853,10 @@ module lowrisc_peppermint_pd_aon #(
     .racl_policies_i(lowrisc_top_racl_pkg::RACL_POLICY_VEC_DEFAULT),
     .racl_error_o(),
     .sram_rerror_o(),
-    .regs_tl_i(sram_ctrl_ret_aon_regs_tl_req),
-    .regs_tl_o(sram_ctrl_ret_aon_regs_tl_rsp),
-    .ram_tl_i(sram_ctrl_ret_aon_ram_tl_req),
-    .ram_tl_o(sram_ctrl_ret_aon_ram_tl_rsp)
+    .regs_tl_i(sram_ctrl_ret_regs_tl_req),
+    .regs_tl_o(sram_ctrl_ret_regs_tl_rsp),
+    .ram_tl_i(sram_ctrl_ret_ram_tl_req),
+    .ram_tl_o(sram_ctrl_ret_ram_tl_rsp)
   );
 
 
@@ -293894,13 +293894,13 @@ module lowrisc_peppermint_pd_aon #(
     .tl_alert_handler_o(alert_handler_tl_req),
     .tl_alert_handler_i(alert_handler_tl_rsp),
 
-    // port: tl_sram_ctrl_ret_aon__regs
-    .tl_sram_ctrl_ret_aon__regs_o(sram_ctrl_ret_aon_regs_tl_req),
-    .tl_sram_ctrl_ret_aon__regs_i(sram_ctrl_ret_aon_regs_tl_rsp),
+    // port: tl_sram_ctrl_ret__regs
+    .tl_sram_ctrl_ret__regs_o(sram_ctrl_ret_regs_tl_req),
+    .tl_sram_ctrl_ret__regs_i(sram_ctrl_ret_regs_tl_rsp),
 
-    // port: tl_sram_ctrl_ret_aon__ram
-    .tl_sram_ctrl_ret_aon__ram_o(sram_ctrl_ret_aon_ram_tl_req),
-    .tl_sram_ctrl_ret_aon__ram_i(sram_ctrl_ret_aon_ram_tl_rsp),
+    // port: tl_sram_ctrl_ret__ram
+    .tl_sram_ctrl_ret__ram_o(sram_ctrl_ret_ram_tl_req),
+    .tl_sram_ctrl_ret__ram_i(sram_ctrl_ret_ram_tl_rsp),
 
     .scanmode_i
   );
