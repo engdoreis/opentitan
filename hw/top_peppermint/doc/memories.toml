@@ -2,7 +2,7 @@
 # Licensed under the Apache License, Version 2.0, see LICENSE for details.
 # SPDX-License-Identifier: Apache-2.0
 
-title = "Memory macro parameters in the OpenTitan Peppermint top"
+title = "Peppermint Memory (SRAM/OTP/ROM) Macros"
 
 # Description and units of each key in the memory parameters.
 [keys]

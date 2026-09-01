@@ -41,6 +41,9 @@ def main() -> None:
 
     memory_markdown = memory_macros.with_suffix('.md')
     with open(memory_markdown, "w") as f:
+        # The TOML's title becomes the document heading, so that the Markdown
+        # carries the same title as the TOML it was generated from.
+        f.write(f"# {data['title']}\n\n")
         f.write(format_row(headers, col_widths))
         sep = "| " + " | ".join("-" * w for w in col_widths) + " |\n"
         f.write(sep)
