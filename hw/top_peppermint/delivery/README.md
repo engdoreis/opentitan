@@ -30,66 +30,58 @@ archive, so `split_pickle.py` takes the identifier as `--release`.
 
 ## Reproducing the Flow
 
-Prepare the bender source manifest with FuseSoC.
+`scripts/generate_out.sh` regenerates the deliverables in `out/` from the RTL in
+the tree.  It needs `fusesoc`, `bender` and `python3` on `PATH`; see [Tool
+Versions](#tool-versions) below.
 ```sh
-fusesoc --cores-root hw run --target=lint --setup lowrisc:systems:top_peppermint
-python3 util/edalize_to_bender.py \
-    build/lowrisc_systems_top_peppermint_0.1/lint-verilator/lowrisc_systems_top_peppermint_0.1.eda.yml
-cd build/lowrisc_systems_top_peppermint_0.1/lint-verilator
+./scripts/generate_out.sh
 ```
 
-FuseSoC copies the sources into this build directory, so re-run the two commands
-above after every RTL change.
+Run it after every RTL change that reaches the top, in the same commit as that
+change.  `out/` is meant to match the RTL at every commit, not just at release
+time, so that the log associates a change in the deliverables with the change
+that caused it.  FuseSoC copies the sources into its build directory and the
+pickle is built from that copy, so nothing short of a full re-run picks a change
+up.
 
-After changing into the build dir, run bender
+The script stamps the release identifier that `out/` already carries into the
+regenerated files, because `scripts/create_release.py` restamps all of them at
+release time anyway.  `--release` sets a different one.  `--keep-pickle` keeps
+the intermediate `lowrisc_peppermint.sv` for inspection instead of deleting it.
 ```sh
-bender pickle \
-    -t rtl \
-    -t generic \
-    --prefix lowrisc_ \
-    --expand-macros \
-    -D SYNTHESIS \
-    --top top_peppermint > ../../../hw/top_peppermint/delivery/lowrisc_peppermint.sv
+./scripts/generate_out.sh --release Peppermint-1.0-M1-RC6 --keep-pickle
 ```
 
+### What the Script Does
 
-Then repair the package references that bender's renaming missed.
-(Issue opened in bender repo: `pulp-platform/bender/issues/338`)
-```sh
-cd ../../../hw/top_peppermint/delivery
-python3 scripts/fix_pickle_prefix.py lowrisc_peppermint.sv
-```
+1. Runs FuseSoC's `lint` setup target and converts the Edalize manifest it
+   writes into a bender manifest (`util/edalize_to_bender.py`).
+2. Pickles the design with `bender pickle`, which prefixes every design unit
+   with `lowrisc_`.
+3. Repairs the package references that bender's renaming misses
+   (`scripts/fix_pickle_prefix.py`, see `pulp-platform/bender#338`).
+4. Splits the pickle into the deliverable files (`scripts/split_pickle.py`).
+5. Normalises those files.  Bender's macro expansion leaves trailing whitespace
+   behind, and the vendored PULP debug-module sources spell their Solderpad
+   licence notice with typographic quotes, which are exempt from the ASCII check
+   only because they sit under `vendor/`, an exemption the pickle does not
+   inherit.  Left alone, both trip this repository's checks and show up as lint
+   noise for the recipient.
+6. Copies `../doc/memories.toml`, appending the release identifier to its
+   title, and regenerates `out/memories.md` from that copy
+   (`util/memory_macro_to_md.py`), which carries the identifier over into the
+   heading.
 
-We first pickle, then finally split into the requested files.
-```sh
-mkdir -p out
-python3 scripts/split_pickle.py --release Peppermint-1.0-M1-RC0 lowrisc_peppermint.sv
-```
+The script's comments explain the individual steps in more detail, including the
+two quirks of `util/fix_trailing_whitespace.py` that are easy to get wrong by
+hand: it only works when run from the repository root, and it exits non-zero
+when it changes a file, which is the normal outcome here rather than an error.
 
-Lastly, normalise the generated files.  Without this they trip this repository's
-whitespace and ASCII checks, and would show up as lint noise for the recipient.
+### What the Script Does Not Touch
 
-Bender's macro expansion leaves trailing whitespace behind.  Note that the
-script below deliberately exits non-zero when it changes a file, so guard it if
-you ever run this from a script with `set -e`.
-```sh
-python3 ../../../util/fix_trailing_whitespace.py out/*.sv
-```
-
-The vendored PULP debug-module sources spell their Solderpad licence notice with
-typographic quotes.  Those are exempt from the ASCII check only because they sit
-under `vendor/`, an exemption the pickle does not inherit, so fold them to ASCII.
-Keep this as two separate expressions: a bracket expression such as `[“”]` would
-match the individual UTF-8 bytes under `LC_ALL=C` and corrupt the file.
-```sh
-sed -i -e 's/“/"/g' -e 's/”/"/g' out/*.sv
-```
-
-Copy the memory macro descriptions:
-```sh
-cp ../doc/memories.toml out
-../../../util/memory_macro_to_md.py out/memories.toml
-```
+`out/README.md`, `out/interfaces.md` and `out/lowrisc_top_peppermint_wrapper.sv`
+are maintained by hand.  Update them in the same commit as the change that makes
+them wrong.
 
 ### Tool Versions
 * `bender 0.32.1`
