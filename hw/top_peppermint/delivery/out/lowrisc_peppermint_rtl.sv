@@ -59413,7 +59413,7 @@ endmodule
  * Three key parameters influence the number and size of physical registers:
  *
  * 1. RV32E == 1:
- *    Restricts the register file to 16 registers (x0–x15).
+ *    Restricts the register file to 16 registers (x0-x15).
  *
  * 2. DummyInstructions == 1:
  *    Implements x0 as a physical register used to write the results of dummy instructions.
@@ -59422,10 +59422,10 @@ endmodule
  * 3. BaseIsa == BaseIsaRV32IorCHERIoT:
  *    Allows dynamic switching between standard RV32I/E registers (configured by the parameters
  *    above) and CHERIoT register mode when `cheriot_enable_i == IbexMuBiOn`.
- *    In CHERIoT mode, the core operates on 16 registers (x0–x15). These registers are wider
+ *    In CHERIoT mode, the core operates on 16 registers (x0-x15). These registers are wider
  *    because they include `CapWidth` capability metadata in addition to standard data bits.
  *
- *    To save area, the upper physical registers (x16–x31) from non-CHERIoT mode are re-purposed
+ *    To save area, the upper physical registers (x16-x31) from non-CHERIoT mode are re-purposed
  *    as `rf_shared` storage to hold CHERIoT capability metadata. Therefore, `CapWidth` must be
  *    >= `DataWidth` so that in non-CHERIoT mode, standard data writes to upper registers can be
  *    zero-extended into `rf_shared`.
@@ -59791,8 +59791,8 @@ module lowrisc_ibex_register_file_ff import lowrisc_ibex_pkg::*; #(
     logic [CapWidth-1:0]  rf_shared [16]; // shared: cap (CHERIoT) or x16-x31 data (!CHERIoT,!RV32E)
 
     // Write decode: waddr[3:0] indexes within a 16-entry bank.
-    // Bank select: waddr[4]=0 → rf_data and rf_shared cap (CHERIoT co-write);
-    //              waddr[4]=1 → rf_shared upper data (non-CHERIoT).
+    // Bank select: waddr[4]=0 -> rf_data and rf_shared cap (CHERIoT co-write);
+    //              waddr[4]=1 -> rf_shared upper data (non-CHERIoT).
     logic [15:0] we_a_dec;
     always_comb begin : we_a_decoder
       for (int unsigned i = 0; i < 16; i++) begin
@@ -59906,8 +59906,8 @@ module lowrisc_ibex_register_file_ff import lowrisc_ibex_pkg::*; #(
 
     // Read outputs
 
-    // Data: raddr[4]=0 → rf_data (x0-x15)
-    //       raddr[4]=1 → rf_shared lower DataWidth bits (x16-x31), non-CHERIoT only.
+    // Data: raddr[4]=0 -> rf_data (x0-x15)
+    //       raddr[4]=1 -> rf_shared lower DataWidth bits (x16-x31), non-CHERIoT only.
     // The bank-select is AND-gated with !cheriot_enabled so a spurious raddr[4]=1 in CHERIoT
     // mode reads from rf_data rather than returning capability bits as integer data.
     assign rdata_a_o = (raddr_a_i[4] && !cheriot_enabled) ?
@@ -60035,18 +60035,18 @@ endmodule
  * Three key parameters influence the number and size of physical registers:
  *
  * 1. RV32E == 1:
- *    Restricts the register file to 16 registers (x0–x15).
+ *    Restricts the register file to 16 registers (x0-x15).
  *
  * 2. DummyInstructions == 1:
- *    Not implemented in this register file — the FPGA variant does not support dummy instructions.
+ *    Not implemented in this register file -- the FPGA variant does not support dummy instructions.
  *
  * 3. BaseIsa == BaseIsaRV32IorCHERIoT:
  *    Allows dynamic switching between standard RV32I/E registers (configured by the parameters
  *    above) and CHERIoT register mode when `cheriot_enable_i == IbexMuBiOn`.
- *    In CHERIoT mode, the core operates on 16 registers (x0–x15). These registers are wider
+ *    In CHERIoT mode, the core operates on 16 registers (x0-x15). These registers are wider
  *    because they include `CapWidth` capability metadata in addition to standard data bits.
  *
- *    To save area, the upper physical registers (x16–x31) from non-CHERIoT mode are re-purposed
+ *    To save area, the upper physical registers (x16-x31) from non-CHERIoT mode are re-purposed
  *    as `rf_shared` storage to hold CHERIoT capability metadata. Therefore, `CapWidth` must be
  *    >= `DataWidth` so that in non-CHERIoT mode, standard data writes to upper registers can be
  *    zero-extended into `rf_shared`.
@@ -60441,8 +60441,8 @@ module lowrisc_ibex_register_file_fpga import lowrisc_ibex_pkg::*; #(
 
 
 
-    // Data: raddr[4]=0 → rf_data (x0-x15)
-    //       raddr[4]=1 → rf_shared lower DataWidth bits (x16-x31), non-CHERIoT only.
+    // Data: raddr[4]=0 -> rf_data (x0-x15)
+    //       raddr[4]=1 -> rf_shared lower DataWidth bits (x16-x31), non-CHERIoT only.
     // The bank-select is AND-gated with !cheriot_enabled so a spurious raddr[4]=1 in CHERIoT
     // mode reads from rf_data rather than returning capability bits as integer data.
     assign rdata_a_o = (raddr_a_i[4] && !cheriot_enabled) ?
@@ -60537,7 +60537,7 @@ endmodule
  * Three key parameters influence the number and size of physical registers:
  *
  * 1. RV32E == 1:
- *    Restricts the register file to 16 registers (x0–x15).
+ *    Restricts the register file to 16 registers (x0-x15).
  *
  * 2. DummyInstructions == 1:
  *    Implements x0 as a physical register used to write the results of dummy instructions.
@@ -60546,10 +60546,10 @@ endmodule
  * 3. BaseIsa == BaseIsaRV32IorCHERIoT:
  *    Allows dynamic switching between standard RV32I/E registers (configured by the parameters
  *    above) and CHERIoT register mode when `cheriot_enable_i == IbexMuBiOn`.
- *    In CHERIoT mode, the core operates on 16 registers (x0–x15). These registers are wider
+ *    In CHERIoT mode, the core operates on 16 registers (x0-x15). These registers are wider
  *    because they include `CapWidth` capability metadata in addition to standard data bits.
  *
- *    To save area, the upper physical registers (x16–x31) from non-CHERIoT mode are re-purposed
+ *    To save area, the upper physical registers (x16-x31) from non-CHERIoT mode are re-purposed
  *    as `rf_shared` storage to hold CHERIoT capability metadata. Therefore, `CapWidth` must be
  *    >= `DataWidth` so that in non-CHERIoT mode, standard data writes to upper registers can be
  *    zero-extended into `rf_shared`.
@@ -60912,8 +60912,8 @@ module lowrisc_ibex_register_file_latch import lowrisc_ibex_pkg::*; #(
     );
 
     // Write decode: waddr[3:0] indexes within a 16-entry bank.
-    // Bank select: waddr[4]=0 → rf_data and rf_shared cap (CHERIoT co-write);
-    //              waddr[4]=1 → rf_shared upper data (non-CHERIoT).
+    // Bank select: waddr[4]=0 -> rf_data and rf_shared cap (CHERIoT co-write);
+    //              waddr[4]=1 -> rf_shared upper data (non-CHERIoT).
     logic [15:0] we_a_dec;
     always_comb begin : we_a_decoder
       for (int unsigned i = 0; i < 16; i++) begin
@@ -61089,8 +61089,8 @@ module lowrisc_ibex_register_file_latch import lowrisc_ibex_pkg::*; #(
     //////////
     // READ //
     //////////
-    // Data: raddr[4]=0 → rf_data (x0-x15)
-    //       raddr[4]=1 → rf_shared lower DataWidth bits (x16-x31), non-CHERIoT only.
+    // Data: raddr[4]=0 -> rf_data (x0-x15)
+    //       raddr[4]=1 -> rf_shared lower DataWidth bits (x16-x31), non-CHERIoT only.
     assign rdata_a_o = (raddr_a_i[4] && !cheriot_enabled) ?
       DataWidth'(rf_shared[raddr_a_i[3:0]]) : rf_data[raddr_a_i[3:0]];
     assign rdata_b_o = (raddr_b_i[4] && !cheriot_enabled) ?

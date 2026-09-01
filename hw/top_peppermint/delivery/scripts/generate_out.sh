@@ -60,6 +60,15 @@ delivery_dir="${repo_top}/hw/top_peppermint/delivery"
 build_dir="${repo_top}/build/lowrisc_systems_top_peppermint_0.1/lint-verilator"
 pickle="${delivery_dir}/lowrisc_peppermint.sv"
 
+# The files `split_pickle.py` writes.  The normalisation below is spelled out
+# per file rather than as `out/*.sv`, because that glob would also rewrite
+# `out/lowrisc_top_peppermint_wrapper.sv`, which is maintained by hand.
+generated_sv=(
+    lowrisc_peppermint_rtl.sv
+    lowrisc_prim_generic.sv
+    lowrisc_top_packages.sv
+)
+
 for tool in fusesoc bender python3; do
     command -v "${tool}" >/dev/null 2>&1 || {
         echo "error: ${tool} not found on PATH" >&2
@@ -117,7 +126,8 @@ python3 scripts/split_pickle.py --release "${release}" lowrisc_peppermint.sv
 # not an error here.
 cd "${repo_top}"
 set +e
-python3 util/fix_trailing_whitespace.py hw/top_peppermint/delivery/out/*.sv
+python3 util/fix_trailing_whitespace.py \
+    "${generated_sv[@]/#/hw/top_peppermint/delivery/out/}"
 whitespace_status=$?
 set -e
 [ "${whitespace_status}" -le 1 ] || {
@@ -126,16 +136,39 @@ set -e
 }
 cd "${delivery_dir}"
 
-# The vendored PULP debug-module sources spell their Solderpad licence notice
-# with typographic quotes.  Those are exempt from the ASCII check only because
-# they sit under `vendor/`, an exemption the pickle does not inherit, so fold
-# them to ASCII.  The quotes are spelled as UTF-8 byte sequences here because
-# this script is itself subject to the ASCII check.  Keep them as two separate
-# expressions: a bracket expression matching both would match the individual
-# UTF-8 bytes under `LC_ALL=C` and corrupt the file.
-left_quote="$(printf '\xe2\x80\x9c')"   # U+201C LEFT DOUBLE QUOTATION MARK
-right_quote="$(printf '\xe2\x80\x9d')"  # U+201D RIGHT DOUBLE QUOTATION MARK
-sed -i -e "s/${left_quote}/\"/g" -e "s/${right_quote}/\"/g" out/*.sv
+# Some vendored sources use typographic punctuation in their comments: the PULP
+# debug module in its Solderpad licence notice, the CHERIoT Ibex in its register
+# file commentary.  Those files are exempt from this repository's ASCII check
+# only because they sit under `vendor/`, an exemption the pickle does not
+# inherit, so fold the characters to ASCII.  They are spelled as UTF-8 byte
+# sequences because this script is itself subject to that check.  Keep one
+# expression per character: a bracket expression matching several would match
+# the individual UTF-8 bytes under `LC_ALL=C` and corrupt the file.
+ascii_folds=()
+fold() {  # <utf-8 bytes of the character> <ASCII spelling>
+    ascii_folds+=(-e "s/$(printf '%b' "$1")/$2/g")
+}
+fold '\xe2\x80\x98' "'"     # U+2018 LEFT SINGLE QUOTATION MARK
+fold '\xe2\x80\x99' "'"     # U+2019 RIGHT SINGLE QUOTATION MARK
+fold '\xe2\x80\x9c' '"'     # U+201C LEFT DOUBLE QUOTATION MARK
+fold '\xe2\x80\x9d' '"'     # U+201D RIGHT DOUBLE QUOTATION MARK
+fold '\xe2\x80\x93' '-'     # U+2013 EN DASH
+fold '\xe2\x80\x94' '--'    # U+2014 EM DASH
+fold '\xe2\x86\x92' '->'    # U+2192 RIGHTWARDS ARROW
+sed -i "${ascii_folds[@]}" "${generated_sv[@]/#/out/}"
+
+# Any character not in that list would reach the recipient and trip this
+# repository's ASCII check, so say which one rather than leave the lint to find
+# it.  A vendor update can introduce one at any time.  The detection matches
+# ci/scripts/check-ascii.sh.
+remaining="$(env LC_ALL=C grep -n -d skip -P '[^\0-\x7f]' \
+    "${generated_sv[@]/#/out/}" || true)"
+[ -z "${remaining}" ] || {
+    echo "error: non-ASCII characters left in the generated files:" >&2
+    echo "${remaining}" >&2
+    echo "Add each one to the fold list in ${0}." >&2
+    exit 1
+}
 
 # Copy the memory macro descriptions, appending the release identifier to
 # the title.  The deliverable copies carry that identifier the way
