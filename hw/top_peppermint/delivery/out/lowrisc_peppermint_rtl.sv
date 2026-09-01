@@ -290951,6 +290951,7 @@ module lowrisc_top_peppermint #(
 
   lowrisc_lc_ctrl_pkg::lc_tx_t lc_ctrl_lc_nvm_debug_en;
   lowrisc_lc_ctrl_pkg::lc_tx_t lc_ctrl_lc_cpu_en;
+  lowrisc_lc_ctrl_pkg::lc_tx_t lc_ctrl_lc_init_done;
 
   assign rst_main_no = rst_main_n;
 
@@ -291043,6 +291044,7 @@ module lowrisc_top_peppermint #(
   ) peppermint_pd_main (
     .lc_ctrl_lc_nvm_debug_en_o(lc_ctrl_lc_nvm_debug_en),
     .lc_ctrl_lc_cpu_en_o      (lc_ctrl_lc_cpu_en      ),
+    .lc_ctrl_lc_init_done_o   (lc_ctrl_lc_init_done   ),
     .power_main_iso_en_i,
     .power_main_sw_en_i,
     .power_main_sw_en_phy_i,
@@ -291154,6 +291156,7 @@ module lowrisc_top_peppermint #(
     .soc_lc_cpu_en_o,
     .lc_ctrl_lc_nvm_debug_en_i(lc_ctrl_lc_nvm_debug_en),
     .lc_ctrl_lc_cpu_en_i      (lc_ctrl_lc_cpu_en      ),
+    .lc_ctrl_lc_init_done_i   (lc_ctrl_lc_init_done   ),
     // All externally supplied clocks
     .clk_aon_i(clk_aon_i),
     .clk_main_i(clk_main_i),
@@ -291679,6 +291682,7 @@ module lowrisc_peppermint_pd_main #(
 
   output lowrisc_lc_ctrl_pkg::lc_tx_t lc_ctrl_lc_nvm_debug_en_o,
   output lowrisc_lc_ctrl_pkg::lc_tx_t lc_ctrl_lc_cpu_en_o,
+  output lowrisc_lc_ctrl_pkg::lc_tx_t lc_ctrl_lc_init_done_o,
 
   // Power gating control of the main power domain by the power controller of
   // the wider SoC.
@@ -291961,6 +291965,7 @@ module lowrisc_peppermint_pd_main #(
   // Life cycle function control to the Aon power domain.
   assign lc_ctrl_lc_nvm_debug_en_o = lc_ctrl_lc_nvm_debug_en;
   assign lc_ctrl_lc_cpu_en_o       = lc_ctrl_lc_cpu_en;
+  assign lc_ctrl_lc_init_done_o    = lc_ctrl_lc_init_done;
 
   // These signals drive physical cells only.
   logic unused_power_gating_ctrl;
@@ -293524,6 +293529,8 @@ module lowrisc_peppermint_pd_aon #(
   // Life cycle function control from lc_ctrl in the Main power domain.
   input lowrisc_lc_ctrl_pkg::lc_tx_t lc_ctrl_lc_nvm_debug_en_i,
   input lowrisc_lc_ctrl_pkg::lc_tx_t lc_ctrl_lc_cpu_en_i,
+  input lowrisc_lc_ctrl_pkg::lc_tx_t lc_ctrl_lc_init_done_i,
+
   // Interrupts to PLIC rv_plic in power domain Main
   output logic [4:0] intr_vector_o,
 
@@ -293759,8 +293766,25 @@ module lowrisc_peppermint_pd_aon #(
   // Boot address of the SoC CPU, driven by a register in rstmgr
   assign soc_cpu_boot_addr_o = rstmgr_soc_cpu_boot_addr[SocCpuBootAddrWidth-1:0];
 
-  // Life cycle function control forwarded registered in AON domain so that the states survive a
-  // power down.
+  // Life cycle function control forwarded to the wider SoC, synchronized into
+  // the Aon clock domain and registered there so that the states survive a
+  // power down of the Main domain.
+  lowrisc_lc_ctrl_pkg::lc_tx_t soc_lc_init_done;
+  lowrisc_prim_lc_sync #(
+    .NumCopies(1),
+    .AsyncOn(1),
+    .ResetValueIsOn(0)
+  ) u_soc_lc_init_done_sync (
+    .clk_i  (clk_aon_i),
+    .rst_ni (rstmgr_resets.rst_lc_aon_n[lowrisc_rstmgr_pkg::DomainAonSel]),
+    .lc_en_i(lc_ctrl_lc_init_done_i),
+    .lc_en_o({soc_lc_init_done})
+  );
+
+  logic soc_lc_capture_en;
+  assign soc_lc_capture_en = lowrisc_lc_ctrl_pkg::lc_tx_test_true_strict(soc_lc_init_done);
+
+  lowrisc_lc_ctrl_pkg::lc_tx_t soc_lc_dft_en_synced;
   lowrisc_prim_lc_sync #(
     .NumCopies(1),
     .AsyncOn(1),
@@ -293769,8 +293793,24 @@ module lowrisc_peppermint_pd_aon #(
     .clk_i  (clk_aon_i),
     .rst_ni (rstmgr_resets.rst_lc_aon_n[lowrisc_rstmgr_pkg::DomainAonSel]),
     .lc_en_i(lc_ctrl_lc_dft_en_i),
-    .lc_en_o({soc_lc_dft_en_o})
+    .lc_en_o({soc_lc_dft_en_synced})
   );
+
+  logic [lowrisc_lc_ctrl_pkg::TxWidth-1:0] soc_lc_dft_en_held;
+  lowrisc_prim_flop_en #(
+    .Width(lowrisc_lc_ctrl_pkg::TxWidth),
+    .EnSecBuf(1),
+    .ResetValue(lowrisc_lc_ctrl_pkg::TxWidth'(lowrisc_lc_ctrl_pkg::Off))
+  ) u_soc_lc_dft_en_hold (
+    .clk_i (clk_aon_i),
+    .rst_ni(rstmgr_resets.rst_lc_aon_n[lowrisc_rstmgr_pkg::DomainAonSel]),
+    .en_i  (soc_lc_capture_en),
+    .d_i   (lowrisc_lc_ctrl_pkg::TxWidth'(soc_lc_dft_en_synced)),
+    .q_o   (soc_lc_dft_en_held)
+  );
+  assign soc_lc_dft_en_o = lowrisc_lc_ctrl_pkg::lc_tx_t'(soc_lc_dft_en_held);
+
+  lowrisc_lc_ctrl_pkg::lc_tx_t soc_lc_nvm_debug_en_synced;
   lowrisc_prim_lc_sync #(
     .NumCopies(1),
     .AsyncOn(1),
@@ -293779,8 +293819,24 @@ module lowrisc_peppermint_pd_aon #(
     .clk_i  (clk_aon_i),
     .rst_ni (rstmgr_resets.rst_lc_aon_n[lowrisc_rstmgr_pkg::DomainAonSel]),
     .lc_en_i(lc_ctrl_lc_nvm_debug_en_i),
-    .lc_en_o({soc_lc_nvm_debug_en_o})
+    .lc_en_o({soc_lc_nvm_debug_en_synced})
   );
+
+  logic [lowrisc_lc_ctrl_pkg::TxWidth-1:0] soc_lc_nvm_debug_en_held;
+  lowrisc_prim_flop_en #(
+    .Width(lowrisc_lc_ctrl_pkg::TxWidth),
+    .EnSecBuf(1),
+    .ResetValue(lowrisc_lc_ctrl_pkg::TxWidth'(lowrisc_lc_ctrl_pkg::Off))
+  ) u_soc_lc_nvm_debug_en_hold (
+    .clk_i (clk_aon_i),
+    .rst_ni(rstmgr_resets.rst_lc_aon_n[lowrisc_rstmgr_pkg::DomainAonSel]),
+    .en_i  (soc_lc_capture_en),
+    .d_i   (lowrisc_lc_ctrl_pkg::TxWidth'(soc_lc_nvm_debug_en_synced)),
+    .q_o   (soc_lc_nvm_debug_en_held)
+  );
+  assign soc_lc_nvm_debug_en_o = lowrisc_lc_ctrl_pkg::lc_tx_t'(soc_lc_nvm_debug_en_held);
+
+  lowrisc_lc_ctrl_pkg::lc_tx_t soc_lc_hw_debug_en_synced;
   lowrisc_prim_lc_sync #(
     .NumCopies(1),
     .AsyncOn(1),
@@ -293789,8 +293845,24 @@ module lowrisc_peppermint_pd_aon #(
     .clk_i  (clk_aon_i),
     .rst_ni (rstmgr_resets.rst_lc_aon_n[lowrisc_rstmgr_pkg::DomainAonSel]),
     .lc_en_i(lc_ctrl_lc_hw_debug_en_i),
-    .lc_en_o({soc_lc_hw_debug_en_o})
+    .lc_en_o({soc_lc_hw_debug_en_synced})
   );
+
+  logic [lowrisc_lc_ctrl_pkg::TxWidth-1:0] soc_lc_hw_debug_en_held;
+  lowrisc_prim_flop_en #(
+    .Width(lowrisc_lc_ctrl_pkg::TxWidth),
+    .EnSecBuf(1),
+    .ResetValue(lowrisc_lc_ctrl_pkg::TxWidth'(lowrisc_lc_ctrl_pkg::Off))
+  ) u_soc_lc_hw_debug_en_hold (
+    .clk_i (clk_aon_i),
+    .rst_ni(rstmgr_resets.rst_lc_aon_n[lowrisc_rstmgr_pkg::DomainAonSel]),
+    .en_i  (soc_lc_capture_en),
+    .d_i   (lowrisc_lc_ctrl_pkg::TxWidth'(soc_lc_hw_debug_en_synced)),
+    .q_o   (soc_lc_hw_debug_en_held)
+  );
+  assign soc_lc_hw_debug_en_o = lowrisc_lc_ctrl_pkg::lc_tx_t'(soc_lc_hw_debug_en_held);
+
+  lowrisc_lc_ctrl_pkg::lc_tx_t soc_lc_cpu_en_synced;
   lowrisc_prim_lc_sync #(
     .NumCopies(1),
     .AsyncOn(1),
@@ -293799,8 +293871,22 @@ module lowrisc_peppermint_pd_aon #(
     .clk_i  (clk_aon_i),
     .rst_ni (rstmgr_resets.rst_lc_aon_n[lowrisc_rstmgr_pkg::DomainAonSel]),
     .lc_en_i(lc_ctrl_lc_cpu_en_i),
-    .lc_en_o({soc_lc_cpu_en_o})
+    .lc_en_o({soc_lc_cpu_en_synced})
   );
+
+  logic [lowrisc_lc_ctrl_pkg::TxWidth-1:0] soc_lc_cpu_en_held;
+  lowrisc_prim_flop_en #(
+    .Width(lowrisc_lc_ctrl_pkg::TxWidth),
+    .EnSecBuf(1),
+    .ResetValue(lowrisc_lc_ctrl_pkg::TxWidth'(lowrisc_lc_ctrl_pkg::Off))
+  ) u_soc_lc_cpu_en_hold (
+    .clk_i (clk_aon_i),
+    .rst_ni(rstmgr_resets.rst_lc_aon_n[lowrisc_rstmgr_pkg::DomainAonSel]),
+    .en_i  (soc_lc_capture_en),
+    .d_i   (lowrisc_lc_ctrl_pkg::TxWidth'(soc_lc_cpu_en_synced)),
+    .q_o   (soc_lc_cpu_en_held)
+  );
+  assign soc_lc_cpu_en_o = lowrisc_lc_ctrl_pkg::lc_tx_t'(soc_lc_cpu_en_held);
 
   // Currently tied-off
   logic unused_scan_en_i;
