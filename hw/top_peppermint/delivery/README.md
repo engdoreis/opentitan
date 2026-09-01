@@ -77,6 +77,11 @@ two quirks of `util/fix_trailing_whitespace.py` that are easy to get wrong by
 hand: it only works when run from the repository root, and it exits non-zero
 when it changes a file, which is the normal outcome here rather than an error.
 
+CI enforces this.  `ci/scripts/check-delivery-out.sh` regenerates `out/` in the
+`gen` lint category and fails if the result differs from what is committed, so
+a change that moves the deliverables cannot merge without them.  Reproduce it
+with `nix run .#lint -- gen`.
+
 ### What the Script Does Not Touch
 
 `out/README.md`, `out/interfaces.md` and `out/lowrisc_top_peppermint_wrapper.sv`
@@ -84,7 +89,8 @@ are maintained by hand.  Update them in the same commit as the change that makes
 them wrong.
 
 ### Tool Versions
-* `bender 0.32.1`
+* `bender 0.32.1`, pinned by the `nixpkgs-bender` input in `flake.nix` so that
+  local runs and CI agree.  Change the two together.
 * `tar (GNU tar) 1.35`
 * `gzip 1.14`
 

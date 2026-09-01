@@ -8,6 +8,16 @@
     # Pinned to nixos-26.05 to match lowrisc-nix and because that channel ships
     # Verilator 5.048.
     nixpkgs.url = "github:nixos/nixpkgs/nixos-26.05";
+
+    # bender pickles the Peppermint delivery deliverables, and their content
+    # depends on its exact version: hw/top_peppermint/delivery/scripts/
+    # fix_pickle_prefix.py exists to repair references that bender 0.32.x
+    # renames incompletely. nixos-26.05 only carries 0.28.2, so pin the
+    # revision that has the 0.32.1 the delivery README documents. This input
+    # deliberately does not `follows` nixpkgs -- carrying its own is the point.
+    # Bump it and that README's Tool Versions list together.
+    nixpkgs-bender.url = "github:nixos/nixpkgs/34ab99075ac4f7e40cf037eef32cb1c360bb85e9";
+
     flake-utils.url = "github:numtide/flake-utils";
 
     # uv2nix builds the Python environment straight from this repo's
@@ -45,6 +55,7 @@
 
   outputs = {
     nixpkgs,
+    nixpkgs-bender,
     flake-utils,
     pyproject-nix,
     uv2nix,
@@ -134,6 +145,10 @@
           pkgs.lrzsz
           # check-lock-files regenerates python-requirements.txt via `uv pip compile`.
           uv
+          # The pickler behind hw/top_peppermint/delivery/scripts/generate_out.sh,
+          # which ci/scripts/check-delivery-out.sh runs in the `gen` lint
+          # category. Pinned to 0.32.1 via its own nixpkgs; see the input above.
+          nixpkgs-bender.legacyPackages.${system}.bender
         ];
         # Point the Bazel bindgen toolchain at a nixpkgs libclang (see
         # third_party/rust/extensions.bzl): the LLVM release Bazel would download

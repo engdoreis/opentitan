@@ -14,7 +14,7 @@
 #
 # Categories:
 #   hygiene   text/metadata/python hygiene checks     (Nix tools)
-#   gen       generated & vendored file freshness     (Nix tools)
+#   gen       generated, vendored & delivery freshness (Nix tools)
 #   hw        per-top Verible + countermeasure lint   (Nix tools)
 #   sv        whole-tree Verible sweep, advisory only (Nix tools)
 #   bazel     Bazel-graph hygiene + link/alert checks (requires Bazel)
@@ -92,7 +92,8 @@ cat_hygiene() {
 }
 
 # ---------------------------------------------------------------------------
-# gen: generated and vendored files must be clean and up to date.
+# gen: generated and vendored files, and the Peppermint release
+# deliverables, must be clean and up to date.
 # ---------------------------------------------------------------------------
 cat_gen() {
     # check-generated regenerates files in place, then restores the tree with
@@ -114,6 +115,11 @@ cat_gen() {
         _ot_endsection
     fi
     check "Vendored files"  ci/scripts/check-vendoring.sh
+    # Keep this last. On failure it leaves the regenerated deliverables in the
+    # tree, and check-vendoring ends with a whole-tree `git diff --exit-code`,
+    # so running it earlier would make vendoring fail too, with a misleading
+    # message.
+    check "Peppermint deliverables" ci/scripts/check-delivery-out.sh
 }
 
 # ---------------------------------------------------------------------------

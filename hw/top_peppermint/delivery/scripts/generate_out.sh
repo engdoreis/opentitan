@@ -76,11 +76,25 @@ for tool in fusesoc bender python3; do
     }
 done
 
+# The pickle depends on the bender version byte for byte, so a mismatch would
+# rewrite the whole deliverable and look like an RTL change.  The version the
+# flake pins is the one the committed deliverables were generated with; keep
+# this, `flake.nix` and the Tool Versions section of README.md in step.
+bender_want=0.32.1
+bender_have="$(bender --version | awk '{print $2}')"
+[ "${bender_have}" = "${bender_want}" ] || {
+    echo "error: found bender ${bender_have}, need ${bender_want}" >&2
+    echo "Run this inside the flake devshell, which pins it:" >&2
+    echo "    nix run .#eda -- ${0}" >&2
+    exit 1
+}
+
 # Take the release identifier from the files in out/ unless one was given, so
 # that a regeneration between releases does not change the stamp.
 if [ -z "${release}" ]; then
     release="$(sed -n 's|^// Release \(.*\)\.$|\1|p' \
-        "${delivery_dir}/out/lowrisc_peppermint_rtl.sv" | head -n 1)"
+        "${delivery_dir}/out/lowrisc_peppermint_rtl.sv" 2>/dev/null \
+        | head -n 1 || true)"
     [ -n "${release}" ] || {
         echo "error: could not read the release identifier from out/;" \
              "pass --release" >&2
