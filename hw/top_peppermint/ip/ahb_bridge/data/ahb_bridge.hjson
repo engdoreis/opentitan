@@ -7,7 +7,7 @@
   human_name:         "AHB Bridge"
   one_line_desc:      "Bidirectional AHB-Lite <-> TL-UL protocol bridge"
   // Unique comportable IP identifier defined under KNOWN_CIP_IDS in the regtool.
-  cip_id:             "48"
+  cip_id:             "49"
   version:            "1.0.0"
 
   clocking: [

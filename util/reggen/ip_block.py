@@ -71,7 +71,7 @@ KNOWN_CIP_IDS = {
     44: 'otp_macro',
     45: 'rram_ctrl',
     46: 'rram_macro',
-    48: 'ahb_bridge'
+    49: 'ahb_bridge'
 }
 
 REQUIRED_ALIAS_FIELDS = {
