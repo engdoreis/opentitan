@@ -1,5 +1,9 @@
 # Reset Manager HWIP Technical Specification
 <!-- BEGIN CMDGEN util/mdbook_regression_links.py --hjson hw/top_peppermint/ip_autogen/rstmgr/data/rstmgr.hjson --top peppermint -->
+| Regression | Version | [Stages](https://opentitan.org/book/doc/project_governance/development_stages.html) | Results |
+|-|-|-|-|
+ [`rstmgr`](https://dashboard.reports.lowrisc.org/opentitan/peppermint/dashboard.html) | 1.0.0 | D3, V2S | ![](https://dashboard.reports.lowrisc.org/opentitan/peppermint/badge/rstmgr/test.svg) ![](https://dashboard.reports.lowrisc.org/opentitan/peppermint/badge/rstmgr/passing.svg) ![](https://dashboard.reports.lowrisc.org/opentitan/peppermint/badge/rstmgr/functional.svg) ![](https://dashboard.reports.lowrisc.org/opentitan/peppermint/badge/rstmgr/code.svg) |
+
 <!-- END CMDGEN -->
 
 # Overview
