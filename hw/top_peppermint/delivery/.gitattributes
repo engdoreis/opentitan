@@ -2,4 +2,9 @@
 # Licensed under the Apache License, Version 2.0, see LICENSE for details.
 # SPDX-License-Identifier: Apache-2.0
 
-out/* lingust-generated=true
+# Collapse the generated deliverables in review.  The last matching pattern
+# wins, so the files that are maintained by hand opt back out.
+out/* linguist-generated=true
+out/README.md -linguist-generated
+out/interfaces.md -linguist-generated
+out/lowrisc_top_peppermint_wrapper.sv -linguist-generated
