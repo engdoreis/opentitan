@@ -156,17 +156,12 @@ function void chip_base_vseq::random_rom_init_with_digest();
     bit [top_pkg::TL_DW-1:0] rnd_data;
 
     rnd_data = $urandom;
-    rom.rom_encrypt_write32_integ(addr,
-                                  rnd_data,
-                                  top_peppermint_rnd_cnst_pkg::RndCnstRomCtrlScrKey,
-                                  top_peppermint_rnd_cnst_pkg::RndCnstRomCtrlScrNonce,
-                                  1'b1);  // Enable scrambling
+    rom.rom_encrypt_write32_integ(.addr(addr), .data(rnd_data), .scramble_data(1'b1));
   end
 
   // Set the top words of the ROM to match the result of running cSHAKE256 over the rest of its
   // contents, which is the digest rom_ctrl recomputes and compares after reset
-  rom.update_rom_digest(top_peppermint_rnd_cnst_pkg::RndCnstRomCtrlScrKey,
-                        top_peppermint_rnd_cnst_pkg::RndCnstRomCtrlScrNonce);
+  rom.update_rom_digest();
 endfunction: random_rom_init_with_digest
 
 // Sequences that touch CSRs must not start before this, or they can write a KMAC register

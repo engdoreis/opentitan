@@ -45,7 +45,7 @@ class chip_env_cfg extends cip_base_env_cfg #(.RAL_T(chip_reg_block));
   extern function new(string name = "");
 
   // Class specific methods
-  extern function void initialize();
+  extern function void initialize(bit inherit_ral_models = 1'b0);
 endclass: chip_env_cfg
 
 
@@ -53,7 +53,7 @@ function chip_env_cfg::new(string name = "");
   super.new(name);
 endfunction: new
 
-function void chip_env_cfg::initialize();
+function void chip_env_cfg::initialize(bit inherit_ral_models = 1'b0);
   // Mark this as a chip-level environment. Among other things it stops cip_base_env looking for a
   // rst_shadowed_vif, which is a block-level interface: at top level the shadow reset comes from
   // rstmgr inside the DUT.
@@ -72,7 +72,7 @@ function void chip_env_cfg::initialize();
   // register is the way to observe a ping timeout here.
   en_scb_ping_chk = 0;
 
-  super.initialize();
+  super.initialize(inherit_ral_models);
 
   // Source ID width of the TL agent hooked onto the Ibex cored port. The port comes from
   // tl_adapter_host_d_ibex, which is instantiated with MAX_REQS 2, the same as on the sibling tops.
