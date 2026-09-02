@@ -14,6 +14,18 @@ class ahb_monitor extends uvm_monitor;
   // waiting on m_vif.rst_ni in watch_until_reset) simulates dramatically more quickly.
   local uvm_event saw_reset;
 
+  // True between seeing the address phase of a transfer and seeing its data phase complete (or a
+  // reset abandoning it). Read by phase_ready_to_end to hold the run phase open.
+  local bit m_txn_in_flight;
+
+  // True while an end-of-test objection raised by phase_ready_to_end is outstanding. This stops a
+  // second call to phase_ready_to_end raising a second objection for the same transfer.
+  local bit m_eot_objection_raised;
+
+  // How many clock cycles phase_ready_to_end waits for an in-flight transfer to complete before it
+  // gives up and reports an error. Set this with set_eot_drain_cycles().
+  local int unsigned m_eot_drain_cycles = 100;
+
   // The analysis ports for requests, responses and complete transactions.
   //
   // A request is published as soon as its address phase is seen, so that a subscriber can see a
@@ -25,12 +37,19 @@ class ahb_monitor extends uvm_monitor;
   uvm_analysis_port #(ahb_txn_response_item) m_response_port;
   uvm_analysis_port #(ahb_txn_item)          m_transaction_port;
 
+  // Standard SV/UVM methods
   extern function new(string name, uvm_component parent);
   extern function void build_phase (uvm_phase phase);
   extern task run_phase(uvm_phase phase);
+  extern function void phase_ready_to_end(uvm_phase phase);
 
   // Set the interface that is being tracked
   extern function void set_vif(virtual ahb_if vif);
+
+  // Set and get the number of clock cycles that phase_ready_to_end allows an in-flight transfer to
+  // complete in. Raise this for a subordinate that applies back pressure for a long time.
+  extern function void set_eot_drain_cycles(int unsigned cycles);
+  extern function int unsigned get_eot_drain_cycles();
 
   // Track requests and responses on m_vif
   extern local task watch_interface();
@@ -68,8 +87,60 @@ task ahb_monitor::run_phase(uvm_phase phase);
   join
 endtask
 
+function void ahb_monitor::phase_ready_to_end(uvm_phase phase);
+  super.phase_ready_to_end(phase);
+
+  // Only the run phase has traffic on the bus, so there is nothing to hold open in any other phase
+  if (phase.get_name() != "run") begin
+    return;
+  end
+
+  // No transfer is waiting for a data phase, so the bus is idle and the phase can end
+  if (!m_txn_in_flight) begin
+    return;
+  end
+
+  // An objection raised by an earlier call is still outstanding and the process below will drop it
+  // when the bus goes idle. A second objection for the same transfer would never be dropped.
+  if (m_eot_objection_raised) begin
+    return;
+  end
+
+  m_eot_objection_raised = 1;
+  phase.raise_objection(this, "AHB transfer in flight");
+
+  fork begin
+    fork begin : isolation_fork
+      fork
+        wait (!m_txn_in_flight);
+        repeat (m_eot_drain_cycles) @(m_vif.mon_cb);
+      join_any
+      disable fork;
+    end join
+
+    if (m_txn_in_flight) begin
+      `uvm_error(get_full_name(),
+                 $sformatf({"The AHB bus was still busy %0d cycles after the run phase was ready ",
+                            "to end. Either a subordinate never completed a data phase, or a ",
+                            "manager is still sending transfers."},
+                           m_eot_drain_cycles))
+    end
+
+    m_eot_objection_raised = 0;
+    phase.drop_objection(this, "AHB transfer drained");
+  end join_none
+endfunction
+
 function void ahb_monitor::set_vif(virtual ahb_if vif);
   m_vif = vif;
+endfunction
+
+function void ahb_monitor::set_eot_drain_cycles(int unsigned cycles);
+  m_eot_drain_cycles = cycles;
+endfunction
+
+function int unsigned ahb_monitor::get_eot_drain_cycles();
+  return m_eot_drain_cycles;
 endfunction
 
 task ahb_monitor::watch_interface();
@@ -109,6 +180,7 @@ task ahb_monitor::watch_until_reset();
         txn_item.m_request = req_item;
         m_transaction_port.write(txn_item);
       end
+      m_txn_in_flight = 0;
       return;
     end
 
@@ -129,7 +201,8 @@ task ahb_monitor::watch_until_reset();
       bit [127:0]  size_strb_mask = (128'd1 << (1 << req_item.m_size)) - 1;
 
       // If the muxed hready signal is low, the selected subordinate is applying back pressure and
-      // there is no transfer on this cycle. Go round the loop again.
+      // there is no transfer on this cycle. Go round the loop again. Note that m_txn_in_flight is
+      // already set, so the transfer still holds the run phase open.
       if (m_vif.mon_cb.hready !== 1'b1) begin
         continue;
       end
@@ -175,20 +248,25 @@ task ahb_monitor::watch_until_reset();
         `uvm_error(get_full_name(),
                    $sformatf("hsel signal for a request is not one-hot (hsel = 0x%0h)",
                              m_vif.mon_cb.hsel))
-        continue;
+      end else begin
+        req_item = ahb_txn_request_item::type_id::create("req_item");
+
+        req_item.m_subordinate_idx = $clog2(m_vif.mon_cb.hsel);
+        req_item.m_addr = m_vif.mon_cb.haddr;
+        req_item.m_burst = burst_e'(m_vif.mon_cb.hburst);
+        req_item.m_lock = m_vif.mon_cb.hmastlock;
+        req_item.m_prot = m_vif.mon_cb.hprot;
+        req_item.m_size = m_vif.mon_cb.hsize;
+        req_item.m_trans = trans_e'(m_vif.mon_cb.htrans);
+        req_item.m_write = m_vif.mon_cb.hwrite;
+        m_request_port.write(req_item);
       end
-
-      req_item = ahb_txn_request_item::type_id::create("req_item");
-
-      req_item.m_subordinate_idx = $clog2(m_vif.mon_cb.hsel);
-      req_item.m_addr = m_vif.mon_cb.haddr;
-      req_item.m_burst = burst_e'(m_vif.mon_cb.hburst);
-      req_item.m_lock = m_vif.mon_cb.hmastlock;
-      req_item.m_prot = m_vif.mon_cb.hprot;
-      req_item.m_size = m_vif.mon_cb.hsize;
-      req_item.m_trans = trans_e'(m_vif.mon_cb.htrans);
-      req_item.m_write = m_vif.mon_cb.hwrite;
-      m_request_port.write(req_item);
     end
+
+    // Update the in-flight flag once per clock edge, when the loop has finished deciding whether a
+    // transfer is waiting for its data phase. Setting it in the branches above instead would let it
+    // glitch low between two back-to-back transfers, which is enough for phase_ready_to_end to stop
+    // waiting in the middle of a transfer.
+    m_txn_in_flight = (req_item != null);
   end
 endtask
