@@ -4,7 +4,7 @@
 
 // An interface to track an AHB bus
 
-interface ahb_if (input clk_i, input rst_ni);
+interface ahb_if (input logic clk_i, input logic rst_ni);
   import uvm_pkg::*;
   `include "uvm_macros.svh"
   import dv_utils_pkg::if_mode_e, dv_utils_pkg::Host, dv_utils_pkg::Device, dv_utils_pkg::Monitor;
