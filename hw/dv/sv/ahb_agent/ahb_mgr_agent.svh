@@ -151,6 +151,7 @@ endfunction
 function void ahb_mgr_agent::register_subordinate_for_map(uvm_reg_map   reg_map,
                                                           int unsigned  subordinate_idx);
   uvm_reg        regs[$];
+  uvm_mem        mems[$];
   uvm_reg_addr_t addr_min = '1, addr_max = 0;
 
   if (m_layer_vseq_running) begin
@@ -159,13 +160,32 @@ function void ahb_mgr_agent::register_subordinate_for_map(uvm_reg_map   reg_map,
                 "the layered vseq is already running."})
   end
 
-  // Update addr_min, addr_max so that the range addr_min..addr_max contains every register
-  // accessible through reg_map.
+  // Update addr_min, addr_max so that the range addr_min..addr_max contains every register and
+  // every memory accessible through reg_map. Adding n_bytes to reach the last byte of an item
+  // assumes that the map is byte addressed, which is true of every map that topgen produces.
   reg_map.get_registers(regs);
   foreach (regs[i]) begin
-    uvm_reg_addr_t addr = regs[i].get_address(reg_map);
-    if (addr < addr_min) addr_min = addr;
-    if (addr_max < addr) addr_max = addr;
+    uvm_reg_addr_t addr_lo = regs[i].get_address(reg_map);
+    uvm_reg_addr_t addr_hi = addr_lo + regs[i].get_n_bytes() - 1;
+    if (addr_lo < addr_min) begin
+      addr_min = addr_lo;
+    end
+    if (addr_max < addr_hi) begin
+      addr_max = addr_hi;
+    end
+  end
+
+  reg_map.get_memories(mems);
+  foreach (mems[i]) begin
+    uvm_reg_addr_t addr_lo = mems[i].get_address(0, reg_map);
+    uvm_reg_addr_t addr_hi = mems[i].get_address(mems[i].get_size() - 1, reg_map) +
+                             mems[i].get_n_bytes() - 1;
+    if (addr_lo < addr_min) begin
+      addr_min = addr_lo;
+    end
+    if (addr_max < addr_hi) begin
+      addr_max = addr_hi;
+    end
   end
 
   if (addr_min <= addr_max) begin
