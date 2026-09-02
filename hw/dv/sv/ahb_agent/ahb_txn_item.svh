@@ -33,18 +33,24 @@ endfunction
 function void ahb_txn_item::do_copy(uvm_object rhs);
   ahb_txn_item rhs_;
 
-  if (rhs == null) `uvm_fatal("do_copy", "Cannot copy from RHS: it is null.")
-  if (!$cast(rhs_, rhs)) `uvm_fatal("do_copy", "Cannot cast RHS: wrong type?")
+  if (rhs == null) begin
+    `uvm_fatal("do_copy", "Cannot copy from RHS: it is null.")
+  end
+  if (!$cast(rhs_, rhs)) begin
+    `uvm_fatal("do_copy", "Cannot cast RHS: wrong type?")
+  end
 
   super.do_copy(rhs);
 
-  if (rhs_.m_request == null) m_request = null;
-  else if (!$cast(m_request, rhs_.m_request.clone())) begin
+  if (rhs_.m_request == null) begin
+    m_request = null;
+  end else if (!$cast(m_request, rhs_.m_request.clone())) begin
     `uvm_fatal("do_copy", "Failed to clone m_request.")
   end
 
-  if (rhs_.m_response == null) m_response = null;
-  else if (!$cast(m_response, rhs_.m_response.clone())) begin
+  if (rhs_.m_response == null) begin
+    m_response = null;
+  end else if (!$cast(m_response, rhs_.m_response.clone())) begin
     `uvm_fatal("do_copy", "Failed to clone m_response.")
   end
 endfunction

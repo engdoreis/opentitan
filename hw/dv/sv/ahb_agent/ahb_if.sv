@@ -126,8 +126,11 @@ interface ahb_if (input clk_i, input rst_ni);
   logic          hresp_muxed_internal;
 
   always_ff @(posedge clk_i or negedge rst_ni) begin
-    if (!rst_ni) data_hsel_q <= '0;
-    else         data_hsel_q <= data_hsel_d;
+    if (!rst_ni) begin
+      data_hsel_q <= '0;
+    end else begin
+      data_hsel_q <= data_hsel_d;
+    end
   end
 
   always_comb begin

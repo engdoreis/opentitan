@@ -87,8 +87,12 @@ endtask
 function void
   ahb_mgr_register_layer_vseq::set_sequencers(ahb_reg_op_sequencer_t layered_sequencer,
                                               ahb_txn_sequencer_t    ahb_sequencer);
-  if (layered_sequencer == null) `uvm_fatal(get_full_name(), "No layered sequencer")
-  if (ahb_sequencer == null)     `uvm_fatal(get_full_name(), "No ahb sequencer")
+  if (layered_sequencer == null) begin
+    `uvm_fatal(get_full_name(), "No layered sequencer")
+  end
+  if (ahb_sequencer == null) begin
+    `uvm_fatal(get_full_name(), "No ahb sequencer")
+  end
 
   m_layered_sequencer = layered_sequencer;
   m_ahb_sequencer     = ahb_sequencer;
@@ -161,7 +165,9 @@ task ahb_mgr_register_layer_vseq::send_op_item(ahb_reg_op_item item);
       // Single read
       ahb_single_read_seq read_seq = ahb_single_read_seq::type_id::create("read_seq");
 
-      if (!m_has_hprot) read_seq.m_hprot_width = 0;
+      if (!m_has_hprot) begin
+        read_seq.m_hprot_width = 0;
+      end
 
       if (!read_seq.randomize() with {
             m_subordinate_idx == local::subordinate_idx;
@@ -191,7 +197,9 @@ task ahb_mgr_register_layer_vseq::send_op_item(ahb_reg_op_item item);
       // Single write
       ahb_single_write_seq write_seq = ahb_single_write_seq::type_id::create("write_seq");
 
-      if (!m_has_hprot) write_seq.m_hprot_width = 0;
+      if (!m_has_hprot) begin
+        write_seq.m_hprot_width = 0;
+      end
 
       if (!write_seq.randomize() with {
             m_subordinate_idx == local::subordinate_idx;

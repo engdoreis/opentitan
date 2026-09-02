@@ -129,17 +129,23 @@ function void ahb_mgr_agent::connect_phase(uvm_phase phase);
 endfunction
 
 function void ahb_mgr_agent::set_vif(virtual ahb_if vif);
-  if (m_vif != null) `uvm_fatal(get_full_name(), "Cannot set vif: m_vif is already non-null.")
+  if (m_vif != null) begin
+    `uvm_fatal(get_full_name(), "Cannot set vif: m_vif is already non-null.")
+  end
   m_vif = vif;
 endfunction
 
 function ahb_txn_sequencer_t ahb_mgr_agent::get_sequencer();
-  if (m_sequencer == null) `uvm_fatal(get_full_name(), "m_sequencer is null.")
+  if (m_sequencer == null) begin
+    `uvm_fatal(get_full_name(), "m_sequencer is null.")
+  end
   return m_sequencer;
 endfunction
 
 function ahb_mgr_reg_adapter ahb_mgr_agent::get_reg_adapter();
-  if (m_reg_adapter == null) `uvm_fatal(get_full_name(), "m_reg_adapter is null.")
+  if (m_reg_adapter == null) begin
+    `uvm_fatal(get_full_name(), "m_reg_adapter is null.")
+  end
   return m_reg_adapter;
 endfunction
 
@@ -174,7 +180,9 @@ function void ahb_mgr_agent::register_subordinate_for_map(uvm_reg_map   reg_map,
 endfunction
 
 function void ahb_mgr_agent::get_subordinate_ranges(ref sub_addr_range_t ranges[$]);
-  foreach (m_subordinate_ranges[i]) ranges.push_back(m_subordinate_ranges[i]);
+  foreach (m_subordinate_ranges[i]) begin
+    ranges.push_back(m_subordinate_ranges[i]);
+  end
 endfunction
 
 task ahb_mgr_agent::run_layered_register_vseq();
@@ -199,8 +207,9 @@ task ahb_mgr_agent::run_layered_register_vseq();
 endtask
 
 function ahb_mgr_agent::layered_reg_sequencer_t ahb_mgr_agent::get_register_layering_sequencer();
-  if (m_layered_reg_sequencer == null)
+  if (m_layered_reg_sequencer == null) begin
     `uvm_fatal(get_full_name(), "m_layered_reg_sequencer is null.")
+  end
 
   return m_layered_reg_sequencer;
 endfunction

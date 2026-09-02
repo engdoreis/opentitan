@@ -43,8 +43,12 @@ endfunction
 
 function void ahb_txn_response_item::do_copy(uvm_object rhs);
   ahb_txn_response_item rhs_;
-  if (rhs == null) `uvm_fatal("do_copy", "Cannot copy from RHS: it is null.")
-  if (!$cast(rhs_, rhs)) `uvm_fatal("do_copy", "Cannot cast RHS: wrong type?")
+  if (rhs == null) begin
+    `uvm_fatal("do_copy", "Cannot copy from RHS: it is null.")
+  end
+  if (!$cast(rhs_, rhs)) begin
+    `uvm_fatal("do_copy", "Cannot cast RHS: wrong type?")
+  end
 
   super.do_copy(rhs);
   this.m_rdata = rhs_.m_rdata;

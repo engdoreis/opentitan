@@ -260,7 +260,9 @@ function bit ahb_transfer_seq::consume_response(uvm_sequence_item base_response,
   ahb_status_item       status_response;
 
   if ($cast(txn_response, base_response)) begin
-    if (!have_seen_reset) m_responses.push_back(txn_response);
+    if (!have_seen_reset) begin
+      m_responses.push_back(txn_response);
+    end
   end else if ($cast(status_response, base_response)) begin
     if (status_response.m_sending_complete) begin
       `uvm_error(get_full_name(), "Status response item sent with m_sending_complete=1.")

@@ -83,8 +83,11 @@ function void ahb_mgr_reg_adapter::bus2reg_txn(ahb_txn_item bus_item, ref uvm_re
     // width 1 << HSIZE bytes.
     rw.byte_en = (128'd1 << (1 << bus_item.m_request.m_size)) - 1;
 
-    if (bus_item.m_response == null) rw.data = 0;
-    else rw.data = bus_item.m_response.m_rdata;
+    if (bus_item.m_response == null) begin
+      rw.data = 0;
+    end else begin
+      rw.data = bus_item.m_response.m_rdata;
+    end
   end
 
   rw.status = (bus_item.m_response == null || bus_item.m_response.m_resp) ? UVM_NOT_OK : UVM_IS_OK;

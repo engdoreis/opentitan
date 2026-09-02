@@ -73,7 +73,9 @@ task ahb_monitor::watch_interface();
 
     // Check that there really has been a reset (to ensure the loop iterations take a positive
     // amount of time)
-    if (m_vif.rst_ni === 1'b1) `uvm_fatal(get_full_name(), "watch_until_reset exited early")
+    if (m_vif.rst_ni === 1'b1) begin
+      `uvm_fatal(get_full_name(), "watch_until_reset exited early")
+    end
   end
 endtask
 
