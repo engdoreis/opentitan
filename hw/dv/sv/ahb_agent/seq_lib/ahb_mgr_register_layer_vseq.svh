@@ -72,13 +72,19 @@ task ahb_mgr_register_layer_vseq::body();
       // sequence runs to completion, modifying the item in its item argument to represent the
       // response.
       //
-      // At that point, we call m_layered_sequencer.put(item). The item will have originally come
+      // At that point, we call m_layered_sequencer.put(l_item). The item will have originally come
       // from an ahb_mgr_reg_adapter and the response will now be passed back to that adapter's
       // bus2reg, which will be able to update a uvm_reg_bus_op in a uvm_reg_map, completing the
       // operation handshake.
+      //
+      // l_item must be an automatic copy taken inside the fork. The item variable is shared by
+      // every iteration of this loop, and the put below runs after send_op_item has spent many
+      // cycles on the bus, by which time a later get may well have replaced it. Without the copy,
+      // two overlapping register accesses hand each other's responses back to the uvm_reg_map.
       fork begin
-        send_op_item(item);
-        m_layered_sequencer.put(item);
+        automatic ahb_reg_op_item l_item = item;
+        send_op_item(l_item);
+        m_layered_sequencer.put(l_item);
       end join_none
     end
   end join
