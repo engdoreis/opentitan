@@ -221,7 +221,7 @@ function void ahb_transfer_seq::randomize_first_item(ahb_txn_request_item item);
         if (local::m_constrain_wstrb && m_trans != TransBusy) {
           m_wstrb == local::m_fixed_wstrb;
         }
-        (m_prot >> m_hprot_width) == '0;
+        (m_prot >> local::m_hprot_width) == '0;
       }) begin
     `uvm_fatal(get_full_name(), "Failed to randomise first item.")
   end
@@ -248,7 +248,7 @@ function void ahb_transfer_seq::randomize_later_item(ahb_txn_request_item item,
         if (local::m_constrain_wstrb && m_trans != TransBusy) {
           m_wstrb == local::m_fixed_wstrb;
         }
-        (m_prot >> m_hprot_width) == '0;
+        (m_prot >> local::m_hprot_width) == '0;
       }) begin
     `uvm_fatal(get_full_name(), "Failed to randomise item.")
   end
