@@ -172,12 +172,12 @@ interface ahb_if (input clk_i, input rst_ni);
   logic [7:0]         hsel_mask;
   logic [7:0][1023:0] sub_data_mask;
 
-  assign haddr_mask   = (64'b1 << addr_width) - 1;
-  assign hburst_mask  = (3'b1 << hburst_width) - 1;
-  assign hprot_mask   = (7'b1 << hprot_width) - 1;
-  assign data_mask    = (1024'b1 << data_width) - 1;
-  assign strb_mask    = has_write_strobes ? ((128'b1 << ((data_width + 7) / 8)) - 1) : '0;
-  assign hsel_mask    = (8'b1 << num_subordinates) - 1;
+  assign haddr_mask   = (64'd1 << addr_width) - 1;
+  assign hburst_mask  = (3'd1 << hburst_width) - 1;
+  assign hprot_mask   = (7'd1 << hprot_width) - 1;
+  assign data_mask    = (1024'd1 << data_width) - 1;
+  assign strb_mask    = has_write_strobes ? ((128'd1 << ((data_width + 7) / 8)) - 1) : '0;
+  assign hsel_mask    = (8'd1 << num_subordinates) - 1;
 
   always_comb begin
     for (int unsigned i = 0; i < 8; i++) begin
@@ -252,7 +252,7 @@ interface ahb_if (input clk_i, input rst_ni);
       hwrite_internal    = '0;
       hsel_internal      = '0;
       hrdata_internal    = '0;
-      hreadyout_internal = '0;
+      hreadyout_internal = '1;  // During reset, all Subordinates must ensure that HREADYOUT is HIGH
       hresp_internal     = '0;
     end else begin
       haddr_internal     = haddr_driven & haddr_mask;
@@ -303,7 +303,7 @@ interface ahb_if (input clk_i, input rst_ni);
   // Set the ADDR_WIDTH property. The AHB specification (issue C) does not constrain the value, but
   // we disallow widths over 64 (in order that a max-footprint approach is possible in this
   // interface).
-  function void set_addr_width(int unsigned width);
+  function automatic void set_addr_width(int unsigned width);
     if (width > 64) begin
       `uvm_error($sformatf("%m"),
                  $sformatf("Cannot set ADDR_WIDTH to %0d: max supported width is 64.",
@@ -314,7 +314,7 @@ interface ahb_if (input clk_i, input rst_ni);
   endfunction
 
   // Set the HBURST_WIDTH property. The AHB specification (issue C) only allows widths of 0 and 3.
-  function void set_hburst_width(int unsigned width);
+  function automatic void set_hburst_width(int unsigned width);
     if (width != 0 && width != 3) begin
       `uvm_error($sformatf("%m"),
                  $sformatf("Cannot set HBURST_WIDTH to %0d: allowed values are 0, 3.",
@@ -325,7 +325,7 @@ interface ahb_if (input clk_i, input rst_ni);
   endfunction
 
   // Set the HPROT_WIDTH property. The AHB specification (issue C) only allows widths of 0, 4 and 7.
-  function void set_hprot_width(int unsigned width);
+  function automatic void set_hprot_width(int unsigned width);
     if (width != 0 && width != 4 && width != 7) begin
       `uvm_error($sformatf("%m"),
                  $sformatf("Cannot set HPROT_WIDTH to %0d: allowed values are 0, 4 and 7.",
@@ -337,7 +337,7 @@ interface ahb_if (input clk_i, input rst_ni);
 
   // Set the DATA_WIDTH property. The AHB specification (issue C) only allows widths of 8, 16, 32,
   // 64, 128, 256, 512 and 1024.
-  function void set_data_width(int unsigned width);
+  function automatic void set_data_width(int unsigned width);
     if (! (width inside {8, 16, 32, 64, 128, 256, 512, 1024})) begin
       `uvm_error($sformatf("%m"),
                  $sformatf("Cannot set DATA_WIDTH to %0d: must be power of 2 between 8 and 1024.",
@@ -348,13 +348,13 @@ interface ahb_if (input clk_i, input rst_ni);
   endfunction
 
   // Configure the Write_Strobes property (if false, there is no HWSTRB signal).
-  function void set_has_write_strobes(bit enabled);
+  function automatic void set_has_write_strobes(bit enabled);
     has_write_strobes = enabled;
   endfunction
 
   // Set the number of subordinates (and thus the width of the HSEL signal). This must be in the
   // range 1..8.
-  function void set_num_subordinates(int unsigned num);
+  function automatic void set_num_subordinates(int unsigned num);
     if (num == 0 || num > 8) begin
       `uvm_error($sformatf("%m"),
                  $sformatf("Cannot set num_subordinates to %0d: number must be in the range 1..8.",

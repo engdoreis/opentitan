@@ -126,12 +126,6 @@ task ahb_mgr_register_layer_vseq::send_op_item(ahb_reg_op_item item);
   bit no_sub;
 
   int unsigned subordinate_idx = get_subordinate_for_addr(item.m_rw.addr, no_sub);
-  if (no_sub) begin
-    `uvm_error(get_full_name(),
-               $sformatf("No subordinate is associated with address 0x%0h", item.m_rw.addr))
-    item.m_rw.status = UVM_NOT_OK;
-    return;
-  end
 
   // item.m_rw.n_bits gives the number of bits that are being accessed. Since we don't support burst
   // accesses, round this up to the next value for HSIZE by dividing down to bytes (and taking the
@@ -145,6 +139,13 @@ task ahb_mgr_register_layer_vseq::send_op_item(ahb_reg_op_item item);
   // The strb value to send on a write transaction, or the byte mask to use with rdata in a read
   // response. This takes size and byte_en into account.
   bit [127:0] byte_mask = strb_from_size & item.m_rw.byte_en;
+
+  if (no_sub) begin
+    `uvm_error(get_full_name(),
+               $sformatf("No subordinate is associated with address 0x%0h", item.m_rw.addr))
+    item.m_rw.status = UVM_NOT_OK;
+    return;
+  end
 
   if (hsize > 7) begin
     `uvm_error(get_full_name(),
