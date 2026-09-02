@@ -15,6 +15,12 @@ class ahb_monitor extends uvm_monitor;
   local uvm_event saw_reset;
 
   // The analysis ports for requests, responses and complete transactions.
+  //
+  // A request is published as soon as its address phase is seen, so that a subscriber can see a
+  // transfer while its data phase is still to come. The write data of a write transfer is not known
+  // at that point, so the request that m_transaction_port carries is a copy with m_wdata and
+  // m_wstrb filled in. A transfer that is still in flight when a reset is asserted appears on
+  // m_transaction_port as an item whose m_response is null.
   uvm_analysis_port #(ahb_txn_request_item)  m_request_port;
   uvm_analysis_port #(ahb_txn_response_item) m_response_port;
   uvm_analysis_port #(ahb_txn_item)          m_transaction_port;
@@ -108,38 +114,52 @@ task ahb_monitor::watch_until_reset();
 
     // Has a request been sent? If so, the subordinate has the opportunity to generate a response.
     if (req_item != null) begin
+      ahb_txn_request_item  full_req;
       ahb_txn_response_item rsp_item;
       ahb_txn_item          txn_item;
 
       // Infer an appropriate hwstrb value to use for the item if m_vif.has_write_strobes is false.
       int unsigned addr_mod_data_width  = req_item.m_addr % (m_vif.data_width / 8);
-      int unsigned selected_idx         = req_item.m_subordinate_idx;
-      bit [127:0]  wstrb_from_size0     = (1 << (1 << req_item.m_size)) - 1;
-      bit [127:0]  wstrb_from_size_addr = wstrb_from_size0 << addr_mod_data_width;
       bit [127:0]  observed_wstrb;
 
-      // If the appropriate hreadyout signal is low, the subordinate is applying back pressure and
+      // Masks selecting the bits of a transfer of 1 << m_size bytes. AHB leaves the byte lanes
+      // outside the transfer undefined, so the captured data is masked down to the transfer before
+      // it goes into an item.
+      bit [1023:0] size_data_mask = (1024'd1 << (8 << req_item.m_size)) - 1;
+      bit [127:0]  size_strb_mask = (128'd1 << (1 << req_item.m_size)) - 1;
+
+      // If the muxed hready signal is low, the selected subordinate is applying back pressure and
       // there is no transfer on this cycle. Go round the loop again.
-      if (m_vif.mon_cb.hreadyout[selected_idx] !== 1'b1) continue;
+      if (m_vif.mon_cb.hready !== 1'b1) begin
+        continue;
+      end
 
       // The wstrb value might not actually be signalled on the bus if m_vif.has_write_strobes is
       // false. In that case, infer a write strobe from hsize.
-      observed_wstrb = m_vif.has_write_strobes ? m_vif.mon_cb.hwstrb : wstrb_from_size_addr;
+      observed_wstrb = m_vif.has_write_strobes ? m_vif.mon_cb.hwstrb
+                                               : (size_strb_mask << addr_mod_data_width);
+
+      // req_item went out on m_request_port when its address phase was seen and a subscriber may
+      // still be holding it, so the write data goes onto a copy rather than onto req_item itself.
+      // That copy is the request that m_transaction_port carries.
+      if (!$cast(full_req, req_item.clone())) begin
+        `uvm_fatal(get_full_name(), "Failed to clone the request item.")
+      end
 
       // If the transfer is a write, the data phase will have write data from the manager. Add this
-      // to req_item.
-      req_item.m_wdata = m_vif.mon_cb.hwdata >> (8 * addr_mod_data_width);
-      req_item.m_wstrb = (observed_wstrb >> addr_mod_data_width);
+      // to full_req.
+      full_req.m_wdata = (m_vif.mon_cb.hwdata >> (8 * addr_mod_data_width)) & size_data_mask;
+      full_req.m_wstrb = (observed_wstrb >> addr_mod_data_width) & size_strb_mask;
 
       // Make a response item, then pair it up with the request, sending the response and the pair
       // on their respective analysis ports.
       rsp_item = ahb_txn_response_item::type_id::create("rsp_item");
-      rsp_item.m_rdata = m_vif.mon_cb.hrdata[selected_idx] >> (8 * addr_mod_data_width);
-      rsp_item.m_resp  = m_vif.mon_cb.hresp[selected_idx];
+      rsp_item.m_rdata = (m_vif.mon_cb.hrdata_muxed >> (8 * addr_mod_data_width)) & size_data_mask;
+      rsp_item.m_resp  = m_vif.mon_cb.hresp_muxed;
       m_response_port.write(rsp_item);
 
       txn_item = ahb_txn_item::type_id::create("txn_item");
-      txn_item.m_request = req_item;
+      txn_item.m_request = full_req;
       txn_item.m_response = rsp_item;
       m_transaction_port.write(txn_item);
 
