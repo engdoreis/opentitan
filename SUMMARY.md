@@ -575,6 +575,7 @@
   - [SRAM Scrambler](./hw/ip/prim/doc/prim_ram_1p_scr.md)
 
 - [Common SystemVerilog and UVM Components](./hw/dv/sv/README.md)
+  - [AHB Agent](./hw/dv/sv/ahb_agent/README.md)
   - [ALERT_ESC Agent](./hw/dv/sv/alert_esc_agent/README.md)
   - [Bus Params Package](./hw/dv/sv/bus_params_pkg/README.md)
   - [Comportable IP Testbench Architecture](./hw/dv/sv/cip_lib/README.md)
