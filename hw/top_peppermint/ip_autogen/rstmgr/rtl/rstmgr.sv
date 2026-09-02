@@ -360,7 +360,7 @@ module rstmgr
   assign shadow_fsm_errs[1] = '0;
 
   // Generating resets for lc_main
-  // Power Domains: ['Aon', 'Main']
+  // Power Domains: ['Main', 'Aon']
   // Shadowed: True
   rstmgr_leaf_rst #(
     .SecCheck(SecCheck),
@@ -460,7 +460,7 @@ module rstmgr
   end
 
   // Generating resets for lc_aon
-  // Power Domains: ['Aon', 'Main']
+  // Power Domains: ['Main', 'Aon']
   // Shadowed: True
   rstmgr_leaf_rst #(
     .SecCheck(0),

@@ -1,0 +1,321 @@
+// Copyright lowRISC contributors (OpenTitan project).
+// Licensed under the Apache License, Version 2.0, see LICENSE for details.
+// SPDX-License-Identifier: Apache-2.0
+//
+// ------------------- W A R N I N G: A U T O - G E N E R A T E D   C O D E !! -------------------//
+// PLEASE DO NOT HAND-EDIT THIS FILE. IT HAS BEEN AUTO-GENERATED WITH THE FOLLOWING COMMAND:
+// util/topgen.py -t hw/top_peppermint/data/top_peppermint.hjson -o hw/top_peppermint/
+
+{
+  name: aon
+  domain: Aon
+  clock_srcs:
+  {
+    clk_aon_i: aon
+  }
+  clock_group: ext
+  reset: rst_aon_ni
+  reset_connections:
+  {
+    rst_aon_ni:
+    {
+      name: lc_aon
+      domain: Aon
+    }
+  }
+  clock_connections:
+  {
+    clk_aon_i: clk_aon_i
+  }
+  connections:
+  {
+    main:
+    [
+      pwrmgr
+      rstmgr
+      clkmgr
+      alert_handler
+      rv_timer_aon
+      sram_ctrl_ret_aon.regs
+      sram_ctrl_ret_aon.ram
+    ]
+  }
+  nodes:
+  [
+    {
+      name: main
+      type: host
+      addr_space: hart
+      clock: clk_aon_i
+      reset: rst_aon_ni
+      pipeline: false
+      xbar: true
+      stub: false
+      inst_type: ""
+      req_fifo_pass: true
+      rsp_fifo_pass: true
+    }
+    {
+      name: pwrmgr
+      type: device
+      clock: clk_aon_i
+      reset: rst_aon_ni
+      pipeline: false
+      inst_type: pwrmgr
+      addr_range:
+      [
+        {
+          base_addrs:
+          {
+            hart: 0x41000000
+          }
+          size_byte: 0x80
+        }
+      ]
+      xbar: false
+      stub: false
+      req_fifo_pass: true
+    }
+    {
+      name: rstmgr
+      type: device
+      clock: clk_aon_i
+      reset: rst_aon_ni
+      pipeline: false
+      inst_type: rstmgr
+      addr_range:
+      [
+        {
+          base_addrs:
+          {
+            hart: 0x41010000
+          }
+          size_byte: 0x40
+        }
+      ]
+      xbar: false
+      stub: false
+      req_fifo_pass: true
+    }
+    {
+      name: clkmgr
+      type: device
+      clock: clk_aon_i
+      reset: rst_aon_ni
+      pipeline: false
+      inst_type: clkmgr
+      addr_range:
+      [
+        {
+          base_addrs:
+          {
+            hart: 0x41020000
+          }
+          size_byte: 0x40
+        }
+      ]
+      xbar: false
+      stub: false
+      req_fifo_pass: true
+    }
+    {
+      name: alert_handler
+      type: device
+      clock: clk_aon_i
+      reset: rst_aon_ni
+      pipeline: false
+      inst_type: alert_handler
+      addr_range:
+      [
+        {
+          base_addrs:
+          {
+            hart: 0x41040000
+          }
+          size_byte: 0x800
+        }
+      ]
+      xbar: false
+      stub: false
+      req_fifo_pass: true
+    }
+    {
+      name: rv_timer_aon
+      type: device
+      clock: clk_aon_i
+      reset: rst_aon_ni
+      pipeline: false
+      inst_type: rv_timer
+      addr_range:
+      [
+        {
+          base_addrs:
+          {
+            hart: 0x41030000
+          }
+          size_byte: 0x200
+        }
+      ]
+      xbar: false
+      stub: false
+      req_fifo_pass: true
+    }
+    {
+      name: sram_ctrl_ret_aon.regs
+      type: device
+      clock: clk_aon_i
+      reset: rst_aon_ni
+      pipeline: false
+      inst_type: sram_ctrl
+      addr_range:
+      [
+        {
+          base_addrs:
+          {
+            hart: 0x41050000
+          }
+          size_byte: 0x40
+        }
+      ]
+      xbar: false
+      stub: false
+      req_fifo_pass: true
+    }
+    {
+      name: sram_ctrl_ret_aon.ram
+      type: device
+      clock: clk_aon_i
+      reset: rst_aon_ni
+      pipeline: false
+      inst_type: sram_ctrl
+      addr_range:
+      [
+        {
+          base_addrs:
+          {
+            hart: 0x41100000
+          }
+          size_byte: 0x2000
+        }
+      ]
+      xbar: false
+      stub: false
+      req_fifo_pass: true
+    }
+  ]
+  addr_spaces:
+  [
+    hart
+  ]
+  clock: clk_aon_i
+  type: xbar
+  inter_signal_list:
+  [
+    {
+      name: tl_main
+      struct: tl
+      package: tlul_pkg
+      type: req_rsp
+      act: rsp
+      inst_name: aon
+      width: 1
+      default: ""
+      domain: Aon
+      top_signame: main_tl_aon
+      index: -1
+      external: true
+      conn_type: false
+    }
+    {
+      name: tl_pwrmgr
+      struct: tl
+      package: tlul_pkg
+      type: req_rsp
+      act: req
+      inst_name: aon
+      width: 1
+      default: ""
+      domain: Aon
+      top_signame: pwrmgr_tl
+      index: -1
+    }
+    {
+      name: tl_rstmgr
+      struct: tl
+      package: tlul_pkg
+      type: req_rsp
+      act: req
+      inst_name: aon
+      width: 1
+      default: ""
+      domain: Aon
+      top_signame: rstmgr_tl
+      index: -1
+    }
+    {
+      name: tl_clkmgr
+      struct: tl
+      package: tlul_pkg
+      type: req_rsp
+      act: req
+      inst_name: aon
+      width: 1
+      default: ""
+      domain: Aon
+      top_signame: clkmgr_tl
+      index: -1
+    }
+    {
+      name: tl_alert_handler
+      struct: tl
+      package: tlul_pkg
+      type: req_rsp
+      act: req
+      inst_name: aon
+      width: 1
+      default: ""
+      domain: Aon
+      top_signame: alert_handler_tl
+      index: -1
+    }
+    {
+      name: tl_rv_timer_aon
+      struct: tl
+      package: tlul_pkg
+      type: req_rsp
+      act: req
+      inst_name: aon
+      width: 1
+      default: ""
+      domain: Aon
+      top_signame: rv_timer_aon_tl
+      index: -1
+    }
+    {
+      name: tl_sram_ctrl_ret_aon__regs
+      struct: tl
+      package: tlul_pkg
+      type: req_rsp
+      act: req
+      inst_name: aon
+      width: 1
+      default: ""
+      domain: Aon
+      top_signame: sram_ctrl_ret_aon_regs_tl
+      index: -1
+    }
+    {
+      name: tl_sram_ctrl_ret_aon__ram
+      struct: tl
+      package: tlul_pkg
+      type: req_rsp
+      act: req
+      inst_name: aon
+      width: 1
+      default: ""
+      domain: Aon
+      top_signame: sram_ctrl_ret_aon_ram_tl
+      index: -1
+    }
+  ]
+}

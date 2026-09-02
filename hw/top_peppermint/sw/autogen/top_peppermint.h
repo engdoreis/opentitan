@@ -30,94 +30,22 @@ extern "C" {
 #endif
 
 /**
- * Peripheral base address for pwrmgr in top peppermint.
+ * Peripheral base address for rv_timer in top peppermint.
  *
  * This should be used with #mmio_region_from_addr to access the memory-mapped
  * registers associated with the peripheral (usually via a DIF).
  */
-#define TOP_PEPPERMINT_PWRMGR_BASE_ADDR 0x40400000u
+#define TOP_PEPPERMINT_RV_TIMER_BASE_ADDR 0x40000000u
 
 /**
- * Peripheral size for pwrmgr in top peppermint.
+ * Peripheral size for rv_timer in top peppermint.
  *
  * This is the size (in bytes) of the peripheral's reserved memory area. All
  * memory-mapped registers associated with this peripheral should have an
- * address between #TOP_PEPPERMINT_PWRMGR_BASE_ADDR and
- * `TOP_PEPPERMINT_PWRMGR_BASE_ADDR + TOP_PEPPERMINT_PWRMGR_SIZE_BYTES`.
+ * address between #TOP_PEPPERMINT_RV_TIMER_BASE_ADDR and
+ * `TOP_PEPPERMINT_RV_TIMER_BASE_ADDR + TOP_PEPPERMINT_RV_TIMER_SIZE_BYTES`.
  */
-#define TOP_PEPPERMINT_PWRMGR_SIZE_BYTES 0x80u
-
-/**
- * Peripheral base address for rstmgr in top peppermint.
- *
- * This should be used with #mmio_region_from_addr to access the memory-mapped
- * registers associated with the peripheral (usually via a DIF).
- */
-#define TOP_PEPPERMINT_RSTMGR_BASE_ADDR 0x40410000u
-
-/**
- * Peripheral size for rstmgr in top peppermint.
- *
- * This is the size (in bytes) of the peripheral's reserved memory area. All
- * memory-mapped registers associated with this peripheral should have an
- * address between #TOP_PEPPERMINT_RSTMGR_BASE_ADDR and
- * `TOP_PEPPERMINT_RSTMGR_BASE_ADDR + TOP_PEPPERMINT_RSTMGR_SIZE_BYTES`.
- */
-#define TOP_PEPPERMINT_RSTMGR_SIZE_BYTES 0x40u
-
-/**
- * Peripheral base address for clkmgr in top peppermint.
- *
- * This should be used with #mmio_region_from_addr to access the memory-mapped
- * registers associated with the peripheral (usually via a DIF).
- */
-#define TOP_PEPPERMINT_CLKMGR_BASE_ADDR 0x40420000u
-
-/**
- * Peripheral size for clkmgr in top peppermint.
- *
- * This is the size (in bytes) of the peripheral's reserved memory area. All
- * memory-mapped registers associated with this peripheral should have an
- * address between #TOP_PEPPERMINT_CLKMGR_BASE_ADDR and
- * `TOP_PEPPERMINT_CLKMGR_BASE_ADDR + TOP_PEPPERMINT_CLKMGR_SIZE_BYTES`.
- */
-#define TOP_PEPPERMINT_CLKMGR_SIZE_BYTES 0x40u
-
-/**
- * Peripheral base address for alert_handler in top peppermint.
- *
- * This should be used with #mmio_region_from_addr to access the memory-mapped
- * registers associated with the peripheral (usually via a DIF).
- */
-#define TOP_PEPPERMINT_ALERT_HANDLER_BASE_ADDR 0x40450000u
-
-/**
- * Peripheral size for alert_handler in top peppermint.
- *
- * This is the size (in bytes) of the peripheral's reserved memory area. All
- * memory-mapped registers associated with this peripheral should have an
- * address between #TOP_PEPPERMINT_ALERT_HANDLER_BASE_ADDR and
- * `TOP_PEPPERMINT_ALERT_HANDLER_BASE_ADDR + TOP_PEPPERMINT_ALERT_HANDLER_SIZE_BYTES`.
- */
-#define TOP_PEPPERMINT_ALERT_HANDLER_SIZE_BYTES 0x800u
-
-/**
- * Peripheral base address for regs device on sram_ctrl_ret in top peppermint.
- *
- * This should be used with #mmio_region_from_addr to access the memory-mapped
- * registers associated with the peripheral (usually via a DIF).
- */
-#define TOP_PEPPERMINT_SRAM_CTRL_RET_REGS_BASE_ADDR 0x40460000u
-
-/**
- * Peripheral size for regs device on sram_ctrl_ret in top peppermint.
- *
- * This is the size (in bytes) of the peripheral's reserved memory area. All
- * memory-mapped registers associated with this peripheral should have an
- * address between #TOP_PEPPERMINT_SRAM_CTRL_RET_REGS_BASE_ADDR and
- * `TOP_PEPPERMINT_SRAM_CTRL_RET_REGS_BASE_ADDR + TOP_PEPPERMINT_SRAM_CTRL_RET_REGS_SIZE_BYTES`.
- */
-#define TOP_PEPPERMINT_SRAM_CTRL_RET_REGS_SIZE_BYTES 0x40u
+#define TOP_PEPPERMINT_RV_TIMER_SIZE_BYTES 0x200u
 
 /**
  * Peripheral base address for core device on otp_ctrl in top peppermint.
@@ -125,7 +53,7 @@ extern "C" {
  * This should be used with #mmio_region_from_addr to access the memory-mapped
  * registers associated with the peripheral (usually via a DIF).
  */
-#define TOP_PEPPERMINT_OTP_CTRL_CORE_BASE_ADDR 0x30130000u
+#define TOP_PEPPERMINT_OTP_CTRL_CORE_BASE_ADDR 0x40010000u
 
 /**
  * Peripheral size for core device on otp_ctrl in top peppermint.
@@ -143,7 +71,7 @@ extern "C" {
  * This should be used with #mmio_region_from_addr to access the memory-mapped
  * registers associated with the peripheral (usually via a DIF).
  */
-#define TOP_PEPPERMINT_OTP_MACRO_PRIM_BASE_ADDR 0x30140000u
+#define TOP_PEPPERMINT_OTP_MACRO_PRIM_BASE_ADDR 0x40020000u
 
 /**
  * Peripheral size for prim device on otp_macro in top peppermint.
@@ -161,7 +89,7 @@ extern "C" {
  * This should be used with #mmio_region_from_addr to access the memory-mapped
  * registers associated with the peripheral (usually via a DIF).
  */
-#define TOP_PEPPERMINT_LC_CTRL_REGS_BASE_ADDR 0x30150000u
+#define TOP_PEPPERMINT_LC_CTRL_REGS_BASE_ADDR 0x40030000u
 
 /**
  * Peripheral size for regs device on lc_ctrl in top peppermint.
@@ -174,84 +102,12 @@ extern "C" {
 #define TOP_PEPPERMINT_LC_CTRL_REGS_SIZE_BYTES 0x100u
 
 /**
- * Peripheral base address for regs device on rv_dm in top peppermint.
- *
- * This should be used with #mmio_region_from_addr to access the memory-mapped
- * registers associated with the peripheral (usually via a DIF).
- */
-#define TOP_PEPPERMINT_RV_DM_REGS_BASE_ADDR 0x21200000u
-
-/**
- * Peripheral size for regs device on rv_dm in top peppermint.
- *
- * This is the size (in bytes) of the peripheral's reserved memory area. All
- * memory-mapped registers associated with this peripheral should have an
- * address between #TOP_PEPPERMINT_RV_DM_REGS_BASE_ADDR and
- * `TOP_PEPPERMINT_RV_DM_REGS_BASE_ADDR + TOP_PEPPERMINT_RV_DM_REGS_SIZE_BYTES`.
- */
-#define TOP_PEPPERMINT_RV_DM_REGS_SIZE_BYTES 0x10u
-
-/**
- * Peripheral base address for mem device on rv_dm in top peppermint.
- *
- * This should be used with #mmio_region_from_addr to access the memory-mapped
- * registers associated with the peripheral (usually via a DIF).
- */
-#define TOP_PEPPERMINT_RV_DM_MEM_BASE_ADDR 0x50000u
-
-/**
- * Peripheral size for mem device on rv_dm in top peppermint.
- *
- * This is the size (in bytes) of the peripheral's reserved memory area. All
- * memory-mapped registers associated with this peripheral should have an
- * address between #TOP_PEPPERMINT_RV_DM_MEM_BASE_ADDR and
- * `TOP_PEPPERMINT_RV_DM_MEM_BASE_ADDR + TOP_PEPPERMINT_RV_DM_MEM_SIZE_BYTES`.
- */
-#define TOP_PEPPERMINT_RV_DM_MEM_SIZE_BYTES 0x1000u
-
-/**
- * Peripheral base address for rv_plic in top peppermint.
- *
- * This should be used with #mmio_region_from_addr to access the memory-mapped
- * registers associated with the peripheral (usually via a DIF).
- */
-#define TOP_PEPPERMINT_RV_PLIC_BASE_ADDR 0x28000000u
-
-/**
- * Peripheral size for rv_plic in top peppermint.
- *
- * This is the size (in bytes) of the peripheral's reserved memory area. All
- * memory-mapped registers associated with this peripheral should have an
- * address between #TOP_PEPPERMINT_RV_PLIC_BASE_ADDR and
- * `TOP_PEPPERMINT_RV_PLIC_BASE_ADDR + TOP_PEPPERMINT_RV_PLIC_SIZE_BYTES`.
- */
-#define TOP_PEPPERMINT_RV_PLIC_SIZE_BYTES 0x8000000u
-
-/**
- * Peripheral base address for rv_timer in top peppermint.
- *
- * This should be used with #mmio_region_from_addr to access the memory-mapped
- * registers associated with the peripheral (usually via a DIF).
- */
-#define TOP_PEPPERMINT_RV_TIMER_BASE_ADDR 0x21190000u
-
-/**
- * Peripheral size for rv_timer in top peppermint.
- *
- * This is the size (in bytes) of the peripheral's reserved memory area. All
- * memory-mapped registers associated with this peripheral should have an
- * address between #TOP_PEPPERMINT_RV_TIMER_BASE_ADDR and
- * `TOP_PEPPERMINT_RV_TIMER_BASE_ADDR + TOP_PEPPERMINT_RV_TIMER_SIZE_BYTES`.
- */
-#define TOP_PEPPERMINT_RV_TIMER_SIZE_BYTES 0x200u
-
-/**
  * Peripheral base address for aes in top peppermint.
  *
  * This should be used with #mmio_region_from_addr to access the memory-mapped
  * registers associated with the peripheral (usually via a DIF).
  */
-#define TOP_PEPPERMINT_AES_BASE_ADDR 0x21100000u
+#define TOP_PEPPERMINT_AES_BASE_ADDR 0x40100000u
 
 /**
  * Peripheral size for aes in top peppermint.
@@ -269,7 +125,7 @@ extern "C" {
  * This should be used with #mmio_region_from_addr to access the memory-mapped
  * registers associated with the peripheral (usually via a DIF).
  */
-#define TOP_PEPPERMINT_HMAC_BASE_ADDR 0x21110000u
+#define TOP_PEPPERMINT_HMAC_BASE_ADDR 0x40110000u
 
 /**
  * Peripheral size for hmac in top peppermint.
@@ -287,7 +143,7 @@ extern "C" {
  * This should be used with #mmio_region_from_addr to access the memory-mapped
  * registers associated with the peripheral (usually via a DIF).
  */
-#define TOP_PEPPERMINT_KMAC_BASE_ADDR 0x21120000u
+#define TOP_PEPPERMINT_KMAC_BASE_ADDR 0x40120000u
 
 /**
  * Peripheral size for kmac in top peppermint.
@@ -305,7 +161,7 @@ extern "C" {
  * This should be used with #mmio_region_from_addr to access the memory-mapped
  * registers associated with the peripheral (usually via a DIF).
  */
-#define TOP_PEPPERMINT_OTBN_BASE_ADDR 0x21130000u
+#define TOP_PEPPERMINT_OTBN_BASE_ADDR 0x40130000u
 
 /**
  * Peripheral size for otbn in top peppermint.
@@ -323,7 +179,7 @@ extern "C" {
  * This should be used with #mmio_region_from_addr to access the memory-mapped
  * registers associated with the peripheral (usually via a DIF).
  */
-#define TOP_PEPPERMINT_KEYMGR_DPE_BASE_ADDR 0x21140000u
+#define TOP_PEPPERMINT_KEYMGR_DPE_BASE_ADDR 0x40140000u
 
 /**
  * Peripheral size for keymgr_dpe in top peppermint.
@@ -341,7 +197,7 @@ extern "C" {
  * This should be used with #mmio_region_from_addr to access the memory-mapped
  * registers associated with the peripheral (usually via a DIF).
  */
-#define TOP_PEPPERMINT_CSRNG_BASE_ADDR 0x21150000u
+#define TOP_PEPPERMINT_CSRNG_BASE_ADDR 0x40150000u
 
 /**
  * Peripheral size for csrng in top peppermint.
@@ -359,7 +215,7 @@ extern "C" {
  * This should be used with #mmio_region_from_addr to access the memory-mapped
  * registers associated with the peripheral (usually via a DIF).
  */
-#define TOP_PEPPERMINT_ENTROPY_SRC_BASE_ADDR 0x21160000u
+#define TOP_PEPPERMINT_ENTROPY_SRC_BASE_ADDR 0x40160000u
 
 /**
  * Peripheral size for entropy_src in top peppermint.
@@ -377,7 +233,7 @@ extern "C" {
  * This should be used with #mmio_region_from_addr to access the memory-mapped
  * registers associated with the peripheral (usually via a DIF).
  */
-#define TOP_PEPPERMINT_EDN0_BASE_ADDR 0x21170000u
+#define TOP_PEPPERMINT_EDN0_BASE_ADDR 0x40170000u
 
 /**
  * Peripheral size for edn0 in top peppermint.
@@ -395,7 +251,7 @@ extern "C" {
  * This should be used with #mmio_region_from_addr to access the memory-mapped
  * registers associated with the peripheral (usually via a DIF).
  */
-#define TOP_PEPPERMINT_EDN1_BASE_ADDR 0x21180000u
+#define TOP_PEPPERMINT_EDN1_BASE_ADDR 0x40180000u
 
 /**
  * Peripheral size for edn1 in top peppermint.
@@ -413,7 +269,7 @@ extern "C" {
  * This should be used with #mmio_region_from_addr to access the memory-mapped
  * registers associated with the peripheral (usually via a DIF).
  */
-#define TOP_PEPPERMINT_SRAM_CTRL_MAIN_REGS_BASE_ADDR 0x211C0000u
+#define TOP_PEPPERMINT_SRAM_CTRL_MAIN_REGS_BASE_ADDR 0x40200000u
 
 /**
  * Peripheral size for regs device on sram_ctrl_main in top peppermint.
@@ -431,7 +287,7 @@ extern "C" {
  * This should be used with #mmio_region_from_addr to access the memory-mapped
  * registers associated with the peripheral (usually via a DIF).
  */
-#define TOP_PEPPERMINT_ROM_CTRL_REGS_BASE_ADDR 0x211E0000u
+#define TOP_PEPPERMINT_ROM_CTRL_REGS_BASE_ADDR 0x40210000u
 
 /**
  * Peripheral size for regs device on rom_ctrl in top peppermint.
@@ -444,12 +300,66 @@ extern "C" {
 #define TOP_PEPPERMINT_ROM_CTRL_REGS_SIZE_BYTES 0x80u
 
 /**
+ * Peripheral base address for cfg device on rv_core_ibex in top peppermint.
+ *
+ * This should be used with #mmio_region_from_addr to access the memory-mapped
+ * registers associated with the peripheral (usually via a DIF).
+ */
+#define TOP_PEPPERMINT_RV_CORE_IBEX_CFG_BASE_ADDR 0x40220000u
+
+/**
+ * Peripheral size for cfg device on rv_core_ibex in top peppermint.
+ *
+ * This is the size (in bytes) of the peripheral's reserved memory area. All
+ * memory-mapped registers associated with this peripheral should have an
+ * address between #TOP_PEPPERMINT_RV_CORE_IBEX_CFG_BASE_ADDR and
+ * `TOP_PEPPERMINT_RV_CORE_IBEX_CFG_BASE_ADDR + TOP_PEPPERMINT_RV_CORE_IBEX_CFG_SIZE_BYTES`.
+ */
+#define TOP_PEPPERMINT_RV_CORE_IBEX_CFG_SIZE_BYTES 0x800u
+
+/**
+ * Peripheral base address for regs device on rv_dm in top peppermint.
+ *
+ * This should be used with #mmio_region_from_addr to access the memory-mapped
+ * registers associated with the peripheral (usually via a DIF).
+ */
+#define TOP_PEPPERMINT_RV_DM_REGS_BASE_ADDR 0x40230000u
+
+/**
+ * Peripheral size for regs device on rv_dm in top peppermint.
+ *
+ * This is the size (in bytes) of the peripheral's reserved memory area. All
+ * memory-mapped registers associated with this peripheral should have an
+ * address between #TOP_PEPPERMINT_RV_DM_REGS_BASE_ADDR and
+ * `TOP_PEPPERMINT_RV_DM_REGS_BASE_ADDR + TOP_PEPPERMINT_RV_DM_REGS_SIZE_BYTES`.
+ */
+#define TOP_PEPPERMINT_RV_DM_REGS_SIZE_BYTES 0x10u
+
+/**
+ * Peripheral base address for mem device on rv_dm in top peppermint.
+ *
+ * This should be used with #mmio_region_from_addr to access the memory-mapped
+ * registers associated with the peripheral (usually via a DIF).
+ */
+#define TOP_PEPPERMINT_RV_DM_MEM_BASE_ADDR 0x10000u
+
+/**
+ * Peripheral size for mem device on rv_dm in top peppermint.
+ *
+ * This is the size (in bytes) of the peripheral's reserved memory area. All
+ * memory-mapped registers associated with this peripheral should have an
+ * address between #TOP_PEPPERMINT_RV_DM_MEM_BASE_ADDR and
+ * `TOP_PEPPERMINT_RV_DM_MEM_BASE_ADDR + TOP_PEPPERMINT_RV_DM_MEM_SIZE_BYTES`.
+ */
+#define TOP_PEPPERMINT_RV_DM_MEM_SIZE_BYTES 0x1000u
+
+/**
  * Peripheral base address for dma in top peppermint.
  *
  * This should be used with #mmio_region_from_addr to access the memory-mapped
  * registers associated with the peripheral (usually via a DIF).
  */
-#define TOP_PEPPERMINT_DMA_BASE_ADDR 0x22010000u
+#define TOP_PEPPERMINT_DMA_BASE_ADDR 0x40300000u
 
 /**
  * Peripheral size for dma in top peppermint.
@@ -467,7 +377,7 @@ extern "C" {
  * This should be used with #mmio_region_from_addr to access the memory-mapped
  * registers associated with the peripheral (usually via a DIF).
  */
-#define TOP_PEPPERMINT_MBX0_CORE_BASE_ADDR 0x22000000u
+#define TOP_PEPPERMINT_MBX0_CORE_BASE_ADDR 0x40310000u
 
 /**
  * Peripheral size for core device on mbx0 in top peppermint.
@@ -485,7 +395,7 @@ extern "C" {
  * This should be used with #mmio_region_from_addr to access the memory-mapped
  * registers associated with the peripheral (usually via a DIF).
  */
-#define TOP_PEPPERMINT_MBX1_CORE_BASE_ADDR 0x22000100u
+#define TOP_PEPPERMINT_MBX1_CORE_BASE_ADDR 0x40320000u
 
 /**
  * Peripheral size for core device on mbx1 in top peppermint.
@@ -498,33 +408,113 @@ extern "C" {
 #define TOP_PEPPERMINT_MBX1_CORE_SIZE_BYTES 0x80u
 
 /**
- * Peripheral base address for cfg device on rv_core_ibex in top peppermint.
+ * Peripheral base address for pwrmgr in top peppermint.
  *
  * This should be used with #mmio_region_from_addr to access the memory-mapped
  * registers associated with the peripheral (usually via a DIF).
  */
-#define TOP_PEPPERMINT_RV_CORE_IBEX_CFG_BASE_ADDR 0x211F0000u
+#define TOP_PEPPERMINT_PWRMGR_BASE_ADDR 0x41000000u
 
 /**
- * Peripheral size for cfg device on rv_core_ibex in top peppermint.
+ * Peripheral size for pwrmgr in top peppermint.
  *
  * This is the size (in bytes) of the peripheral's reserved memory area. All
  * memory-mapped registers associated with this peripheral should have an
- * address between #TOP_PEPPERMINT_RV_CORE_IBEX_CFG_BASE_ADDR and
- * `TOP_PEPPERMINT_RV_CORE_IBEX_CFG_BASE_ADDR + TOP_PEPPERMINT_RV_CORE_IBEX_CFG_SIZE_BYTES`.
+ * address between #TOP_PEPPERMINT_PWRMGR_BASE_ADDR and
+ * `TOP_PEPPERMINT_PWRMGR_BASE_ADDR + TOP_PEPPERMINT_PWRMGR_SIZE_BYTES`.
  */
-#define TOP_PEPPERMINT_RV_CORE_IBEX_CFG_SIZE_BYTES 0x800u
-
-
-/**
- * Memory base address for ram memory on sram_ctrl_ret in top peppermint.
- */
-#define TOP_PEPPERMINT_SRAM_CTRL_RET_RAM_BASE_ADDR 0x40470000u
+#define TOP_PEPPERMINT_PWRMGR_SIZE_BYTES 0x80u
 
 /**
- * Memory size for ram memory on sram_ctrl_ret in top peppermint.
+ * Peripheral base address for rstmgr in top peppermint.
+ *
+ * This should be used with #mmio_region_from_addr to access the memory-mapped
+ * registers associated with the peripheral (usually via a DIF).
  */
-#define TOP_PEPPERMINT_SRAM_CTRL_RET_RAM_SIZE_BYTES 0x2000u
+#define TOP_PEPPERMINT_RSTMGR_BASE_ADDR 0x41010000u
+
+/**
+ * Peripheral size for rstmgr in top peppermint.
+ *
+ * This is the size (in bytes) of the peripheral's reserved memory area. All
+ * memory-mapped registers associated with this peripheral should have an
+ * address between #TOP_PEPPERMINT_RSTMGR_BASE_ADDR and
+ * `TOP_PEPPERMINT_RSTMGR_BASE_ADDR + TOP_PEPPERMINT_RSTMGR_SIZE_BYTES`.
+ */
+#define TOP_PEPPERMINT_RSTMGR_SIZE_BYTES 0x40u
+
+/**
+ * Peripheral base address for clkmgr in top peppermint.
+ *
+ * This should be used with #mmio_region_from_addr to access the memory-mapped
+ * registers associated with the peripheral (usually via a DIF).
+ */
+#define TOP_PEPPERMINT_CLKMGR_BASE_ADDR 0x41020000u
+
+/**
+ * Peripheral size for clkmgr in top peppermint.
+ *
+ * This is the size (in bytes) of the peripheral's reserved memory area. All
+ * memory-mapped registers associated with this peripheral should have an
+ * address between #TOP_PEPPERMINT_CLKMGR_BASE_ADDR and
+ * `TOP_PEPPERMINT_CLKMGR_BASE_ADDR + TOP_PEPPERMINT_CLKMGR_SIZE_BYTES`.
+ */
+#define TOP_PEPPERMINT_CLKMGR_SIZE_BYTES 0x40u
+
+/**
+ * Peripheral base address for alert_handler in top peppermint.
+ *
+ * This should be used with #mmio_region_from_addr to access the memory-mapped
+ * registers associated with the peripheral (usually via a DIF).
+ */
+#define TOP_PEPPERMINT_ALERT_HANDLER_BASE_ADDR 0x41040000u
+
+/**
+ * Peripheral size for alert_handler in top peppermint.
+ *
+ * This is the size (in bytes) of the peripheral's reserved memory area. All
+ * memory-mapped registers associated with this peripheral should have an
+ * address between #TOP_PEPPERMINT_ALERT_HANDLER_BASE_ADDR and
+ * `TOP_PEPPERMINT_ALERT_HANDLER_BASE_ADDR + TOP_PEPPERMINT_ALERT_HANDLER_SIZE_BYTES`.
+ */
+#define TOP_PEPPERMINT_ALERT_HANDLER_SIZE_BYTES 0x800u
+
+/**
+ * Peripheral base address for regs device on sram_ctrl_ret in top peppermint.
+ *
+ * This should be used with #mmio_region_from_addr to access the memory-mapped
+ * registers associated with the peripheral (usually via a DIF).
+ */
+#define TOP_PEPPERMINT_SRAM_CTRL_RET_REGS_BASE_ADDR 0x41050000u
+
+/**
+ * Peripheral size for regs device on sram_ctrl_ret in top peppermint.
+ *
+ * This is the size (in bytes) of the peripheral's reserved memory area. All
+ * memory-mapped registers associated with this peripheral should have an
+ * address between #TOP_PEPPERMINT_SRAM_CTRL_RET_REGS_BASE_ADDR and
+ * `TOP_PEPPERMINT_SRAM_CTRL_RET_REGS_BASE_ADDR + TOP_PEPPERMINT_SRAM_CTRL_RET_REGS_SIZE_BYTES`.
+ */
+#define TOP_PEPPERMINT_SRAM_CTRL_RET_REGS_SIZE_BYTES 0x40u
+
+/**
+ * Peripheral base address for rv_plic in top peppermint.
+ *
+ * This should be used with #mmio_region_from_addr to access the memory-mapped
+ * registers associated with the peripheral (usually via a DIF).
+ */
+#define TOP_PEPPERMINT_RV_PLIC_BASE_ADDR 0x48000000u
+
+/**
+ * Peripheral size for rv_plic in top peppermint.
+ *
+ * This is the size (in bytes) of the peripheral's reserved memory area. All
+ * memory-mapped registers associated with this peripheral should have an
+ * address between #TOP_PEPPERMINT_RV_PLIC_BASE_ADDR and
+ * `TOP_PEPPERMINT_RV_PLIC_BASE_ADDR + TOP_PEPPERMINT_RV_PLIC_SIZE_BYTES`.
+ */
+#define TOP_PEPPERMINT_RV_PLIC_SIZE_BYTES 0x8000000u
+
 
 /**
  * Memory base address for ram memory on sram_ctrl_main in top peppermint.
@@ -539,12 +529,22 @@ extern "C" {
 /**
  * Memory base address for rom memory on rom_ctrl in top peppermint.
  */
-#define TOP_PEPPERMINT_ROM_CTRL_ROM_BASE_ADDR 0x20000u
+#define TOP_PEPPERMINT_ROM_CTRL_ROM_BASE_ADDR 0x40000u
 
 /**
  * Memory size for rom memory on rom_ctrl in top peppermint.
  */
 #define TOP_PEPPERMINT_ROM_CTRL_ROM_SIZE_BYTES 0x20000u
+
+/**
+ * Memory base address for ram memory on sram_ctrl_ret in top peppermint.
+ */
+#define TOP_PEPPERMINT_SRAM_CTRL_RET_RAM_BASE_ADDR 0x41100000u
+
+/**
+ * Memory size for ram memory on sram_ctrl_ret in top peppermint.
+ */
+#define TOP_PEPPERMINT_SRAM_CTRL_RET_RAM_SIZE_BYTES 0x2000u
 
 /**
  * Memory base address for ctn memory on ahb_bridge in top peppermint.
@@ -554,7 +554,7 @@ extern "C" {
 /**
  * Memory size for ctn memory on ahb_bridge in top peppermint.
  */
-#define TOP_PEPPERMINT_AHB_BRIDGE_CTN_SIZE_BYTES 0x10000000u
+#define TOP_PEPPERMINT_AHB_BRIDGE_CTN_SIZE_BYTES 0x80000000u
 
 
 /**
@@ -565,21 +565,21 @@ extern "C" {
  */
 typedef enum top_peppermint_plic_peripheral {
   kTopPeppermintPlicPeripheralUnknown = 0, /**< Unknown Peripheral */
-  kTopPeppermintPlicPeripheralPwrmgr = 1, /**< pwrmgr */
-  kTopPeppermintPlicPeripheralAlertHandler = 2, /**< alert_handler */
-  kTopPeppermintPlicPeripheralOtpCtrl = 3, /**< otp_ctrl */
-  kTopPeppermintPlicPeripheralRvTimer = 4, /**< rv_timer */
-  kTopPeppermintPlicPeripheralHmac = 5, /**< hmac */
-  kTopPeppermintPlicPeripheralKmac = 6, /**< kmac */
-  kTopPeppermintPlicPeripheralOtbn = 7, /**< otbn */
-  kTopPeppermintPlicPeripheralKeymgrDpe = 8, /**< keymgr_dpe */
-  kTopPeppermintPlicPeripheralCsrng = 9, /**< csrng */
-  kTopPeppermintPlicPeripheralEntropySrc = 10, /**< entropy_src */
-  kTopPeppermintPlicPeripheralEdn0 = 11, /**< edn0 */
-  kTopPeppermintPlicPeripheralEdn1 = 12, /**< edn1 */
-  kTopPeppermintPlicPeripheralDma = 13, /**< dma */
-  kTopPeppermintPlicPeripheralMbx0 = 14, /**< mbx0 */
-  kTopPeppermintPlicPeripheralMbx1 = 15, /**< mbx1 */
+  kTopPeppermintPlicPeripheralRvTimer = 1, /**< rv_timer */
+  kTopPeppermintPlicPeripheralOtpCtrl = 2, /**< otp_ctrl */
+  kTopPeppermintPlicPeripheralHmac = 3, /**< hmac */
+  kTopPeppermintPlicPeripheralKmac = 4, /**< kmac */
+  kTopPeppermintPlicPeripheralOtbn = 5, /**< otbn */
+  kTopPeppermintPlicPeripheralKeymgrDpe = 6, /**< keymgr_dpe */
+  kTopPeppermintPlicPeripheralCsrng = 7, /**< csrng */
+  kTopPeppermintPlicPeripheralEntropySrc = 8, /**< entropy_src */
+  kTopPeppermintPlicPeripheralEdn0 = 9, /**< edn0 */
+  kTopPeppermintPlicPeripheralEdn1 = 10, /**< edn1 */
+  kTopPeppermintPlicPeripheralDma = 11, /**< dma */
+  kTopPeppermintPlicPeripheralMbx0 = 12, /**< mbx0 */
+  kTopPeppermintPlicPeripheralMbx1 = 13, /**< mbx1 */
+  kTopPeppermintPlicPeripheralPwrmgr = 14, /**< pwrmgr */
+  kTopPeppermintPlicPeripheralAlertHandler = 15, /**< alert_handler */
   kTopPeppermintPlicPeripheralLast = 15, /**< \internal Final PLIC peripheral */
 } top_peppermint_plic_peripheral_t;
 
@@ -591,43 +591,43 @@ typedef enum top_peppermint_plic_peripheral {
  */
 typedef enum top_peppermint_plic_irq_id {
   kTopPeppermintPlicIrqIdNone = 0, /**< No Interrupt */
-  kTopPeppermintPlicIrqIdPwrmgrWakeup = 1, /**< pwrmgr_wakeup */
-  kTopPeppermintPlicIrqIdAlertHandlerClassa = 2, /**< alert_handler_classa */
-  kTopPeppermintPlicIrqIdAlertHandlerClassb = 3, /**< alert_handler_classb */
-  kTopPeppermintPlicIrqIdAlertHandlerClassc = 4, /**< alert_handler_classc */
-  kTopPeppermintPlicIrqIdAlertHandlerClassd = 5, /**< alert_handler_classd */
-  kTopPeppermintPlicIrqIdOtpCtrlOtpOperationDone = 6, /**< otp_ctrl_otp_operation_done */
-  kTopPeppermintPlicIrqIdOtpCtrlOtpError = 7, /**< otp_ctrl_otp_error */
-  kTopPeppermintPlicIrqIdRvTimerTimerExpiredHart0Timer0 = 8, /**< rv_timer_timer_expired_hart0_timer0 */
-  kTopPeppermintPlicIrqIdHmacHmacDone = 9, /**< hmac_hmac_done */
-  kTopPeppermintPlicIrqIdHmacFifoEmpty = 10, /**< hmac_fifo_empty */
-  kTopPeppermintPlicIrqIdHmacHmacErr = 11, /**< hmac_hmac_err */
-  kTopPeppermintPlicIrqIdKmacKmacDone = 12, /**< kmac_kmac_done */
-  kTopPeppermintPlicIrqIdKmacFifoEmpty = 13, /**< kmac_fifo_empty */
-  kTopPeppermintPlicIrqIdKmacKmacErr = 14, /**< kmac_kmac_err */
-  kTopPeppermintPlicIrqIdOtbnDone = 15, /**< otbn_done */
-  kTopPeppermintPlicIrqIdKeymgrDpeOpDone = 16, /**< keymgr_dpe_op_done */
-  kTopPeppermintPlicIrqIdCsrngCsCmdReqDone = 17, /**< csrng_cs_cmd_req_done */
-  kTopPeppermintPlicIrqIdCsrngCsEntropyReq = 18, /**< csrng_cs_entropy_req */
-  kTopPeppermintPlicIrqIdCsrngCsHwInstExc = 19, /**< csrng_cs_hw_inst_exc */
-  kTopPeppermintPlicIrqIdCsrngCsFatalErr = 20, /**< csrng_cs_fatal_err */
-  kTopPeppermintPlicIrqIdEntropySrcEsEntropyValid = 21, /**< entropy_src_es_entropy_valid */
-  kTopPeppermintPlicIrqIdEntropySrcEsHealthTestFailed = 22, /**< entropy_src_es_health_test_failed */
-  kTopPeppermintPlicIrqIdEntropySrcEsObserveFifoReady = 23, /**< entropy_src_es_observe_fifo_ready */
-  kTopPeppermintPlicIrqIdEntropySrcEsFatalErr = 24, /**< entropy_src_es_fatal_err */
-  kTopPeppermintPlicIrqIdEdn0EdnCmdReqDone = 25, /**< edn0_edn_cmd_req_done */
-  kTopPeppermintPlicIrqIdEdn0EdnFatalErr = 26, /**< edn0_edn_fatal_err */
-  kTopPeppermintPlicIrqIdEdn1EdnCmdReqDone = 27, /**< edn1_edn_cmd_req_done */
-  kTopPeppermintPlicIrqIdEdn1EdnFatalErr = 28, /**< edn1_edn_fatal_err */
-  kTopPeppermintPlicIrqIdDmaDmaDone = 29, /**< dma_dma_done */
-  kTopPeppermintPlicIrqIdDmaDmaChunkDone = 30, /**< dma_dma_chunk_done */
-  kTopPeppermintPlicIrqIdDmaDmaError = 31, /**< dma_dma_error */
-  kTopPeppermintPlicIrqIdMbx0MbxReady = 32, /**< mbx0_mbx_ready */
-  kTopPeppermintPlicIrqIdMbx0MbxAbort = 33, /**< mbx0_mbx_abort */
-  kTopPeppermintPlicIrqIdMbx0MbxError = 34, /**< mbx0_mbx_error */
-  kTopPeppermintPlicIrqIdMbx1MbxReady = 35, /**< mbx1_mbx_ready */
-  kTopPeppermintPlicIrqIdMbx1MbxAbort = 36, /**< mbx1_mbx_abort */
-  kTopPeppermintPlicIrqIdMbx1MbxError = 37, /**< mbx1_mbx_error */
+  kTopPeppermintPlicIrqIdRvTimerTimerExpiredHart0Timer0 = 1, /**< rv_timer_timer_expired_hart0_timer0 */
+  kTopPeppermintPlicIrqIdOtpCtrlOtpOperationDone = 2, /**< otp_ctrl_otp_operation_done */
+  kTopPeppermintPlicIrqIdOtpCtrlOtpError = 3, /**< otp_ctrl_otp_error */
+  kTopPeppermintPlicIrqIdHmacHmacDone = 4, /**< hmac_hmac_done */
+  kTopPeppermintPlicIrqIdHmacFifoEmpty = 5, /**< hmac_fifo_empty */
+  kTopPeppermintPlicIrqIdHmacHmacErr = 6, /**< hmac_hmac_err */
+  kTopPeppermintPlicIrqIdKmacKmacDone = 7, /**< kmac_kmac_done */
+  kTopPeppermintPlicIrqIdKmacFifoEmpty = 8, /**< kmac_fifo_empty */
+  kTopPeppermintPlicIrqIdKmacKmacErr = 9, /**< kmac_kmac_err */
+  kTopPeppermintPlicIrqIdOtbnDone = 10, /**< otbn_done */
+  kTopPeppermintPlicIrqIdKeymgrDpeOpDone = 11, /**< keymgr_dpe_op_done */
+  kTopPeppermintPlicIrqIdCsrngCsCmdReqDone = 12, /**< csrng_cs_cmd_req_done */
+  kTopPeppermintPlicIrqIdCsrngCsEntropyReq = 13, /**< csrng_cs_entropy_req */
+  kTopPeppermintPlicIrqIdCsrngCsHwInstExc = 14, /**< csrng_cs_hw_inst_exc */
+  kTopPeppermintPlicIrqIdCsrngCsFatalErr = 15, /**< csrng_cs_fatal_err */
+  kTopPeppermintPlicIrqIdEntropySrcEsEntropyValid = 16, /**< entropy_src_es_entropy_valid */
+  kTopPeppermintPlicIrqIdEntropySrcEsHealthTestFailed = 17, /**< entropy_src_es_health_test_failed */
+  kTopPeppermintPlicIrqIdEntropySrcEsObserveFifoReady = 18, /**< entropy_src_es_observe_fifo_ready */
+  kTopPeppermintPlicIrqIdEntropySrcEsFatalErr = 19, /**< entropy_src_es_fatal_err */
+  kTopPeppermintPlicIrqIdEdn0EdnCmdReqDone = 20, /**< edn0_edn_cmd_req_done */
+  kTopPeppermintPlicIrqIdEdn0EdnFatalErr = 21, /**< edn0_edn_fatal_err */
+  kTopPeppermintPlicIrqIdEdn1EdnCmdReqDone = 22, /**< edn1_edn_cmd_req_done */
+  kTopPeppermintPlicIrqIdEdn1EdnFatalErr = 23, /**< edn1_edn_fatal_err */
+  kTopPeppermintPlicIrqIdDmaDmaDone = 24, /**< dma_dma_done */
+  kTopPeppermintPlicIrqIdDmaDmaChunkDone = 25, /**< dma_dma_chunk_done */
+  kTopPeppermintPlicIrqIdDmaDmaError = 26, /**< dma_dma_error */
+  kTopPeppermintPlicIrqIdMbx0MbxReady = 27, /**< mbx0_mbx_ready */
+  kTopPeppermintPlicIrqIdMbx0MbxAbort = 28, /**< mbx0_mbx_abort */
+  kTopPeppermintPlicIrqIdMbx0MbxError = 29, /**< mbx0_mbx_error */
+  kTopPeppermintPlicIrqIdMbx1MbxReady = 30, /**< mbx1_mbx_ready */
+  kTopPeppermintPlicIrqIdMbx1MbxAbort = 31, /**< mbx1_mbx_abort */
+  kTopPeppermintPlicIrqIdMbx1MbxError = 32, /**< mbx1_mbx_error */
+  kTopPeppermintPlicIrqIdPwrmgrWakeup = 33, /**< pwrmgr_wakeup */
+  kTopPeppermintPlicIrqIdAlertHandlerClassa = 34, /**< alert_handler_classa */
+  kTopPeppermintPlicIrqIdAlertHandlerClassb = 35, /**< alert_handler_classb */
+  kTopPeppermintPlicIrqIdAlertHandlerClassc = 36, /**< alert_handler_classc */
+  kTopPeppermintPlicIrqIdAlertHandlerClassd = 37, /**< alert_handler_classd */
   kTopPeppermintPlicIrqIdSocIrq0 = 38, /**< soc_irq_0 */
   kTopPeppermintPlicIrqIdSocIrq1 = 39, /**< soc_irq_1 */
   kTopPeppermintPlicIrqIdSocIrq2 = 40, /**< soc_irq_2 */
@@ -664,30 +664,30 @@ typedef enum top_peppermint_plic_target {
  */
 typedef enum top_peppermint_alert_peripheral {
   kTopPeppermintAlertPeripheralExternal = 0, /**< External Peripheral */
-  kTopPeppermintAlertPeripheralPwrmgr = 1, /**< pwrmgr */
-  kTopPeppermintAlertPeripheralRstmgr = 2, /**< rstmgr */
-  kTopPeppermintAlertPeripheralClkmgr = 3, /**< clkmgr */
-  kTopPeppermintAlertPeripheralSramCtrlRet = 4, /**< sram_ctrl_ret */
-  kTopPeppermintAlertPeripheralOtpCtrl = 5, /**< otp_ctrl */
-  kTopPeppermintAlertPeripheralLcCtrl = 6, /**< lc_ctrl */
-  kTopPeppermintAlertPeripheralRvDm = 7, /**< rv_dm */
-  kTopPeppermintAlertPeripheralRvPlic = 8, /**< rv_plic */
-  kTopPeppermintAlertPeripheralRvTimer = 9, /**< rv_timer */
-  kTopPeppermintAlertPeripheralAes = 10, /**< aes */
-  kTopPeppermintAlertPeripheralHmac = 11, /**< hmac */
-  kTopPeppermintAlertPeripheralKmac = 12, /**< kmac */
-  kTopPeppermintAlertPeripheralOtbn = 13, /**< otbn */
-  kTopPeppermintAlertPeripheralKeymgrDpe = 14, /**< keymgr_dpe */
-  kTopPeppermintAlertPeripheralCsrng = 15, /**< csrng */
-  kTopPeppermintAlertPeripheralEntropySrc = 16, /**< entropy_src */
-  kTopPeppermintAlertPeripheralEdn0 = 17, /**< edn0 */
-  kTopPeppermintAlertPeripheralEdn1 = 18, /**< edn1 */
-  kTopPeppermintAlertPeripheralSramCtrlMain = 19, /**< sram_ctrl_main */
-  kTopPeppermintAlertPeripheralRomCtrl = 20, /**< rom_ctrl */
-  kTopPeppermintAlertPeripheralDma = 21, /**< dma */
-  kTopPeppermintAlertPeripheralMbx0 = 22, /**< mbx0 */
-  kTopPeppermintAlertPeripheralMbx1 = 23, /**< mbx1 */
-  kTopPeppermintAlertPeripheralRvCoreIbex = 24, /**< rv_core_ibex */
+  kTopPeppermintAlertPeripheralRvTimer = 1, /**< rv_timer */
+  kTopPeppermintAlertPeripheralOtpCtrl = 2, /**< otp_ctrl */
+  kTopPeppermintAlertPeripheralLcCtrl = 3, /**< lc_ctrl */
+  kTopPeppermintAlertPeripheralAes = 4, /**< aes */
+  kTopPeppermintAlertPeripheralHmac = 5, /**< hmac */
+  kTopPeppermintAlertPeripheralKmac = 6, /**< kmac */
+  kTopPeppermintAlertPeripheralOtbn = 7, /**< otbn */
+  kTopPeppermintAlertPeripheralKeymgrDpe = 8, /**< keymgr_dpe */
+  kTopPeppermintAlertPeripheralCsrng = 9, /**< csrng */
+  kTopPeppermintAlertPeripheralEntropySrc = 10, /**< entropy_src */
+  kTopPeppermintAlertPeripheralEdn0 = 11, /**< edn0 */
+  kTopPeppermintAlertPeripheralEdn1 = 12, /**< edn1 */
+  kTopPeppermintAlertPeripheralSramCtrlMain = 13, /**< sram_ctrl_main */
+  kTopPeppermintAlertPeripheralRomCtrl = 14, /**< rom_ctrl */
+  kTopPeppermintAlertPeripheralRvCoreIbex = 15, /**< rv_core_ibex */
+  kTopPeppermintAlertPeripheralRvDm = 16, /**< rv_dm */
+  kTopPeppermintAlertPeripheralDma = 17, /**< dma */
+  kTopPeppermintAlertPeripheralMbx0 = 18, /**< mbx0 */
+  kTopPeppermintAlertPeripheralMbx1 = 19, /**< mbx1 */
+  kTopPeppermintAlertPeripheralPwrmgr = 20, /**< pwrmgr */
+  kTopPeppermintAlertPeripheralRstmgr = 21, /**< rstmgr */
+  kTopPeppermintAlertPeripheralClkmgr = 22, /**< clkmgr */
+  kTopPeppermintAlertPeripheralSramCtrlRet = 23, /**< sram_ctrl_ret */
+  kTopPeppermintAlertPeripheralRvPlic = 24, /**< rv_plic */
   kTopPeppermintAlertPeripheralLast = 24, /**< \internal Final Alert peripheral */
 } top_peppermint_alert_peripheral_t;
 
@@ -698,51 +698,51 @@ typedef enum top_peppermint_alert_peripheral {
  * the same peripheral are guaranteed to be consecutive.
  */
 typedef enum top_peppermint_alert_id {
-  kTopPeppermintAlertIdPwrmgrFatalFault = 0, /**< pwrmgr_fatal_fault */
-  kTopPeppermintAlertIdRstmgrFatalFault = 1, /**< rstmgr_fatal_fault */
-  kTopPeppermintAlertIdRstmgrFatalCnstyFault = 2, /**< rstmgr_fatal_cnsty_fault */
-  kTopPeppermintAlertIdClkmgrRecovFault = 3, /**< clkmgr_recov_fault */
-  kTopPeppermintAlertIdClkmgrFatalFault = 4, /**< clkmgr_fatal_fault */
-  kTopPeppermintAlertIdSramCtrlRetFatalError = 5, /**< sram_ctrl_ret_fatal_error */
-  kTopPeppermintAlertIdOtpCtrlFatalMacroError = 6, /**< otp_ctrl_fatal_macro_error */
-  kTopPeppermintAlertIdOtpCtrlFatalCheckError = 7, /**< otp_ctrl_fatal_check_error */
-  kTopPeppermintAlertIdOtpCtrlFatalBusIntegError = 8, /**< otp_ctrl_fatal_bus_integ_error */
-  kTopPeppermintAlertIdOtpCtrlFatalPrimOtpAlert = 9, /**< otp_ctrl_fatal_prim_otp_alert */
-  kTopPeppermintAlertIdOtpCtrlRecovPrimOtpAlert = 10, /**< otp_ctrl_recov_prim_otp_alert */
-  kTopPeppermintAlertIdLcCtrlFatalProgError = 11, /**< lc_ctrl_fatal_prog_error */
-  kTopPeppermintAlertIdLcCtrlFatalStateError = 12, /**< lc_ctrl_fatal_state_error */
-  kTopPeppermintAlertIdLcCtrlFatalBusIntegError = 13, /**< lc_ctrl_fatal_bus_integ_error */
-  kTopPeppermintAlertIdRvDmFatalFault = 14, /**< rv_dm_fatal_fault */
-  kTopPeppermintAlertIdRvPlicFatalFault = 15, /**< rv_plic_fatal_fault */
-  kTopPeppermintAlertIdRvTimerFatalFault = 16, /**< rv_timer_fatal_fault */
-  kTopPeppermintAlertIdAesRecovCtrlUpdateErr = 17, /**< aes_recov_ctrl_update_err */
-  kTopPeppermintAlertIdAesFatalFault = 18, /**< aes_fatal_fault */
-  kTopPeppermintAlertIdHmacFatalFault = 19, /**< hmac_fatal_fault */
-  kTopPeppermintAlertIdKmacRecovOperationErr = 20, /**< kmac_recov_operation_err */
-  kTopPeppermintAlertIdKmacFatalFaultErr = 21, /**< kmac_fatal_fault_err */
-  kTopPeppermintAlertIdOtbnFatal = 22, /**< otbn_fatal */
-  kTopPeppermintAlertIdOtbnRecov = 23, /**< otbn_recov */
-  kTopPeppermintAlertIdKeymgrDpeRecovOperationErr = 24, /**< keymgr_dpe_recov_operation_err */
-  kTopPeppermintAlertIdKeymgrDpeFatalFaultErr = 25, /**< keymgr_dpe_fatal_fault_err */
-  kTopPeppermintAlertIdCsrngRecovAlert = 26, /**< csrng_recov_alert */
-  kTopPeppermintAlertIdCsrngFatalAlert = 27, /**< csrng_fatal_alert */
-  kTopPeppermintAlertIdEntropySrcRecovAlert = 28, /**< entropy_src_recov_alert */
-  kTopPeppermintAlertIdEntropySrcFatalAlert = 29, /**< entropy_src_fatal_alert */
-  kTopPeppermintAlertIdEdn0RecovAlert = 30, /**< edn0_recov_alert */
-  kTopPeppermintAlertIdEdn0FatalAlert = 31, /**< edn0_fatal_alert */
-  kTopPeppermintAlertIdEdn1RecovAlert = 32, /**< edn1_recov_alert */
-  kTopPeppermintAlertIdEdn1FatalAlert = 33, /**< edn1_fatal_alert */
-  kTopPeppermintAlertIdSramCtrlMainFatalError = 34, /**< sram_ctrl_main_fatal_error */
-  kTopPeppermintAlertIdRomCtrlFatal = 35, /**< rom_ctrl_fatal */
-  kTopPeppermintAlertIdDmaFatalFault = 36, /**< dma_fatal_fault */
-  kTopPeppermintAlertIdMbx0FatalFault = 37, /**< mbx0_fatal_fault */
-  kTopPeppermintAlertIdMbx0RecovFault = 38, /**< mbx0_recov_fault */
-  kTopPeppermintAlertIdMbx1FatalFault = 39, /**< mbx1_fatal_fault */
-  kTopPeppermintAlertIdMbx1RecovFault = 40, /**< mbx1_recov_fault */
-  kTopPeppermintAlertIdRvCoreIbexFatalSwErr = 41, /**< rv_core_ibex_fatal_sw_err */
-  kTopPeppermintAlertIdRvCoreIbexRecovSwErr = 42, /**< rv_core_ibex_recov_sw_err */
-  kTopPeppermintAlertIdRvCoreIbexFatalHwErr = 43, /**< rv_core_ibex_fatal_hw_err */
-  kTopPeppermintAlertIdRvCoreIbexRecovHwErr = 44, /**< rv_core_ibex_recov_hw_err */
+  kTopPeppermintAlertIdRvTimerFatalFault = 0, /**< rv_timer_fatal_fault */
+  kTopPeppermintAlertIdOtpCtrlFatalMacroError = 1, /**< otp_ctrl_fatal_macro_error */
+  kTopPeppermintAlertIdOtpCtrlFatalCheckError = 2, /**< otp_ctrl_fatal_check_error */
+  kTopPeppermintAlertIdOtpCtrlFatalBusIntegError = 3, /**< otp_ctrl_fatal_bus_integ_error */
+  kTopPeppermintAlertIdOtpCtrlFatalPrimOtpAlert = 4, /**< otp_ctrl_fatal_prim_otp_alert */
+  kTopPeppermintAlertIdOtpCtrlRecovPrimOtpAlert = 5, /**< otp_ctrl_recov_prim_otp_alert */
+  kTopPeppermintAlertIdLcCtrlFatalProgError = 6, /**< lc_ctrl_fatal_prog_error */
+  kTopPeppermintAlertIdLcCtrlFatalStateError = 7, /**< lc_ctrl_fatal_state_error */
+  kTopPeppermintAlertIdLcCtrlFatalBusIntegError = 8, /**< lc_ctrl_fatal_bus_integ_error */
+  kTopPeppermintAlertIdAesRecovCtrlUpdateErr = 9, /**< aes_recov_ctrl_update_err */
+  kTopPeppermintAlertIdAesFatalFault = 10, /**< aes_fatal_fault */
+  kTopPeppermintAlertIdHmacFatalFault = 11, /**< hmac_fatal_fault */
+  kTopPeppermintAlertIdKmacRecovOperationErr = 12, /**< kmac_recov_operation_err */
+  kTopPeppermintAlertIdKmacFatalFaultErr = 13, /**< kmac_fatal_fault_err */
+  kTopPeppermintAlertIdOtbnFatal = 14, /**< otbn_fatal */
+  kTopPeppermintAlertIdOtbnRecov = 15, /**< otbn_recov */
+  kTopPeppermintAlertIdKeymgrDpeRecovOperationErr = 16, /**< keymgr_dpe_recov_operation_err */
+  kTopPeppermintAlertIdKeymgrDpeFatalFaultErr = 17, /**< keymgr_dpe_fatal_fault_err */
+  kTopPeppermintAlertIdCsrngRecovAlert = 18, /**< csrng_recov_alert */
+  kTopPeppermintAlertIdCsrngFatalAlert = 19, /**< csrng_fatal_alert */
+  kTopPeppermintAlertIdEntropySrcRecovAlert = 20, /**< entropy_src_recov_alert */
+  kTopPeppermintAlertIdEntropySrcFatalAlert = 21, /**< entropy_src_fatal_alert */
+  kTopPeppermintAlertIdEdn0RecovAlert = 22, /**< edn0_recov_alert */
+  kTopPeppermintAlertIdEdn0FatalAlert = 23, /**< edn0_fatal_alert */
+  kTopPeppermintAlertIdEdn1RecovAlert = 24, /**< edn1_recov_alert */
+  kTopPeppermintAlertIdEdn1FatalAlert = 25, /**< edn1_fatal_alert */
+  kTopPeppermintAlertIdSramCtrlMainFatalError = 26, /**< sram_ctrl_main_fatal_error */
+  kTopPeppermintAlertIdRomCtrlFatal = 27, /**< rom_ctrl_fatal */
+  kTopPeppermintAlertIdRvCoreIbexFatalSwErr = 28, /**< rv_core_ibex_fatal_sw_err */
+  kTopPeppermintAlertIdRvCoreIbexRecovSwErr = 29, /**< rv_core_ibex_recov_sw_err */
+  kTopPeppermintAlertIdRvCoreIbexFatalHwErr = 30, /**< rv_core_ibex_fatal_hw_err */
+  kTopPeppermintAlertIdRvCoreIbexRecovHwErr = 31, /**< rv_core_ibex_recov_hw_err */
+  kTopPeppermintAlertIdRvDmFatalFault = 32, /**< rv_dm_fatal_fault */
+  kTopPeppermintAlertIdDmaFatalFault = 33, /**< dma_fatal_fault */
+  kTopPeppermintAlertIdMbx0FatalFault = 34, /**< mbx0_fatal_fault */
+  kTopPeppermintAlertIdMbx0RecovFault = 35, /**< mbx0_recov_fault */
+  kTopPeppermintAlertIdMbx1FatalFault = 36, /**< mbx1_fatal_fault */
+  kTopPeppermintAlertIdMbx1RecovFault = 37, /**< mbx1_recov_fault */
+  kTopPeppermintAlertIdPwrmgrFatalFault = 38, /**< pwrmgr_fatal_fault */
+  kTopPeppermintAlertIdRstmgrFatalFault = 39, /**< rstmgr_fatal_fault */
+  kTopPeppermintAlertIdRstmgrFatalCnstyFault = 40, /**< rstmgr_fatal_cnsty_fault */
+  kTopPeppermintAlertIdClkmgrRecovFault = 41, /**< clkmgr_recov_fault */
+  kTopPeppermintAlertIdClkmgrFatalFault = 42, /**< clkmgr_fatal_fault */
+  kTopPeppermintAlertIdSramCtrlRetFatalError = 43, /**< sram_ctrl_ret_fatal_error */
+  kTopPeppermintAlertIdRvPlicFatalFault = 44, /**< rv_plic_fatal_fault */
   kTopPeppermintAlertIdIncomingSocSocRecovAlert0 = 45, /**< incoming_soc_soc_recov_alert_0 */
   kTopPeppermintAlertIdIncomingSocSocRecovAlert1 = 46, /**< incoming_soc_soc_recov_alert_1 */
   kTopPeppermintAlertIdIncomingSocSocRecovAlert2 = 47, /**< incoming_soc_soc_recov_alert_2 */
@@ -845,8 +845,8 @@ typedef enum top_peppermint_hintable_clocks {
  * configuration space, i.e. ROM, main SRAM and mailbox SoC window are excluded
  * but retention SRAM is included.
  */
-#define TOP_PEPPERMINT_MMIO_BASE_ADDR 0x21100000u
-#define TOP_PEPPERMINT_MMIO_SIZE_BYTES 0x1F372000u
+#define TOP_PEPPERMINT_MMIO_BASE_ADDR 0x40000000u
+#define TOP_PEPPERMINT_MMIO_SIZE_BYTES 0x10000000u
 
 // Header Extern Guard
 #ifdef __cplusplus

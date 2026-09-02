@@ -67,19 +67,6 @@ interface rstmgr_rst_en_track_sva_if (
           clk_main_i,
           !rst_por_ni)
 
-  `ASSERT(DAonRstLcMainShadowedEnTracksRstLcMainShadowedActive_A,
-          $fell(resets_i.rst_lc_main_shadowed_n[DomainAonSel]) |-> ##[0:DELAY]
-          reset_en_i.lc_main_shadowed[DomainAonSel] == prim_mubi_pkg::MuBi4True,
-          clk_main_i,
-          !rst_por_ni)
-
-  `ASSERT(DAonRstLcMainShadowedEnTracksRstLcMainShadowedInactive_A,
-          $rose(resets_i.rst_lc_main_shadowed_n[DomainAonSel]) |-> ##DELAY
-          !resets_i.rst_lc_main_shadowed_n[DomainAonSel] ||
-          reset_en_i.lc_main_shadowed[DomainAonSel] == prim_mubi_pkg::MuBi4False,
-          clk_main_i,
-          !rst_por_ni)
-
   `ASSERT(DMainRstLcMainShadowedEnTracksRstLcMainShadowedActive_A,
           $fell(resets_i.rst_lc_main_shadowed_n[DomainMainSel]) |-> ##[0:DELAY]
           reset_en_i.lc_main_shadowed[DomainMainSel] == prim_mubi_pkg::MuBi4True,
@@ -93,17 +80,17 @@ interface rstmgr_rst_en_track_sva_if (
           clk_main_i,
           !rst_por_ni)
 
-  `ASSERT(DAonRstLcAonShadowedEnTracksRstLcAonShadowedActive_A,
-          $fell(resets_i.rst_lc_aon_shadowed_n[DomainAonSel]) |-> ##[0:DELAY]
-          reset_en_i.lc_aon_shadowed[DomainAonSel] == prim_mubi_pkg::MuBi4True,
-          clk_aon_i,
+  `ASSERT(DAonRstLcMainShadowedEnTracksRstLcMainShadowedActive_A,
+          $fell(resets_i.rst_lc_main_shadowed_n[DomainAonSel]) |-> ##[0:DELAY]
+          reset_en_i.lc_main_shadowed[DomainAonSel] == prim_mubi_pkg::MuBi4True,
+          clk_main_i,
           !rst_por_ni)
 
-  `ASSERT(DAonRstLcAonShadowedEnTracksRstLcAonShadowedInactive_A,
-          $rose(resets_i.rst_lc_aon_shadowed_n[DomainAonSel]) |-> ##DELAY
-          !resets_i.rst_lc_aon_shadowed_n[DomainAonSel] ||
-          reset_en_i.lc_aon_shadowed[DomainAonSel] == prim_mubi_pkg::MuBi4False,
-          clk_aon_i,
+  `ASSERT(DAonRstLcMainShadowedEnTracksRstLcMainShadowedInactive_A,
+          $rose(resets_i.rst_lc_main_shadowed_n[DomainAonSel]) |-> ##DELAY
+          !resets_i.rst_lc_main_shadowed_n[DomainAonSel] ||
+          reset_en_i.lc_main_shadowed[DomainAonSel] == prim_mubi_pkg::MuBi4False,
+          clk_main_i,
           !rst_por_ni)
 
   `ASSERT(DMainRstLcAonShadowedEnTracksRstLcAonShadowedActive_A,
@@ -116,6 +103,19 @@ interface rstmgr_rst_en_track_sva_if (
           $rose(resets_i.rst_lc_aon_shadowed_n[DomainMainSel]) |-> ##DELAY
           !resets_i.rst_lc_aon_shadowed_n[DomainMainSel] ||
           reset_en_i.lc_aon_shadowed[DomainMainSel] == prim_mubi_pkg::MuBi4False,
+          clk_aon_i,
+          !rst_por_ni)
+
+  `ASSERT(DAonRstLcAonShadowedEnTracksRstLcAonShadowedActive_A,
+          $fell(resets_i.rst_lc_aon_shadowed_n[DomainAonSel]) |-> ##[0:DELAY]
+          reset_en_i.lc_aon_shadowed[DomainAonSel] == prim_mubi_pkg::MuBi4True,
+          clk_aon_i,
+          !rst_por_ni)
+
+  `ASSERT(DAonRstLcAonShadowedEnTracksRstLcAonShadowedInactive_A,
+          $rose(resets_i.rst_lc_aon_shadowed_n[DomainAonSel]) |-> ##DELAY
+          !resets_i.rst_lc_aon_shadowed_n[DomainAonSel] ||
+          reset_en_i.lc_aon_shadowed[DomainAonSel] == prim_mubi_pkg::MuBi4False,
           clk_aon_i,
           !rst_por_ni)
 

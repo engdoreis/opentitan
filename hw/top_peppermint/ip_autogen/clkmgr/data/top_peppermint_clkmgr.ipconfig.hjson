@@ -52,7 +52,7 @@
         clk_main_secure:
         {
           src_name: main
-          endpoint_ip: alert_handler
+          endpoint_ip: rv_timer
         }
       }
       sw_clks: {}

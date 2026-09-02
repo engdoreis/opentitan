@@ -22,7 +22,7 @@ package top_peppermint_soc_mbx_pkg;
   /**
    * Peripheral base address for soc device on mbx1 in top peppermint.
    */
-  parameter int unsigned TOP_PEPPERMINT_SOC_MBX_MBX1_SOC_BASE_ADDR = 32'h100;
+  parameter int unsigned TOP_PEPPERMINT_SOC_MBX_MBX1_SOC_BASE_ADDR = 32'h10000;
 
   /**
    * Peripheral size in bytes for soc device on mbx1 in top peppermint.

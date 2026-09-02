@@ -7,7 +7,7 @@
 package tl_socmbx_pkg;
 
   localparam logic [31:0] ADDR_SPACE_MBX0__SOC = 32'h 00000000;
-  localparam logic [31:0] ADDR_SPACE_MBX1__SOC = 32'h 00000100;
+  localparam logic [31:0] ADDR_SPACE_MBX1__SOC = 32'h 00010000;
 
   localparam logic [31:0] ADDR_MASK_MBX0__SOC = 32'h 0000001f;
   localparam logic [31:0] ADDR_MASK_MBX1__SOC = 32'h 0000001f;

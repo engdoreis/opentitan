@@ -49,7 +49,7 @@
  * This should be used with #mmio_region_from_addr to access the memory-mapped
  * registers associated with the peripheral (usually via a DIF).
  */
-#define TOP_PEPPERMINT_SOC_MBX_MBX1_SOC_BASE_ADDR 0x100
+#define TOP_PEPPERMINT_SOC_MBX_MBX1_SOC_BASE_ADDR 0x10000
 
 /**
  * Peripheral size for soc device on mbx1 in top peppermint.

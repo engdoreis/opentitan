@@ -20,81 +20,25 @@
 
 use core::convert::TryFrom;
 
-/// Peripheral base address for pwrmgr in top peppermint.
+/// Peripheral base address for rv_timer in top peppermint.
 ///
 /// This should be used with #mmio_region_from_addr to access the memory-mapped
 /// registers associated with the peripheral (usually via a DIF).
-pub const PWRMGR_BASE_ADDR: usize = 0x40400000;
+pub const RV_TIMER_BASE_ADDR: usize = 0x40000000;
 
-/// Peripheral size for pwrmgr in top peppermint.
+/// Peripheral size for rv_timer in top peppermint.
 ///
 /// This is the size (in bytes) of the peripheral's reserved memory area. All
 /// memory-mapped registers associated with this peripheral should have an
-/// address between #PWRMGR_BASE_ADDR and
-/// `PWRMGR_BASE_ADDR + PWRMGR_SIZE_BYTES`.
-pub const PWRMGR_SIZE_BYTES: usize = 0x80;
-
-/// Peripheral base address for rstmgr in top peppermint.
-///
-/// This should be used with #mmio_region_from_addr to access the memory-mapped
-/// registers associated with the peripheral (usually via a DIF).
-pub const RSTMGR_BASE_ADDR: usize = 0x40410000;
-
-/// Peripheral size for rstmgr in top peppermint.
-///
-/// This is the size (in bytes) of the peripheral's reserved memory area. All
-/// memory-mapped registers associated with this peripheral should have an
-/// address between #RSTMGR_BASE_ADDR and
-/// `RSTMGR_BASE_ADDR + RSTMGR_SIZE_BYTES`.
-pub const RSTMGR_SIZE_BYTES: usize = 0x40;
-
-/// Peripheral base address for clkmgr in top peppermint.
-///
-/// This should be used with #mmio_region_from_addr to access the memory-mapped
-/// registers associated with the peripheral (usually via a DIF).
-pub const CLKMGR_BASE_ADDR: usize = 0x40420000;
-
-/// Peripheral size for clkmgr in top peppermint.
-///
-/// This is the size (in bytes) of the peripheral's reserved memory area. All
-/// memory-mapped registers associated with this peripheral should have an
-/// address between #CLKMGR_BASE_ADDR and
-/// `CLKMGR_BASE_ADDR + CLKMGR_SIZE_BYTES`.
-pub const CLKMGR_SIZE_BYTES: usize = 0x40;
-
-/// Peripheral base address for alert_handler in top peppermint.
-///
-/// This should be used with #mmio_region_from_addr to access the memory-mapped
-/// registers associated with the peripheral (usually via a DIF).
-pub const ALERT_HANDLER_BASE_ADDR: usize = 0x40450000;
-
-/// Peripheral size for alert_handler in top peppermint.
-///
-/// This is the size (in bytes) of the peripheral's reserved memory area. All
-/// memory-mapped registers associated with this peripheral should have an
-/// address between #ALERT_HANDLER_BASE_ADDR and
-/// `ALERT_HANDLER_BASE_ADDR + ALERT_HANDLER_SIZE_BYTES`.
-pub const ALERT_HANDLER_SIZE_BYTES: usize = 0x800;
-
-/// Peripheral base address for regs device on sram_ctrl_ret in top peppermint.
-///
-/// This should be used with #mmio_region_from_addr to access the memory-mapped
-/// registers associated with the peripheral (usually via a DIF).
-pub const SRAM_CTRL_RET_REGS_BASE_ADDR: usize = 0x40460000;
-
-/// Peripheral size for regs device on sram_ctrl_ret in top peppermint.
-///
-/// This is the size (in bytes) of the peripheral's reserved memory area. All
-/// memory-mapped registers associated with this peripheral should have an
-/// address between #SRAM_CTRL_RET_REGS_BASE_ADDR and
-/// `SRAM_CTRL_RET_REGS_BASE_ADDR + SRAM_CTRL_RET_REGS_SIZE_BYTES`.
-pub const SRAM_CTRL_RET_REGS_SIZE_BYTES: usize = 0x40;
+/// address between #RV_TIMER_BASE_ADDR and
+/// `RV_TIMER_BASE_ADDR + RV_TIMER_SIZE_BYTES`.
+pub const RV_TIMER_SIZE_BYTES: usize = 0x200;
 
 /// Peripheral base address for core device on otp_ctrl in top peppermint.
 ///
 /// This should be used with #mmio_region_from_addr to access the memory-mapped
 /// registers associated with the peripheral (usually via a DIF).
-pub const OTP_CTRL_CORE_BASE_ADDR: usize = 0x30130000;
+pub const OTP_CTRL_CORE_BASE_ADDR: usize = 0x40010000;
 
 /// Peripheral size for core device on otp_ctrl in top peppermint.
 ///
@@ -108,7 +52,7 @@ pub const OTP_CTRL_CORE_SIZE_BYTES: usize = 0x4000;
 ///
 /// This should be used with #mmio_region_from_addr to access the memory-mapped
 /// registers associated with the peripheral (usually via a DIF).
-pub const OTP_MACRO_PRIM_BASE_ADDR: usize = 0x30140000;
+pub const OTP_MACRO_PRIM_BASE_ADDR: usize = 0x40020000;
 
 /// Peripheral size for prim device on otp_macro in top peppermint.
 ///
@@ -122,7 +66,7 @@ pub const OTP_MACRO_PRIM_SIZE_BYTES: usize = 0x20;
 ///
 /// This should be used with #mmio_region_from_addr to access the memory-mapped
 /// registers associated with the peripheral (usually via a DIF).
-pub const LC_CTRL_REGS_BASE_ADDR: usize = 0x30150000;
+pub const LC_CTRL_REGS_BASE_ADDR: usize = 0x40030000;
 
 /// Peripheral size for regs device on lc_ctrl in top peppermint.
 ///
@@ -132,67 +76,11 @@ pub const LC_CTRL_REGS_BASE_ADDR: usize = 0x30150000;
 /// `LC_CTRL_REGS_BASE_ADDR + LC_CTRL_REGS_SIZE_BYTES`.
 pub const LC_CTRL_REGS_SIZE_BYTES: usize = 0x100;
 
-/// Peripheral base address for regs device on rv_dm in top peppermint.
-///
-/// This should be used with #mmio_region_from_addr to access the memory-mapped
-/// registers associated with the peripheral (usually via a DIF).
-pub const RV_DM_REGS_BASE_ADDR: usize = 0x21200000;
-
-/// Peripheral size for regs device on rv_dm in top peppermint.
-///
-/// This is the size (in bytes) of the peripheral's reserved memory area. All
-/// memory-mapped registers associated with this peripheral should have an
-/// address between #RV_DM_REGS_BASE_ADDR and
-/// `RV_DM_REGS_BASE_ADDR + RV_DM_REGS_SIZE_BYTES`.
-pub const RV_DM_REGS_SIZE_BYTES: usize = 0x10;
-
-/// Peripheral base address for mem device on rv_dm in top peppermint.
-///
-/// This should be used with #mmio_region_from_addr to access the memory-mapped
-/// registers associated with the peripheral (usually via a DIF).
-pub const RV_DM_MEM_BASE_ADDR: usize = 0x50000;
-
-/// Peripheral size for mem device on rv_dm in top peppermint.
-///
-/// This is the size (in bytes) of the peripheral's reserved memory area. All
-/// memory-mapped registers associated with this peripheral should have an
-/// address between #RV_DM_MEM_BASE_ADDR and
-/// `RV_DM_MEM_BASE_ADDR + RV_DM_MEM_SIZE_BYTES`.
-pub const RV_DM_MEM_SIZE_BYTES: usize = 0x1000;
-
-/// Peripheral base address for rv_plic in top peppermint.
-///
-/// This should be used with #mmio_region_from_addr to access the memory-mapped
-/// registers associated with the peripheral (usually via a DIF).
-pub const RV_PLIC_BASE_ADDR: usize = 0x28000000;
-
-/// Peripheral size for rv_plic in top peppermint.
-///
-/// This is the size (in bytes) of the peripheral's reserved memory area. All
-/// memory-mapped registers associated with this peripheral should have an
-/// address between #RV_PLIC_BASE_ADDR and
-/// `RV_PLIC_BASE_ADDR + RV_PLIC_SIZE_BYTES`.
-pub const RV_PLIC_SIZE_BYTES: usize = 0x8000000;
-
-/// Peripheral base address for rv_timer in top peppermint.
-///
-/// This should be used with #mmio_region_from_addr to access the memory-mapped
-/// registers associated with the peripheral (usually via a DIF).
-pub const RV_TIMER_BASE_ADDR: usize = 0x21190000;
-
-/// Peripheral size for rv_timer in top peppermint.
-///
-/// This is the size (in bytes) of the peripheral's reserved memory area. All
-/// memory-mapped registers associated with this peripheral should have an
-/// address between #RV_TIMER_BASE_ADDR and
-/// `RV_TIMER_BASE_ADDR + RV_TIMER_SIZE_BYTES`.
-pub const RV_TIMER_SIZE_BYTES: usize = 0x200;
-
 /// Peripheral base address for aes in top peppermint.
 ///
 /// This should be used with #mmio_region_from_addr to access the memory-mapped
 /// registers associated with the peripheral (usually via a DIF).
-pub const AES_BASE_ADDR: usize = 0x21100000;
+pub const AES_BASE_ADDR: usize = 0x40100000;
 
 /// Peripheral size for aes in top peppermint.
 ///
@@ -206,7 +94,7 @@ pub const AES_SIZE_BYTES: usize = 0x100;
 ///
 /// This should be used with #mmio_region_from_addr to access the memory-mapped
 /// registers associated with the peripheral (usually via a DIF).
-pub const HMAC_BASE_ADDR: usize = 0x21110000;
+pub const HMAC_BASE_ADDR: usize = 0x40110000;
 
 /// Peripheral size for hmac in top peppermint.
 ///
@@ -220,7 +108,7 @@ pub const HMAC_SIZE_BYTES: usize = 0x2000;
 ///
 /// This should be used with #mmio_region_from_addr to access the memory-mapped
 /// registers associated with the peripheral (usually via a DIF).
-pub const KMAC_BASE_ADDR: usize = 0x21120000;
+pub const KMAC_BASE_ADDR: usize = 0x40120000;
 
 /// Peripheral size for kmac in top peppermint.
 ///
@@ -234,7 +122,7 @@ pub const KMAC_SIZE_BYTES: usize = 0x1000;
 ///
 /// This should be used with #mmio_region_from_addr to access the memory-mapped
 /// registers associated with the peripheral (usually via a DIF).
-pub const OTBN_BASE_ADDR: usize = 0x21130000;
+pub const OTBN_BASE_ADDR: usize = 0x40130000;
 
 /// Peripheral size for otbn in top peppermint.
 ///
@@ -248,7 +136,7 @@ pub const OTBN_SIZE_BYTES: usize = 0x10000;
 ///
 /// This should be used with #mmio_region_from_addr to access the memory-mapped
 /// registers associated with the peripheral (usually via a DIF).
-pub const KEYMGR_DPE_BASE_ADDR: usize = 0x21140000;
+pub const KEYMGR_DPE_BASE_ADDR: usize = 0x40140000;
 
 /// Peripheral size for keymgr_dpe in top peppermint.
 ///
@@ -262,7 +150,7 @@ pub const KEYMGR_DPE_SIZE_BYTES: usize = 0x100;
 ///
 /// This should be used with #mmio_region_from_addr to access the memory-mapped
 /// registers associated with the peripheral (usually via a DIF).
-pub const CSRNG_BASE_ADDR: usize = 0x21150000;
+pub const CSRNG_BASE_ADDR: usize = 0x40150000;
 
 /// Peripheral size for csrng in top peppermint.
 ///
@@ -276,7 +164,7 @@ pub const CSRNG_SIZE_BYTES: usize = 0x80;
 ///
 /// This should be used with #mmio_region_from_addr to access the memory-mapped
 /// registers associated with the peripheral (usually via a DIF).
-pub const ENTROPY_SRC_BASE_ADDR: usize = 0x21160000;
+pub const ENTROPY_SRC_BASE_ADDR: usize = 0x40160000;
 
 /// Peripheral size for entropy_src in top peppermint.
 ///
@@ -290,7 +178,7 @@ pub const ENTROPY_SRC_SIZE_BYTES: usize = 0x100;
 ///
 /// This should be used with #mmio_region_from_addr to access the memory-mapped
 /// registers associated with the peripheral (usually via a DIF).
-pub const EDN0_BASE_ADDR: usize = 0x21170000;
+pub const EDN0_BASE_ADDR: usize = 0x40170000;
 
 /// Peripheral size for edn0 in top peppermint.
 ///
@@ -304,7 +192,7 @@ pub const EDN0_SIZE_BYTES: usize = 0x80;
 ///
 /// This should be used with #mmio_region_from_addr to access the memory-mapped
 /// registers associated with the peripheral (usually via a DIF).
-pub const EDN1_BASE_ADDR: usize = 0x21180000;
+pub const EDN1_BASE_ADDR: usize = 0x40180000;
 
 /// Peripheral size for edn1 in top peppermint.
 ///
@@ -318,7 +206,7 @@ pub const EDN1_SIZE_BYTES: usize = 0x80;
 ///
 /// This should be used with #mmio_region_from_addr to access the memory-mapped
 /// registers associated with the peripheral (usually via a DIF).
-pub const SRAM_CTRL_MAIN_REGS_BASE_ADDR: usize = 0x211C0000;
+pub const SRAM_CTRL_MAIN_REGS_BASE_ADDR: usize = 0x40200000;
 
 /// Peripheral size for regs device on sram_ctrl_main in top peppermint.
 ///
@@ -332,7 +220,7 @@ pub const SRAM_CTRL_MAIN_REGS_SIZE_BYTES: usize = 0x40;
 ///
 /// This should be used with #mmio_region_from_addr to access the memory-mapped
 /// registers associated with the peripheral (usually via a DIF).
-pub const ROM_CTRL_REGS_BASE_ADDR: usize = 0x211E0000;
+pub const ROM_CTRL_REGS_BASE_ADDR: usize = 0x40210000;
 
 /// Peripheral size for regs device on rom_ctrl in top peppermint.
 ///
@@ -342,11 +230,53 @@ pub const ROM_CTRL_REGS_BASE_ADDR: usize = 0x211E0000;
 /// `ROM_CTRL_REGS_BASE_ADDR + ROM_CTRL_REGS_SIZE_BYTES`.
 pub const ROM_CTRL_REGS_SIZE_BYTES: usize = 0x80;
 
+/// Peripheral base address for cfg device on rv_core_ibex in top peppermint.
+///
+/// This should be used with #mmio_region_from_addr to access the memory-mapped
+/// registers associated with the peripheral (usually via a DIF).
+pub const RV_CORE_IBEX_CFG_BASE_ADDR: usize = 0x40220000;
+
+/// Peripheral size for cfg device on rv_core_ibex in top peppermint.
+///
+/// This is the size (in bytes) of the peripheral's reserved memory area. All
+/// memory-mapped registers associated with this peripheral should have an
+/// address between #RV_CORE_IBEX_CFG_BASE_ADDR and
+/// `RV_CORE_IBEX_CFG_BASE_ADDR + RV_CORE_IBEX_CFG_SIZE_BYTES`.
+pub const RV_CORE_IBEX_CFG_SIZE_BYTES: usize = 0x800;
+
+/// Peripheral base address for regs device on rv_dm in top peppermint.
+///
+/// This should be used with #mmio_region_from_addr to access the memory-mapped
+/// registers associated with the peripheral (usually via a DIF).
+pub const RV_DM_REGS_BASE_ADDR: usize = 0x40230000;
+
+/// Peripheral size for regs device on rv_dm in top peppermint.
+///
+/// This is the size (in bytes) of the peripheral's reserved memory area. All
+/// memory-mapped registers associated with this peripheral should have an
+/// address between #RV_DM_REGS_BASE_ADDR and
+/// `RV_DM_REGS_BASE_ADDR + RV_DM_REGS_SIZE_BYTES`.
+pub const RV_DM_REGS_SIZE_BYTES: usize = 0x10;
+
+/// Peripheral base address for mem device on rv_dm in top peppermint.
+///
+/// This should be used with #mmio_region_from_addr to access the memory-mapped
+/// registers associated with the peripheral (usually via a DIF).
+pub const RV_DM_MEM_BASE_ADDR: usize = 0x10000;
+
+/// Peripheral size for mem device on rv_dm in top peppermint.
+///
+/// This is the size (in bytes) of the peripheral's reserved memory area. All
+/// memory-mapped registers associated with this peripheral should have an
+/// address between #RV_DM_MEM_BASE_ADDR and
+/// `RV_DM_MEM_BASE_ADDR + RV_DM_MEM_SIZE_BYTES`.
+pub const RV_DM_MEM_SIZE_BYTES: usize = 0x1000;
+
 /// Peripheral base address for dma in top peppermint.
 ///
 /// This should be used with #mmio_region_from_addr to access the memory-mapped
 /// registers associated with the peripheral (usually via a DIF).
-pub const DMA_BASE_ADDR: usize = 0x22010000;
+pub const DMA_BASE_ADDR: usize = 0x40300000;
 
 /// Peripheral size for dma in top peppermint.
 ///
@@ -360,7 +290,7 @@ pub const DMA_SIZE_BYTES: usize = 0x200;
 ///
 /// This should be used with #mmio_region_from_addr to access the memory-mapped
 /// registers associated with the peripheral (usually via a DIF).
-pub const MBX0_CORE_BASE_ADDR: usize = 0x22000000;
+pub const MBX0_CORE_BASE_ADDR: usize = 0x40310000;
 
 /// Peripheral size for core device on mbx0 in top peppermint.
 ///
@@ -374,7 +304,7 @@ pub const MBX0_CORE_SIZE_BYTES: usize = 0x80;
 ///
 /// This should be used with #mmio_region_from_addr to access the memory-mapped
 /// registers associated with the peripheral (usually via a DIF).
-pub const MBX1_CORE_BASE_ADDR: usize = 0x22000100;
+pub const MBX1_CORE_BASE_ADDR: usize = 0x40320000;
 
 /// Peripheral size for core device on mbx1 in top peppermint.
 ///
@@ -384,25 +314,89 @@ pub const MBX1_CORE_BASE_ADDR: usize = 0x22000100;
 /// `MBX1_CORE_BASE_ADDR + MBX1_CORE_SIZE_BYTES`.
 pub const MBX1_CORE_SIZE_BYTES: usize = 0x80;
 
-/// Peripheral base address for cfg device on rv_core_ibex in top peppermint.
+/// Peripheral base address for pwrmgr in top peppermint.
 ///
 /// This should be used with #mmio_region_from_addr to access the memory-mapped
 /// registers associated with the peripheral (usually via a DIF).
-pub const RV_CORE_IBEX_CFG_BASE_ADDR: usize = 0x211F0000;
+pub const PWRMGR_BASE_ADDR: usize = 0x41000000;
 
-/// Peripheral size for cfg device on rv_core_ibex in top peppermint.
+/// Peripheral size for pwrmgr in top peppermint.
 ///
 /// This is the size (in bytes) of the peripheral's reserved memory area. All
 /// memory-mapped registers associated with this peripheral should have an
-/// address between #RV_CORE_IBEX_CFG_BASE_ADDR and
-/// `RV_CORE_IBEX_CFG_BASE_ADDR + RV_CORE_IBEX_CFG_SIZE_BYTES`.
-pub const RV_CORE_IBEX_CFG_SIZE_BYTES: usize = 0x800;
+/// address between #PWRMGR_BASE_ADDR and
+/// `PWRMGR_BASE_ADDR + PWRMGR_SIZE_BYTES`.
+pub const PWRMGR_SIZE_BYTES: usize = 0x80;
 
-/// Memory base address for ram memory on sram_ctrl_ret in top peppermint.
-pub const SRAM_CTRL_RET_RAM_BASE_ADDR: usize = 0x40470000;
+/// Peripheral base address for rstmgr in top peppermint.
+///
+/// This should be used with #mmio_region_from_addr to access the memory-mapped
+/// registers associated with the peripheral (usually via a DIF).
+pub const RSTMGR_BASE_ADDR: usize = 0x41010000;
 
-/// Memory size for ram memory on sram_ctrl_ret in top peppermint.
-pub const SRAM_CTRL_RET_RAM_SIZE_BYTES: usize = 0x2000;
+/// Peripheral size for rstmgr in top peppermint.
+///
+/// This is the size (in bytes) of the peripheral's reserved memory area. All
+/// memory-mapped registers associated with this peripheral should have an
+/// address between #RSTMGR_BASE_ADDR and
+/// `RSTMGR_BASE_ADDR + RSTMGR_SIZE_BYTES`.
+pub const RSTMGR_SIZE_BYTES: usize = 0x40;
+
+/// Peripheral base address for clkmgr in top peppermint.
+///
+/// This should be used with #mmio_region_from_addr to access the memory-mapped
+/// registers associated with the peripheral (usually via a DIF).
+pub const CLKMGR_BASE_ADDR: usize = 0x41020000;
+
+/// Peripheral size for clkmgr in top peppermint.
+///
+/// This is the size (in bytes) of the peripheral's reserved memory area. All
+/// memory-mapped registers associated with this peripheral should have an
+/// address between #CLKMGR_BASE_ADDR and
+/// `CLKMGR_BASE_ADDR + CLKMGR_SIZE_BYTES`.
+pub const CLKMGR_SIZE_BYTES: usize = 0x40;
+
+/// Peripheral base address for alert_handler in top peppermint.
+///
+/// This should be used with #mmio_region_from_addr to access the memory-mapped
+/// registers associated with the peripheral (usually via a DIF).
+pub const ALERT_HANDLER_BASE_ADDR: usize = 0x41040000;
+
+/// Peripheral size for alert_handler in top peppermint.
+///
+/// This is the size (in bytes) of the peripheral's reserved memory area. All
+/// memory-mapped registers associated with this peripheral should have an
+/// address between #ALERT_HANDLER_BASE_ADDR and
+/// `ALERT_HANDLER_BASE_ADDR + ALERT_HANDLER_SIZE_BYTES`.
+pub const ALERT_HANDLER_SIZE_BYTES: usize = 0x800;
+
+/// Peripheral base address for regs device on sram_ctrl_ret in top peppermint.
+///
+/// This should be used with #mmio_region_from_addr to access the memory-mapped
+/// registers associated with the peripheral (usually via a DIF).
+pub const SRAM_CTRL_RET_REGS_BASE_ADDR: usize = 0x41050000;
+
+/// Peripheral size for regs device on sram_ctrl_ret in top peppermint.
+///
+/// This is the size (in bytes) of the peripheral's reserved memory area. All
+/// memory-mapped registers associated with this peripheral should have an
+/// address between #SRAM_CTRL_RET_REGS_BASE_ADDR and
+/// `SRAM_CTRL_RET_REGS_BASE_ADDR + SRAM_CTRL_RET_REGS_SIZE_BYTES`.
+pub const SRAM_CTRL_RET_REGS_SIZE_BYTES: usize = 0x40;
+
+/// Peripheral base address for rv_plic in top peppermint.
+///
+/// This should be used with #mmio_region_from_addr to access the memory-mapped
+/// registers associated with the peripheral (usually via a DIF).
+pub const RV_PLIC_BASE_ADDR: usize = 0x48000000;
+
+/// Peripheral size for rv_plic in top peppermint.
+///
+/// This is the size (in bytes) of the peripheral's reserved memory area. All
+/// memory-mapped registers associated with this peripheral should have an
+/// address between #RV_PLIC_BASE_ADDR and
+/// `RV_PLIC_BASE_ADDR + RV_PLIC_SIZE_BYTES`.
+pub const RV_PLIC_SIZE_BYTES: usize = 0x8000000;
 
 /// Memory base address for ram memory on sram_ctrl_main in top peppermint.
 pub const SRAM_CTRL_MAIN_RAM_BASE_ADDR: usize = 0x10000000;
@@ -411,16 +405,22 @@ pub const SRAM_CTRL_MAIN_RAM_BASE_ADDR: usize = 0x10000000;
 pub const SRAM_CTRL_MAIN_RAM_SIZE_BYTES: usize = 0x30000;
 
 /// Memory base address for rom memory on rom_ctrl in top peppermint.
-pub const ROM_CTRL_ROM_BASE_ADDR: usize = 0x20000;
+pub const ROM_CTRL_ROM_BASE_ADDR: usize = 0x40000;
 
 /// Memory size for rom memory on rom_ctrl in top peppermint.
 pub const ROM_CTRL_ROM_SIZE_BYTES: usize = 0x20000;
+
+/// Memory base address for ram memory on sram_ctrl_ret in top peppermint.
+pub const SRAM_CTRL_RET_RAM_BASE_ADDR: usize = 0x41100000;
+
+/// Memory size for ram memory on sram_ctrl_ret in top peppermint.
+pub const SRAM_CTRL_RET_RAM_SIZE_BYTES: usize = 0x2000;
 
 /// Memory base address for ctn memory on ahb_bridge in top peppermint.
 pub const AHB_BRIDGE_CTN_BASE_ADDR: usize = 0x80000000;
 
 /// Memory size for ctn memory on ahb_bridge in top peppermint.
-pub const AHB_BRIDGE_CTN_SIZE_BYTES: usize = 0x10000000;
+pub const AHB_BRIDGE_CTN_SIZE_BYTES: usize = 0x80000000;
 
 /// PLIC Interrupt Source Peripheral.
 ///
@@ -431,36 +431,36 @@ pub const AHB_BRIDGE_CTN_SIZE_BYTES: usize = 0x10000000;
 pub enum PlicPeripheral {
     /// Unknown Peripheral
     Unknown = 0,
-    /// pwrmgr
-    Pwrmgr = 1,
-    /// alert_handler
-    AlertHandler = 2,
-    /// otp_ctrl
-    OtpCtrl = 3,
     /// rv_timer
-    RvTimer = 4,
+    RvTimer = 1,
+    /// otp_ctrl
+    OtpCtrl = 2,
     /// hmac
-    Hmac = 5,
+    Hmac = 3,
     /// kmac
-    Kmac = 6,
+    Kmac = 4,
     /// otbn
-    Otbn = 7,
+    Otbn = 5,
     /// keymgr_dpe
-    KeymgrDpe = 8,
+    KeymgrDpe = 6,
     /// csrng
-    Csrng = 9,
+    Csrng = 7,
     /// entropy_src
-    EntropySrc = 10,
+    EntropySrc = 8,
     /// edn0
-    Edn0 = 11,
+    Edn0 = 9,
     /// edn1
-    Edn1 = 12,
+    Edn1 = 10,
     /// dma
-    Dma = 13,
+    Dma = 11,
     /// mbx0
-    Mbx0 = 14,
+    Mbx0 = 12,
     /// mbx1
-    Mbx1 = 15,
+    Mbx1 = 13,
+    /// pwrmgr
+    Pwrmgr = 14,
+    /// alert_handler
+    AlertHandler = 15,
 }
 
 impl TryFrom<u32> for PlicPeripheral {
@@ -468,21 +468,21 @@ impl TryFrom<u32> for PlicPeripheral {
     fn try_from(val: u32) -> Result<Self, Self::Error> {
         match val {
             0 => Ok(Self::Unknown),
-            1 => Ok(Self::Pwrmgr),
-            2 => Ok(Self::AlertHandler),
-            3 => Ok(Self::OtpCtrl),
-            4 => Ok(Self::RvTimer),
-            5 => Ok(Self::Hmac),
-            6 => Ok(Self::Kmac),
-            7 => Ok(Self::Otbn),
-            8 => Ok(Self::KeymgrDpe),
-            9 => Ok(Self::Csrng),
-            10 => Ok(Self::EntropySrc),
-            11 => Ok(Self::Edn0),
-            12 => Ok(Self::Edn1),
-            13 => Ok(Self::Dma),
-            14 => Ok(Self::Mbx0),
-            15 => Ok(Self::Mbx1),
+            1 => Ok(Self::RvTimer),
+            2 => Ok(Self::OtpCtrl),
+            3 => Ok(Self::Hmac),
+            4 => Ok(Self::Kmac),
+            5 => Ok(Self::Otbn),
+            6 => Ok(Self::KeymgrDpe),
+            7 => Ok(Self::Csrng),
+            8 => Ok(Self::EntropySrc),
+            9 => Ok(Self::Edn0),
+            10 => Ok(Self::Edn1),
+            11 => Ok(Self::Dma),
+            12 => Ok(Self::Mbx0),
+            13 => Ok(Self::Mbx1),
+            14 => Ok(Self::Pwrmgr),
+            15 => Ok(Self::AlertHandler),
             _ => Err(val),
         }
     }
@@ -497,80 +497,80 @@ impl TryFrom<u32> for PlicPeripheral {
 pub enum PlicIrqId {
     /// No Interrupt
     None = 0,
-    /// pwrmgr_wakeup
-    PwrmgrWakeup = 1,
-    /// alert_handler_classa
-    AlertHandlerClassa = 2,
-    /// alert_handler_classb
-    AlertHandlerClassb = 3,
-    /// alert_handler_classc
-    AlertHandlerClassc = 4,
-    /// alert_handler_classd
-    AlertHandlerClassd = 5,
-    /// otp_ctrl_otp_operation_done
-    OtpCtrlOtpOperationDone = 6,
-    /// otp_ctrl_otp_error
-    OtpCtrlOtpError = 7,
     /// rv_timer_timer_expired_hart0_timer0
-    RvTimerTimerExpiredHart0Timer0 = 8,
+    RvTimerTimerExpiredHart0Timer0 = 1,
+    /// otp_ctrl_otp_operation_done
+    OtpCtrlOtpOperationDone = 2,
+    /// otp_ctrl_otp_error
+    OtpCtrlOtpError = 3,
     /// hmac_hmac_done
-    HmacHmacDone = 9,
+    HmacHmacDone = 4,
     /// hmac_fifo_empty
-    HmacFifoEmpty = 10,
+    HmacFifoEmpty = 5,
     /// hmac_hmac_err
-    HmacHmacErr = 11,
+    HmacHmacErr = 6,
     /// kmac_kmac_done
-    KmacKmacDone = 12,
+    KmacKmacDone = 7,
     /// kmac_fifo_empty
-    KmacFifoEmpty = 13,
+    KmacFifoEmpty = 8,
     /// kmac_kmac_err
-    KmacKmacErr = 14,
+    KmacKmacErr = 9,
     /// otbn_done
-    OtbnDone = 15,
+    OtbnDone = 10,
     /// keymgr_dpe_op_done
-    KeymgrDpeOpDone = 16,
+    KeymgrDpeOpDone = 11,
     /// csrng_cs_cmd_req_done
-    CsrngCsCmdReqDone = 17,
+    CsrngCsCmdReqDone = 12,
     /// csrng_cs_entropy_req
-    CsrngCsEntropyReq = 18,
+    CsrngCsEntropyReq = 13,
     /// csrng_cs_hw_inst_exc
-    CsrngCsHwInstExc = 19,
+    CsrngCsHwInstExc = 14,
     /// csrng_cs_fatal_err
-    CsrngCsFatalErr = 20,
+    CsrngCsFatalErr = 15,
     /// entropy_src_es_entropy_valid
-    EntropySrcEsEntropyValid = 21,
+    EntropySrcEsEntropyValid = 16,
     /// entropy_src_es_health_test_failed
-    EntropySrcEsHealthTestFailed = 22,
+    EntropySrcEsHealthTestFailed = 17,
     /// entropy_src_es_observe_fifo_ready
-    EntropySrcEsObserveFifoReady = 23,
+    EntropySrcEsObserveFifoReady = 18,
     /// entropy_src_es_fatal_err
-    EntropySrcEsFatalErr = 24,
+    EntropySrcEsFatalErr = 19,
     /// edn0_edn_cmd_req_done
-    Edn0EdnCmdReqDone = 25,
+    Edn0EdnCmdReqDone = 20,
     /// edn0_edn_fatal_err
-    Edn0EdnFatalErr = 26,
+    Edn0EdnFatalErr = 21,
     /// edn1_edn_cmd_req_done
-    Edn1EdnCmdReqDone = 27,
+    Edn1EdnCmdReqDone = 22,
     /// edn1_edn_fatal_err
-    Edn1EdnFatalErr = 28,
+    Edn1EdnFatalErr = 23,
     /// dma_dma_done
-    DmaDmaDone = 29,
+    DmaDmaDone = 24,
     /// dma_dma_chunk_done
-    DmaDmaChunkDone = 30,
+    DmaDmaChunkDone = 25,
     /// dma_dma_error
-    DmaDmaError = 31,
+    DmaDmaError = 26,
     /// mbx0_mbx_ready
-    Mbx0MbxReady = 32,
+    Mbx0MbxReady = 27,
     /// mbx0_mbx_abort
-    Mbx0MbxAbort = 33,
+    Mbx0MbxAbort = 28,
     /// mbx0_mbx_error
-    Mbx0MbxError = 34,
+    Mbx0MbxError = 29,
     /// mbx1_mbx_ready
-    Mbx1MbxReady = 35,
+    Mbx1MbxReady = 30,
     /// mbx1_mbx_abort
-    Mbx1MbxAbort = 36,
+    Mbx1MbxAbort = 31,
     /// mbx1_mbx_error
-    Mbx1MbxError = 37,
+    Mbx1MbxError = 32,
+    /// pwrmgr_wakeup
+    PwrmgrWakeup = 33,
+    /// alert_handler_classa
+    AlertHandlerClassa = 34,
+    /// alert_handler_classb
+    AlertHandlerClassb = 35,
+    /// alert_handler_classc
+    AlertHandlerClassc = 36,
+    /// alert_handler_classd
+    AlertHandlerClassd = 37,
     /// soc_irq_0
     SocIrq0 = 38,
     /// soc_irq_1
@@ -586,43 +586,43 @@ impl TryFrom<u32> for PlicIrqId {
     fn try_from(val: u32) -> Result<Self, Self::Error> {
         match val {
             0 => Ok(Self::None),
-            1 => Ok(Self::PwrmgrWakeup),
-            2 => Ok(Self::AlertHandlerClassa),
-            3 => Ok(Self::AlertHandlerClassb),
-            4 => Ok(Self::AlertHandlerClassc),
-            5 => Ok(Self::AlertHandlerClassd),
-            6 => Ok(Self::OtpCtrlOtpOperationDone),
-            7 => Ok(Self::OtpCtrlOtpError),
-            8 => Ok(Self::RvTimerTimerExpiredHart0Timer0),
-            9 => Ok(Self::HmacHmacDone),
-            10 => Ok(Self::HmacFifoEmpty),
-            11 => Ok(Self::HmacHmacErr),
-            12 => Ok(Self::KmacKmacDone),
-            13 => Ok(Self::KmacFifoEmpty),
-            14 => Ok(Self::KmacKmacErr),
-            15 => Ok(Self::OtbnDone),
-            16 => Ok(Self::KeymgrDpeOpDone),
-            17 => Ok(Self::CsrngCsCmdReqDone),
-            18 => Ok(Self::CsrngCsEntropyReq),
-            19 => Ok(Self::CsrngCsHwInstExc),
-            20 => Ok(Self::CsrngCsFatalErr),
-            21 => Ok(Self::EntropySrcEsEntropyValid),
-            22 => Ok(Self::EntropySrcEsHealthTestFailed),
-            23 => Ok(Self::EntropySrcEsObserveFifoReady),
-            24 => Ok(Self::EntropySrcEsFatalErr),
-            25 => Ok(Self::Edn0EdnCmdReqDone),
-            26 => Ok(Self::Edn0EdnFatalErr),
-            27 => Ok(Self::Edn1EdnCmdReqDone),
-            28 => Ok(Self::Edn1EdnFatalErr),
-            29 => Ok(Self::DmaDmaDone),
-            30 => Ok(Self::DmaDmaChunkDone),
-            31 => Ok(Self::DmaDmaError),
-            32 => Ok(Self::Mbx0MbxReady),
-            33 => Ok(Self::Mbx0MbxAbort),
-            34 => Ok(Self::Mbx0MbxError),
-            35 => Ok(Self::Mbx1MbxReady),
-            36 => Ok(Self::Mbx1MbxAbort),
-            37 => Ok(Self::Mbx1MbxError),
+            1 => Ok(Self::RvTimerTimerExpiredHart0Timer0),
+            2 => Ok(Self::OtpCtrlOtpOperationDone),
+            3 => Ok(Self::OtpCtrlOtpError),
+            4 => Ok(Self::HmacHmacDone),
+            5 => Ok(Self::HmacFifoEmpty),
+            6 => Ok(Self::HmacHmacErr),
+            7 => Ok(Self::KmacKmacDone),
+            8 => Ok(Self::KmacFifoEmpty),
+            9 => Ok(Self::KmacKmacErr),
+            10 => Ok(Self::OtbnDone),
+            11 => Ok(Self::KeymgrDpeOpDone),
+            12 => Ok(Self::CsrngCsCmdReqDone),
+            13 => Ok(Self::CsrngCsEntropyReq),
+            14 => Ok(Self::CsrngCsHwInstExc),
+            15 => Ok(Self::CsrngCsFatalErr),
+            16 => Ok(Self::EntropySrcEsEntropyValid),
+            17 => Ok(Self::EntropySrcEsHealthTestFailed),
+            18 => Ok(Self::EntropySrcEsObserveFifoReady),
+            19 => Ok(Self::EntropySrcEsFatalErr),
+            20 => Ok(Self::Edn0EdnCmdReqDone),
+            21 => Ok(Self::Edn0EdnFatalErr),
+            22 => Ok(Self::Edn1EdnCmdReqDone),
+            23 => Ok(Self::Edn1EdnFatalErr),
+            24 => Ok(Self::DmaDmaDone),
+            25 => Ok(Self::DmaDmaChunkDone),
+            26 => Ok(Self::DmaDmaError),
+            27 => Ok(Self::Mbx0MbxReady),
+            28 => Ok(Self::Mbx0MbxAbort),
+            29 => Ok(Self::Mbx0MbxError),
+            30 => Ok(Self::Mbx1MbxReady),
+            31 => Ok(Self::Mbx1MbxAbort),
+            32 => Ok(Self::Mbx1MbxError),
+            33 => Ok(Self::PwrmgrWakeup),
+            34 => Ok(Self::AlertHandlerClassa),
+            35 => Ok(Self::AlertHandlerClassb),
+            36 => Ok(Self::AlertHandlerClassc),
+            37 => Ok(Self::AlertHandlerClassd),
             38 => Ok(Self::SocIrq0),
             39 => Ok(Self::SocIrq1),
             40 => Ok(Self::SocIrq2),
@@ -650,22 +650,12 @@ pub enum PlicTarget {
 pub const PLIC_INTERRUPT_FOR_PERIPHERAL: [PlicPeripheral; 42] = [
     // None -> PlicPeripheral::Unknown
     PlicPeripheral::Unknown,
-    // PwrmgrWakeup -> PlicPeripheral::Pwrmgr
-    PlicPeripheral::Pwrmgr,
-    // AlertHandlerClassa -> PlicPeripheral::AlertHandler
-    PlicPeripheral::AlertHandler,
-    // AlertHandlerClassb -> PlicPeripheral::AlertHandler
-    PlicPeripheral::AlertHandler,
-    // AlertHandlerClassc -> PlicPeripheral::AlertHandler
-    PlicPeripheral::AlertHandler,
-    // AlertHandlerClassd -> PlicPeripheral::AlertHandler
-    PlicPeripheral::AlertHandler,
+    // RvTimerTimerExpiredHart0Timer0 -> PlicPeripheral::RvTimer
+    PlicPeripheral::RvTimer,
     // OtpCtrlOtpOperationDone -> PlicPeripheral::OtpCtrl
     PlicPeripheral::OtpCtrl,
     // OtpCtrlOtpError -> PlicPeripheral::OtpCtrl
     PlicPeripheral::OtpCtrl,
-    // RvTimerTimerExpiredHart0Timer0 -> PlicPeripheral::RvTimer
-    PlicPeripheral::RvTimer,
     // HmacHmacDone -> PlicPeripheral::Hmac
     PlicPeripheral::Hmac,
     // HmacFifoEmpty -> PlicPeripheral::Hmac
@@ -724,6 +714,16 @@ pub const PLIC_INTERRUPT_FOR_PERIPHERAL: [PlicPeripheral; 42] = [
     PlicPeripheral::Mbx1,
     // Mbx1MbxError -> PlicPeripheral::Mbx1
     PlicPeripheral::Mbx1,
+    // PwrmgrWakeup -> PlicPeripheral::Pwrmgr
+    PlicPeripheral::Pwrmgr,
+    // AlertHandlerClassa -> PlicPeripheral::AlertHandler
+    PlicPeripheral::AlertHandler,
+    // AlertHandlerClassb -> PlicPeripheral::AlertHandler
+    PlicPeripheral::AlertHandler,
+    // AlertHandlerClassc -> PlicPeripheral::AlertHandler
+    PlicPeripheral::AlertHandler,
+    // AlertHandlerClassd -> PlicPeripheral::AlertHandler
+    PlicPeripheral::AlertHandler,
     // SocIrq0 -> PlicPeripheral::Unknown
     PlicPeripheral::Unknown,
     // SocIrq1 -> PlicPeripheral::Unknown
@@ -743,54 +743,54 @@ pub const PLIC_INTERRUPT_FOR_PERIPHERAL: [PlicPeripheral; 42] = [
 pub enum AlertPeripheral {
     /// External Peripheral
     External = 0,
-    /// pwrmgr
-    Pwrmgr = 1,
-    /// rstmgr
-    Rstmgr = 2,
-    /// clkmgr
-    Clkmgr = 3,
-    /// sram_ctrl_ret
-    SramCtrlRet = 4,
-    /// otp_ctrl
-    OtpCtrl = 5,
-    /// lc_ctrl
-    LcCtrl = 6,
-    /// rv_dm
-    RvDm = 7,
-    /// rv_plic
-    RvPlic = 8,
     /// rv_timer
-    RvTimer = 9,
+    RvTimer = 1,
+    /// otp_ctrl
+    OtpCtrl = 2,
+    /// lc_ctrl
+    LcCtrl = 3,
     /// aes
-    Aes = 10,
+    Aes = 4,
     /// hmac
-    Hmac = 11,
+    Hmac = 5,
     /// kmac
-    Kmac = 12,
+    Kmac = 6,
     /// otbn
-    Otbn = 13,
+    Otbn = 7,
     /// keymgr_dpe
-    KeymgrDpe = 14,
+    KeymgrDpe = 8,
     /// csrng
-    Csrng = 15,
+    Csrng = 9,
     /// entropy_src
-    EntropySrc = 16,
+    EntropySrc = 10,
     /// edn0
-    Edn0 = 17,
+    Edn0 = 11,
     /// edn1
-    Edn1 = 18,
+    Edn1 = 12,
     /// sram_ctrl_main
-    SramCtrlMain = 19,
+    SramCtrlMain = 13,
     /// rom_ctrl
-    RomCtrl = 20,
-    /// dma
-    Dma = 21,
-    /// mbx0
-    Mbx0 = 22,
-    /// mbx1
-    Mbx1 = 23,
+    RomCtrl = 14,
     /// rv_core_ibex
-    RvCoreIbex = 24,
+    RvCoreIbex = 15,
+    /// rv_dm
+    RvDm = 16,
+    /// dma
+    Dma = 17,
+    /// mbx0
+    Mbx0 = 18,
+    /// mbx1
+    Mbx1 = 19,
+    /// pwrmgr
+    Pwrmgr = 20,
+    /// rstmgr
+    Rstmgr = 21,
+    /// clkmgr
+    Clkmgr = 22,
+    /// sram_ctrl_ret
+    SramCtrlRet = 23,
+    /// rv_plic
+    RvPlic = 24,
 }
 
 /// Alert Handler Alert Source.
@@ -800,96 +800,96 @@ pub enum AlertPeripheral {
 #[derive(Copy, Clone, PartialEq, Eq)]
 #[repr(u32)]
 pub enum AlertId {
-    /// pwrmgr_fatal_fault
-    PwrmgrFatalFault = 0,
-    /// rstmgr_fatal_fault
-    RstmgrFatalFault = 1,
-    /// rstmgr_fatal_cnsty_fault
-    RstmgrFatalCnstyFault = 2,
-    /// clkmgr_recov_fault
-    ClkmgrRecovFault = 3,
-    /// clkmgr_fatal_fault
-    ClkmgrFatalFault = 4,
-    /// sram_ctrl_ret_fatal_error
-    SramCtrlRetFatalError = 5,
-    /// otp_ctrl_fatal_macro_error
-    OtpCtrlFatalMacroError = 6,
-    /// otp_ctrl_fatal_check_error
-    OtpCtrlFatalCheckError = 7,
-    /// otp_ctrl_fatal_bus_integ_error
-    OtpCtrlFatalBusIntegError = 8,
-    /// otp_ctrl_fatal_prim_otp_alert
-    OtpCtrlFatalPrimOtpAlert = 9,
-    /// otp_ctrl_recov_prim_otp_alert
-    OtpCtrlRecovPrimOtpAlert = 10,
-    /// lc_ctrl_fatal_prog_error
-    LcCtrlFatalProgError = 11,
-    /// lc_ctrl_fatal_state_error
-    LcCtrlFatalStateError = 12,
-    /// lc_ctrl_fatal_bus_integ_error
-    LcCtrlFatalBusIntegError = 13,
-    /// rv_dm_fatal_fault
-    RvDmFatalFault = 14,
-    /// rv_plic_fatal_fault
-    RvPlicFatalFault = 15,
     /// rv_timer_fatal_fault
-    RvTimerFatalFault = 16,
+    RvTimerFatalFault = 0,
+    /// otp_ctrl_fatal_macro_error
+    OtpCtrlFatalMacroError = 1,
+    /// otp_ctrl_fatal_check_error
+    OtpCtrlFatalCheckError = 2,
+    /// otp_ctrl_fatal_bus_integ_error
+    OtpCtrlFatalBusIntegError = 3,
+    /// otp_ctrl_fatal_prim_otp_alert
+    OtpCtrlFatalPrimOtpAlert = 4,
+    /// otp_ctrl_recov_prim_otp_alert
+    OtpCtrlRecovPrimOtpAlert = 5,
+    /// lc_ctrl_fatal_prog_error
+    LcCtrlFatalProgError = 6,
+    /// lc_ctrl_fatal_state_error
+    LcCtrlFatalStateError = 7,
+    /// lc_ctrl_fatal_bus_integ_error
+    LcCtrlFatalBusIntegError = 8,
     /// aes_recov_ctrl_update_err
-    AesRecovCtrlUpdateErr = 17,
+    AesRecovCtrlUpdateErr = 9,
     /// aes_fatal_fault
-    AesFatalFault = 18,
+    AesFatalFault = 10,
     /// hmac_fatal_fault
-    HmacFatalFault = 19,
+    HmacFatalFault = 11,
     /// kmac_recov_operation_err
-    KmacRecovOperationErr = 20,
+    KmacRecovOperationErr = 12,
     /// kmac_fatal_fault_err
-    KmacFatalFaultErr = 21,
+    KmacFatalFaultErr = 13,
     /// otbn_fatal
-    OtbnFatal = 22,
+    OtbnFatal = 14,
     /// otbn_recov
-    OtbnRecov = 23,
+    OtbnRecov = 15,
     /// keymgr_dpe_recov_operation_err
-    KeymgrDpeRecovOperationErr = 24,
+    KeymgrDpeRecovOperationErr = 16,
     /// keymgr_dpe_fatal_fault_err
-    KeymgrDpeFatalFaultErr = 25,
+    KeymgrDpeFatalFaultErr = 17,
     /// csrng_recov_alert
-    CsrngRecovAlert = 26,
+    CsrngRecovAlert = 18,
     /// csrng_fatal_alert
-    CsrngFatalAlert = 27,
+    CsrngFatalAlert = 19,
     /// entropy_src_recov_alert
-    EntropySrcRecovAlert = 28,
+    EntropySrcRecovAlert = 20,
     /// entropy_src_fatal_alert
-    EntropySrcFatalAlert = 29,
+    EntropySrcFatalAlert = 21,
     /// edn0_recov_alert
-    Edn0RecovAlert = 30,
+    Edn0RecovAlert = 22,
     /// edn0_fatal_alert
-    Edn0FatalAlert = 31,
+    Edn0FatalAlert = 23,
     /// edn1_recov_alert
-    Edn1RecovAlert = 32,
+    Edn1RecovAlert = 24,
     /// edn1_fatal_alert
-    Edn1FatalAlert = 33,
+    Edn1FatalAlert = 25,
     /// sram_ctrl_main_fatal_error
-    SramCtrlMainFatalError = 34,
+    SramCtrlMainFatalError = 26,
     /// rom_ctrl_fatal
-    RomCtrlFatal = 35,
-    /// dma_fatal_fault
-    DmaFatalFault = 36,
-    /// mbx0_fatal_fault
-    Mbx0FatalFault = 37,
-    /// mbx0_recov_fault
-    Mbx0RecovFault = 38,
-    /// mbx1_fatal_fault
-    Mbx1FatalFault = 39,
-    /// mbx1_recov_fault
-    Mbx1RecovFault = 40,
+    RomCtrlFatal = 27,
     /// rv_core_ibex_fatal_sw_err
-    RvCoreIbexFatalSwErr = 41,
+    RvCoreIbexFatalSwErr = 28,
     /// rv_core_ibex_recov_sw_err
-    RvCoreIbexRecovSwErr = 42,
+    RvCoreIbexRecovSwErr = 29,
     /// rv_core_ibex_fatal_hw_err
-    RvCoreIbexFatalHwErr = 43,
+    RvCoreIbexFatalHwErr = 30,
     /// rv_core_ibex_recov_hw_err
-    RvCoreIbexRecovHwErr = 44,
+    RvCoreIbexRecovHwErr = 31,
+    /// rv_dm_fatal_fault
+    RvDmFatalFault = 32,
+    /// dma_fatal_fault
+    DmaFatalFault = 33,
+    /// mbx0_fatal_fault
+    Mbx0FatalFault = 34,
+    /// mbx0_recov_fault
+    Mbx0RecovFault = 35,
+    /// mbx1_fatal_fault
+    Mbx1FatalFault = 36,
+    /// mbx1_recov_fault
+    Mbx1RecovFault = 37,
+    /// pwrmgr_fatal_fault
+    PwrmgrFatalFault = 38,
+    /// rstmgr_fatal_fault
+    RstmgrFatalFault = 39,
+    /// rstmgr_fatal_cnsty_fault
+    RstmgrFatalCnstyFault = 40,
+    /// clkmgr_recov_fault
+    ClkmgrRecovFault = 41,
+    /// clkmgr_fatal_fault
+    ClkmgrFatalFault = 42,
+    /// sram_ctrl_ret_fatal_error
+    SramCtrlRetFatalError = 43,
+    /// rv_plic_fatal_fault
+    RvPlicFatalFault = 44,
     /// incoming_soc_soc_recov_alert_0
     IncomingSocSocRecovAlert0 = 45,
     /// incoming_soc_soc_recov_alert_1
@@ -976,51 +976,51 @@ impl TryFrom<u32> for AlertId {
     type Error = u32;
     fn try_from(val: u32) -> Result<Self, Self::Error> {
         match val {
-            0 => Ok(Self::PwrmgrFatalFault),
-            1 => Ok(Self::RstmgrFatalFault),
-            2 => Ok(Self::RstmgrFatalCnstyFault),
-            3 => Ok(Self::ClkmgrRecovFault),
-            4 => Ok(Self::ClkmgrFatalFault),
-            5 => Ok(Self::SramCtrlRetFatalError),
-            6 => Ok(Self::OtpCtrlFatalMacroError),
-            7 => Ok(Self::OtpCtrlFatalCheckError),
-            8 => Ok(Self::OtpCtrlFatalBusIntegError),
-            9 => Ok(Self::OtpCtrlFatalPrimOtpAlert),
-            10 => Ok(Self::OtpCtrlRecovPrimOtpAlert),
-            11 => Ok(Self::LcCtrlFatalProgError),
-            12 => Ok(Self::LcCtrlFatalStateError),
-            13 => Ok(Self::LcCtrlFatalBusIntegError),
-            14 => Ok(Self::RvDmFatalFault),
-            15 => Ok(Self::RvPlicFatalFault),
-            16 => Ok(Self::RvTimerFatalFault),
-            17 => Ok(Self::AesRecovCtrlUpdateErr),
-            18 => Ok(Self::AesFatalFault),
-            19 => Ok(Self::HmacFatalFault),
-            20 => Ok(Self::KmacRecovOperationErr),
-            21 => Ok(Self::KmacFatalFaultErr),
-            22 => Ok(Self::OtbnFatal),
-            23 => Ok(Self::OtbnRecov),
-            24 => Ok(Self::KeymgrDpeRecovOperationErr),
-            25 => Ok(Self::KeymgrDpeFatalFaultErr),
-            26 => Ok(Self::CsrngRecovAlert),
-            27 => Ok(Self::CsrngFatalAlert),
-            28 => Ok(Self::EntropySrcRecovAlert),
-            29 => Ok(Self::EntropySrcFatalAlert),
-            30 => Ok(Self::Edn0RecovAlert),
-            31 => Ok(Self::Edn0FatalAlert),
-            32 => Ok(Self::Edn1RecovAlert),
-            33 => Ok(Self::Edn1FatalAlert),
-            34 => Ok(Self::SramCtrlMainFatalError),
-            35 => Ok(Self::RomCtrlFatal),
-            36 => Ok(Self::DmaFatalFault),
-            37 => Ok(Self::Mbx0FatalFault),
-            38 => Ok(Self::Mbx0RecovFault),
-            39 => Ok(Self::Mbx1FatalFault),
-            40 => Ok(Self::Mbx1RecovFault),
-            41 => Ok(Self::RvCoreIbexFatalSwErr),
-            42 => Ok(Self::RvCoreIbexRecovSwErr),
-            43 => Ok(Self::RvCoreIbexFatalHwErr),
-            44 => Ok(Self::RvCoreIbexRecovHwErr),
+            0 => Ok(Self::RvTimerFatalFault),
+            1 => Ok(Self::OtpCtrlFatalMacroError),
+            2 => Ok(Self::OtpCtrlFatalCheckError),
+            3 => Ok(Self::OtpCtrlFatalBusIntegError),
+            4 => Ok(Self::OtpCtrlFatalPrimOtpAlert),
+            5 => Ok(Self::OtpCtrlRecovPrimOtpAlert),
+            6 => Ok(Self::LcCtrlFatalProgError),
+            7 => Ok(Self::LcCtrlFatalStateError),
+            8 => Ok(Self::LcCtrlFatalBusIntegError),
+            9 => Ok(Self::AesRecovCtrlUpdateErr),
+            10 => Ok(Self::AesFatalFault),
+            11 => Ok(Self::HmacFatalFault),
+            12 => Ok(Self::KmacRecovOperationErr),
+            13 => Ok(Self::KmacFatalFaultErr),
+            14 => Ok(Self::OtbnFatal),
+            15 => Ok(Self::OtbnRecov),
+            16 => Ok(Self::KeymgrDpeRecovOperationErr),
+            17 => Ok(Self::KeymgrDpeFatalFaultErr),
+            18 => Ok(Self::CsrngRecovAlert),
+            19 => Ok(Self::CsrngFatalAlert),
+            20 => Ok(Self::EntropySrcRecovAlert),
+            21 => Ok(Self::EntropySrcFatalAlert),
+            22 => Ok(Self::Edn0RecovAlert),
+            23 => Ok(Self::Edn0FatalAlert),
+            24 => Ok(Self::Edn1RecovAlert),
+            25 => Ok(Self::Edn1FatalAlert),
+            26 => Ok(Self::SramCtrlMainFatalError),
+            27 => Ok(Self::RomCtrlFatal),
+            28 => Ok(Self::RvCoreIbexFatalSwErr),
+            29 => Ok(Self::RvCoreIbexRecovSwErr),
+            30 => Ok(Self::RvCoreIbexFatalHwErr),
+            31 => Ok(Self::RvCoreIbexRecovHwErr),
+            32 => Ok(Self::RvDmFatalFault),
+            33 => Ok(Self::DmaFatalFault),
+            34 => Ok(Self::Mbx0FatalFault),
+            35 => Ok(Self::Mbx0RecovFault),
+            36 => Ok(Self::Mbx1FatalFault),
+            37 => Ok(Self::Mbx1RecovFault),
+            38 => Ok(Self::PwrmgrFatalFault),
+            39 => Ok(Self::RstmgrFatalFault),
+            40 => Ok(Self::RstmgrFatalCnstyFault),
+            41 => Ok(Self::ClkmgrRecovFault),
+            42 => Ok(Self::ClkmgrFatalFault),
+            43 => Ok(Self::SramCtrlRetFatalError),
+            44 => Ok(Self::RvPlicFatalFault),
             45 => Ok(Self::IncomingSocSocRecovAlert0),
             46 => Ok(Self::IncomingSocSocRecovAlert1),
             47 => Ok(Self::IncomingSocSocRecovAlert2),
@@ -1071,18 +1071,8 @@ impl TryFrom<u32> for AlertId {
 /// This array is a mapping from `AlertId` to
 /// `AlertPeripheral`.
 pub const ALERT_FOR_PERIPHERAL: [AlertPeripheral; 85] = [
-    // PwrmgrFatalFault -> AlertPeripheral::Pwrmgr
-    AlertPeripheral::Pwrmgr,
-    // RstmgrFatalFault -> AlertPeripheral::Rstmgr
-    AlertPeripheral::Rstmgr,
-    // RstmgrFatalCnstyFault -> AlertPeripheral::Rstmgr
-    AlertPeripheral::Rstmgr,
-    // ClkmgrRecovFault -> AlertPeripheral::Clkmgr
-    AlertPeripheral::Clkmgr,
-    // ClkmgrFatalFault -> AlertPeripheral::Clkmgr
-    AlertPeripheral::Clkmgr,
-    // SramCtrlRetFatalError -> AlertPeripheral::SramCtrlRet
-    AlertPeripheral::SramCtrlRet,
+    // RvTimerFatalFault -> AlertPeripheral::RvTimer
+    AlertPeripheral::RvTimer,
     // OtpCtrlFatalMacroError -> AlertPeripheral::OtpCtrl
     AlertPeripheral::OtpCtrl,
     // OtpCtrlFatalCheckError -> AlertPeripheral::OtpCtrl
@@ -1099,12 +1089,6 @@ pub const ALERT_FOR_PERIPHERAL: [AlertPeripheral; 85] = [
     AlertPeripheral::LcCtrl,
     // LcCtrlFatalBusIntegError -> AlertPeripheral::LcCtrl
     AlertPeripheral::LcCtrl,
-    // RvDmFatalFault -> AlertPeripheral::RvDm
-    AlertPeripheral::RvDm,
-    // RvPlicFatalFault -> AlertPeripheral::RvPlic
-    AlertPeripheral::RvPlic,
-    // RvTimerFatalFault -> AlertPeripheral::RvTimer
-    AlertPeripheral::RvTimer,
     // AesRecovCtrlUpdateErr -> AlertPeripheral::Aes
     AlertPeripheral::Aes,
     // AesFatalFault -> AlertPeripheral::Aes
@@ -1143,6 +1127,16 @@ pub const ALERT_FOR_PERIPHERAL: [AlertPeripheral; 85] = [
     AlertPeripheral::SramCtrlMain,
     // RomCtrlFatal -> AlertPeripheral::RomCtrl
     AlertPeripheral::RomCtrl,
+    // RvCoreIbexFatalSwErr -> AlertPeripheral::RvCoreIbex
+    AlertPeripheral::RvCoreIbex,
+    // RvCoreIbexRecovSwErr -> AlertPeripheral::RvCoreIbex
+    AlertPeripheral::RvCoreIbex,
+    // RvCoreIbexFatalHwErr -> AlertPeripheral::RvCoreIbex
+    AlertPeripheral::RvCoreIbex,
+    // RvCoreIbexRecovHwErr -> AlertPeripheral::RvCoreIbex
+    AlertPeripheral::RvCoreIbex,
+    // RvDmFatalFault -> AlertPeripheral::RvDm
+    AlertPeripheral::RvDm,
     // DmaFatalFault -> AlertPeripheral::Dma
     AlertPeripheral::Dma,
     // Mbx0FatalFault -> AlertPeripheral::Mbx0
@@ -1153,14 +1147,20 @@ pub const ALERT_FOR_PERIPHERAL: [AlertPeripheral; 85] = [
     AlertPeripheral::Mbx1,
     // Mbx1RecovFault -> AlertPeripheral::Mbx1
     AlertPeripheral::Mbx1,
-    // RvCoreIbexFatalSwErr -> AlertPeripheral::RvCoreIbex
-    AlertPeripheral::RvCoreIbex,
-    // RvCoreIbexRecovSwErr -> AlertPeripheral::RvCoreIbex
-    AlertPeripheral::RvCoreIbex,
-    // RvCoreIbexFatalHwErr -> AlertPeripheral::RvCoreIbex
-    AlertPeripheral::RvCoreIbex,
-    // RvCoreIbexRecovHwErr -> AlertPeripheral::RvCoreIbex
-    AlertPeripheral::RvCoreIbex,
+    // PwrmgrFatalFault -> AlertPeripheral::Pwrmgr
+    AlertPeripheral::Pwrmgr,
+    // RstmgrFatalFault -> AlertPeripheral::Rstmgr
+    AlertPeripheral::Rstmgr,
+    // RstmgrFatalCnstyFault -> AlertPeripheral::Rstmgr
+    AlertPeripheral::Rstmgr,
+    // ClkmgrRecovFault -> AlertPeripheral::Clkmgr
+    AlertPeripheral::Clkmgr,
+    // ClkmgrFatalFault -> AlertPeripheral::Clkmgr
+    AlertPeripheral::Clkmgr,
+    // SramCtrlRetFatalError -> AlertPeripheral::SramCtrlRet
+    AlertPeripheral::SramCtrlRet,
+    // RvPlicFatalFault -> AlertPeripheral::RvPlic
+    AlertPeripheral::RvPlic,
     // IncomingSocSocRecovAlert0 -> AlertPeripheral::External
     AlertPeripheral::External,
     // IncomingSocSocRecovAlert1 -> AlertPeripheral::External
@@ -1282,5 +1282,5 @@ pub enum HintableClocks {}
 /// MMIO region excludes any memory that is separate from the module
 /// configuration space, i.e. ROM, main SRAM and mailbox SoC window are excluded
 /// but retention SRAM is included.
-pub const TOP_PEPPERMINT_MMIO_BASE_ADDR: usize = 0x21100000;
-pub const TOP_PEPPERMINT_MMIO_SIZE_BYTES: usize = 0x1F372000;
+pub const TOP_PEPPERMINT_MMIO_BASE_ADDR: usize = 0x40000000;
+pub const TOP_PEPPERMINT_MMIO_SIZE_BYTES: usize = 0x10000000;

@@ -5001,7 +5001,7 @@ package lowrisc_ibex_pmp_reset_pkg;
     '{lock: 1'b0, mode: PMP_MODE_OFF,   exec: 1'b0, write: 1'b0, read: 1'b0}, // 10
     '{lock: 1'b1, mode: PMP_MODE_TOR,   exec: 1'b0, write: 1'b1, read: 1'b1}, // 11 [MMIO: LRW]
     '{lock: 1'b0, mode: PMP_MODE_OFF,   exec: 1'b0, write: 1'b0, read: 1'b0}, // 12
-    '{lock: 1'b1, mode: PMP_MODE_OFF,   exec: 1'b0, write: 1'b0, read: 1'b0}, // 13
+    '{lock: 1'b0, mode: PMP_MODE_OFF,   exec: 1'b0, write: 1'b0, read: 1'b0}, // 13
     '{lock: 1'b0, mode: PMP_MODE_OFF,   exec: 1'b0, write: 1'b0, read: 1'b0}, // 14
     '{lock: 1'b0, mode: PMP_MODE_OFF,   exec: 1'b0, write: 1'b0, read: 1'b0}  // 15
   };
@@ -5011,12 +5011,12 @@ package lowrisc_ibex_pmp_reset_pkg;
   // off at coarser granularities.
   //
   // Note: The size of region 2 below must match the ROM size configured in
-  // top_peppermint.hjson (rom_ctrl.rom: base 0x0002_0000, 128 KiB) and, once
+  // top_peppermint.hjson (rom_ctrl.rom: base 0x0004_0000, 128 KiB) and, once
   // Peppermint's ROM software exists, its `_epmp_reset_rx_size` linker symbol.
   localparam logic [33:0] PmpAddrRst[16] = '{
     34'h00000000, // rgn 0
     34'h00000000, // rgn 1
-    34'h0002fffc, // rgn 2  [ROM: base=0x0002_0000 size=0x2_0000 (128KiB)]
+    34'h0004fffc, // rgn 2  [ROM: base=0x0004_0000, NAPOT of 128 KiB indicated by a 0 followed by 14 ones]
     34'h00000000, // rgn 3
     34'h00000000, // rgn 4
     34'h00000000, // rgn 5
@@ -41561,50 +41561,50 @@ package lowrisc_alert_handler_reg_pkg;
   4'd4,
   4'd4,
   4'd4,
-  4'd2,
-  4'd2,
-  4'd2,
-  4'd2,
-  4'd2,
-  4'd2,
-  4'd2,
-  4'd2,
-  4'd2,
-  4'd2,
-  4'd2,
-  4'd2,
-  4'd2,
-  4'd2,
-  4'd2,
-  4'd2,
-  4'd2,
-  4'd2,
-  4'd2,
-  4'd2,
-  4'd2,
-  4'd2,
-  4'd2,
-  4'd2,
-  4'd2,
-  4'd2,
-  4'd2,
-  4'd2,
-  4'd2,
-  4'd2,
+  4'd0,
+  4'd3,
+  4'd3,
+  4'd3,
+  4'd3,
   4'd3,
   4'd2,
-  4'd2,
-  4'd2,
-  4'd2,
-  4'd2,
-  4'd2,
-  4'd2,
-  4'd2,
+  4'd0,
+  4'd0,
+  4'd0,
+  4'd0,
+  4'd0,
   4'd1,
-  4'd1,
-  4'd1,
-  4'd1,
-  4'd1,
+  4'd0,
+  4'd0,
+  4'd0,
+  4'd0,
+  4'd0,
+  4'd0,
+  4'd0,
+  4'd0,
+  4'd0,
+  4'd0,
+  4'd0,
+  4'd0,
+  4'd0,
+  4'd0,
+  4'd0,
+  4'd0,
+  4'd0,
+  4'd0,
+  4'd0,
+  4'd0,
+  4'd0,
+  4'd0,
+  4'd0,
+  4'd0,
+  4'd0,
+  4'd0,
+  4'd0,
+  4'd0,
+  4'd0,
+  4'd0,
+  4'd0,
   4'd0
 };
   parameter int EscCntDw = 32;
@@ -176490,7 +176490,7 @@ module lowrisc_rstmgr
   assign shadow_fsm_errs[1] = '0;
 
   // Generating resets for lc_main
-  // Power Domains: ['Aon', 'Main']
+  // Power Domains: ['Main', 'Aon']
   // Shadowed: True
   lowrisc_rstmgr_leaf_rst #(
     .SecCheck(SecCheck),
@@ -176598,7 +176598,7 @@ module lowrisc_rstmgr
   end
 
   // Generating resets for lc_aon
-  // Power Domains: ['Aon', 'Main']
+  // Power Domains: ['Main', 'Aon']
   // Shadowed: True
   lowrisc_rstmgr_leaf_rst #(
     .SecCheck(0),
@@ -200563,37 +200563,37 @@ endmodule
 
 package lowrisc_tl_main_pkg;
 
-  localparam logic [31:0] ADDR_SPACE_RV_DM__REGS          = 32'h 21200000;
-  localparam logic [31:0] ADDR_SPACE_RV_DM__MEM           = 32'h 00050000;
-  localparam logic [31:0] ADDR_SPACE_ROM_CTRL__ROM        = 32'h 00020000;
-  localparam logic [31:0] ADDR_SPACE_ROM_CTRL__REGS       = 32'h 211e0000;
-  localparam logic [31:0] ADDR_SPACE_SRAM_CTRL_MAIN__REGS = 32'h 211c0000;
+  localparam logic [31:0] ADDR_SPACE_RV_DM__REGS          = 32'h 40230000;
+  localparam logic [31:0] ADDR_SPACE_RV_DM__MEM           = 32'h 00010000;
+  localparam logic [31:0] ADDR_SPACE_ROM_CTRL__ROM        = 32'h 00040000;
+  localparam logic [31:0] ADDR_SPACE_ROM_CTRL__REGS       = 32'h 40210000;
+  localparam logic [31:0] ADDR_SPACE_SRAM_CTRL_MAIN__REGS = 32'h 40200000;
   localparam logic [31:0] ADDR_SPACE_SRAM_CTRL_MAIN__RAM  = 32'h 10000000;
-  localparam logic [31:0] ADDR_SPACE_OTP_CTRL__CORE       = 32'h 30130000;
-  localparam logic [31:0] ADDR_SPACE_OTP_MACRO__PRIM      = 32'h 30140000;
-  localparam logic [31:0] ADDR_SPACE_LC_CTRL__REGS        = 32'h 30150000;
-  localparam logic [31:0] ADDR_SPACE_RV_PLIC              = 32'h 28000000;
-  localparam logic [31:0] ADDR_SPACE_RV_TIMER             = 32'h 21190000;
-  localparam logic [31:0] ADDR_SPACE_AES                  = 32'h 21100000;
-  localparam logic [31:0] ADDR_SPACE_HMAC                 = 32'h 21110000;
-  localparam logic [31:0] ADDR_SPACE_KMAC                 = 32'h 21120000;
-  localparam logic [31:0] ADDR_SPACE_OTBN                 = 32'h 21130000;
-  localparam logic [31:0] ADDR_SPACE_KEYMGR_DPE           = 32'h 21140000;
-  localparam logic [31:0] ADDR_SPACE_CSRNG                = 32'h 21150000;
-  localparam logic [31:0] ADDR_SPACE_ENTROPY_SRC          = 32'h 21160000;
-  localparam logic [31:0] ADDR_SPACE_EDN0                 = 32'h 21170000;
-  localparam logic [31:0] ADDR_SPACE_EDN1                 = 32'h 21180000;
-  localparam logic [31:0] ADDR_SPACE_RV_CORE_IBEX__CFG    = 32'h 211f0000;
-  localparam logic [31:0] ADDR_SPACE_DMA                  = 32'h 22010000;
+  localparam logic [31:0] ADDR_SPACE_OTP_CTRL__CORE       = 32'h 40010000;
+  localparam logic [31:0] ADDR_SPACE_OTP_MACRO__PRIM      = 32'h 40020000;
+  localparam logic [31:0] ADDR_SPACE_LC_CTRL__REGS        = 32'h 40030000;
+  localparam logic [31:0] ADDR_SPACE_RV_PLIC              = 32'h 48000000;
+  localparam logic [31:0] ADDR_SPACE_RV_TIMER             = 32'h 40000000;
+  localparam logic [31:0] ADDR_SPACE_AES                  = 32'h 40100000;
+  localparam logic [31:0] ADDR_SPACE_HMAC                 = 32'h 40110000;
+  localparam logic [31:0] ADDR_SPACE_KMAC                 = 32'h 40120000;
+  localparam logic [31:0] ADDR_SPACE_OTBN                 = 32'h 40130000;
+  localparam logic [31:0] ADDR_SPACE_KEYMGR_DPE           = 32'h 40140000;
+  localparam logic [31:0] ADDR_SPACE_CSRNG                = 32'h 40150000;
+  localparam logic [31:0] ADDR_SPACE_ENTROPY_SRC          = 32'h 40160000;
+  localparam logic [31:0] ADDR_SPACE_EDN0                 = 32'h 40170000;
+  localparam logic [31:0] ADDR_SPACE_EDN1                 = 32'h 40180000;
+  localparam logic [31:0] ADDR_SPACE_RV_CORE_IBEX__CFG    = 32'h 40220000;
+  localparam logic [31:0] ADDR_SPACE_DMA                  = 32'h 40300000;
   localparam logic [31:0] ADDR_SPACE_AHB_BRIDGE__CTN      = 32'h 80000000;
-  localparam logic [31:0] ADDR_SPACE_MBX0__CORE           = 32'h 22000000;
-  localparam logic [31:0] ADDR_SPACE_MBX1__CORE           = 32'h 22000100;
-  localparam logic [31:0] ADDR_SPACE_PWRMGR               = 32'h 40400000;
-  localparam logic [31:0] ADDR_SPACE_RSTMGR               = 32'h 40410000;
-  localparam logic [31:0] ADDR_SPACE_CLKMGR               = 32'h 40420000;
-  localparam logic [31:0] ADDR_SPACE_ALERT_HANDLER        = 32'h 40450000;
-  localparam logic [31:0] ADDR_SPACE_SRAM_CTRL_RET__REGS  = 32'h 40460000;
-  localparam logic [31:0] ADDR_SPACE_SRAM_CTRL_RET__RAM   = 32'h 40470000;
+  localparam logic [31:0] ADDR_SPACE_MBX0__CORE           = 32'h 40310000;
+  localparam logic [31:0] ADDR_SPACE_MBX1__CORE           = 32'h 40320000;
+  localparam logic [31:0] ADDR_SPACE_PWRMGR               = 32'h 41000000;
+  localparam logic [31:0] ADDR_SPACE_RSTMGR               = 32'h 41010000;
+  localparam logic [31:0] ADDR_SPACE_CLKMGR               = 32'h 41020000;
+  localparam logic [31:0] ADDR_SPACE_ALERT_HANDLER        = 32'h 41040000;
+  localparam logic [31:0] ADDR_SPACE_SRAM_CTRL_RET__REGS  = 32'h 41050000;
+  localparam logic [31:0] ADDR_SPACE_SRAM_CTRL_RET__RAM   = 32'h 41100000;
 
   localparam logic [31:0] ADDR_MASK_RV_DM__REGS          = 32'h 0000000f;
   localparam logic [31:0] ADDR_MASK_RV_DM__MEM           = 32'h 00000fff;
@@ -200617,7 +200617,7 @@ package lowrisc_tl_main_pkg;
   localparam logic [31:0] ADDR_MASK_EDN1                 = 32'h 0000007f;
   localparam logic [31:0] ADDR_MASK_RV_CORE_IBEX__CFG    = 32'h 000007ff;
   localparam logic [31:0] ADDR_MASK_DMA                  = 32'h 000001ff;
-  localparam logic [31:0] ADDR_MASK_AHB_BRIDGE__CTN      = 32'h 0fffffff;
+  localparam logic [31:0] ADDR_MASK_AHB_BRIDGE__CTN      = 32'h 7fffffff;
   localparam logic [31:0] ADDR_MASK_MBX0__CORE           = 32'h 0000007f;
   localparam logic [31:0] ADDR_MASK_MBX1__CORE           = 32'h 0000007f;
   localparam logic [31:0] ADDR_MASK_PWRMGR               = 32'h 0000007f;
@@ -202630,7 +202630,7 @@ endmodule
 package lowrisc_tl_socmbx_pkg;
 
   localparam logic [31:0] ADDR_SPACE_MBX0__SOC = 32'h 00000000;
-  localparam logic [31:0] ADDR_SPACE_MBX1__SOC = 32'h 00000100;
+  localparam logic [31:0] ADDR_SPACE_MBX1__SOC = 32'h 00010000;
 
   localparam logic [31:0] ADDR_MASK_MBX0__SOC = 32'h 0000001f;
   localparam logic [31:0] ADDR_MASK_MBX1__SOC = 32'h 0000001f;
@@ -278148,58 +278148,21 @@ endmodule
 package lowrisc_top_peppermint_rnd_cnst_pkg;
 
   ////////////////////////////////////////////
-  // alert_handler
-  ////////////////////////////////////////////
-  // Compile-time random bits for initial LFSR seed
-  parameter lowrisc_alert_handler_pkg::lfsr_seed_t RndCnstAlertHandlerLfsrSeed = {
-    32'hE6BC3EF8
-  };
-
-  // Compile-time random permutation for LFSR output
-  parameter lowrisc_alert_handler_pkg::lfsr_perm_t RndCnstAlertHandlerLfsrPerm = {
-    160'hAB34758A_3DD8E938_14CF2493_6E073E53_B08B81BF
-  };
-
-  ////////////////////////////////////////////
-  // sram_ctrl_ret
-  ////////////////////////////////////////////
-  // Compile-time random reset value for SRAM scrambling key.
-  parameter lowrisc_otp_ctrl_pkg::sram_key_t RndCnstSramCtrlRetSramKey = {
-    128'h5FC12BE3_C5333D77_AEE81229_AD96C8C5
-  };
-
-  // Compile-time random reset value for SRAM scrambling nonce.
-  parameter lowrisc_otp_ctrl_pkg::sram_nonce_t RndCnstSramCtrlRetSramNonce = {
-    128'h96EDA91A_2485301A_48907C59_639294C3
-  };
-
-  // Compile-time random bits for initial LFSR seed
-  parameter lowrisc_sram_ctrl_pkg::lfsr_seed_t RndCnstSramCtrlRetLfsrSeed = {
-    64'h3B5F713F_DEFA9C76
-  };
-
-  // Compile-time random permutation for LFSR output
-  parameter lowrisc_sram_ctrl_pkg::lfsr_perm_t RndCnstSramCtrlRetLfsrPerm = {
-    128'hE6A5D33D_9F50F213_8C074BF8_35A6250D,
-    256'h27301FF8_96EAC015_B85ED4FB_1DEB7D18_0AB75A1B_2369A31A_7CDD08BA_4425E932
-  };
-
-  ////////////////////////////////////////////
   // otp_ctrl
   ////////////////////////////////////////////
   // Compile-time random bits for initial LFSR seed
   parameter lowrisc_otp_ctrl_top_specific_pkg::lfsr_seed_t RndCnstOtpCtrlLfsrSeed = {
-    40'hE9_51AFC889
+    40'h62_5B39DD88
   };
 
   // Compile-time random permutation for LFSR output
   parameter lowrisc_otp_ctrl_top_specific_pkg::lfsr_perm_t RndCnstOtpCtrlLfsrPerm = {
-    240'h7886_9D8DB026_40B30D9D_F3876524_4A0D4097_90684F16_50587208_93115589
+    240'h2C08_CC3C1219_8606D179_F2535249_449D649A_1425621C_661C2973_8D990743
   };
 
   // Compile-time random permutation for scrambling key/nonce register reset value
   parameter lowrisc_otp_ctrl_top_specific_pkg::scrmbl_key_init_t RndCnstOtpCtrlScrmblKeyInit = {
-    256'h253DDFD7_8E689FD1_6D99B848_90C036F4_E8D7C83B_63ACDA01_9F8D7EDA_05D5A9DF
+    256'h2610A62D_08F074CE_9D1B8C9A_8D23F56F_D2C1A29E_EA9C28B8_81457DDD_29CDA674
   };
 
   // Compile-time scrambling key
@@ -278404,35 +278367,35 @@ package lowrisc_top_peppermint_rnd_cnst_pkg;
   ////////////////////////////////////////////
   // Diversification value used for all invalid life cycle states.
   parameter lowrisc_lc_ctrl_pkg::lc_keymgr_div_t RndCnstLcCtrlLcKeymgrDivInvalid = {
-    128'hBF0C3F86_70E567E3_D45248FC_C97C0789
+    128'h8F9052C4_E410A914_D67CA904_568DB527
   };
 
   // Diversification value used for the TEST_UNLOCKED* life cycle states.
   parameter lowrisc_lc_ctrl_pkg::lc_keymgr_div_t RndCnstLcCtrlLcKeymgrDivTestUnlocked = {
-    128'h01CC4386_3AA87FA6_80492A05_4B140BD9
+    128'hEBD7543A_4689BD95_1B183CB8_BF216F28
   };
 
   // Diversification value used for the DEV life cycle state.
   parameter lowrisc_lc_ctrl_pkg::lc_keymgr_div_t RndCnstLcCtrlLcKeymgrDivDev = {
-    128'hE143DFC4_B6DBEED1_BF90ABFB_15626596
+    128'h4E65E1FD_E71DF816_C143C257_5BD40DE3
   };
 
   // Diversification value used for the PROD/PROD_END life cycle states.
   parameter lowrisc_lc_ctrl_pkg::lc_keymgr_div_t RndCnstLcCtrlLcKeymgrDivProduction = {
-    128'hD2EFD423_C911ABC2_4E671612_54169BDB
+    128'hE98A45CE_844AE951_AFC88927_5ACE5410
   };
 
   // Diversification value used for the RMA life cycle state.
   parameter lowrisc_lc_ctrl_pkg::lc_keymgr_div_t RndCnstLcCtrlLcKeymgrDivRma = {
-    128'h5C2840F0_D87B7F93_3BE73A25_096F4A87
+    128'h4D8883C1_73C10DFF_AC297AE0_F92F3724
   };
 
   // Compile-time random bits used for invalid tokens in the token mux
   parameter lowrisc_lc_ctrl_pkg::lc_token_mux_t RndCnstLcCtrlInvalidTokens = {
-    256'hDDC34EC6_5F281D26_D8CF913A_1D6EEFB2_7A1A456B_36C86F2E_9C630081_1CAF885F,
-    256'hE8B32371_241D3A38_DF907746_9A0CAB69_AC24EEBA_B82AFE47_59CFC663_225C12D7,
-    256'h753AA2EE_916025DF_0BE5C28F_4B20200E_6920CE35_374ACE64_E4CD2159_E36D6B67,
-    256'h1C5A316A_042D0DFF_88A19559_E90E7C39_56634C78_DB0F9C86_6205C5DB_2FD08403
+    256'hBA10B3A0_A91B5288_A3BDCBDF_D488FA37_78EBFB41_9EC7F546_94416348_06D05790,
+    256'hDFF6A451_253DDFD7_8E689FD1_6D99B848_90C036F4_E8D7C83B_63ACDA01_9F8D7EDA,
+    256'h05D5A9DF_BF0C3F86_70E567E3_D45248FC_C97C0789_01CC4386_3AA87FA6_80492A05,
+    256'h4B140BD9_E143DFC4_B6DBEED1_BF90ABFB_15626596_D2EFD423_C911ABC2_4E671612
   };
 
   ////////////////////////////////////////////
@@ -278440,34 +278403,34 @@ package lowrisc_top_peppermint_rnd_cnst_pkg;
   ////////////////////////////////////////////
   // Default seed of the PRNG used for register clearing.
   parameter lowrisc_aes_pkg::clearing_lfsr_seed_t RndCnstAesClearingLfsrSeed = {
-    64'h03E2045F_E16F058E
+    64'h54169BDB_5C2840F0
   };
 
   // Permutation applied to the LFSR of the PRNG used for clearing.
   parameter lowrisc_aes_pkg::clearing_lfsr_perm_t RndCnstAesClearingLfsrPerm = {
-    128'h895F66B3_A524A583_AD3194F4_050BA70F,
-    256'hE17684F8_2F472ADE_7426BBCD_7F04E781_88FC91DF_DCB28D8C_0A12AB1D_56C1C6E5
+    128'hB1C82DF6_55321733_23DCF9EF_048D3576,
+    256'hAA19AC45_A29950D0_0182E935_A446FBFB_BAF381CA_5F14F085_26C227BE_4E91F7B6
   };
 
   // Permutation applied to the clearing PRNG output for clearing the second share of registers.
   parameter lowrisc_aes_pkg::clearing_lfsr_perm_t RndCnstAesClearingSharePerm = {
-    128'hF23C5C33_B6C284BF_AA154B40_1DD5B5C3,
-    256'hFB1F979C_F8462428_A43904CA_EDFA7979_B420F48D_24A0599F_DAD8D866_A0BD5393
+    128'h1BF4FE11_5C7A157F_5CAB8B5E_03C4229B,
+    256'h9D4A94F7_E0B14461_2C19CCA4_7AF66D6B_D9D2E372_683CC84A_3C02DC96_24EE839D
   };
 
   // Default seed of the PRNG used for masking.
   parameter lowrisc_aes_pkg::masking_lfsr_seed_t RndCnstAesMaskingLfsrSeed = {
-    32'h3C86671D,
-    256'h45561998_0F4674CA_14D88EBB_455250F4_E07680D8_246D7DE5_057EFC5B_212368D0
+    32'hC05BD6F0,
+    256'hC7F6AA48_A202E6F5_EF8F36E1_F62AE9EC_EF2F4A7E_1EC425EE_F897221A_1B2C10A9
   };
 
   // Permutation applied to the output of the PRNG used for masking.
   parameter lowrisc_aes_pkg::masking_lfsr_perm_t RndCnstAesMaskingLfsrPerm = {
-    256'h2E484109_4F5A349E_08352F33_968E6476_78603A49_666C7775_614D8F6E_15186B40,
-    256'h47289D6F_21013055_3E700331_450D221A_136D4C59_1C575D17_252C949F_1F2B2A83,
-    256'h7E394695_0597678B_040E3663_2980069A_37422362_6812110B_9091275C_853D071B,
-    256'h567F8C0A_3B320C43_5E8D934E_65828A86_163C2D92_7A4B5102_54527984_88989B1D,
-    256'h107C3800_81509920_3F0F725F_73447114_196A245B_4A877B74_9C89691E_5358267D
+    256'h1875008C_5076883C_8B3A8A17_367F123B_7B1C293E_64440E79_6899639A_0B482C4A,
+    256'h676D605D_1627011F_1B098933_2D6F9D52_23057194_39465706_829B3F61_8D0F1087,
+    256'h4373697D_6B559196_805C747C_5B225962_6620429F_8E980440_904C7207_02087025,
+    256'h30549378_7E2F864F_849C111E_851A1314_03324E2B_97316C0D_3595812A_1D263D37,
+    256'h289E926E_65244D5A_49510C83_38211947_2E5E157A_53418F56_45770A6A_58345F4B
   };
 
   ////////////////////////////////////////////
@@ -278475,58 +278438,58 @@ package lowrisc_top_peppermint_rnd_cnst_pkg;
   ////////////////////////////////////////////
   // Compile-time random data for PRNG default seed
   parameter lowrisc_kmac_pkg::lfsr_seed_t RndCnstKmacLfsrSeed = {
-    32'h6C0DAF4E,
-    256'h52301CD7_5EAAF2C4_EA2A3664_91A412AF_3E75B451_1771A607_249592FC_2952D333
+    32'h8EF4200F,
+    256'h5081CD00_FD38F1D4_7CC0C610_3A3DA67F_7EF3A4FC_A904A297_A4495B79_2D1FE05A
   };
 
   // Compile-time random permutation for PRNG output
   parameter lowrisc_kmac_pkg::lfsr_perm_t RndCnstKmacLfsrPerm = {
-    64'h991C59A4_2380599A,
-    256'h891655A5_352D8298_5BE7D649_A35D936C_772D0495_6DD82092_6876E13E_C296CA3F,
-    256'h14D97060_05346836_26374D4D_681B0195_6F0BB8A4_AB5105E9_58AEB0A2_51F239E7,
-    256'hF6DCDD60_DB418AA3_0B55C628_37880887_4C4AB29F_04691867_490C0DA0_6BE945FE,
-    256'h16B6A5C1_5B1FB708_15900027_E1C14537_4F262692_B16C5D63_B9B8116B_D6425DC7,
-    256'h1CF00EC2_4B00E7D0_F014AAA6_C1EB68E4_091198B1_AB59BC27_1C712422_2D23B1AB,
-    256'h9C54018E_6580B2A7_D699689A_0ECFEA5C_2137248B_31FC9DE1_758C2283_879492DB,
-    256'h796602A4_0D57AC76_2CE97F60_33618765_9C2652AB_54A6C3C4_398220C4_05BC0828,
-    256'h80F88A2E_E437A69B_9A85FC6D_28059E33_798FA2C6_6A004D50_8A53395A_534968F2,
-    256'hCE5D12A9_2F0042AC_59C5EC31_9069D953_7452F80A_42A3AF54_702F30CA_8C5A6D87,
-    256'h8078E2CB_51C6479E_30011CD2_66B229CE_599A469D_069160EF_9E6E6AA2_196D6EB4,
-    256'h32B38F9B_A340A33A_E3998ED9_95287588_5C88B0D3_F53683DE_16782E4A_42A37C0C,
-    256'h86317426_05C61204_9D3D3D4C_DA9236B2_2516987B_8556D402_FA4EED63_E6271C8D,
-    256'h5B7A1A3D_2103DC61_9D51B1FB_19C52B43_6A298B86_53DA41BD_D778D419_3200871A,
-    256'hC0A79D59_AE1F5F44_B15DC164_89E49570_04EBC4B6_3A6CD387_29A82FAE_07E46CBE,
-    256'h4833A8D2_BF8D9049_782718D4_4CC5BC71_5436579E_99C091C4_32F048C9_D4382F6A,
-    256'h9A4F69DE_6887114F_923A4432_AB9617AB_0BB4C6EA_863D174B_06940A2E_A8C7FD50,
-    256'h5C581A62_CDBA9EF9_CD802C56_A700E230_0AF15549_2BA6595A_50BA4019_65324BA7,
-    256'h87A24A06_A0A6111D_BD1CC1C1_F1532899_A2E5C0A8_4ABCA01A_E3161540_742A0564,
-    256'h5AA56826_E45E2262_5464D32F_CF2AE2DD_B064D13A_F26187F2_DEBB304A_D99C6AB8,
-    256'h8BD70E86_97C2522C_442AE0DA_FE14A593_03CC435D_96F1A29A_B521BB3D_7E802349,
-    256'h6D1F42C4_12E55450_C339F105_33CA60B1_110D6A75_F1FA1313_19C2C3B9_22C65699,
-    256'hADD9F668_E441DDCB_62132A88_7B562B8E_C74AC0CC_5E41D638_CA7882B8_CE9D3F2F,
-    256'h89600982_67D43C0B_B7C17AD9_CB1404F0_EA4C2369_326C4663_0780C5BD_2869C9EE,
-    256'hD27B56B1_B5395A1C_81206354_4915949D_7B9AE3FE_F36B5DB5_3CEC5770_CC1C422E,
-    256'h104AA4F8_B8C0F23E_1240E5E1_00BCBF6A_C5C93AC1_7066A4AC_455F3248_7C6D8369,
-    256'h147D4FCC_46ED3494_9AA939AC_6AC8C40A_EF89080C_2122C249_8B5D4E28_AA582D57,
-    256'hBA121C40_1F748C79_B99B06C2_88AA112D_6722CCED_6871E620_264787A2_1AD05D55,
-    256'hFAF86025_60704228_1D83876A_81BF30F1_1D554485_98BCD491_CE85CC1C_A4AB9519,
-    256'h677930E5_983F45CF_A24DDF07_8155ED41_512FF521_6EA3D2B8_11E07E1A_21BD919F,
-    256'h8B643A23_38DC71CE_C4C4ED14_CC11009D_D3846775_DDEBB5F6_5B2EC64C_5B7F9FB6,
-    256'hFEC97DD4_50F1140F_497C74C9_30884528_3405226B_ECD77268_5A288573_A901D430
+    64'h0A9A8666_D63AE916,
+    256'h72666112_01A5B729_0C6B2EA6_1DD82742_5A441942_64CC431D_54926362_6ADB15B1,
+    256'hB7231088_7179CA87_B007BFF1_4A64E9AD_131A8638_94029C72_4A9F5C21_16934A9F,
+    256'h086A3595_DFD49E3E_75094BE8_3BC166A7_5AC20618_765A5C0D_C03162B3_80597AAD,
+    256'hA474E950_325B3758_554C2D63_D4B78474_23ADD98A_221590B6_38790340_939CB260,
+    256'h1F4392CE_80ECF259_423994D8_5EA514A7_B8E40017_E14800E5_B8665AC9_C64B7155,
+    256'hE556BB96_40F8624A_4D8B99D1_A802E8ED_08459CF4_07105882_F90C21AE_A5F51C64,
+    256'hC21E6C7B_1AA38C3C_09811249_F872605F_0D14E245_715C0B42_A309DC12_2B0442B1,
+    256'h13C317A0_CFC6D70A_3EDDC3F9_E92996AC_0E2C9FD0_7C26D982_51C14454_92229134,
+    256'h05BB4410_8D9A3397_44DEF58F_5693BDEB_018F5925_1146CA37_D4DE908A_96F1F1BD,
+    256'hD8D5412F_47CBB8D1_5C5B66B2_695B29E5_E41A6F93_1B85687B_185F9912_C4369FF4,
+    256'hD5F23DA0_2AA961BA_1B432008_46A795E2_2B865601_2EE9C6D4_32792804_E7594D5E,
+    256'h676E070C_6C5FE25C_60D2A8AD_80489C78_E0F31630_735AF854_24B959EC_5977382A,
+    256'h98BA1E9B_2C14F923_934329A2_08AEC6E9_768BB4CB_05480A2E_AE77970E_B229F640,
+    256'h2C2C69E3_88C02BEB_E524AE5F_616BBDFA_4C92E62A_0A6FAFD6_EAA85C47_07A94CA1,
+    256'h278A6A69_2806B075_CC661591_6A519045_E2257E94_AF9695A0_9C6DE9EA_0D13AA76,
+    256'h187FB1E7_4304ADC7_46AA5CBD_81A1F096_AC110ABB_89B20D53_03CE9C5D_96F1A256,
+    256'h3CA4FBCA_9B7BCBF4_019F68E4_083A324F_6CA5010D_0805C2AA_F4065C42_0A3CC1B0,
+    256'hC4741622_1130690F_461D8498_BE3F66DB_A983BECB_75C2D588_68D359CA_84EC9328,
+    256'h4CC34CF4_B1E83370_B788833B_88B42719_10CD58FE_D77F1A79_D8D062C6_664A6E58,
+    256'hE369500E_965D9194_F14D9B9A_491986C7_E004B401_22D37C87_02E9405E_7072C501,
+    256'h3C3A8308_D26C46B9_078BD9BD_286588EA_E37B56B1_B5395A1C_81206354_4915949D,
+    256'h7B9AE3FE_7C6B5DB5_3CEC576F_0A04422E_104990F8_B480F23E_1240C402_F2B099EF,
+    256'hC4EAB6AD_DA92B115_7CED41F1_B60D87D4_FEF16ED3_46A9AC6A_C8C40AA4_89080C49,
+    256'h22AE498A_314E28A6_182D57A7_521B001F_748C766C_1B0A22AC_3CB52CCE_D686CD62,
+    256'h0264787A_2197557E_7718095B_AC108A07_60E1DAAB_EBF11D55_448598BC_D491CE85,
+    256'hCC1C5196_7791660F_D173E893_77C1E055_7B50544A_C6DB5BAE_C4AE0478_1F86886F,
+    256'h6467E2D9_0E88CE3C_7EDAB0D3_30440277_4E119DD7_779F65B1_9316F007_EDBF7DD4,
+    256'h50F1140F_497B30C9_30884528_34052263_5DC9A168_A215CEA4_0750C0A5_92C92A60,
+    256'h5DB44F91_2A463657_A1CD48AF_5B0A58C4_552050CE_88633133_DE33C1C5_756207A3,
+    256'hEB536DB3_AF2DFA26_828413C0_C4398DCD_369A55BF_8B95CAC6_7FAAE3D2_4E9CD05C,
+    256'h042B876F_8A007214_C8188211_49490AE0_CBA1D3BA_18DC3A85_565618BC_E279C9C7
   };
 
   // Compile-time random data for PRNG buffer default seed
   parameter lowrisc_kmac_pkg::buffer_lfsr_seed_t RndCnstKmacBufferLfsrSeed = {
-    32'hA8499700,
-    256'h9610065E_87C3D7F6_261D9469_8B9D8EF1_F778309F_11160FBF_A7481BEE_6B55C518,
-    256'h9F370C0A_37FBACC9_633925FD_92158D6D_E07BCCC8_9D3A03DC_B3705E6E_DFC6182F,
-    256'h46339348_27F5C72A_5A1DF71B_12490281_35F95B3D_CEC35DDC_E040862D_3995FCBE
+    32'h43E42270,
+    256'hB728FDD7_B08A5C4D_E78DE5E4_4021DBC5_5FB9AD96_C258A13B_F0BBCC70_48148A64,
+    256'h96135F06_54389C91_BED1DA22_E0D5B248_74C4E219_28ED714E_82F58EBB_A15D3AD5,
+    256'h4138A5A9_C21C493B_07C2BAB1_73198BDF_F759A49C_B9F6383B_8609A1A3_E9B32ACA
   };
 
   // Compile-time random permutation for LFSR Message output
   parameter lowrisc_kmac_pkg::msg_perm_t RndCnstKmacMsgPerm = {
-    128'h81C5A3BE_5EF1992E_1DCC078D_330DADBA,
-    256'h86A4E53F_6B521FC9_E9956AD4_B0C8197D_0FC9B12C_DCA9C21D_089139FF_81A5817C
+    128'hF68E15B4_5986934D_992CC6B3_47ACA37B,
+    256'h1729BAA0_B01F73BC_8815A16C_D0FEE605_DF2A5B1D_FF59EF4C_825012B6_0FED4480
   };
 
   ////////////////////////////////////////////
@@ -278534,30 +278497,30 @@ package lowrisc_top_peppermint_rnd_cnst_pkg;
   ////////////////////////////////////////////
   // Default seed of the PRNG used for URND.
   parameter lowrisc_otbn_pkg::urnd_prng_seed_t RndCnstOtbnUrndPrngSeed = {
-    32'hFA73A216,
-    256'h740D626B_B001BE50_3766C584_10432FED_05072901_B78B2A4E_AFFBB536_6556C422
+    32'h6172C7D0,
+    256'h4859AC5C_FEA1A64B_0B0D05AD_4D6E24A4_BC3154C4_8126BFB2_8A4AEFB7_F20AA522
   };
 
   // Compile-time random permutation for URND permutation in BN MAC.
   parameter lowrisc_otbn_pkg::bn_mac_urnd_perm_t RndCnstOtbnBnMacUrndPerm = {
-    256'h1902C337_9E844EAD_5EE34500_F47E10FE_DEE8C45F_F548AE78_AADCCB82_FB390FB5,
-    256'hEE61CABB_91182844_BE47A57D_2CF9D84F_6C7C602E_C9177379_90EB0405_A408BC49,
-    256'h8832D00A_465C1D50_F274FA42_B026153C_E2532BE1_F8A7560E_C11FCF21_92B10D70,
-    256'hFCD3ACB4_36D7C69B_982D7522_2FD52996_852469A0_C813FFA2_343ECC23_2A80938C,
-    256'h1A1164C7_3D4AA97F_F16B5A0C_8FDF33F3_14A1CDF0_83E60601_7BD95D9C_09865867,
-    256'hF765CEBF_663B31A3_8D8B438A_AB893A71_6E38E407_E5524D9F_FD6881A6_628EECE7,
-    256'h876F4B97_59C5B677_EFC04076_DDD6E9BA_7A274195_1C5BB73F_C216B2B9_BD259A55,
-    256'hEA1EDA35_2051EDD4_72E06D12_0B94A854_AF1BB330_039DDB99_6AD14C57_F6B863D2
+    256'h4D54849A_1959BB3F_BED1E5C0_24418F5C_CC3CF9A6_22A3ABCD_D06F131F_4BC4DB61,
+    256'h4FA46665_50B25685_76B553FD_CFE9749C_3ED3CA80_A2F77577_8AEF2C2E_BC38B871,
+    256'h4A9991B9_79687336_09059E0D_BD0188A9_6CFCD6F1_DE2B32EB_C7B77F45_AD6AE483,
+    256'h7E17219B_4262BAD5_28E6F058_827CEDEA_0B51A072_3B8C52E0_C2F8B6C1_3198B0C8,
+    256'h0767AEE1_23344CAF_4E7AB1A5_6457B443_F3DC201A_5F1CCEC6_EE472908_1EAA8944,
+    256'hDAFFDD04_601495CB_2D86405D_3D5B3581_02F212D8_FB5A2A27_D9933346_2FD46EEC,
+    256'h70B3033A_E37B6D8D_15F425F6_63C9ACD2_0A0C37DF_18C5556B_1B48A7BF_0F16119F,
+    256'h30788E9D_8B69941D_FAD7C387_5E061096_0097F5A8_92493990_A10E26E7_E8E2FE7D
   };
 
   // Compile-time random reset value for IMem/DMem scrambling key.
   parameter lowrisc_otp_ctrl_pkg::otbn_key_t RndCnstOtbnOtbnKey = {
-    128'hFDFC150C_6156628C_4AA2CEA5_DBA9F318
+    128'h99BBDF67_58AD8609_A3095D16_7B010694
   };
 
   // Compile-time random reset value for IMem/DMem scrambling nonce.
   parameter lowrisc_otp_ctrl_pkg::otbn_nonce_t RndCnstOtbnOtbnNonce = {
-    64'h0C483597_28441317
+    64'h83D2FF71_67A7CBF9
   };
 
   ////////////////////////////////////////////
@@ -278565,53 +278528,53 @@ package lowrisc_top_peppermint_rnd_cnst_pkg;
   ////////////////////////////////////////////
   // Compile-time random bits for initial LFSR seed
   parameter lowrisc_keymgr_pkg::lfsr_seed_t RndCnstKeymgrDpeLfsrSeed = {
-    64'hC074F527_08CD3DCB
+    64'h65A0E493_D1EC1430
   };
 
   // Compile-time random permutation for LFSR output
   parameter lowrisc_keymgr_pkg::lfsr_perm_t RndCnstKeymgrDpeLfsrPerm = {
-    128'hA4DAE633_DD4B39BB_798C461E_DDD65405,
-    256'h62A8F31E_ECAB8915_0859493D_34971F27_C8CEE446_D3F43A8A_78408300_DAF9CDAF
+    128'hE3952708_0C1C3B1B_875FEA2A_4F420B28,
+    256'h18091629_906FDB1E_BD1E8D63_613365DA_ED3E1952_DDF1BB69_6C83D7F5_64F23A4C
   };
 
   // Compile-time random permutation for entropy used in share overriding
   parameter lowrisc_keymgr_pkg::rand_perm_t RndCnstKeymgrDpeRandPerm = {
-    160'hEA7319E8_AF54906D_D700A08E_16C3CB73_077B73E4
+    160'h362F6E8A_91731A15_FE40DCE1_9495E8D2_B843D47E
   };
 
   // Compile-time random bits for revision seed
   parameter lowrisc_keymgr_pkg::seed_t RndCnstKeymgrDpeRevisionSeed = {
-    256'h67F1D201_23AE962A_003E30C2_A8942F27_C4CA21C6_327FB8E7_BF10C9EF_8B9C0DEB
+    256'h12485247_595EC3B8_8DFBABBF_99969CEA_B0691780_2CACD576_2F634C14_B36E8772
   };
 
   // Compile-time random bits for software generation seed
   parameter lowrisc_keymgr_pkg::seed_t RndCnstKeymgrDpeSoftOutputSeed = {
-    256'h2418423F_AFF41E7B_4FF4B0E6_9553D130_A0407693_DE540219_FC849445_3AE7FD82
+    256'hD67F9071_B12DC054_59B825DE_DEFD3862_72A32C2D_B89E62F7_C6C8310D_9E08B3FF
   };
 
   // Compile-time random bits for hardware generation seed
   parameter lowrisc_keymgr_pkg::seed_t RndCnstKeymgrDpeHardOutputSeed = {
-    256'hBA5F8D8F_F25C89C0_45CAFB05_418DFBE8_D7FCBBEF_ECD0724D_145309F4_4AAFF187
+    256'h3B8390DB_75EF94DA_C87B92FD_FC150C61_56628C4A_A2CEA5DB_A9F3180C_48359728
   };
 
   // Compile-time random bits for generation seed when aes destination selected
   parameter lowrisc_keymgr_pkg::seed_t RndCnstKeymgrDpeAesSeed = {
-    256'h2FF7E109_3995149E_C3100940_1FD157BB_84A905B2_C5F9C732_916D3F0A_01064F24
+    256'h441317C0_74F52708_CD3DCBBD_DB73DA69_0CC28200_849D8AE1_0F42BF8A_E019CA47
   };
 
   // Compile-time random bits for generation seed when kmac destination selected
   parameter lowrisc_keymgr_pkg::seed_t RndCnstKeymgrDpeKmacSeed = {
-    256'h0EA0465A_16890A37_BB88177F_BC4C9D84_33B09B81_15D90B55_578192BA_15B877A0
+    256'h440F207C_421E5FCC_4B4E3F26_EFD44F16_0AAB7CFB_11AA1CD3_34D52BE3_3950BFF9
   };
 
   // Compile-time random bits for generation seed when otbn destination selected
   parameter lowrisc_keymgr_pkg::seed_t RndCnstKeymgrDpeOtbnSeed = {
-    256'h14FB372C_EF558975_129DEAE6_6BDCBEF8_597635D3_EFFEF7C2_50098FB9_64BE41D6
+    256'hCB53080D_35EFF512_8E07F559_44D5951F_2A38A558_36294463_61D8A4A4_2123E6B0
   };
 
   // Compile-time random bits for generation seed when no destination selected
   parameter lowrisc_keymgr_pkg::seed_t RndCnstKeymgrDpeNoneSeed = {
-    256'h92B97C16_69F1994B_9663DFCC_E042F0B3_50714F7A_42778626_D3A6AC18_2DB8D1A2
+    256'hB81867F5_745F2685_6D0F9C3D_99166E01_EDD5B864_8771A4E5_8512EAA4_6EE7DC26
   };
 
   ////////////////////////////////////////////
@@ -278619,14 +278582,14 @@ package lowrisc_top_peppermint_rnd_cnst_pkg;
   ////////////////////////////////////////////
   // Compile-time random bits for csrng state group diversification value
   parameter lowrisc_csrng_pkg::cs_keymgr_div_t RndCnstCsrngCsKeymgrDivNonProduction = {
-    128'h21875BFF_BD69423A_DCA64DA6_E21F0298,
-    256'h923A2586_B01B2088_4604567B_C0249E2D_8AB794A7_633D9C6E_CF883C94_0F9C5210
+    128'h9CE2F2F6_E7B95767_F1D20123_AE962A00,
+    256'h3E30C2A8_942F27C4_CA21C632_7FB8E7BF_10C9EF8B_9C0DEB24_18423FAF_F41E7B4F
   };
 
   // Compile-time random bits for csrng state group diversification value
   parameter lowrisc_csrng_pkg::cs_keymgr_div_t RndCnstCsrngCsKeymgrDivProduction = {
-    128'hB3C58633_8402BDF1_122BEB15_EA2FC002,
-    256'hAAE3AA4C_DF001F7A_0161DD19_B6BE6C3F_A57AA970_C83CC6C9_148ECEE6_DBD6EA31
+    128'hF4B0E695_53D130A0_407693DE_540219FC,
+    256'h8494453A_E7FD82BA_5F8D8FF2_5C89C045_CAFB0541_8DFBE8D7_FCBBEFEC_D0724D14
   };
 
   ////////////////////////////////////////////
@@ -278634,23 +278597,23 @@ package lowrisc_top_peppermint_rnd_cnst_pkg;
   ////////////////////////////////////////////
   // Compile-time random reset value for SRAM scrambling key.
   parameter lowrisc_otp_ctrl_pkg::sram_key_t RndCnstSramCtrlMainSramKey = {
-    128'h69859159_AEBED647_ABB46389_F3C15DC7
+    128'h5309F44A_AFF1872F_F7E10939_95149EC3
   };
 
   // Compile-time random reset value for SRAM scrambling nonce.
   parameter lowrisc_otp_ctrl_pkg::sram_nonce_t RndCnstSramCtrlMainSramNonce = {
-    128'h8313D02E_CA038E9E_13920507_091A5B7A
+    128'h1009401F_D157BB84_A905B2C5_F9C73291
   };
 
   // Compile-time random bits for initial LFSR seed
   parameter lowrisc_sram_ctrl_pkg::lfsr_seed_t RndCnstSramCtrlMainLfsrSeed = {
-    64'h4275FFBB_34D2938D
+    64'h6D3F0A01_064F240E
   };
 
   // Compile-time random permutation for LFSR output
   parameter lowrisc_sram_ctrl_pkg::lfsr_perm_t RndCnstSramCtrlMainLfsrPerm = {
-    128'h69CDA6C8_74F8FA58_FC095777_03BA6AFE,
-    256'h134A3CB1_5950CD0E_4480F9B2_75AE6048_2BC6FB5E_F5F6E425_2E908A80_70D57CC6
+    128'hF7101E65_20D01F26_D460425A_D4F230F8,
+    256'h12863B75_E373FCEB_9692F9E1_DD24B6A5_7ADA09AC_3219D3BD_FF3BB8D0_A2156468
   };
 
   ////////////////////////////////////////////
@@ -278658,12 +278621,12 @@ package lowrisc_top_peppermint_rnd_cnst_pkg;
   ////////////////////////////////////////////
   // Fixed nonce used for address / data scrambling
   parameter bit [63:0] RndCnstRomCtrlScrNonce = {
-    64'h911D539B_E4585CD8
+    64'hA6AC182D_B8D1A221
   };
 
   // Randomised constant used as a scrambling key for ROM data
   parameter bit [127:0] RndCnstRomCtrlScrKey = {
-    128'h7FF2E1BA_5327BC85_1A8140FC_AEB768FD
+    128'h875BFFBD_69423ADC_A64DA6E2_1F029892
   };
 
   ////////////////////////////////////////////
@@ -278671,22 +278634,59 @@ package lowrisc_top_peppermint_rnd_cnst_pkg;
   ////////////////////////////////////////////
   // Default seed of the PRNG used for random instructions.
   parameter lowrisc_ibex_pkg::lfsr_seed_t RndCnstRvCoreIbexLfsrSeed = {
-    32'h780C7BBB
+    32'h3A2586B0
   };
 
   // Permutation applied to the LFSR of the PRNG used for random instructions.
   parameter lowrisc_ibex_pkg::lfsr_perm_t RndCnstRvCoreIbexLfsrPerm = {
-    160'h2339D2B6_78809EA4_7BF51E4D_B0C80E3E_969A46D7
+    160'h8516275C_DA0D73B4_FF9669D9_2E967EC3_D4044483
   };
 
   // Default icache scrambling key
   parameter logic [lowrisc_ibex_pkg::SCRAMBLE_KEY_W-1:0] RndCnstRvCoreIbexIbexKey = {
-    128'h78BC92EB_252479EC_E1502F2C_333B1543
+    128'hF1122BEB_15EA2FC0_02AAE3AA_4CDF001F
   };
 
   // Default icache scrambling nonce
   parameter logic [lowrisc_ibex_pkg::SCRAMBLE_NONCE_W-1:0] RndCnstRvCoreIbexIbexNonce = {
-    64'h64FD06D4_CEB894C6
+    64'h7A0161DD_19B6BE6C
+  };
+
+  ////////////////////////////////////////////
+  // alert_handler
+  ////////////////////////////////////////////
+  // Compile-time random bits for initial LFSR seed
+  parameter lowrisc_alert_handler_pkg::lfsr_seed_t RndCnstAlertHandlerLfsrSeed = {
+    32'h3FA57AA9
+  };
+
+  // Compile-time random permutation for LFSR output
+  parameter lowrisc_alert_handler_pkg::lfsr_perm_t RndCnstAlertHandlerLfsrPerm = {
+    160'h78D5D2F2_C4BA7E0D_0675A6D8_85CA0D34_45EC1F2E
+  };
+
+  ////////////////////////////////////////////
+  // sram_ctrl_ret
+  ////////////////////////////////////////////
+  // Compile-time random reset value for SRAM scrambling key.
+  parameter lowrisc_otp_ctrl_pkg::sram_key_t RndCnstSramCtrlRetSramKey = {
+    128'h4275FFBB_34D2938D_19CE5DD7_C307A18B
+  };
+
+  // Compile-time random reset value for SRAM scrambling nonce.
+  parameter lowrisc_otp_ctrl_pkg::sram_nonce_t RndCnstSramCtrlRetSramNonce = {
+    128'h42074925_926C7F5F_79B6C1CC_7B7EAC83
+  };
+
+  // Compile-time random bits for initial LFSR seed
+  parameter lowrisc_sram_ctrl_pkg::lfsr_seed_t RndCnstSramCtrlRetLfsrSeed = {
+    64'h1360785B_797FC861
+  };
+
+  // Compile-time random permutation for LFSR output
+  parameter lowrisc_sram_ctrl_pkg::lfsr_perm_t RndCnstSramCtrlRetLfsrPerm = {
+    128'hC35A79C8_1AA2155F_613AC1FA_37EB7CC4,
+    256'h47173DAB_FB9669F7_D9919F2A_4FD2BA00_80AF8263_3106D479_6D0BCE86_13751203
   };
 
 endpackage : lowrisc_top_peppermint_rnd_cnst_pkg
@@ -298564,19 +298564,6 @@ module lowrisc_top_peppermint #(
   parameter int unsigned SocCpuBootAddrWidth = 32,
 
   // Auto-inferred parameters
-  // parameters for rstmgr
-  parameter bit SecRstmgrCheck = 0,
-  parameter int SecRstmgrMaxSyncDelay = 2,
-  // parameters for alert_handler
-  parameter int AlertHandlerEscNumSeverities = 4,
-  parameter int AlertHandlerEscPingCountWidth = 16,
-  // parameters for sram_ctrl_ret
-  parameter int SramCtrlRetInstSize = 8192,
-  parameter int SramCtrlRetNumRamInst = 1,
-  parameter bit SramCtrlRetInstrExec = 0,
-  parameter int SramCtrlRetNumPrinceRoundsHalf = 3,
-  parameter int SramCtrlRetNumAddrScrRounds = 2,
-  parameter bit SramCtrlRetEccCorrection = 0,
   // parameters for otp_macro
   parameter OtpMacroMemInitFile = "",
   // parameters for lc_ctrl
@@ -298586,11 +298573,6 @@ module lowrisc_top_peppermint #(
   parameter logic [15:0] LcCtrlProductId = 16'h 4100,
   parameter logic [7:0] LcCtrlRevisionId = 8'h 01,
   parameter logic [31:0] LcCtrlIdcodeValue = 32'h0000_0001,
-  // parameters for rv_dm
-  parameter logic [31:0] RvDmIdcodeValue = 32'h0000_0001,
-  parameter bit RvDmUseDmiInterface = 1,
-  parameter bit SecRvDmVolatileRawUnlockEn = 0,
-  parameter logic [lowrisc_tlul_pkg::RsvdWidth-1:0] RvDmTlulHostUserRsvdBits = '0,
   // parameters for aes
   parameter bit AesAESGCMEnable = 1,
   parameter bit SecAesMasking = 1,
@@ -298634,12 +298616,6 @@ module lowrisc_top_peppermint #(
   // parameters for rom_ctrl
   parameter RomCtrlBootRomInitFile = "",
   parameter bit SecRomCtrlDisableScrambling = 1'b0,
-  // parameters for dma
-  parameter bit DmaEnableDataIntgGen = 1'b1,
-  parameter bit DmaEnableRspDataIntgCheck = 1'b1,
-  parameter logic [lowrisc_tlul_pkg::RsvdWidth-1:0] DmaTlUserRsvd = '0,
-  parameter lowrisc_top_racl_pkg::racl_role_t DmaSysRaclRole = '0,
-  parameter int unsigned DmaOtAgentId = 0,
   // parameters for rv_core_ibex
   parameter bit RvCoreIbexPMPEnable = 1,
   parameter int unsigned RvCoreIbexPMPGranularity = 0,
@@ -298673,7 +298649,31 @@ module lowrisc_top_peppermint #(
   parameter bit RvCoreIbexPipeLine = 1,
   parameter logic [lowrisc_tlul_pkg::RsvdWidth-1:0] RvCoreIbexTlulHostUserRsvdBits = '0,
   parameter logic [31:0] RvCoreIbexCsrMvendorId = '0,
-  parameter logic [31:0] RvCoreIbexCsrMimpId = '0
+  parameter logic [31:0] RvCoreIbexCsrMimpId = '0,
+  // parameters for rv_dm
+  parameter logic [31:0] RvDmIdcodeValue = 32'h0000_0001,
+  parameter bit RvDmUseDmiInterface = 1,
+  parameter bit SecRvDmVolatileRawUnlockEn = 0,
+  parameter logic [lowrisc_tlul_pkg::RsvdWidth-1:0] RvDmTlulHostUserRsvdBits = '0,
+  // parameters for dma
+  parameter bit DmaEnableDataIntgGen = 1'b1,
+  parameter bit DmaEnableRspDataIntgCheck = 1'b1,
+  parameter logic [lowrisc_tlul_pkg::RsvdWidth-1:0] DmaTlUserRsvd = '0,
+  parameter lowrisc_top_racl_pkg::racl_role_t DmaSysRaclRole = '0,
+  parameter int unsigned DmaOtAgentId = 0,
+  // parameters for rstmgr
+  parameter bit SecRstmgrCheck = 0,
+  parameter int SecRstmgrMaxSyncDelay = 2,
+  // parameters for alert_handler
+  parameter int AlertHandlerEscNumSeverities = 4,
+  parameter int AlertHandlerEscPingCountWidth = 16,
+  // parameters for sram_ctrl_ret
+  parameter int SramCtrlRetInstSize = 8192,
+  parameter int SramCtrlRetNumRamInst = 1,
+  parameter bit SramCtrlRetInstrExec = 0,
+  parameter int SramCtrlRetNumPrinceRoundsHalf = 3,
+  parameter int SramCtrlRetNumAddrScrRounds = 2,
+  parameter bit SramCtrlRetEccCorrection = 0
 ) (
   // Externally supplied base clocks
   input clk_aon_i,
@@ -298809,10 +298809,6 @@ module lowrisc_top_peppermint #(
   .LcCtrlProductId(LcCtrlProductId),
   .LcCtrlRevisionId(LcCtrlRevisionId),
   .LcCtrlIdcodeValue(LcCtrlIdcodeValue),
-  .RvDmIdcodeValue(RvDmIdcodeValue),
-  .RvDmUseDmiInterface(RvDmUseDmiInterface),
-  .SecRvDmVolatileRawUnlockEn(SecRvDmVolatileRawUnlockEn),
-  .RvDmTlulHostUserRsvdBits(RvDmTlulHostUserRsvdBits),
   .AesAESGCMEnable(AesAESGCMEnable),
   .SecAesMasking(SecAesMasking),
   .SecAesSBoxImpl(SecAesSBoxImpl),
@@ -298845,11 +298841,6 @@ module lowrisc_top_peppermint #(
   .SramCtrlMainEccCorrection(SramCtrlMainEccCorrection),
   .RomCtrlBootRomInitFile(RomCtrlBootRomInitFile),
   .SecRomCtrlDisableScrambling(SecRomCtrlDisableScrambling),
-  .DmaEnableDataIntgGen(DmaEnableDataIntgGen),
-  .DmaEnableRspDataIntgCheck(DmaEnableRspDataIntgCheck),
-  .DmaTlUserRsvd(DmaTlUserRsvd),
-  .DmaSysRaclRole(DmaSysRaclRole),
-  .DmaOtAgentId(DmaOtAgentId),
   .RvCoreIbexPMPEnable(RvCoreIbexPMPEnable),
   .RvCoreIbexPMPGranularity(RvCoreIbexPMPGranularity),
   .RvCoreIbexPMPNumRegions(RvCoreIbexPMPNumRegions),
@@ -298881,6 +298872,15 @@ module lowrisc_top_peppermint #(
   .RvCoreIbexTlulHostUserRsvdBits(RvCoreIbexTlulHostUserRsvdBits),
   .RvCoreIbexCsrMvendorId(RvCoreIbexCsrMvendorId),
   .RvCoreIbexCsrMimpId(RvCoreIbexCsrMimpId),
+  .RvDmIdcodeValue(RvDmIdcodeValue),
+  .RvDmUseDmiInterface(RvDmUseDmiInterface),
+  .SecRvDmVolatileRawUnlockEn(SecRvDmVolatileRawUnlockEn),
+  .RvDmTlulHostUserRsvdBits(RvDmTlulHostUserRsvdBits),
+  .DmaEnableDataIntgGen(DmaEnableDataIntgGen),
+  .DmaEnableRspDataIntgCheck(DmaEnableRspDataIntgCheck),
+  .DmaTlUserRsvd(DmaTlUserRsvd),
+  .DmaSysRaclRole(DmaSysRaclRole),
+  .DmaOtAgentId(DmaOtAgentId),
   .AlertHandlerEscNumSeverities(AlertHandlerEscNumSeverities),
   .AlertHandlerEscPingCountWidth(AlertHandlerEscPingCountWidth)
   ) peppermint_pd_main (
@@ -299380,11 +299380,6 @@ module lowrisc_peppermint_pd_main #(
   parameter logic [15:0] LcCtrlProductId = 16'h 4100,
   parameter logic [7:0] LcCtrlRevisionId = 8'h 01,
   parameter logic [31:0] LcCtrlIdcodeValue = 32'h0000_0001,
-  // parameters for rv_dm
-  parameter logic [31:0] RvDmIdcodeValue = 32'h0000_0001,
-  parameter bit RvDmUseDmiInterface = 1,
-  parameter bit SecRvDmVolatileRawUnlockEn = 0,
-  parameter logic [lowrisc_tlul_pkg::RsvdWidth-1:0] RvDmTlulHostUserRsvdBits = '0,
   // parameters for aes
   parameter bit AesAESGCMEnable = 1,
   parameter bit SecAesMasking = 1,
@@ -299428,12 +299423,6 @@ module lowrisc_peppermint_pd_main #(
   // parameters for rom_ctrl
   parameter RomCtrlBootRomInitFile = "",
   parameter bit SecRomCtrlDisableScrambling = 1'b0,
-  // parameters for dma
-  parameter bit DmaEnableDataIntgGen = 1'b1,
-  parameter bit DmaEnableRspDataIntgCheck = 1'b1,
-  parameter logic [lowrisc_tlul_pkg::RsvdWidth-1:0] DmaTlUserRsvd = '0,
-  parameter lowrisc_top_racl_pkg::racl_role_t DmaSysRaclRole = '0,
-  parameter int unsigned DmaOtAgentId = 0,
   // parameters for rv_core_ibex
   parameter bit RvCoreIbexPMPEnable = 1,
   parameter int unsigned RvCoreIbexPMPGranularity = 0,
@@ -299468,6 +299457,17 @@ module lowrisc_peppermint_pd_main #(
   parameter logic [lowrisc_tlul_pkg::RsvdWidth-1:0] RvCoreIbexTlulHostUserRsvdBits = '0,
   parameter logic [31:0] RvCoreIbexCsrMvendorId = '0,
   parameter logic [31:0] RvCoreIbexCsrMimpId = '0,
+  // parameters for rv_dm
+  parameter logic [31:0] RvDmIdcodeValue = 32'h0000_0001,
+  parameter bit RvDmUseDmiInterface = 1,
+  parameter bit SecRvDmVolatileRawUnlockEn = 0,
+  parameter logic [lowrisc_tlul_pkg::RsvdWidth-1:0] RvDmTlulHostUserRsvdBits = '0,
+  // parameters for dma
+  parameter bit DmaEnableDataIntgGen = 1'b1,
+  parameter bit DmaEnableRspDataIntgCheck = 1'b1,
+  parameter logic [lowrisc_tlul_pkg::RsvdWidth-1:0] DmaTlUserRsvd = '0,
+  parameter lowrisc_top_racl_pkg::racl_role_t DmaSysRaclRole = '0,
+  parameter int unsigned DmaOtAgentId = 0,
   // parameters for alert_handler
   parameter int AlertHandlerEscNumSeverities = 4,
   parameter int AlertHandlerEscPingCountWidth = 16
@@ -299588,9 +299588,9 @@ module lowrisc_peppermint_pd_main #(
 
   logic [41:0] intr_vector;
   // Interrupt source list
+  logic intr_rv_timer_timer_expired_hart0_timer0;
   logic intr_otp_ctrl_otp_operation_done;
   logic intr_otp_ctrl_otp_error;
-  logic intr_rv_timer_timer_expired_hart0_timer0;
   logic intr_hmac_hmac_done;
   logic intr_hmac_fifo_empty;
   logic intr_hmac_hmac_err;
@@ -299834,8 +299834,30 @@ module lowrisc_peppermint_pd_main #(
 
 
   // Instantiation of IPs
+  lowrisc_rv_timer #(
+    .AlertAsyncOn(lowrisc_alert_handler_reg_pkg::AsyncOn[0]),
+    .AlertSkewCycles(lowrisc_top_pkg::AlertSkewCycles)
+  ) u_rv_timer (
+    // Clock and reset connections
+    .clk_i(clk_main_i),
+    .rst_ni(rst_main_ni),
+
+    // Interrupts
+    .intr_timer_expired_hart0_timer0_o(intr_rv_timer_timer_expired_hart0_timer0),
+
+    // alert_handler[0]: fatal_fault
+    .alert_tx_o(alert_tx_o[0]),
+    .alert_rx_i(alert_rx_i[0]),
+
+    // Inter-module signals
+    .racl_policies_i(lowrisc_top_racl_pkg::RACL_POLICY_VEC_DEFAULT),
+    .racl_error_o(),
+    .tl_i(rv_timer_tl_req),
+    .tl_o(rv_timer_tl_rsp)
+  );
+
   lowrisc_otp_ctrl #(
-    .AlertAsyncOn(lowrisc_alert_handler_reg_pkg::AsyncOn[10:6]),
+    .AlertAsyncOn(lowrisc_alert_handler_reg_pkg::AsyncOn[5:1]),
     .AlertSkewCycles(lowrisc_top_pkg::AlertSkewCycles),
     .RndCnstLfsrSeed(RndCnstOtpCtrlLfsrSeed),
     .RndCnstLfsrPerm(RndCnstOtpCtrlLfsrPerm),
@@ -299860,13 +299882,13 @@ module lowrisc_peppermint_pd_main #(
     .intr_otp_operation_done_o(intr_otp_ctrl_otp_operation_done),
     .intr_otp_error_o         (intr_otp_ctrl_otp_error),
 
-    // alert_handler[6]: fatal_macro_error
-    // alert_handler[7]: fatal_check_error
-    // alert_handler[8]: fatal_bus_integ_error
-    // alert_handler[9]: fatal_prim_otp_alert
-    // alert_handler[10]: recov_prim_otp_alert
-    .alert_tx_o(alert_tx_o[4:0]),
-    .alert_rx_i(alert_rx_i[4:0]),
+    // alert_handler[1]: fatal_macro_error
+    // alert_handler[2]: fatal_check_error
+    // alert_handler[3]: fatal_bus_integ_error
+    // alert_handler[4]: fatal_prim_otp_alert
+    // alert_handler[5]: recov_prim_otp_alert
+    .alert_tx_o(alert_tx_o[5:1]),
+    .alert_rx_i(alert_rx_i[5:1]),
 
     // Inter-module signals
     .edn_o(edn0_edn_req[1]),
@@ -299938,7 +299960,7 @@ module lowrisc_peppermint_pd_main #(
   );
 
   lowrisc_lc_ctrl #(
-    .AlertAsyncOn(lowrisc_alert_handler_reg_pkg::AsyncOn[13:11]),
+    .AlertAsyncOn(lowrisc_alert_handler_reg_pkg::AsyncOn[8:6]),
     .AlertSkewCycles(lowrisc_top_pkg::AlertSkewCycles),
     .SecVolatileRawUnlockEn(SecLcCtrlVolatileRawUnlockEn),
     .UseDmiInterface(LcCtrlUseDmiInterface),
@@ -299966,11 +299988,11 @@ module lowrisc_peppermint_pd_main #(
     .scanmode_i,
     .scan_rst_ni,
 
-    // alert_handler[11]: fatal_prog_error
-    // alert_handler[12]: fatal_state_error
-    // alert_handler[13]: fatal_bus_integ_error
-    .alert_tx_o(alert_tx_o[7:5]),
-    .alert_rx_i(alert_rx_i[7:5]),
+    // alert_handler[6]: fatal_prog_error
+    // alert_handler[7]: fatal_state_error
+    // alert_handler[8]: fatal_bus_integ_error
+    .alert_tx_o(alert_tx_o[8:6]),
+    .alert_rx_i(alert_rx_i[8:6]),
 
     // Inter-module signals
     .jtag_i(lowrisc_jtag_pkg::JTAG_REQ_DEFAULT),
@@ -300020,106 +300042,8 @@ module lowrisc_peppermint_pd_main #(
     .dmi_tl_o(lc_ctrl_dmi_tl_rsp)
   );
 
-  lowrisc_rv_dm #(
-    .AlertAsyncOn(lowrisc_alert_handler_reg_pkg::AsyncOn[14]),
-    .AlertSkewCycles(lowrisc_top_pkg::AlertSkewCycles),
-    .IdcodeValue(RvDmIdcodeValue),
-    .UseDmiInterface(RvDmUseDmiInterface),
-    .SecVolatileRawUnlockEn(SecRvDmVolatileRawUnlockEn),
-    .TlulHostUserRsvdBits(RvDmTlulHostUserRsvdBits)
-  ) u_rv_dm (
-    // Clock and reset connections
-    .clk_i(clk_main_i),
-    .clk_lc_i(clk_main_i),
-    .rst_ni(rst_main_sys_ni),
-    .rst_lc_ni(rst_main_ni),
-
-    // DFT/scan connections
-    .scanmode_i,
-    .scan_rst_ni,
-
-    // alert_handler[14]: fatal_fault
-    .alert_tx_o(alert_tx_o[8]),
-    .alert_rx_i(alert_rx_i[8]),
-
-    // Inter-module signals
-    .next_dm_addr_i('0),
-    .jtag_i(lowrisc_jtag_pkg::JTAG_REQ_DEFAULT),
-    .jtag_o(),
-    .lc_init_done_i(lc_ctrl_lc_init_done),
-    .lc_hw_debug_clr_i(lc_ctrl_lc_hw_debug_clr),
-    .lc_hw_debug_en_i(lc_ctrl_lc_hw_debug_en),
-    .lc_dft_en_i(lc_ctrl_lc_dft_en),
-    .pinmux_hw_debug_en_i(lowrisc_lc_ctrl_pkg::Off),
-    .otp_dis_rv_dm_late_debug_i(rv_dm_otp_dis_rv_dm_late_debug),
-    .unavailable_i(1'b0),
-    .ndmreset_req_o(rv_dm_ndmreset_req_o),
-    .dmactive_o(),
-    .debug_req_o(rv_dm_debug_req),
-    .lc_escalate_en_i(lc_ctrl_lc_escalate_en),
-    .lc_check_byp_en_i(lc_ctrl_lc_check_byp_en),
-    .strap_en_i(pwrmgr_strap_i),
-    .strap_en_override_i(lc_ctrl_strap_en_override),
-    .racl_policies_i(lowrisc_top_racl_pkg::RACL_POLICY_VEC_DEFAULT),
-    .racl_error_o(),
-    .sba_tl_h_o(main_tl_rv_dm__sba_req),
-    .sba_tl_h_i(main_tl_rv_dm__sba_rsp),
-    .regs_tl_d_i(rv_dm_regs_tl_d_req),
-    .regs_tl_d_o(rv_dm_regs_tl_d_rsp),
-    .mem_tl_d_i(rv_dm_mem_tl_d_req),
-    .mem_tl_d_o(rv_dm_mem_tl_d_rsp),
-    .dbg_tl_d_i(rv_dm_dbg_tl_d_req),
-    .dbg_tl_d_o(rv_dm_dbg_tl_d_rsp)
-  );
-
-  lowrisc_rv_plic #(
-    .AlertAsyncOn(lowrisc_alert_handler_reg_pkg::AsyncOn[15]),
-    .AlertSkewCycles(lowrisc_top_pkg::AlertSkewCycles)
-  ) u_rv_plic (
-    // Clock and reset connections
-    .clk_i(clk_main_i),
-    .rst_ni(rst_main_ni),
-
-    // alert_handler[15]: fatal_fault
-    .alert_tx_o(alert_tx_o[9]),
-    .alert_rx_i(alert_rx_i[9]),
-
-    // Inter-module signals
-    .irq_o(rv_plic_irq),
-    .irq_id_o(),
-    .msip_o(rv_plic_msip),
-    .tl_i(rv_plic_tl_req),
-    .tl_o(rv_plic_tl_rsp),
-
-
-    // Interrupt source vector
-    .intr_src_i(intr_vector)
-  );
-
-  lowrisc_rv_timer #(
-    .AlertAsyncOn(lowrisc_alert_handler_reg_pkg::AsyncOn[16]),
-    .AlertSkewCycles(lowrisc_top_pkg::AlertSkewCycles)
-  ) u_rv_timer (
-    // Clock and reset connections
-    .clk_i(clk_main_i),
-    .rst_ni(rst_main_ni),
-
-    // Interrupts
-    .intr_timer_expired_hart0_timer0_o(intr_rv_timer_timer_expired_hart0_timer0),
-
-    // alert_handler[16]: fatal_fault
-    .alert_tx_o(alert_tx_o[10]),
-    .alert_rx_i(alert_rx_i[10]),
-
-    // Inter-module signals
-    .racl_policies_i(lowrisc_top_racl_pkg::RACL_POLICY_VEC_DEFAULT),
-    .racl_error_o(),
-    .tl_i(rv_timer_tl_req),
-    .tl_o(rv_timer_tl_rsp)
-  );
-
   lowrisc_aes #(
-    .AlertAsyncOn(lowrisc_alert_handler_reg_pkg::AsyncOn[18:17]),
+    .AlertAsyncOn(lowrisc_alert_handler_reg_pkg::AsyncOn[10:9]),
     .AlertSkewCycles(lowrisc_top_pkg::AlertSkewCycles),
     .AES192Enable(1'b1),
     .AESGCMEnable(AesAESGCMEnable),
@@ -300141,10 +300065,10 @@ module lowrisc_peppermint_pd_main #(
     .rst_ni(rst_main_ni),
     .rst_edn_ni(rst_main_ni),
 
-    // alert_handler[17]: recov_ctrl_update_err
-    // alert_handler[18]: fatal_fault
-    .alert_tx_o(alert_tx_o[12:11]),
-    .alert_rx_i(alert_rx_i[12:11]),
+    // alert_handler[9]: recov_ctrl_update_err
+    // alert_handler[10]: fatal_fault
+    .alert_tx_o(alert_tx_o[10:9]),
+    .alert_rx_i(alert_rx_i[10:9]),
 
     // Inter-module signals
     .idle_o(),
@@ -300159,7 +300083,7 @@ module lowrisc_peppermint_pd_main #(
   );
 
   lowrisc_hmac #(
-    .AlertAsyncOn(lowrisc_alert_handler_reg_pkg::AsyncOn[19]),
+    .AlertAsyncOn(lowrisc_alert_handler_reg_pkg::AsyncOn[11]),
     .AlertSkewCycles(lowrisc_top_pkg::AlertSkewCycles)
   ) u_hmac (
     // Clock and reset connections
@@ -300171,9 +300095,9 @@ module lowrisc_peppermint_pd_main #(
     .intr_fifo_empty_o(intr_hmac_fifo_empty),
     .intr_hmac_err_o  (intr_hmac_hmac_err),
 
-    // alert_handler[19]: fatal_fault
-    .alert_tx_o(alert_tx_o[13]),
-    .alert_rx_i(alert_rx_i[13]),
+    // alert_handler[11]: fatal_fault
+    .alert_tx_o(alert_tx_o[11]),
+    .alert_rx_i(alert_rx_i[11]),
 
     // Inter-module signals
     .idle_o(),
@@ -300183,7 +300107,7 @@ module lowrisc_peppermint_pd_main #(
   );
 
   lowrisc_kmac #(
-    .AlertAsyncOn(lowrisc_alert_handler_reg_pkg::AsyncOn[21:20]),
+    .AlertAsyncOn(lowrisc_alert_handler_reg_pkg::AsyncOn[13:12]),
     .AlertSkewCycles(lowrisc_top_pkg::AlertSkewCycles),
     .EnMasking(KmacEnMasking),
     .SwKeyMasked(KmacSwKeyMasked),
@@ -300208,10 +300132,10 @@ module lowrisc_peppermint_pd_main #(
     .intr_fifo_empty_o(intr_kmac_fifo_empty),
     .intr_kmac_err_o  (intr_kmac_kmac_err),
 
-    // alert_handler[20]: recov_operation_err
-    // alert_handler[21]: fatal_fault_err
-    .alert_tx_o(alert_tx_o[15:14]),
-    .alert_rx_i(alert_rx_i[15:14]),
+    // alert_handler[12]: recov_operation_err
+    // alert_handler[13]: fatal_fault_err
+    .alert_tx_o(alert_tx_o[13:12]),
+    .alert_rx_i(alert_rx_i[13:12]),
 
     // Inter-module signals
     .keymgr_key_i(keymgr_dpe_kmac_key),
@@ -300227,7 +300151,7 @@ module lowrisc_peppermint_pd_main #(
   );
 
   lowrisc_otbn #(
-    .AlertAsyncOn(lowrisc_alert_handler_reg_pkg::AsyncOn[23:22]),
+    .AlertAsyncOn(lowrisc_alert_handler_reg_pkg::AsyncOn[15:14]),
     .AlertSkewCycles(lowrisc_top_pkg::AlertSkewCycles),
     .Stub(OtbnStub),
     .RegFile(OtbnRegFile),
@@ -300251,10 +300175,10 @@ module lowrisc_peppermint_pd_main #(
     // Interrupts
     .intr_done_o(intr_otbn_done),
 
-    // alert_handler[22]: fatal
-    // alert_handler[23]: recov
-    .alert_tx_o(alert_tx_o[17:16]),
-    .alert_rx_i(alert_rx_i[17:16]),
+    // alert_handler[14]: fatal
+    // alert_handler[15]: recov
+    .alert_tx_o(alert_tx_o[15:14]),
+    .alert_rx_i(alert_rx_i[15:14]),
 
     // Inter-module signals
     .otbn_otp_key_o(otp_ctrl_otbn_otp_key_req),
@@ -300279,7 +300203,7 @@ module lowrisc_peppermint_pd_main #(
   );
 
   lowrisc_keymgr_dpe #(
-    .AlertAsyncOn(lowrisc_alert_handler_reg_pkg::AsyncOn[25:24]),
+    .AlertAsyncOn(lowrisc_alert_handler_reg_pkg::AsyncOn[17:16]),
     .AlertSkewCycles(lowrisc_top_pkg::AlertSkewCycles),
     .KmacEnMasking(KeymgrDpeKmacEnMasking),
     .RndCnstLfsrSeed(RndCnstKeymgrDpeLfsrSeed),
@@ -300306,10 +300230,10 @@ module lowrisc_peppermint_pd_main #(
     // Interrupts
     .intr_op_done_o(intr_keymgr_dpe_op_done),
 
-    // alert_handler[24]: recov_operation_err
-    // alert_handler[25]: fatal_fault_err
-    .alert_tx_o(alert_tx_o[19:18]),
-    .alert_rx_i(alert_rx_i[19:18]),
+    // alert_handler[16]: recov_operation_err
+    // alert_handler[17]: fatal_fault_err
+    .alert_tx_o(alert_tx_o[17:16]),
+    .alert_rx_i(alert_rx_i[17:16]),
 
     // Inter-module signals
     .edn_o(edn0_edn_req[0]),
@@ -300333,7 +300257,7 @@ module lowrisc_peppermint_pd_main #(
   );
 
   lowrisc_csrng #(
-    .AlertAsyncOn(lowrisc_alert_handler_reg_pkg::AsyncOn[27:26]),
+    .AlertAsyncOn(lowrisc_alert_handler_reg_pkg::AsyncOn[19:18]),
     .AlertSkewCycles(lowrisc_top_pkg::AlertSkewCycles),
     .RndCnstCsKeymgrDivNonProduction(RndCnstCsrngCsKeymgrDivNonProduction),
     .RndCnstCsKeymgrDivProduction(RndCnstCsrngCsKeymgrDivProduction),
@@ -300349,10 +300273,10 @@ module lowrisc_peppermint_pd_main #(
     .intr_cs_hw_inst_exc_o (intr_csrng_cs_hw_inst_exc),
     .intr_cs_fatal_err_o   (intr_csrng_cs_fatal_err),
 
-    // alert_handler[26]: recov_alert
-    // alert_handler[27]: fatal_alert
-    .alert_tx_o(alert_tx_o[21:20]),
-    .alert_rx_i(alert_rx_i[21:20]),
+    // alert_handler[18]: recov_alert
+    // alert_handler[19]: fatal_alert
+    .alert_tx_o(alert_tx_o[19:18]),
+    .alert_rx_i(alert_rx_i[19:18]),
 
     // Inter-module signals
     .csrng_cmd_i(csrng_csrng_cmd_req),
@@ -300366,7 +300290,7 @@ module lowrisc_peppermint_pd_main #(
   );
 
   lowrisc_entropy_src #(
-    .AlertAsyncOn(lowrisc_alert_handler_reg_pkg::AsyncOn[29:28]),
+    .AlertAsyncOn(lowrisc_alert_handler_reg_pkg::AsyncOn[21:20]),
     .AlertSkewCycles(lowrisc_top_pkg::AlertSkewCycles),
     .RngBusWidth(EntropySrcRngBusWidth),
     .RngBusBitSelWidth(EntropySrcRngBusBitSelWidth),
@@ -300385,10 +300309,10 @@ module lowrisc_peppermint_pd_main #(
     .intr_es_observe_fifo_ready_o(intr_entropy_src_es_observe_fifo_ready),
     .intr_es_fatal_err_o         (intr_entropy_src_es_fatal_err),
 
-    // alert_handler[28]: recov_alert
-    // alert_handler[29]: fatal_alert
-    .alert_tx_o(alert_tx_o[23:22]),
-    .alert_rx_i(alert_rx_i[23:22]),
+    // alert_handler[20]: recov_alert
+    // alert_handler[21]: fatal_alert
+    .alert_tx_o(alert_tx_o[21:20]),
+    .alert_rx_i(alert_rx_i[21:20]),
 
     // Inter-module signals
     .entropy_src_hw_if_i(csrng_entropy_src_hw_if_req),
@@ -300410,7 +300334,7 @@ module lowrisc_peppermint_pd_main #(
   );
 
   lowrisc_edn #(
-    .AlertAsyncOn(lowrisc_alert_handler_reg_pkg::AsyncOn[31:30]),
+    .AlertAsyncOn(lowrisc_alert_handler_reg_pkg::AsyncOn[23:22]),
     .AlertSkewCycles(lowrisc_top_pkg::AlertSkewCycles),
     .NumEndPoints(Edn0NumEndPoints)
   ) u_edn0 (
@@ -300422,10 +300346,10 @@ module lowrisc_peppermint_pd_main #(
     .intr_edn_cmd_req_done_o(intr_edn0_edn_cmd_req_done),
     .intr_edn_fatal_err_o   (intr_edn0_edn_fatal_err),
 
-    // alert_handler[30]: recov_alert
-    // alert_handler[31]: fatal_alert
-    .alert_tx_o(alert_tx_o[25:24]),
-    .alert_rx_i(alert_rx_i[25:24]),
+    // alert_handler[22]: recov_alert
+    // alert_handler[23]: fatal_alert
+    .alert_tx_o(alert_tx_o[23:22]),
+    .alert_rx_i(alert_rx_i[23:22]),
 
     // Inter-module signals
     .csrng_cmd_o(csrng_csrng_cmd_req[0]),
@@ -300437,7 +300361,7 @@ module lowrisc_peppermint_pd_main #(
   );
 
   lowrisc_edn #(
-    .AlertAsyncOn(lowrisc_alert_handler_reg_pkg::AsyncOn[33:32]),
+    .AlertAsyncOn(lowrisc_alert_handler_reg_pkg::AsyncOn[25:24]),
     .AlertSkewCycles(lowrisc_top_pkg::AlertSkewCycles),
     .NumEndPoints(Edn1NumEndPoints)
   ) u_edn1 (
@@ -300449,10 +300373,10 @@ module lowrisc_peppermint_pd_main #(
     .intr_edn_cmd_req_done_o(intr_edn1_edn_cmd_req_done),
     .intr_edn_fatal_err_o   (intr_edn1_edn_fatal_err),
 
-    // alert_handler[32]: recov_alert
-    // alert_handler[33]: fatal_alert
-    .alert_tx_o(alert_tx_o[27:26]),
-    .alert_rx_i(alert_rx_i[27:26]),
+    // alert_handler[24]: recov_alert
+    // alert_handler[25]: fatal_alert
+    .alert_tx_o(alert_tx_o[25:24]),
+    .alert_rx_i(alert_rx_i[25:24]),
 
     // Inter-module signals
     .csrng_cmd_o(csrng_csrng_cmd_req[1]),
@@ -300464,7 +300388,7 @@ module lowrisc_peppermint_pd_main #(
   );
 
   lowrisc_sram_ctrl #(
-    .AlertAsyncOn(lowrisc_alert_handler_reg_pkg::AsyncOn[34]),
+    .AlertAsyncOn(lowrisc_alert_handler_reg_pkg::AsyncOn[26]),
     .AlertSkewCycles(lowrisc_top_pkg::AlertSkewCycles),
     .RndCnstSramKey(RndCnstSramCtrlMainSramKey),
     .RndCnstSramNonce(RndCnstSramCtrlMainSramNonce),
@@ -300485,9 +300409,9 @@ module lowrisc_peppermint_pd_main #(
     .rst_ni(rst_main_ni),
     .rst_otp_ni(rst_main_ni),
 
-    // alert_handler[34]: fatal_error
-    .alert_tx_o(alert_tx_o[28]),
-    .alert_rx_i(alert_rx_i[28]),
+    // alert_handler[26]: fatal_error
+    .alert_tx_o(alert_tx_o[26]),
+    .alert_rx_i(alert_rx_i[26]),
 
     // RACL policies
     .racl_policy_sel_ranges_ram_i('0),
@@ -300510,7 +300434,7 @@ module lowrisc_peppermint_pd_main #(
   );
 
   lowrisc_rom_ctrl #(
-    .AlertAsyncOn(lowrisc_alert_handler_reg_pkg::AsyncOn[35]),
+    .AlertAsyncOn(lowrisc_alert_handler_reg_pkg::AsyncOn[27]),
     .AlertSkewCycles(lowrisc_top_pkg::AlertSkewCycles),
     .BootRomInitFile(RomCtrlBootRomInitFile),
     .FlopToKmac(RomCtrlFlopToKmac),
@@ -300523,9 +300447,9 @@ module lowrisc_peppermint_pd_main #(
     .clk_i(clk_main_i),
     .rst_ni(rst_main_ni),
 
-    // alert_handler[35]: fatal
-    .alert_tx_o(alert_tx_o[29]),
-    .alert_rx_i(alert_rx_i[29]),
+    // alert_handler[27]: fatal
+    .alert_tx_o(alert_tx_o[27]),
+    .alert_rx_i(alert_rx_i[27]),
 
     // Inter-module signals
     .rom_cfg_i(lowrisc_prim_rom_pkg::ROM_CFG_REQ_DEFAULT),
@@ -300540,130 +300464,8 @@ module lowrisc_peppermint_pd_main #(
     .rom_tl_o(rom_ctrl_rom_tl_rsp)
   );
 
-  lowrisc_dma #(
-    .AlertAsyncOn(lowrisc_alert_handler_reg_pkg::AsyncOn[36]),
-    .AlertSkewCycles(lowrisc_top_pkg::AlertSkewCycles),
-    .EnableDataIntgGen(DmaEnableDataIntgGen),
-    .EnableRspDataIntgCheck(DmaEnableRspDataIntgCheck),
-    .TlUserRsvd(DmaTlUserRsvd),
-    .SysRaclRole(DmaSysRaclRole),
-    .OtAgentId(DmaOtAgentId)
-  ) u_dma (
-    // Clock and reset connections
-    .clk_i(clk_main_i),
-    .rst_ni(rst_main_ni),
-
-    // DFT/scan connections
-    .scanmode_i,
-
-    // Interrupts
-    .intr_dma_done_o      (intr_dma_dma_done),
-    .intr_dma_chunk_done_o(intr_dma_dma_chunk_done),
-    .intr_dma_error_o     (intr_dma_dma_error),
-
-    // alert_handler[36]: fatal_fault
-    .alert_tx_o(alert_tx_o[30]),
-    .alert_rx_i(alert_rx_i[30]),
-
-    // Inter-module signals
-    .lsio_trigger_i(lowrisc_dma_pkg::LSIO_TRIGGER_DEFAULT),
-    .sys_o(),
-    .sys_i(lowrisc_dma_pkg::SYS_RSP_DEFAULT),
-    .ctn_tl_h2d_o(),
-    .ctn_tl_d2h_i(lowrisc_tlul_pkg::TL_D2H_DEFAULT),
-    .racl_policies_i(lowrisc_top_racl_pkg::RACL_POLICY_VEC_DEFAULT),
-    .racl_error_o(),
-    .host_tl_h_o(main_tl_dma__host_req),
-    .host_tl_h_i(main_tl_dma__host_rsp),
-    .tl_d_i(dma_tl_d_req),
-    .tl_d_o(dma_tl_d_rsp)
-  );
-
-  lowrisc_ahb_bridge u_ahb_bridge (
-    // Clock and reset connections
-    .clk_i(clk_main_i),
-    .rst_ni(rst_main_ni),
-
-
-    // Inter-module signals
-    .ahb_sub_m2s_i(soc_mbx_ahb_req_i),
-    .ahb_sub_s2m_o(soc_mbx_ahb_rsp_o),
-    .ahb_mgr_m2s_o(soc_mgr_ahb_req_o),
-    .ahb_mgr_s2m_i(soc_mgr_ahb_rsp_i),
-    .socmbx_tl_h_o(socmbx_tl_ahb_bridge__socmbx_req),
-    .socmbx_tl_h_i(socmbx_tl_ahb_bridge__socmbx_rsp),
-    .ctn_tl_d_i(ahb_bridge_ctn_tl_d_req),
-    .ctn_tl_d_o(ahb_bridge_ctn_tl_d_rsp)
-  );
-
-  lowrisc_mbx #(
-    .AlertAsyncOn(lowrisc_alert_handler_reg_pkg::AsyncOn[38:37]),
-    .AlertSkewCycles(lowrisc_top_pkg::AlertSkewCycles)
-  ) u_mbx0 (
-    // Clock and reset connections
-    .clk_i(clk_main_i),
-    .rst_ni(rst_main_ni),
-
-    // Interrupts
-    .intr_mbx_ready_o(intr_mbx0_mbx_ready),
-    .intr_mbx_abort_o(intr_mbx0_mbx_abort),
-    .intr_mbx_error_o(intr_mbx0_mbx_error),
-
-    // alert_handler[37]: fatal_fault
-    // alert_handler[38]: recov_fault
-    .alert_tx_o(alert_tx_o[32:31]),
-    .alert_rx_i(alert_rx_i[32:31]),
-
-    // Inter-module signals
-    .doe_intr_support_o(mbx0_doe_intr_support_o),
-    .doe_intr_en_o(mbx0_doe_intr_en_o),
-    .doe_intr_o(mbx0_doe_intr_o),
-    .doe_async_msg_support_o(mbx0_doe_async_msg_support_o),
-    .racl_policies_i(lowrisc_top_racl_pkg::RACL_POLICY_VEC_DEFAULT),
-    .racl_error_o(),
-    .sram_tl_h_o(main_tl_mbx0__sram_req),
-    .sram_tl_h_i(main_tl_mbx0__sram_rsp),
-    .core_tl_d_i(mbx0_core_tl_d_req),
-    .core_tl_d_o(mbx0_core_tl_d_rsp),
-    .soc_tl_d_i(mbx0_soc_tl_d_req),
-    .soc_tl_d_o(mbx0_soc_tl_d_rsp)
-  );
-
-  lowrisc_mbx #(
-    .AlertAsyncOn(lowrisc_alert_handler_reg_pkg::AsyncOn[40:39]),
-    .AlertSkewCycles(lowrisc_top_pkg::AlertSkewCycles)
-  ) u_mbx1 (
-    // Clock and reset connections
-    .clk_i(clk_main_i),
-    .rst_ni(rst_main_ni),
-
-    // Interrupts
-    .intr_mbx_ready_o(intr_mbx1_mbx_ready),
-    .intr_mbx_abort_o(intr_mbx1_mbx_abort),
-    .intr_mbx_error_o(intr_mbx1_mbx_error),
-
-    // alert_handler[39]: fatal_fault
-    // alert_handler[40]: recov_fault
-    .alert_tx_o(alert_tx_o[34:33]),
-    .alert_rx_i(alert_rx_i[34:33]),
-
-    // Inter-module signals
-    .doe_intr_support_o(mbx1_doe_intr_support_o),
-    .doe_intr_en_o(mbx1_doe_intr_en_o),
-    .doe_intr_o(mbx1_doe_intr_o),
-    .doe_async_msg_support_o(mbx1_doe_async_msg_support_o),
-    .racl_policies_i(lowrisc_top_racl_pkg::RACL_POLICY_VEC_DEFAULT),
-    .racl_error_o(),
-    .sram_tl_h_o(main_tl_mbx1__sram_req),
-    .sram_tl_h_i(main_tl_mbx1__sram_rsp),
-    .core_tl_d_i(mbx1_core_tl_d_req),
-    .core_tl_d_o(mbx1_core_tl_d_rsp),
-    .soc_tl_d_i(mbx1_soc_tl_d_req),
-    .soc_tl_d_o(mbx1_soc_tl_d_rsp)
-  );
-
   lowrisc_rv_core_ibex #(
-    .AlertAsyncOn(lowrisc_alert_handler_reg_pkg::AsyncOn[44:41]),
+    .AlertAsyncOn(lowrisc_alert_handler_reg_pkg::AsyncOn[31:28]),
     .AlertSkewCycles(lowrisc_top_pkg::AlertSkewCycles),
     .RndCnstLfsrSeed(RndCnstRvCoreIbexLfsrSeed),
     .RndCnstLfsrPerm(RndCnstRvCoreIbexLfsrPerm),
@@ -300718,12 +300520,12 @@ module lowrisc_peppermint_pd_main #(
     .scanmode_i,
     .scan_rst_ni,
 
-    // alert_handler[41]: fatal_sw_err
-    // alert_handler[42]: recov_sw_err
-    // alert_handler[43]: fatal_hw_err
-    // alert_handler[44]: recov_hw_err
-    .alert_tx_o(alert_tx_o[38:35]),
-    .alert_rx_i(alert_rx_i[38:35]),
+    // alert_handler[28]: fatal_sw_err
+    // alert_handler[29]: recov_sw_err
+    // alert_handler[30]: fatal_hw_err
+    // alert_handler[31]: recov_hw_err
+    .alert_tx_o(alert_tx_o[31:28]),
+    .alert_rx_i(alert_rx_i[31:28]),
 
     // Inter-module signals
     .rst_cpu_n_o(),
@@ -300757,47 +300559,245 @@ module lowrisc_peppermint_pd_main #(
     .cfg_tl_d_o(rv_core_ibex_cfg_tl_d_rsp)
   );
 
+  lowrisc_rv_dm #(
+    .AlertAsyncOn(lowrisc_alert_handler_reg_pkg::AsyncOn[32]),
+    .AlertSkewCycles(lowrisc_top_pkg::AlertSkewCycles),
+    .IdcodeValue(RvDmIdcodeValue),
+    .UseDmiInterface(RvDmUseDmiInterface),
+    .SecVolatileRawUnlockEn(SecRvDmVolatileRawUnlockEn),
+    .TlulHostUserRsvdBits(RvDmTlulHostUserRsvdBits)
+  ) u_rv_dm (
+    // Clock and reset connections
+    .clk_i(clk_main_i),
+    .clk_lc_i(clk_main_i),
+    .rst_ni(rst_main_sys_ni),
+    .rst_lc_ni(rst_main_ni),
+
+    // DFT/scan connections
+    .scanmode_i,
+    .scan_rst_ni,
+
+    // alert_handler[32]: fatal_fault
+    .alert_tx_o(alert_tx_o[32]),
+    .alert_rx_i(alert_rx_i[32]),
+
+    // Inter-module signals
+    .next_dm_addr_i('0),
+    .jtag_i(lowrisc_jtag_pkg::JTAG_REQ_DEFAULT),
+    .jtag_o(),
+    .lc_init_done_i(lc_ctrl_lc_init_done),
+    .lc_hw_debug_clr_i(lc_ctrl_lc_hw_debug_clr),
+    .lc_hw_debug_en_i(lc_ctrl_lc_hw_debug_en),
+    .lc_dft_en_i(lc_ctrl_lc_dft_en),
+    .pinmux_hw_debug_en_i(lowrisc_lc_ctrl_pkg::Off),
+    .otp_dis_rv_dm_late_debug_i(rv_dm_otp_dis_rv_dm_late_debug),
+    .unavailable_i(1'b0),
+    .ndmreset_req_o(rv_dm_ndmreset_req_o),
+    .dmactive_o(),
+    .debug_req_o(rv_dm_debug_req),
+    .lc_escalate_en_i(lc_ctrl_lc_escalate_en),
+    .lc_check_byp_en_i(lc_ctrl_lc_check_byp_en),
+    .strap_en_i(pwrmgr_strap_i),
+    .strap_en_override_i(lc_ctrl_strap_en_override),
+    .racl_policies_i(lowrisc_top_racl_pkg::RACL_POLICY_VEC_DEFAULT),
+    .racl_error_o(),
+    .sba_tl_h_o(main_tl_rv_dm__sba_req),
+    .sba_tl_h_i(main_tl_rv_dm__sba_rsp),
+    .regs_tl_d_i(rv_dm_regs_tl_d_req),
+    .regs_tl_d_o(rv_dm_regs_tl_d_rsp),
+    .mem_tl_d_i(rv_dm_mem_tl_d_req),
+    .mem_tl_d_o(rv_dm_mem_tl_d_rsp),
+    .dbg_tl_d_i(rv_dm_dbg_tl_d_req),
+    .dbg_tl_d_o(rv_dm_dbg_tl_d_rsp)
+  );
+
+  lowrisc_dma #(
+    .AlertAsyncOn(lowrisc_alert_handler_reg_pkg::AsyncOn[33]),
+    .AlertSkewCycles(lowrisc_top_pkg::AlertSkewCycles),
+    .EnableDataIntgGen(DmaEnableDataIntgGen),
+    .EnableRspDataIntgCheck(DmaEnableRspDataIntgCheck),
+    .TlUserRsvd(DmaTlUserRsvd),
+    .SysRaclRole(DmaSysRaclRole),
+    .OtAgentId(DmaOtAgentId)
+  ) u_dma (
+    // Clock and reset connections
+    .clk_i(clk_main_i),
+    .rst_ni(rst_main_ni),
+
+    // DFT/scan connections
+    .scanmode_i,
+
+    // Interrupts
+    .intr_dma_done_o      (intr_dma_dma_done),
+    .intr_dma_chunk_done_o(intr_dma_dma_chunk_done),
+    .intr_dma_error_o     (intr_dma_dma_error),
+
+    // alert_handler[33]: fatal_fault
+    .alert_tx_o(alert_tx_o[33]),
+    .alert_rx_i(alert_rx_i[33]),
+
+    // Inter-module signals
+    .lsio_trigger_i(lowrisc_dma_pkg::LSIO_TRIGGER_DEFAULT),
+    .sys_o(),
+    .sys_i(lowrisc_dma_pkg::SYS_RSP_DEFAULT),
+    .ctn_tl_h2d_o(),
+    .ctn_tl_d2h_i(lowrisc_tlul_pkg::TL_D2H_DEFAULT),
+    .racl_policies_i(lowrisc_top_racl_pkg::RACL_POLICY_VEC_DEFAULT),
+    .racl_error_o(),
+    .host_tl_h_o(main_tl_dma__host_req),
+    .host_tl_h_i(main_tl_dma__host_rsp),
+    .tl_d_i(dma_tl_d_req),
+    .tl_d_o(dma_tl_d_rsp)
+  );
+
+  lowrisc_mbx #(
+    .AlertAsyncOn(lowrisc_alert_handler_reg_pkg::AsyncOn[35:34]),
+    .AlertSkewCycles(lowrisc_top_pkg::AlertSkewCycles)
+  ) u_mbx0 (
+    // Clock and reset connections
+    .clk_i(clk_main_i),
+    .rst_ni(rst_main_ni),
+
+    // Interrupts
+    .intr_mbx_ready_o(intr_mbx0_mbx_ready),
+    .intr_mbx_abort_o(intr_mbx0_mbx_abort),
+    .intr_mbx_error_o(intr_mbx0_mbx_error),
+
+    // alert_handler[34]: fatal_fault
+    // alert_handler[35]: recov_fault
+    .alert_tx_o(alert_tx_o[35:34]),
+    .alert_rx_i(alert_rx_i[35:34]),
+
+    // Inter-module signals
+    .doe_intr_support_o(mbx0_doe_intr_support_o),
+    .doe_intr_en_o(mbx0_doe_intr_en_o),
+    .doe_intr_o(mbx0_doe_intr_o),
+    .doe_async_msg_support_o(mbx0_doe_async_msg_support_o),
+    .racl_policies_i(lowrisc_top_racl_pkg::RACL_POLICY_VEC_DEFAULT),
+    .racl_error_o(),
+    .sram_tl_h_o(main_tl_mbx0__sram_req),
+    .sram_tl_h_i(main_tl_mbx0__sram_rsp),
+    .core_tl_d_i(mbx0_core_tl_d_req),
+    .core_tl_d_o(mbx0_core_tl_d_rsp),
+    .soc_tl_d_i(mbx0_soc_tl_d_req),
+    .soc_tl_d_o(mbx0_soc_tl_d_rsp)
+  );
+
+  lowrisc_mbx #(
+    .AlertAsyncOn(lowrisc_alert_handler_reg_pkg::AsyncOn[37:36]),
+    .AlertSkewCycles(lowrisc_top_pkg::AlertSkewCycles)
+  ) u_mbx1 (
+    // Clock and reset connections
+    .clk_i(clk_main_i),
+    .rst_ni(rst_main_ni),
+
+    // Interrupts
+    .intr_mbx_ready_o(intr_mbx1_mbx_ready),
+    .intr_mbx_abort_o(intr_mbx1_mbx_abort),
+    .intr_mbx_error_o(intr_mbx1_mbx_error),
+
+    // alert_handler[36]: fatal_fault
+    // alert_handler[37]: recov_fault
+    .alert_tx_o(alert_tx_o[37:36]),
+    .alert_rx_i(alert_rx_i[37:36]),
+
+    // Inter-module signals
+    .doe_intr_support_o(mbx1_doe_intr_support_o),
+    .doe_intr_en_o(mbx1_doe_intr_en_o),
+    .doe_intr_o(mbx1_doe_intr_o),
+    .doe_async_msg_support_o(mbx1_doe_async_msg_support_o),
+    .racl_policies_i(lowrisc_top_racl_pkg::RACL_POLICY_VEC_DEFAULT),
+    .racl_error_o(),
+    .sram_tl_h_o(main_tl_mbx1__sram_req),
+    .sram_tl_h_i(main_tl_mbx1__sram_rsp),
+    .core_tl_d_i(mbx1_core_tl_d_req),
+    .core_tl_d_o(mbx1_core_tl_d_rsp),
+    .soc_tl_d_i(mbx1_soc_tl_d_req),
+    .soc_tl_d_o(mbx1_soc_tl_d_rsp)
+  );
+
+  lowrisc_rv_plic #(
+    .AlertAsyncOn(lowrisc_alert_handler_reg_pkg::AsyncOn[44]),
+    .AlertSkewCycles(lowrisc_top_pkg::AlertSkewCycles)
+  ) u_rv_plic (
+    // Clock and reset connections
+    .clk_i(clk_main_i),
+    .rst_ni(rst_main_ni),
+
+    // alert_handler[44]: fatal_fault
+    .alert_tx_o(alert_tx_o[38]),
+    .alert_rx_i(alert_rx_i[38]),
+
+    // Inter-module signals
+    .irq_o(rv_plic_irq),
+    .irq_id_o(),
+    .msip_o(rv_plic_msip),
+    .tl_i(rv_plic_tl_req),
+    .tl_o(rv_plic_tl_rsp),
+
+
+    // Interrupt source vector
+    .intr_src_i(intr_vector)
+  );
+
+  lowrisc_ahb_bridge u_ahb_bridge (
+    // Clock and reset connections
+    .clk_i(clk_main_i),
+    .rst_ni(rst_main_ni),
+
+
+    // Inter-module signals
+    .ahb_sub_m2s_i(soc_mbx_ahb_req_i),
+    .ahb_sub_s2m_o(soc_mbx_ahb_rsp_o),
+    .ahb_mgr_m2s_o(soc_mgr_ahb_req_o),
+    .ahb_mgr_s2m_i(soc_mgr_ahb_rsp_i),
+    .socmbx_tl_h_o(socmbx_tl_ahb_bridge__socmbx_req),
+    .socmbx_tl_h_i(socmbx_tl_ahb_bridge__socmbx_rsp),
+    .ctn_tl_d_i(ahb_bridge_ctn_tl_d_req),
+    .ctn_tl_d_o(ahb_bridge_ctn_tl_d_rsp)
+  );
+
 
   // Interrupt assignments
   assign intr_vector = {
     incoming_interrupt_soc_i,                                 // IDs [38 +: 4]
-    intr_mbx1_mbx_error,                                      // ID 37
-    intr_mbx1_mbx_abort,                                      // ID 36
-    intr_mbx1_mbx_ready,                                      // ID 35
-    intr_mbx0_mbx_error,                                      // ID 34
-    intr_mbx0_mbx_abort,                                      // ID 33
-    intr_mbx0_mbx_ready,                                      // ID 32
-    intr_dma_dma_error,                                       // ID 31
-    intr_dma_dma_chunk_done,                                  // ID 30
-    intr_dma_dma_done,                                        // ID 29
-    intr_edn1_edn_fatal_err,                                  // ID 28
-    intr_edn1_edn_cmd_req_done,                               // ID 27
-    intr_edn0_edn_fatal_err,                                  // ID 26
-    intr_edn0_edn_cmd_req_done,                               // ID 25
-    intr_entropy_src_es_fatal_err,                            // ID 24
-    intr_entropy_src_es_observe_fifo_ready,                   // ID 23
-    intr_entropy_src_es_health_test_failed,                   // ID 22
-    intr_entropy_src_es_entropy_valid,                        // ID 21
-    intr_csrng_cs_fatal_err,                                  // ID 20
-    intr_csrng_cs_hw_inst_exc,                                // ID 19
-    intr_csrng_cs_entropy_req,                                // ID 18
-    intr_csrng_cs_cmd_req_done,                               // ID 17
-    intr_keymgr_dpe_op_done,                                  // ID 16
-    intr_otbn_done,                                           // ID 15
-    intr_kmac_kmac_err,                                       // ID 14
-    intr_kmac_fifo_empty,                                     // ID 13
-    intr_kmac_kmac_done,                                      // ID 12
-    intr_hmac_hmac_err,                                       // ID 11
-    intr_hmac_fifo_empty,                                     // ID 10
-    intr_hmac_hmac_done,                                      // ID 9
-    intr_rv_timer_timer_expired_hart0_timer0,                 // ID 8
-    intr_otp_ctrl_otp_error,                                  // ID 7
-    intr_otp_ctrl_otp_operation_done,                         // ID 6
-    intr_vector_pd_aon_i[4],                                  // ID 5 (alert_handler_classd)
-    intr_vector_pd_aon_i[3],                                  // ID 4 (alert_handler_classc)
-    intr_vector_pd_aon_i[2],                                  // ID 3 (alert_handler_classb)
-    intr_vector_pd_aon_i[1],                                  // ID 2 (alert_handler_classa)
-    intr_vector_pd_aon_i[0],                                  // ID 1 (pwrmgr_wakeup)
+    intr_vector_pd_aon_i[4],                                  // ID 37 (alert_handler_classd)
+    intr_vector_pd_aon_i[3],                                  // ID 36 (alert_handler_classc)
+    intr_vector_pd_aon_i[2],                                  // ID 35 (alert_handler_classb)
+    intr_vector_pd_aon_i[1],                                  // ID 34 (alert_handler_classa)
+    intr_vector_pd_aon_i[0],                                  // ID 33 (pwrmgr_wakeup)
+    intr_mbx1_mbx_error,                                      // ID 32
+    intr_mbx1_mbx_abort,                                      // ID 31
+    intr_mbx1_mbx_ready,                                      // ID 30
+    intr_mbx0_mbx_error,                                      // ID 29
+    intr_mbx0_mbx_abort,                                      // ID 28
+    intr_mbx0_mbx_ready,                                      // ID 27
+    intr_dma_dma_error,                                       // ID 26
+    intr_dma_dma_chunk_done,                                  // ID 25
+    intr_dma_dma_done,                                        // ID 24
+    intr_edn1_edn_fatal_err,                                  // ID 23
+    intr_edn1_edn_cmd_req_done,                               // ID 22
+    intr_edn0_edn_fatal_err,                                  // ID 21
+    intr_edn0_edn_cmd_req_done,                               // ID 20
+    intr_entropy_src_es_fatal_err,                            // ID 19
+    intr_entropy_src_es_observe_fifo_ready,                   // ID 18
+    intr_entropy_src_es_health_test_failed,                   // ID 17
+    intr_entropy_src_es_entropy_valid,                        // ID 16
+    intr_csrng_cs_fatal_err,                                  // ID 15
+    intr_csrng_cs_hw_inst_exc,                                // ID 14
+    intr_csrng_cs_entropy_req,                                // ID 13
+    intr_csrng_cs_cmd_req_done,                               // ID 12
+    intr_keymgr_dpe_op_done,                                  // ID 11
+    intr_otbn_done,                                           // ID 10
+    intr_kmac_kmac_err,                                       // ID 9
+    intr_kmac_fifo_empty,                                     // ID 8
+    intr_kmac_kmac_done,                                      // ID 7
+    intr_hmac_hmac_err,                                       // ID 6
+    intr_hmac_fifo_empty,                                     // ID 5
+    intr_hmac_hmac_done,                                      // ID 4
+    intr_otp_ctrl_otp_error,                                  // ID 3
+    intr_otp_ctrl_otp_operation_done,                         // ID 2
+    intr_rv_timer_timer_expired_hart0_timer0,                 // ID 1
     1'b0 // ID 0 is a special case and tied to zero.
   };
 
@@ -301438,83 +301438,83 @@ module lowrisc_peppermint_pd_aon #(
   lowrisc_prim_alert_pkg::alert_rx_t [lowrisc_alert_handler_pkg::NAlerts-1:0] alert_rx;
 
   // External connections for alert_handler
-  assign alert_tx[6] = alert_tx_pd_main_i[0];
-  assign alert_tx[7] = alert_tx_pd_main_i[1];
-  assign alert_tx[8] = alert_tx_pd_main_i[2];
-  assign alert_tx[9] = alert_tx_pd_main_i[3];
-  assign alert_tx[10] = alert_tx_pd_main_i[4];
-  assign alert_tx[11] = alert_tx_pd_main_i[5];
-  assign alert_tx[12] = alert_tx_pd_main_i[6];
-  assign alert_tx[13] = alert_tx_pd_main_i[7];
-  assign alert_tx[14] = alert_tx_pd_main_i[8];
-  assign alert_tx[15] = alert_tx_pd_main_i[9];
-  assign alert_tx[16] = alert_tx_pd_main_i[10];
-  assign alert_tx[17] = alert_tx_pd_main_i[11];
-  assign alert_tx[18] = alert_tx_pd_main_i[12];
-  assign alert_tx[19] = alert_tx_pd_main_i[13];
-  assign alert_tx[20] = alert_tx_pd_main_i[14];
-  assign alert_tx[21] = alert_tx_pd_main_i[15];
-  assign alert_tx[22] = alert_tx_pd_main_i[16];
-  assign alert_tx[23] = alert_tx_pd_main_i[17];
-  assign alert_tx[24] = alert_tx_pd_main_i[18];
-  assign alert_tx[25] = alert_tx_pd_main_i[19];
-  assign alert_tx[26] = alert_tx_pd_main_i[20];
-  assign alert_tx[27] = alert_tx_pd_main_i[21];
-  assign alert_tx[28] = alert_tx_pd_main_i[22];
-  assign alert_tx[29] = alert_tx_pd_main_i[23];
-  assign alert_tx[30] = alert_tx_pd_main_i[24];
-  assign alert_tx[31] = alert_tx_pd_main_i[25];
-  assign alert_tx[32] = alert_tx_pd_main_i[26];
-  assign alert_tx[33] = alert_tx_pd_main_i[27];
-  assign alert_tx[34] = alert_tx_pd_main_i[28];
-  assign alert_tx[35] = alert_tx_pd_main_i[29];
-  assign alert_tx[36] = alert_tx_pd_main_i[30];
-  assign alert_tx[37] = alert_tx_pd_main_i[31];
-  assign alert_tx[38] = alert_tx_pd_main_i[32];
-  assign alert_tx[39] = alert_tx_pd_main_i[33];
-  assign alert_tx[40] = alert_tx_pd_main_i[34];
-  assign alert_tx[41] = alert_tx_pd_main_i[35];
-  assign alert_tx[42] = alert_tx_pd_main_i[36];
-  assign alert_tx[43] = alert_tx_pd_main_i[37];
+  assign alert_tx[0] = alert_tx_pd_main_i[0];
+  assign alert_tx[1] = alert_tx_pd_main_i[1];
+  assign alert_tx[2] = alert_tx_pd_main_i[2];
+  assign alert_tx[3] = alert_tx_pd_main_i[3];
+  assign alert_tx[4] = alert_tx_pd_main_i[4];
+  assign alert_tx[5] = alert_tx_pd_main_i[5];
+  assign alert_tx[6] = alert_tx_pd_main_i[6];
+  assign alert_tx[7] = alert_tx_pd_main_i[7];
+  assign alert_tx[8] = alert_tx_pd_main_i[8];
+  assign alert_tx[9] = alert_tx_pd_main_i[9];
+  assign alert_tx[10] = alert_tx_pd_main_i[10];
+  assign alert_tx[11] = alert_tx_pd_main_i[11];
+  assign alert_tx[12] = alert_tx_pd_main_i[12];
+  assign alert_tx[13] = alert_tx_pd_main_i[13];
+  assign alert_tx[14] = alert_tx_pd_main_i[14];
+  assign alert_tx[15] = alert_tx_pd_main_i[15];
+  assign alert_tx[16] = alert_tx_pd_main_i[16];
+  assign alert_tx[17] = alert_tx_pd_main_i[17];
+  assign alert_tx[18] = alert_tx_pd_main_i[18];
+  assign alert_tx[19] = alert_tx_pd_main_i[19];
+  assign alert_tx[20] = alert_tx_pd_main_i[20];
+  assign alert_tx[21] = alert_tx_pd_main_i[21];
+  assign alert_tx[22] = alert_tx_pd_main_i[22];
+  assign alert_tx[23] = alert_tx_pd_main_i[23];
+  assign alert_tx[24] = alert_tx_pd_main_i[24];
+  assign alert_tx[25] = alert_tx_pd_main_i[25];
+  assign alert_tx[26] = alert_tx_pd_main_i[26];
+  assign alert_tx[27] = alert_tx_pd_main_i[27];
+  assign alert_tx[28] = alert_tx_pd_main_i[28];
+  assign alert_tx[29] = alert_tx_pd_main_i[29];
+  assign alert_tx[30] = alert_tx_pd_main_i[30];
+  assign alert_tx[31] = alert_tx_pd_main_i[31];
+  assign alert_tx[32] = alert_tx_pd_main_i[32];
+  assign alert_tx[33] = alert_tx_pd_main_i[33];
+  assign alert_tx[34] = alert_tx_pd_main_i[34];
+  assign alert_tx[35] = alert_tx_pd_main_i[35];
+  assign alert_tx[36] = alert_tx_pd_main_i[36];
+  assign alert_tx[37] = alert_tx_pd_main_i[37];
   assign alert_tx[44] = alert_tx_pd_main_i[38];
-  assign alert_rx_pd_main_o[0] = alert_rx[6];
-  assign alert_rx_pd_main_o[1] = alert_rx[7];
-  assign alert_rx_pd_main_o[2] = alert_rx[8];
-  assign alert_rx_pd_main_o[3] = alert_rx[9];
-  assign alert_rx_pd_main_o[4] = alert_rx[10];
-  assign alert_rx_pd_main_o[5] = alert_rx[11];
-  assign alert_rx_pd_main_o[6] = alert_rx[12];
-  assign alert_rx_pd_main_o[7] = alert_rx[13];
-  assign alert_rx_pd_main_o[8] = alert_rx[14];
-  assign alert_rx_pd_main_o[9] = alert_rx[15];
-  assign alert_rx_pd_main_o[10] = alert_rx[16];
-  assign alert_rx_pd_main_o[11] = alert_rx[17];
-  assign alert_rx_pd_main_o[12] = alert_rx[18];
-  assign alert_rx_pd_main_o[13] = alert_rx[19];
-  assign alert_rx_pd_main_o[14] = alert_rx[20];
-  assign alert_rx_pd_main_o[15] = alert_rx[21];
-  assign alert_rx_pd_main_o[16] = alert_rx[22];
-  assign alert_rx_pd_main_o[17] = alert_rx[23];
-  assign alert_rx_pd_main_o[18] = alert_rx[24];
-  assign alert_rx_pd_main_o[19] = alert_rx[25];
-  assign alert_rx_pd_main_o[20] = alert_rx[26];
-  assign alert_rx_pd_main_o[21] = alert_rx[27];
-  assign alert_rx_pd_main_o[22] = alert_rx[28];
-  assign alert_rx_pd_main_o[23] = alert_rx[29];
-  assign alert_rx_pd_main_o[24] = alert_rx[30];
-  assign alert_rx_pd_main_o[25] = alert_rx[31];
-  assign alert_rx_pd_main_o[26] = alert_rx[32];
-  assign alert_rx_pd_main_o[27] = alert_rx[33];
-  assign alert_rx_pd_main_o[28] = alert_rx[34];
-  assign alert_rx_pd_main_o[29] = alert_rx[35];
-  assign alert_rx_pd_main_o[30] = alert_rx[36];
-  assign alert_rx_pd_main_o[31] = alert_rx[37];
-  assign alert_rx_pd_main_o[32] = alert_rx[38];
-  assign alert_rx_pd_main_o[33] = alert_rx[39];
-  assign alert_rx_pd_main_o[34] = alert_rx[40];
-  assign alert_rx_pd_main_o[35] = alert_rx[41];
-  assign alert_rx_pd_main_o[36] = alert_rx[42];
-  assign alert_rx_pd_main_o[37] = alert_rx[43];
+  assign alert_rx_pd_main_o[0] = alert_rx[0];
+  assign alert_rx_pd_main_o[1] = alert_rx[1];
+  assign alert_rx_pd_main_o[2] = alert_rx[2];
+  assign alert_rx_pd_main_o[3] = alert_rx[3];
+  assign alert_rx_pd_main_o[4] = alert_rx[4];
+  assign alert_rx_pd_main_o[5] = alert_rx[5];
+  assign alert_rx_pd_main_o[6] = alert_rx[6];
+  assign alert_rx_pd_main_o[7] = alert_rx[7];
+  assign alert_rx_pd_main_o[8] = alert_rx[8];
+  assign alert_rx_pd_main_o[9] = alert_rx[9];
+  assign alert_rx_pd_main_o[10] = alert_rx[10];
+  assign alert_rx_pd_main_o[11] = alert_rx[11];
+  assign alert_rx_pd_main_o[12] = alert_rx[12];
+  assign alert_rx_pd_main_o[13] = alert_rx[13];
+  assign alert_rx_pd_main_o[14] = alert_rx[14];
+  assign alert_rx_pd_main_o[15] = alert_rx[15];
+  assign alert_rx_pd_main_o[16] = alert_rx[16];
+  assign alert_rx_pd_main_o[17] = alert_rx[17];
+  assign alert_rx_pd_main_o[18] = alert_rx[18];
+  assign alert_rx_pd_main_o[19] = alert_rx[19];
+  assign alert_rx_pd_main_o[20] = alert_rx[20];
+  assign alert_rx_pd_main_o[21] = alert_rx[21];
+  assign alert_rx_pd_main_o[22] = alert_rx[22];
+  assign alert_rx_pd_main_o[23] = alert_rx[23];
+  assign alert_rx_pd_main_o[24] = alert_rx[24];
+  assign alert_rx_pd_main_o[25] = alert_rx[25];
+  assign alert_rx_pd_main_o[26] = alert_rx[26];
+  assign alert_rx_pd_main_o[27] = alert_rx[27];
+  assign alert_rx_pd_main_o[28] = alert_rx[28];
+  assign alert_rx_pd_main_o[29] = alert_rx[29];
+  assign alert_rx_pd_main_o[30] = alert_rx[30];
+  assign alert_rx_pd_main_o[31] = alert_rx[31];
+  assign alert_rx_pd_main_o[32] = alert_rx[32];
+  assign alert_rx_pd_main_o[33] = alert_rx[33];
+  assign alert_rx_pd_main_o[34] = alert_rx[34];
+  assign alert_rx_pd_main_o[35] = alert_rx[35];
+  assign alert_rx_pd_main_o[36] = alert_rx[36];
+  assign alert_rx_pd_main_o[37] = alert_rx[37];
   assign alert_rx_pd_main_o[38] = alert_rx[44];
   // Alert mapping to the alert handler for alert group soc
   // alert_handler[45]: soc_recov_alert_0
@@ -301757,18 +301757,18 @@ module lowrisc_peppermint_pd_aon #(
   lowrisc_prim_mubi_pkg::mubi4_t [lowrisc_alert_handler_pkg::NLpg-1:0] lpg_cg_en;
   lowrisc_prim_mubi_pkg::mubi4_t [lowrisc_alert_handler_pkg::NLpg-1:0] lpg_rst_en;
 
-  // ext_por_aon_Aon
-  assign lpg_cg_en[0] = lowrisc_prim_mubi_pkg::MuBi4False;
-  assign lpg_rst_en[0] = rstmgr_rst_en.por_aon[lowrisc_rstmgr_pkg::DomainAonSel];
-  // ext_lc_aon_Aon
-  assign lpg_cg_en[1] = lowrisc_prim_mubi_pkg::MuBi4False;
-  assign lpg_rst_en[1] = rstmgr_rst_en.lc_aon[lowrisc_rstmgr_pkg::DomainAonSel];
   // secure_lc_main_Main
-  assign lpg_cg_en[2] = clkmgr_cg_en.main_secure;
-  assign lpg_rst_en[2] = rstmgr_rst_en.lc_main[lowrisc_rstmgr_pkg::DomainMainSel];
+  assign lpg_cg_en[0] = clkmgr_cg_en.main_secure;
+  assign lpg_rst_en[0] = rstmgr_rst_en.lc_main[lowrisc_rstmgr_pkg::DomainMainSel];
   // secure_sys_Main
-  assign lpg_cg_en[3] = clkmgr_cg_en.main_secure;
-  assign lpg_rst_en[3] = rstmgr_rst_en.sys[lowrisc_rstmgr_pkg::DomainMainSel];
+  assign lpg_cg_en[1] = clkmgr_cg_en.main_secure;
+  assign lpg_rst_en[1] = rstmgr_rst_en.sys[lowrisc_rstmgr_pkg::DomainMainSel];
+  // ext_por_aon_Aon
+  assign lpg_cg_en[2] = lowrisc_prim_mubi_pkg::MuBi4False;
+  assign lpg_rst_en[2] = rstmgr_rst_en.por_aon[lowrisc_rstmgr_pkg::DomainAonSel];
+  // ext_lc_aon_Aon
+  assign lpg_cg_en[3] = lowrisc_prim_mubi_pkg::MuBi4False;
+  assign lpg_rst_en[3] = rstmgr_rst_en.lc_aon[lowrisc_rstmgr_pkg::DomainAonSel];
   assign lpg_cg_en[4] = incoming_lpg_cg_en_soc_i[0];
   assign lpg_rst_en[4] = incoming_lpg_rst_en_soc_i[0];
   assign lpg_cg_en[5] = incoming_lpg_cg_en_soc_i[1];
@@ -301825,7 +301825,7 @@ module lowrisc_peppermint_pd_aon #(
 
   // Instantiation of IPs
   lowrisc_pwrmgr #(
-    .AlertAsyncOn(lowrisc_alert_handler_reg_pkg::AsyncOn[0]),
+    .AlertAsyncOn(lowrisc_alert_handler_reg_pkg::AsyncOn[38]),
     .AlertSkewCycles(lowrisc_top_pkg::AlertSkewCycles),
     .EscNumSeverities(AlertHandlerEscNumSeverities),
     .EscPingCountWidth(AlertHandlerEscPingCountWidth)
@@ -301844,9 +301844,9 @@ module lowrisc_peppermint_pd_aon #(
     // Interrupts
     .intr_wakeup_o(intr_pwrmgr_wakeup),
 
-    // alert_handler[0]: fatal_fault
-    .alert_tx_o(alert_tx[0]),
-    .alert_rx_i(alert_rx[0]),
+    // alert_handler[38]: fatal_fault
+    .alert_tx_o(alert_tx[38]),
+    .alert_rx_i(alert_rx[38]),
 
     // Inter-module signals
     .pwr_ast_o(pwrmgr_pwr_ast_req),
@@ -301878,7 +301878,7 @@ module lowrisc_peppermint_pd_aon #(
   );
 
   lowrisc_rstmgr #(
-    .AlertAsyncOn(lowrisc_alert_handler_reg_pkg::AsyncOn[2:1]),
+    .AlertAsyncOn(lowrisc_alert_handler_reg_pkg::AsyncOn[40:39]),
     .AlertSkewCycles(lowrisc_top_pkg::AlertSkewCycles),
     .SecCheck(SecRstmgrCheck),
     .SecMaxSyncDelay(SecRstmgrMaxSyncDelay)
@@ -301895,10 +301895,10 @@ module lowrisc_peppermint_pd_aon #(
     .scanmode_i,
     .scan_rst_ni,
 
-    // alert_handler[1]: fatal_fault
-    // alert_handler[2]: fatal_cnsty_fault
-    .alert_tx_o(alert_tx[2:1]),
-    .alert_rx_i(alert_rx[2:1]),
+    // alert_handler[39]: fatal_fault
+    // alert_handler[40]: fatal_cnsty_fault
+    .alert_tx_o(alert_tx[40:39]),
+    .alert_rx_i(alert_rx[40:39]),
 
     // Inter-module signals
     .por_n_i(rstmgr_por_n),
@@ -301915,7 +301915,7 @@ module lowrisc_peppermint_pd_aon #(
   );
 
   lowrisc_clkmgr #(
-    .AlertAsyncOn(lowrisc_alert_handler_reg_pkg::AsyncOn[4:3]),
+    .AlertAsyncOn(lowrisc_alert_handler_reg_pkg::AsyncOn[42:41]),
     .AlertSkewCycles(lowrisc_top_pkg::AlertSkewCycles)
   ) u_clkmgr (
     // Clock and reset connections
@@ -301932,10 +301932,10 @@ module lowrisc_peppermint_pd_aon #(
     // DFT/scan connections
     .scanmode_i,
 
-    // alert_handler[3]: recov_fault
-    // alert_handler[4]: fatal_fault
-    .alert_tx_o(alert_tx[4:3]),
-    .alert_rx_i(alert_rx[4:3]),
+    // alert_handler[41]: recov_fault
+    // alert_handler[42]: fatal_fault
+    .alert_tx_o(alert_tx[42:41]),
+    .alert_rx_i(alert_rx[42:41]),
 
     // Inter-module signals
     .clocks_o(clkmgr_clocks),
@@ -301988,7 +301988,7 @@ module lowrisc_peppermint_pd_aon #(
   );
 
   lowrisc_sram_ctrl #(
-    .AlertAsyncOn(lowrisc_alert_handler_reg_pkg::AsyncOn[5]),
+    .AlertAsyncOn(lowrisc_alert_handler_reg_pkg::AsyncOn[43]),
     .AlertSkewCycles(lowrisc_top_pkg::AlertSkewCycles),
     .RndCnstSramKey(RndCnstSramCtrlRetSramKey),
     .RndCnstSramNonce(RndCnstSramCtrlRetSramNonce),
@@ -302009,9 +302009,9 @@ module lowrisc_peppermint_pd_aon #(
     .rst_ni(rstmgr_resets.rst_lc_aon_n[lowrisc_rstmgr_pkg::DomainAonSel]),
     .rst_otp_ni(rstmgr_resets.rst_lc_main_n[lowrisc_rstmgr_pkg::DomainMainSel]),
 
-    // alert_handler[5]: fatal_error
-    .alert_tx_o(alert_tx[5]),
-    .alert_rx_i(alert_rx[5]),
+    // alert_handler[43]: fatal_error
+    .alert_tx_o(alert_tx[43]),
+    .alert_rx_i(alert_rx[43]),
 
     // RACL policies
     .racl_policy_sel_ranges_ram_i('0),

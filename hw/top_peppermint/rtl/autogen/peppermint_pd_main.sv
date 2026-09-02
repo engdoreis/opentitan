@@ -21,11 +21,6 @@ module peppermint_pd_main #(
   parameter logic [15:0] LcCtrlProductId = 16'h 4100,
   parameter logic [7:0] LcCtrlRevisionId = 8'h 01,
   parameter logic [31:0] LcCtrlIdcodeValue = 32'h0000_0001,
-  // parameters for rv_dm
-  parameter logic [31:0] RvDmIdcodeValue = 32'h0000_0001,
-  parameter bit RvDmUseDmiInterface = 1,
-  parameter bit SecRvDmVolatileRawUnlockEn = 0,
-  parameter logic [tlul_pkg::RsvdWidth-1:0] RvDmTlulHostUserRsvdBits = '0,
   // parameters for aes
   parameter bit AesAESGCMEnable = 1,
   parameter bit SecAesMasking = 1,
@@ -69,12 +64,6 @@ module peppermint_pd_main #(
   // parameters for rom_ctrl
   parameter RomCtrlBootRomInitFile = "",
   parameter bit SecRomCtrlDisableScrambling = 1'b0,
-  // parameters for dma
-  parameter bit DmaEnableDataIntgGen = 1'b1,
-  parameter bit DmaEnableRspDataIntgCheck = 1'b1,
-  parameter logic [tlul_pkg::RsvdWidth-1:0] DmaTlUserRsvd = '0,
-  parameter top_racl_pkg::racl_role_t DmaSysRaclRole = '0,
-  parameter int unsigned DmaOtAgentId = 0,
   // parameters for rv_core_ibex
   parameter bit RvCoreIbexPMPEnable = 1,
   parameter int unsigned RvCoreIbexPMPGranularity = 0,
@@ -109,6 +98,17 @@ module peppermint_pd_main #(
   parameter logic [tlul_pkg::RsvdWidth-1:0] RvCoreIbexTlulHostUserRsvdBits = '0,
   parameter logic [31:0] RvCoreIbexCsrMvendorId = '0,
   parameter logic [31:0] RvCoreIbexCsrMimpId = '0,
+  // parameters for rv_dm
+  parameter logic [31:0] RvDmIdcodeValue = 32'h0000_0001,
+  parameter bit RvDmUseDmiInterface = 1,
+  parameter bit SecRvDmVolatileRawUnlockEn = 0,
+  parameter logic [tlul_pkg::RsvdWidth-1:0] RvDmTlulHostUserRsvdBits = '0,
+  // parameters for dma
+  parameter bit DmaEnableDataIntgGen = 1'b1,
+  parameter bit DmaEnableRspDataIntgCheck = 1'b1,
+  parameter logic [tlul_pkg::RsvdWidth-1:0] DmaTlUserRsvd = '0,
+  parameter top_racl_pkg::racl_role_t DmaSysRaclRole = '0,
+  parameter int unsigned DmaOtAgentId = 0,
   // parameters for alert_handler
   parameter int AlertHandlerEscNumSeverities = 4,
   parameter int AlertHandlerEscPingCountWidth = 16
@@ -229,9 +229,9 @@ module peppermint_pd_main #(
 
   logic [41:0] intr_vector;
   // Interrupt source list
+  logic intr_rv_timer_timer_expired_hart0_timer0;
   logic intr_otp_ctrl_otp_operation_done;
   logic intr_otp_ctrl_otp_error;
-  logic intr_rv_timer_timer_expired_hart0_timer0;
   logic intr_hmac_hmac_done;
   logic intr_hmac_fifo_empty;
   logic intr_hmac_hmac_err;
@@ -475,8 +475,30 @@ module peppermint_pd_main #(
 
 
   // Instantiation of IPs
+  rv_timer #(
+    .AlertAsyncOn(alert_handler_reg_pkg::AsyncOn[0]),
+    .AlertSkewCycles(top_pkg::AlertSkewCycles)
+  ) u_rv_timer (
+    // Clock and reset connections
+    .clk_i(clk_main_i),
+    .rst_ni(rst_main_ni),
+
+    // Interrupts
+    .intr_timer_expired_hart0_timer0_o(intr_rv_timer_timer_expired_hart0_timer0),
+
+    // alert_handler[0]: fatal_fault
+    .alert_tx_o(alert_tx_o[0]),
+    .alert_rx_i(alert_rx_i[0]),
+
+    // Inter-module signals
+    .racl_policies_i(top_racl_pkg::RACL_POLICY_VEC_DEFAULT),
+    .racl_error_o(),
+    .tl_i(rv_timer_tl_req),
+    .tl_o(rv_timer_tl_rsp)
+  );
+
   otp_ctrl #(
-    .AlertAsyncOn(alert_handler_reg_pkg::AsyncOn[10:6]),
+    .AlertAsyncOn(alert_handler_reg_pkg::AsyncOn[5:1]),
     .AlertSkewCycles(top_pkg::AlertSkewCycles),
     .RndCnstLfsrSeed(RndCnstOtpCtrlLfsrSeed),
     .RndCnstLfsrPerm(RndCnstOtpCtrlLfsrPerm),
@@ -501,13 +523,13 @@ module peppermint_pd_main #(
     .intr_otp_operation_done_o(intr_otp_ctrl_otp_operation_done),
     .intr_otp_error_o         (intr_otp_ctrl_otp_error),
 
-    // alert_handler[6]: fatal_macro_error
-    // alert_handler[7]: fatal_check_error
-    // alert_handler[8]: fatal_bus_integ_error
-    // alert_handler[9]: fatal_prim_otp_alert
-    // alert_handler[10]: recov_prim_otp_alert
-    .alert_tx_o(alert_tx_o[4:0]),
-    .alert_rx_i(alert_rx_i[4:0]),
+    // alert_handler[1]: fatal_macro_error
+    // alert_handler[2]: fatal_check_error
+    // alert_handler[3]: fatal_bus_integ_error
+    // alert_handler[4]: fatal_prim_otp_alert
+    // alert_handler[5]: recov_prim_otp_alert
+    .alert_tx_o(alert_tx_o[5:1]),
+    .alert_rx_i(alert_rx_i[5:1]),
 
     // Inter-module signals
     .edn_o(edn0_edn_req[1]),
@@ -579,7 +601,7 @@ module peppermint_pd_main #(
   );
 
   lc_ctrl #(
-    .AlertAsyncOn(alert_handler_reg_pkg::AsyncOn[13:11]),
+    .AlertAsyncOn(alert_handler_reg_pkg::AsyncOn[8:6]),
     .AlertSkewCycles(top_pkg::AlertSkewCycles),
     .SecVolatileRawUnlockEn(SecLcCtrlVolatileRawUnlockEn),
     .UseDmiInterface(LcCtrlUseDmiInterface),
@@ -607,11 +629,11 @@ module peppermint_pd_main #(
     .scanmode_i,
     .scan_rst_ni,
 
-    // alert_handler[11]: fatal_prog_error
-    // alert_handler[12]: fatal_state_error
-    // alert_handler[13]: fatal_bus_integ_error
-    .alert_tx_o(alert_tx_o[7:5]),
-    .alert_rx_i(alert_rx_i[7:5]),
+    // alert_handler[6]: fatal_prog_error
+    // alert_handler[7]: fatal_state_error
+    // alert_handler[8]: fatal_bus_integ_error
+    .alert_tx_o(alert_tx_o[8:6]),
+    .alert_rx_i(alert_rx_i[8:6]),
 
     // Inter-module signals
     .jtag_i(jtag_pkg::JTAG_REQ_DEFAULT),
@@ -661,106 +683,8 @@ module peppermint_pd_main #(
     .dmi_tl_o(lc_ctrl_dmi_tl_rsp)
   );
 
-  rv_dm #(
-    .AlertAsyncOn(alert_handler_reg_pkg::AsyncOn[14]),
-    .AlertSkewCycles(top_pkg::AlertSkewCycles),
-    .IdcodeValue(RvDmIdcodeValue),
-    .UseDmiInterface(RvDmUseDmiInterface),
-    .SecVolatileRawUnlockEn(SecRvDmVolatileRawUnlockEn),
-    .TlulHostUserRsvdBits(RvDmTlulHostUserRsvdBits)
-  ) u_rv_dm (
-    // Clock and reset connections
-    .clk_i(clk_main_i),
-    .clk_lc_i(clk_main_i),
-    .rst_ni(rst_main_sys_ni),
-    .rst_lc_ni(rst_main_ni),
-
-    // DFT/scan connections
-    .scanmode_i,
-    .scan_rst_ni,
-
-    // alert_handler[14]: fatal_fault
-    .alert_tx_o(alert_tx_o[8]),
-    .alert_rx_i(alert_rx_i[8]),
-
-    // Inter-module signals
-    .next_dm_addr_i('0),
-    .jtag_i(jtag_pkg::JTAG_REQ_DEFAULT),
-    .jtag_o(),
-    .lc_init_done_i(lc_ctrl_lc_init_done),
-    .lc_hw_debug_clr_i(lc_ctrl_lc_hw_debug_clr),
-    .lc_hw_debug_en_i(lc_ctrl_lc_hw_debug_en),
-    .lc_dft_en_i(lc_ctrl_lc_dft_en),
-    .pinmux_hw_debug_en_i(lc_ctrl_pkg::Off),
-    .otp_dis_rv_dm_late_debug_i(rv_dm_otp_dis_rv_dm_late_debug),
-    .unavailable_i(1'b0),
-    .ndmreset_req_o(rv_dm_ndmreset_req_o),
-    .dmactive_o(),
-    .debug_req_o(rv_dm_debug_req),
-    .lc_escalate_en_i(lc_ctrl_lc_escalate_en),
-    .lc_check_byp_en_i(lc_ctrl_lc_check_byp_en),
-    .strap_en_i(pwrmgr_strap_i),
-    .strap_en_override_i(lc_ctrl_strap_en_override),
-    .racl_policies_i(top_racl_pkg::RACL_POLICY_VEC_DEFAULT),
-    .racl_error_o(),
-    .sba_tl_h_o(main_tl_rv_dm__sba_req),
-    .sba_tl_h_i(main_tl_rv_dm__sba_rsp),
-    .regs_tl_d_i(rv_dm_regs_tl_d_req),
-    .regs_tl_d_o(rv_dm_regs_tl_d_rsp),
-    .mem_tl_d_i(rv_dm_mem_tl_d_req),
-    .mem_tl_d_o(rv_dm_mem_tl_d_rsp),
-    .dbg_tl_d_i(rv_dm_dbg_tl_d_req),
-    .dbg_tl_d_o(rv_dm_dbg_tl_d_rsp)
-  );
-
-  rv_plic #(
-    .AlertAsyncOn(alert_handler_reg_pkg::AsyncOn[15]),
-    .AlertSkewCycles(top_pkg::AlertSkewCycles)
-  ) u_rv_plic (
-    // Clock and reset connections
-    .clk_i(clk_main_i),
-    .rst_ni(rst_main_ni),
-
-    // alert_handler[15]: fatal_fault
-    .alert_tx_o(alert_tx_o[9]),
-    .alert_rx_i(alert_rx_i[9]),
-
-    // Inter-module signals
-    .irq_o(rv_plic_irq),
-    .irq_id_o(),
-    .msip_o(rv_plic_msip),
-    .tl_i(rv_plic_tl_req),
-    .tl_o(rv_plic_tl_rsp),
-
-
-    // Interrupt source vector
-    .intr_src_i(intr_vector)
-  );
-
-  rv_timer #(
-    .AlertAsyncOn(alert_handler_reg_pkg::AsyncOn[16]),
-    .AlertSkewCycles(top_pkg::AlertSkewCycles)
-  ) u_rv_timer (
-    // Clock and reset connections
-    .clk_i(clk_main_i),
-    .rst_ni(rst_main_ni),
-
-    // Interrupts
-    .intr_timer_expired_hart0_timer0_o(intr_rv_timer_timer_expired_hart0_timer0),
-
-    // alert_handler[16]: fatal_fault
-    .alert_tx_o(alert_tx_o[10]),
-    .alert_rx_i(alert_rx_i[10]),
-
-    // Inter-module signals
-    .racl_policies_i(top_racl_pkg::RACL_POLICY_VEC_DEFAULT),
-    .racl_error_o(),
-    .tl_i(rv_timer_tl_req),
-    .tl_o(rv_timer_tl_rsp)
-  );
-
   aes #(
-    .AlertAsyncOn(alert_handler_reg_pkg::AsyncOn[18:17]),
+    .AlertAsyncOn(alert_handler_reg_pkg::AsyncOn[10:9]),
     .AlertSkewCycles(top_pkg::AlertSkewCycles),
     .AES192Enable(1'b1),
     .AESGCMEnable(AesAESGCMEnable),
@@ -782,10 +706,10 @@ module peppermint_pd_main #(
     .rst_ni(rst_main_ni),
     .rst_edn_ni(rst_main_ni),
 
-    // alert_handler[17]: recov_ctrl_update_err
-    // alert_handler[18]: fatal_fault
-    .alert_tx_o(alert_tx_o[12:11]),
-    .alert_rx_i(alert_rx_i[12:11]),
+    // alert_handler[9]: recov_ctrl_update_err
+    // alert_handler[10]: fatal_fault
+    .alert_tx_o(alert_tx_o[10:9]),
+    .alert_rx_i(alert_rx_i[10:9]),
 
     // Inter-module signals
     .idle_o(),
@@ -800,7 +724,7 @@ module peppermint_pd_main #(
   );
 
   hmac #(
-    .AlertAsyncOn(alert_handler_reg_pkg::AsyncOn[19]),
+    .AlertAsyncOn(alert_handler_reg_pkg::AsyncOn[11]),
     .AlertSkewCycles(top_pkg::AlertSkewCycles)
   ) u_hmac (
     // Clock and reset connections
@@ -812,9 +736,9 @@ module peppermint_pd_main #(
     .intr_fifo_empty_o(intr_hmac_fifo_empty),
     .intr_hmac_err_o  (intr_hmac_hmac_err),
 
-    // alert_handler[19]: fatal_fault
-    .alert_tx_o(alert_tx_o[13]),
-    .alert_rx_i(alert_rx_i[13]),
+    // alert_handler[11]: fatal_fault
+    .alert_tx_o(alert_tx_o[11]),
+    .alert_rx_i(alert_rx_i[11]),
 
     // Inter-module signals
     .idle_o(),
@@ -824,7 +748,7 @@ module peppermint_pd_main #(
   );
 
   kmac #(
-    .AlertAsyncOn(alert_handler_reg_pkg::AsyncOn[21:20]),
+    .AlertAsyncOn(alert_handler_reg_pkg::AsyncOn[13:12]),
     .AlertSkewCycles(top_pkg::AlertSkewCycles),
     .EnMasking(KmacEnMasking),
     .SwKeyMasked(KmacSwKeyMasked),
@@ -849,10 +773,10 @@ module peppermint_pd_main #(
     .intr_fifo_empty_o(intr_kmac_fifo_empty),
     .intr_kmac_err_o  (intr_kmac_kmac_err),
 
-    // alert_handler[20]: recov_operation_err
-    // alert_handler[21]: fatal_fault_err
-    .alert_tx_o(alert_tx_o[15:14]),
-    .alert_rx_i(alert_rx_i[15:14]),
+    // alert_handler[12]: recov_operation_err
+    // alert_handler[13]: fatal_fault_err
+    .alert_tx_o(alert_tx_o[13:12]),
+    .alert_rx_i(alert_rx_i[13:12]),
 
     // Inter-module signals
     .keymgr_key_i(keymgr_dpe_kmac_key),
@@ -868,7 +792,7 @@ module peppermint_pd_main #(
   );
 
   otbn #(
-    .AlertAsyncOn(alert_handler_reg_pkg::AsyncOn[23:22]),
+    .AlertAsyncOn(alert_handler_reg_pkg::AsyncOn[15:14]),
     .AlertSkewCycles(top_pkg::AlertSkewCycles),
     .Stub(OtbnStub),
     .RegFile(OtbnRegFile),
@@ -892,10 +816,10 @@ module peppermint_pd_main #(
     // Interrupts
     .intr_done_o(intr_otbn_done),
 
-    // alert_handler[22]: fatal
-    // alert_handler[23]: recov
-    .alert_tx_o(alert_tx_o[17:16]),
-    .alert_rx_i(alert_rx_i[17:16]),
+    // alert_handler[14]: fatal
+    // alert_handler[15]: recov
+    .alert_tx_o(alert_tx_o[15:14]),
+    .alert_rx_i(alert_rx_i[15:14]),
 
     // Inter-module signals
     .otbn_otp_key_o(otp_ctrl_otbn_otp_key_req),
@@ -920,7 +844,7 @@ module peppermint_pd_main #(
   );
 
   keymgr_dpe #(
-    .AlertAsyncOn(alert_handler_reg_pkg::AsyncOn[25:24]),
+    .AlertAsyncOn(alert_handler_reg_pkg::AsyncOn[17:16]),
     .AlertSkewCycles(top_pkg::AlertSkewCycles),
     .KmacEnMasking(KeymgrDpeKmacEnMasking),
     .RndCnstLfsrSeed(RndCnstKeymgrDpeLfsrSeed),
@@ -947,10 +871,10 @@ module peppermint_pd_main #(
     // Interrupts
     .intr_op_done_o(intr_keymgr_dpe_op_done),
 
-    // alert_handler[24]: recov_operation_err
-    // alert_handler[25]: fatal_fault_err
-    .alert_tx_o(alert_tx_o[19:18]),
-    .alert_rx_i(alert_rx_i[19:18]),
+    // alert_handler[16]: recov_operation_err
+    // alert_handler[17]: fatal_fault_err
+    .alert_tx_o(alert_tx_o[17:16]),
+    .alert_rx_i(alert_rx_i[17:16]),
 
     // Inter-module signals
     .edn_o(edn0_edn_req[0]),
@@ -974,7 +898,7 @@ module peppermint_pd_main #(
   );
 
   csrng #(
-    .AlertAsyncOn(alert_handler_reg_pkg::AsyncOn[27:26]),
+    .AlertAsyncOn(alert_handler_reg_pkg::AsyncOn[19:18]),
     .AlertSkewCycles(top_pkg::AlertSkewCycles),
     .RndCnstCsKeymgrDivNonProduction(RndCnstCsrngCsKeymgrDivNonProduction),
     .RndCnstCsKeymgrDivProduction(RndCnstCsrngCsKeymgrDivProduction),
@@ -990,10 +914,10 @@ module peppermint_pd_main #(
     .intr_cs_hw_inst_exc_o (intr_csrng_cs_hw_inst_exc),
     .intr_cs_fatal_err_o   (intr_csrng_cs_fatal_err),
 
-    // alert_handler[26]: recov_alert
-    // alert_handler[27]: fatal_alert
-    .alert_tx_o(alert_tx_o[21:20]),
-    .alert_rx_i(alert_rx_i[21:20]),
+    // alert_handler[18]: recov_alert
+    // alert_handler[19]: fatal_alert
+    .alert_tx_o(alert_tx_o[19:18]),
+    .alert_rx_i(alert_rx_i[19:18]),
 
     // Inter-module signals
     .csrng_cmd_i(csrng_csrng_cmd_req),
@@ -1007,7 +931,7 @@ module peppermint_pd_main #(
   );
 
   entropy_src #(
-    .AlertAsyncOn(alert_handler_reg_pkg::AsyncOn[29:28]),
+    .AlertAsyncOn(alert_handler_reg_pkg::AsyncOn[21:20]),
     .AlertSkewCycles(top_pkg::AlertSkewCycles),
     .RngBusWidth(EntropySrcRngBusWidth),
     .RngBusBitSelWidth(EntropySrcRngBusBitSelWidth),
@@ -1026,10 +950,10 @@ module peppermint_pd_main #(
     .intr_es_observe_fifo_ready_o(intr_entropy_src_es_observe_fifo_ready),
     .intr_es_fatal_err_o         (intr_entropy_src_es_fatal_err),
 
-    // alert_handler[28]: recov_alert
-    // alert_handler[29]: fatal_alert
-    .alert_tx_o(alert_tx_o[23:22]),
-    .alert_rx_i(alert_rx_i[23:22]),
+    // alert_handler[20]: recov_alert
+    // alert_handler[21]: fatal_alert
+    .alert_tx_o(alert_tx_o[21:20]),
+    .alert_rx_i(alert_rx_i[21:20]),
 
     // Inter-module signals
     .entropy_src_hw_if_i(csrng_entropy_src_hw_if_req),
@@ -1051,7 +975,7 @@ module peppermint_pd_main #(
   );
 
   edn #(
-    .AlertAsyncOn(alert_handler_reg_pkg::AsyncOn[31:30]),
+    .AlertAsyncOn(alert_handler_reg_pkg::AsyncOn[23:22]),
     .AlertSkewCycles(top_pkg::AlertSkewCycles),
     .NumEndPoints(Edn0NumEndPoints)
   ) u_edn0 (
@@ -1063,10 +987,10 @@ module peppermint_pd_main #(
     .intr_edn_cmd_req_done_o(intr_edn0_edn_cmd_req_done),
     .intr_edn_fatal_err_o   (intr_edn0_edn_fatal_err),
 
-    // alert_handler[30]: recov_alert
-    // alert_handler[31]: fatal_alert
-    .alert_tx_o(alert_tx_o[25:24]),
-    .alert_rx_i(alert_rx_i[25:24]),
+    // alert_handler[22]: recov_alert
+    // alert_handler[23]: fatal_alert
+    .alert_tx_o(alert_tx_o[23:22]),
+    .alert_rx_i(alert_rx_i[23:22]),
 
     // Inter-module signals
     .csrng_cmd_o(csrng_csrng_cmd_req[0]),
@@ -1078,7 +1002,7 @@ module peppermint_pd_main #(
   );
 
   edn #(
-    .AlertAsyncOn(alert_handler_reg_pkg::AsyncOn[33:32]),
+    .AlertAsyncOn(alert_handler_reg_pkg::AsyncOn[25:24]),
     .AlertSkewCycles(top_pkg::AlertSkewCycles),
     .NumEndPoints(Edn1NumEndPoints)
   ) u_edn1 (
@@ -1090,10 +1014,10 @@ module peppermint_pd_main #(
     .intr_edn_cmd_req_done_o(intr_edn1_edn_cmd_req_done),
     .intr_edn_fatal_err_o   (intr_edn1_edn_fatal_err),
 
-    // alert_handler[32]: recov_alert
-    // alert_handler[33]: fatal_alert
-    .alert_tx_o(alert_tx_o[27:26]),
-    .alert_rx_i(alert_rx_i[27:26]),
+    // alert_handler[24]: recov_alert
+    // alert_handler[25]: fatal_alert
+    .alert_tx_o(alert_tx_o[25:24]),
+    .alert_rx_i(alert_rx_i[25:24]),
 
     // Inter-module signals
     .csrng_cmd_o(csrng_csrng_cmd_req[1]),
@@ -1105,7 +1029,7 @@ module peppermint_pd_main #(
   );
 
   sram_ctrl #(
-    .AlertAsyncOn(alert_handler_reg_pkg::AsyncOn[34]),
+    .AlertAsyncOn(alert_handler_reg_pkg::AsyncOn[26]),
     .AlertSkewCycles(top_pkg::AlertSkewCycles),
     .RndCnstSramKey(RndCnstSramCtrlMainSramKey),
     .RndCnstSramNonce(RndCnstSramCtrlMainSramNonce),
@@ -1126,9 +1050,9 @@ module peppermint_pd_main #(
     .rst_ni(rst_main_ni),
     .rst_otp_ni(rst_main_ni),
 
-    // alert_handler[34]: fatal_error
-    .alert_tx_o(alert_tx_o[28]),
-    .alert_rx_i(alert_rx_i[28]),
+    // alert_handler[26]: fatal_error
+    .alert_tx_o(alert_tx_o[26]),
+    .alert_rx_i(alert_rx_i[26]),
 
     // RACL policies
     .racl_policy_sel_ranges_ram_i('{top_racl_pkg::RACL_RANGE_T_DEFAULT}),
@@ -1151,7 +1075,7 @@ module peppermint_pd_main #(
   );
 
   rom_ctrl #(
-    .AlertAsyncOn(alert_handler_reg_pkg::AsyncOn[35]),
+    .AlertAsyncOn(alert_handler_reg_pkg::AsyncOn[27]),
     .AlertSkewCycles(top_pkg::AlertSkewCycles),
     .BootRomInitFile(RomCtrlBootRomInitFile),
     .FlopToKmac(RomCtrlFlopToKmac),
@@ -1164,9 +1088,9 @@ module peppermint_pd_main #(
     .clk_i(clk_main_i),
     .rst_ni(rst_main_ni),
 
-    // alert_handler[35]: fatal
-    .alert_tx_o(alert_tx_o[29]),
-    .alert_rx_i(alert_rx_i[29]),
+    // alert_handler[27]: fatal
+    .alert_tx_o(alert_tx_o[27]),
+    .alert_rx_i(alert_rx_i[27]),
 
     // Inter-module signals
     .rom_cfg_i(prim_rom_pkg::ROM_CFG_REQ_DEFAULT),
@@ -1181,130 +1105,8 @@ module peppermint_pd_main #(
     .rom_tl_o(rom_ctrl_rom_tl_rsp)
   );
 
-  dma #(
-    .AlertAsyncOn(alert_handler_reg_pkg::AsyncOn[36]),
-    .AlertSkewCycles(top_pkg::AlertSkewCycles),
-    .EnableDataIntgGen(DmaEnableDataIntgGen),
-    .EnableRspDataIntgCheck(DmaEnableRspDataIntgCheck),
-    .TlUserRsvd(DmaTlUserRsvd),
-    .SysRaclRole(DmaSysRaclRole),
-    .OtAgentId(DmaOtAgentId)
-  ) u_dma (
-    // Clock and reset connections
-    .clk_i(clk_main_i),
-    .rst_ni(rst_main_ni),
-
-    // DFT/scan connections
-    .scanmode_i,
-
-    // Interrupts
-    .intr_dma_done_o      (intr_dma_dma_done),
-    .intr_dma_chunk_done_o(intr_dma_dma_chunk_done),
-    .intr_dma_error_o     (intr_dma_dma_error),
-
-    // alert_handler[36]: fatal_fault
-    .alert_tx_o(alert_tx_o[30]),
-    .alert_rx_i(alert_rx_i[30]),
-
-    // Inter-module signals
-    .lsio_trigger_i(dma_pkg::LSIO_TRIGGER_DEFAULT),
-    .sys_o(),
-    .sys_i(dma_pkg::SYS_RSP_DEFAULT),
-    .ctn_tl_h2d_o(),
-    .ctn_tl_d2h_i(tlul_pkg::TL_D2H_DEFAULT),
-    .racl_policies_i(top_racl_pkg::RACL_POLICY_VEC_DEFAULT),
-    .racl_error_o(),
-    .host_tl_h_o(main_tl_dma__host_req),
-    .host_tl_h_i(main_tl_dma__host_rsp),
-    .tl_d_i(dma_tl_d_req),
-    .tl_d_o(dma_tl_d_rsp)
-  );
-
-  ahb_bridge u_ahb_bridge (
-    // Clock and reset connections
-    .clk_i(clk_main_i),
-    .rst_ni(rst_main_ni),
-
-
-    // Inter-module signals
-    .ahb_sub_m2s_i(soc_mbx_ahb_req_i),
-    .ahb_sub_s2m_o(soc_mbx_ahb_rsp_o),
-    .ahb_mgr_m2s_o(soc_mgr_ahb_req_o),
-    .ahb_mgr_s2m_i(soc_mgr_ahb_rsp_i),
-    .socmbx_tl_h_o(socmbx_tl_ahb_bridge__socmbx_req),
-    .socmbx_tl_h_i(socmbx_tl_ahb_bridge__socmbx_rsp),
-    .ctn_tl_d_i(ahb_bridge_ctn_tl_d_req),
-    .ctn_tl_d_o(ahb_bridge_ctn_tl_d_rsp)
-  );
-
-  mbx #(
-    .AlertAsyncOn(alert_handler_reg_pkg::AsyncOn[38:37]),
-    .AlertSkewCycles(top_pkg::AlertSkewCycles)
-  ) u_mbx0 (
-    // Clock and reset connections
-    .clk_i(clk_main_i),
-    .rst_ni(rst_main_ni),
-
-    // Interrupts
-    .intr_mbx_ready_o(intr_mbx0_mbx_ready),
-    .intr_mbx_abort_o(intr_mbx0_mbx_abort),
-    .intr_mbx_error_o(intr_mbx0_mbx_error),
-
-    // alert_handler[37]: fatal_fault
-    // alert_handler[38]: recov_fault
-    .alert_tx_o(alert_tx_o[32:31]),
-    .alert_rx_i(alert_rx_i[32:31]),
-
-    // Inter-module signals
-    .doe_intr_support_o(mbx0_doe_intr_support_o),
-    .doe_intr_en_o(mbx0_doe_intr_en_o),
-    .doe_intr_o(mbx0_doe_intr_o),
-    .doe_async_msg_support_o(mbx0_doe_async_msg_support_o),
-    .racl_policies_i(top_racl_pkg::RACL_POLICY_VEC_DEFAULT),
-    .racl_error_o(),
-    .sram_tl_h_o(main_tl_mbx0__sram_req),
-    .sram_tl_h_i(main_tl_mbx0__sram_rsp),
-    .core_tl_d_i(mbx0_core_tl_d_req),
-    .core_tl_d_o(mbx0_core_tl_d_rsp),
-    .soc_tl_d_i(mbx0_soc_tl_d_req),
-    .soc_tl_d_o(mbx0_soc_tl_d_rsp)
-  );
-
-  mbx #(
-    .AlertAsyncOn(alert_handler_reg_pkg::AsyncOn[40:39]),
-    .AlertSkewCycles(top_pkg::AlertSkewCycles)
-  ) u_mbx1 (
-    // Clock and reset connections
-    .clk_i(clk_main_i),
-    .rst_ni(rst_main_ni),
-
-    // Interrupts
-    .intr_mbx_ready_o(intr_mbx1_mbx_ready),
-    .intr_mbx_abort_o(intr_mbx1_mbx_abort),
-    .intr_mbx_error_o(intr_mbx1_mbx_error),
-
-    // alert_handler[39]: fatal_fault
-    // alert_handler[40]: recov_fault
-    .alert_tx_o(alert_tx_o[34:33]),
-    .alert_rx_i(alert_rx_i[34:33]),
-
-    // Inter-module signals
-    .doe_intr_support_o(mbx1_doe_intr_support_o),
-    .doe_intr_en_o(mbx1_doe_intr_en_o),
-    .doe_intr_o(mbx1_doe_intr_o),
-    .doe_async_msg_support_o(mbx1_doe_async_msg_support_o),
-    .racl_policies_i(top_racl_pkg::RACL_POLICY_VEC_DEFAULT),
-    .racl_error_o(),
-    .sram_tl_h_o(main_tl_mbx1__sram_req),
-    .sram_tl_h_i(main_tl_mbx1__sram_rsp),
-    .core_tl_d_i(mbx1_core_tl_d_req),
-    .core_tl_d_o(mbx1_core_tl_d_rsp),
-    .soc_tl_d_i(mbx1_soc_tl_d_req),
-    .soc_tl_d_o(mbx1_soc_tl_d_rsp)
-  );
-
   rv_core_ibex #(
-    .AlertAsyncOn(alert_handler_reg_pkg::AsyncOn[44:41]),
+    .AlertAsyncOn(alert_handler_reg_pkg::AsyncOn[31:28]),
     .AlertSkewCycles(top_pkg::AlertSkewCycles),
     .RndCnstLfsrSeed(RndCnstRvCoreIbexLfsrSeed),
     .RndCnstLfsrPerm(RndCnstRvCoreIbexLfsrPerm),
@@ -1359,12 +1161,12 @@ module peppermint_pd_main #(
     .scanmode_i,
     .scan_rst_ni,
 
-    // alert_handler[41]: fatal_sw_err
-    // alert_handler[42]: recov_sw_err
-    // alert_handler[43]: fatal_hw_err
-    // alert_handler[44]: recov_hw_err
-    .alert_tx_o(alert_tx_o[38:35]),
-    .alert_rx_i(alert_rx_i[38:35]),
+    // alert_handler[28]: fatal_sw_err
+    // alert_handler[29]: recov_sw_err
+    // alert_handler[30]: fatal_hw_err
+    // alert_handler[31]: recov_hw_err
+    .alert_tx_o(alert_tx_o[31:28]),
+    .alert_rx_i(alert_rx_i[31:28]),
 
     // Inter-module signals
     .rst_cpu_n_o(),
@@ -1398,47 +1200,245 @@ module peppermint_pd_main #(
     .cfg_tl_d_o(rv_core_ibex_cfg_tl_d_rsp)
   );
 
+  rv_dm #(
+    .AlertAsyncOn(alert_handler_reg_pkg::AsyncOn[32]),
+    .AlertSkewCycles(top_pkg::AlertSkewCycles),
+    .IdcodeValue(RvDmIdcodeValue),
+    .UseDmiInterface(RvDmUseDmiInterface),
+    .SecVolatileRawUnlockEn(SecRvDmVolatileRawUnlockEn),
+    .TlulHostUserRsvdBits(RvDmTlulHostUserRsvdBits)
+  ) u_rv_dm (
+    // Clock and reset connections
+    .clk_i(clk_main_i),
+    .clk_lc_i(clk_main_i),
+    .rst_ni(rst_main_sys_ni),
+    .rst_lc_ni(rst_main_ni),
+
+    // DFT/scan connections
+    .scanmode_i,
+    .scan_rst_ni,
+
+    // alert_handler[32]: fatal_fault
+    .alert_tx_o(alert_tx_o[32]),
+    .alert_rx_i(alert_rx_i[32]),
+
+    // Inter-module signals
+    .next_dm_addr_i('0),
+    .jtag_i(jtag_pkg::JTAG_REQ_DEFAULT),
+    .jtag_o(),
+    .lc_init_done_i(lc_ctrl_lc_init_done),
+    .lc_hw_debug_clr_i(lc_ctrl_lc_hw_debug_clr),
+    .lc_hw_debug_en_i(lc_ctrl_lc_hw_debug_en),
+    .lc_dft_en_i(lc_ctrl_lc_dft_en),
+    .pinmux_hw_debug_en_i(lc_ctrl_pkg::Off),
+    .otp_dis_rv_dm_late_debug_i(rv_dm_otp_dis_rv_dm_late_debug),
+    .unavailable_i(1'b0),
+    .ndmreset_req_o(rv_dm_ndmreset_req_o),
+    .dmactive_o(),
+    .debug_req_o(rv_dm_debug_req),
+    .lc_escalate_en_i(lc_ctrl_lc_escalate_en),
+    .lc_check_byp_en_i(lc_ctrl_lc_check_byp_en),
+    .strap_en_i(pwrmgr_strap_i),
+    .strap_en_override_i(lc_ctrl_strap_en_override),
+    .racl_policies_i(top_racl_pkg::RACL_POLICY_VEC_DEFAULT),
+    .racl_error_o(),
+    .sba_tl_h_o(main_tl_rv_dm__sba_req),
+    .sba_tl_h_i(main_tl_rv_dm__sba_rsp),
+    .regs_tl_d_i(rv_dm_regs_tl_d_req),
+    .regs_tl_d_o(rv_dm_regs_tl_d_rsp),
+    .mem_tl_d_i(rv_dm_mem_tl_d_req),
+    .mem_tl_d_o(rv_dm_mem_tl_d_rsp),
+    .dbg_tl_d_i(rv_dm_dbg_tl_d_req),
+    .dbg_tl_d_o(rv_dm_dbg_tl_d_rsp)
+  );
+
+  dma #(
+    .AlertAsyncOn(alert_handler_reg_pkg::AsyncOn[33]),
+    .AlertSkewCycles(top_pkg::AlertSkewCycles),
+    .EnableDataIntgGen(DmaEnableDataIntgGen),
+    .EnableRspDataIntgCheck(DmaEnableRspDataIntgCheck),
+    .TlUserRsvd(DmaTlUserRsvd),
+    .SysRaclRole(DmaSysRaclRole),
+    .OtAgentId(DmaOtAgentId)
+  ) u_dma (
+    // Clock and reset connections
+    .clk_i(clk_main_i),
+    .rst_ni(rst_main_ni),
+
+    // DFT/scan connections
+    .scanmode_i,
+
+    // Interrupts
+    .intr_dma_done_o      (intr_dma_dma_done),
+    .intr_dma_chunk_done_o(intr_dma_dma_chunk_done),
+    .intr_dma_error_o     (intr_dma_dma_error),
+
+    // alert_handler[33]: fatal_fault
+    .alert_tx_o(alert_tx_o[33]),
+    .alert_rx_i(alert_rx_i[33]),
+
+    // Inter-module signals
+    .lsio_trigger_i(dma_pkg::LSIO_TRIGGER_DEFAULT),
+    .sys_o(),
+    .sys_i(dma_pkg::SYS_RSP_DEFAULT),
+    .ctn_tl_h2d_o(),
+    .ctn_tl_d2h_i(tlul_pkg::TL_D2H_DEFAULT),
+    .racl_policies_i(top_racl_pkg::RACL_POLICY_VEC_DEFAULT),
+    .racl_error_o(),
+    .host_tl_h_o(main_tl_dma__host_req),
+    .host_tl_h_i(main_tl_dma__host_rsp),
+    .tl_d_i(dma_tl_d_req),
+    .tl_d_o(dma_tl_d_rsp)
+  );
+
+  mbx #(
+    .AlertAsyncOn(alert_handler_reg_pkg::AsyncOn[35:34]),
+    .AlertSkewCycles(top_pkg::AlertSkewCycles)
+  ) u_mbx0 (
+    // Clock and reset connections
+    .clk_i(clk_main_i),
+    .rst_ni(rst_main_ni),
+
+    // Interrupts
+    .intr_mbx_ready_o(intr_mbx0_mbx_ready),
+    .intr_mbx_abort_o(intr_mbx0_mbx_abort),
+    .intr_mbx_error_o(intr_mbx0_mbx_error),
+
+    // alert_handler[34]: fatal_fault
+    // alert_handler[35]: recov_fault
+    .alert_tx_o(alert_tx_o[35:34]),
+    .alert_rx_i(alert_rx_i[35:34]),
+
+    // Inter-module signals
+    .doe_intr_support_o(mbx0_doe_intr_support_o),
+    .doe_intr_en_o(mbx0_doe_intr_en_o),
+    .doe_intr_o(mbx0_doe_intr_o),
+    .doe_async_msg_support_o(mbx0_doe_async_msg_support_o),
+    .racl_policies_i(top_racl_pkg::RACL_POLICY_VEC_DEFAULT),
+    .racl_error_o(),
+    .sram_tl_h_o(main_tl_mbx0__sram_req),
+    .sram_tl_h_i(main_tl_mbx0__sram_rsp),
+    .core_tl_d_i(mbx0_core_tl_d_req),
+    .core_tl_d_o(mbx0_core_tl_d_rsp),
+    .soc_tl_d_i(mbx0_soc_tl_d_req),
+    .soc_tl_d_o(mbx0_soc_tl_d_rsp)
+  );
+
+  mbx #(
+    .AlertAsyncOn(alert_handler_reg_pkg::AsyncOn[37:36]),
+    .AlertSkewCycles(top_pkg::AlertSkewCycles)
+  ) u_mbx1 (
+    // Clock and reset connections
+    .clk_i(clk_main_i),
+    .rst_ni(rst_main_ni),
+
+    // Interrupts
+    .intr_mbx_ready_o(intr_mbx1_mbx_ready),
+    .intr_mbx_abort_o(intr_mbx1_mbx_abort),
+    .intr_mbx_error_o(intr_mbx1_mbx_error),
+
+    // alert_handler[36]: fatal_fault
+    // alert_handler[37]: recov_fault
+    .alert_tx_o(alert_tx_o[37:36]),
+    .alert_rx_i(alert_rx_i[37:36]),
+
+    // Inter-module signals
+    .doe_intr_support_o(mbx1_doe_intr_support_o),
+    .doe_intr_en_o(mbx1_doe_intr_en_o),
+    .doe_intr_o(mbx1_doe_intr_o),
+    .doe_async_msg_support_o(mbx1_doe_async_msg_support_o),
+    .racl_policies_i(top_racl_pkg::RACL_POLICY_VEC_DEFAULT),
+    .racl_error_o(),
+    .sram_tl_h_o(main_tl_mbx1__sram_req),
+    .sram_tl_h_i(main_tl_mbx1__sram_rsp),
+    .core_tl_d_i(mbx1_core_tl_d_req),
+    .core_tl_d_o(mbx1_core_tl_d_rsp),
+    .soc_tl_d_i(mbx1_soc_tl_d_req),
+    .soc_tl_d_o(mbx1_soc_tl_d_rsp)
+  );
+
+  rv_plic #(
+    .AlertAsyncOn(alert_handler_reg_pkg::AsyncOn[44]),
+    .AlertSkewCycles(top_pkg::AlertSkewCycles)
+  ) u_rv_plic (
+    // Clock and reset connections
+    .clk_i(clk_main_i),
+    .rst_ni(rst_main_ni),
+
+    // alert_handler[44]: fatal_fault
+    .alert_tx_o(alert_tx_o[38]),
+    .alert_rx_i(alert_rx_i[38]),
+
+    // Inter-module signals
+    .irq_o(rv_plic_irq),
+    .irq_id_o(),
+    .msip_o(rv_plic_msip),
+    .tl_i(rv_plic_tl_req),
+    .tl_o(rv_plic_tl_rsp),
+
+
+    // Interrupt source vector
+    .intr_src_i(intr_vector)
+  );
+
+  ahb_bridge u_ahb_bridge (
+    // Clock and reset connections
+    .clk_i(clk_main_i),
+    .rst_ni(rst_main_ni),
+
+
+    // Inter-module signals
+    .ahb_sub_m2s_i(soc_mbx_ahb_req_i),
+    .ahb_sub_s2m_o(soc_mbx_ahb_rsp_o),
+    .ahb_mgr_m2s_o(soc_mgr_ahb_req_o),
+    .ahb_mgr_s2m_i(soc_mgr_ahb_rsp_i),
+    .socmbx_tl_h_o(socmbx_tl_ahb_bridge__socmbx_req),
+    .socmbx_tl_h_i(socmbx_tl_ahb_bridge__socmbx_rsp),
+    .ctn_tl_d_i(ahb_bridge_ctn_tl_d_req),
+    .ctn_tl_d_o(ahb_bridge_ctn_tl_d_rsp)
+  );
+
 
   // Interrupt assignments
   assign intr_vector = {
     incoming_interrupt_soc_i,                                 // IDs [38 +: 4]
-    intr_mbx1_mbx_error,                                      // ID 37
-    intr_mbx1_mbx_abort,                                      // ID 36
-    intr_mbx1_mbx_ready,                                      // ID 35
-    intr_mbx0_mbx_error,                                      // ID 34
-    intr_mbx0_mbx_abort,                                      // ID 33
-    intr_mbx0_mbx_ready,                                      // ID 32
-    intr_dma_dma_error,                                       // ID 31
-    intr_dma_dma_chunk_done,                                  // ID 30
-    intr_dma_dma_done,                                        // ID 29
-    intr_edn1_edn_fatal_err,                                  // ID 28
-    intr_edn1_edn_cmd_req_done,                               // ID 27
-    intr_edn0_edn_fatal_err,                                  // ID 26
-    intr_edn0_edn_cmd_req_done,                               // ID 25
-    intr_entropy_src_es_fatal_err,                            // ID 24
-    intr_entropy_src_es_observe_fifo_ready,                   // ID 23
-    intr_entropy_src_es_health_test_failed,                   // ID 22
-    intr_entropy_src_es_entropy_valid,                        // ID 21
-    intr_csrng_cs_fatal_err,                                  // ID 20
-    intr_csrng_cs_hw_inst_exc,                                // ID 19
-    intr_csrng_cs_entropy_req,                                // ID 18
-    intr_csrng_cs_cmd_req_done,                               // ID 17
-    intr_keymgr_dpe_op_done,                                  // ID 16
-    intr_otbn_done,                                           // ID 15
-    intr_kmac_kmac_err,                                       // ID 14
-    intr_kmac_fifo_empty,                                     // ID 13
-    intr_kmac_kmac_done,                                      // ID 12
-    intr_hmac_hmac_err,                                       // ID 11
-    intr_hmac_fifo_empty,                                     // ID 10
-    intr_hmac_hmac_done,                                      // ID 9
-    intr_rv_timer_timer_expired_hart0_timer0,                 // ID 8
-    intr_otp_ctrl_otp_error,                                  // ID 7
-    intr_otp_ctrl_otp_operation_done,                         // ID 6
-    intr_vector_pd_aon_i[4],                                  // ID 5 (alert_handler_classd)
-    intr_vector_pd_aon_i[3],                                  // ID 4 (alert_handler_classc)
-    intr_vector_pd_aon_i[2],                                  // ID 3 (alert_handler_classb)
-    intr_vector_pd_aon_i[1],                                  // ID 2 (alert_handler_classa)
-    intr_vector_pd_aon_i[0],                                  // ID 1 (pwrmgr_wakeup)
+    intr_vector_pd_aon_i[4],                                  // ID 37 (alert_handler_classd)
+    intr_vector_pd_aon_i[3],                                  // ID 36 (alert_handler_classc)
+    intr_vector_pd_aon_i[2],                                  // ID 35 (alert_handler_classb)
+    intr_vector_pd_aon_i[1],                                  // ID 34 (alert_handler_classa)
+    intr_vector_pd_aon_i[0],                                  // ID 33 (pwrmgr_wakeup)
+    intr_mbx1_mbx_error,                                      // ID 32
+    intr_mbx1_mbx_abort,                                      // ID 31
+    intr_mbx1_mbx_ready,                                      // ID 30
+    intr_mbx0_mbx_error,                                      // ID 29
+    intr_mbx0_mbx_abort,                                      // ID 28
+    intr_mbx0_mbx_ready,                                      // ID 27
+    intr_dma_dma_error,                                       // ID 26
+    intr_dma_dma_chunk_done,                                  // ID 25
+    intr_dma_dma_done,                                        // ID 24
+    intr_edn1_edn_fatal_err,                                  // ID 23
+    intr_edn1_edn_cmd_req_done,                               // ID 22
+    intr_edn0_edn_fatal_err,                                  // ID 21
+    intr_edn0_edn_cmd_req_done,                               // ID 20
+    intr_entropy_src_es_fatal_err,                            // ID 19
+    intr_entropy_src_es_observe_fifo_ready,                   // ID 18
+    intr_entropy_src_es_health_test_failed,                   // ID 17
+    intr_entropy_src_es_entropy_valid,                        // ID 16
+    intr_csrng_cs_fatal_err,                                  // ID 15
+    intr_csrng_cs_hw_inst_exc,                                // ID 14
+    intr_csrng_cs_entropy_req,                                // ID 13
+    intr_csrng_cs_cmd_req_done,                               // ID 12
+    intr_keymgr_dpe_op_done,                                  // ID 11
+    intr_otbn_done,                                           // ID 10
+    intr_kmac_kmac_err,                                       // ID 9
+    intr_kmac_fifo_empty,                                     // ID 8
+    intr_kmac_kmac_done,                                      // ID 7
+    intr_hmac_hmac_err,                                       // ID 6
+    intr_hmac_fifo_empty,                                     // ID 5
+    intr_hmac_hmac_done,                                      // ID 4
+    intr_otp_ctrl_otp_error,                                  // ID 3
+    intr_otp_ctrl_otp_operation_done,                         // ID 2
+    intr_rv_timer_timer_expired_hart0_timer0,                 // ID 1
     1'b0 // ID 0 is a special case and tied to zero.
   };
 

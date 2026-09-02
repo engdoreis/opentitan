@@ -15,19 +15,6 @@ module top_peppermint #(
   parameter int unsigned SocCpuBootAddrWidth = 32,
 
   // Auto-inferred parameters
-  // parameters for rstmgr
-  parameter bit SecRstmgrCheck = 0,
-  parameter int SecRstmgrMaxSyncDelay = 2,
-  // parameters for alert_handler
-  parameter int AlertHandlerEscNumSeverities = 4,
-  parameter int AlertHandlerEscPingCountWidth = 16,
-  // parameters for sram_ctrl_ret
-  parameter int SramCtrlRetInstSize = 8192,
-  parameter int SramCtrlRetNumRamInst = 1,
-  parameter bit SramCtrlRetInstrExec = 0,
-  parameter int SramCtrlRetNumPrinceRoundsHalf = 3,
-  parameter int SramCtrlRetNumAddrScrRounds = 2,
-  parameter bit SramCtrlRetEccCorrection = 0,
   // parameters for otp_macro
   parameter OtpMacroMemInitFile = "",
   // parameters for lc_ctrl
@@ -37,11 +24,6 @@ module top_peppermint #(
   parameter logic [15:0] LcCtrlProductId = 16'h 4100,
   parameter logic [7:0] LcCtrlRevisionId = 8'h 01,
   parameter logic [31:0] LcCtrlIdcodeValue = 32'h0000_0001,
-  // parameters for rv_dm
-  parameter logic [31:0] RvDmIdcodeValue = 32'h0000_0001,
-  parameter bit RvDmUseDmiInterface = 1,
-  parameter bit SecRvDmVolatileRawUnlockEn = 0,
-  parameter logic [tlul_pkg::RsvdWidth-1:0] RvDmTlulHostUserRsvdBits = '0,
   // parameters for aes
   parameter bit AesAESGCMEnable = 1,
   parameter bit SecAesMasking = 1,
@@ -85,12 +67,6 @@ module top_peppermint #(
   // parameters for rom_ctrl
   parameter RomCtrlBootRomInitFile = "",
   parameter bit SecRomCtrlDisableScrambling = 1'b0,
-  // parameters for dma
-  parameter bit DmaEnableDataIntgGen = 1'b1,
-  parameter bit DmaEnableRspDataIntgCheck = 1'b1,
-  parameter logic [tlul_pkg::RsvdWidth-1:0] DmaTlUserRsvd = '0,
-  parameter top_racl_pkg::racl_role_t DmaSysRaclRole = '0,
-  parameter int unsigned DmaOtAgentId = 0,
   // parameters for rv_core_ibex
   parameter bit RvCoreIbexPMPEnable = 1,
   parameter int unsigned RvCoreIbexPMPGranularity = 0,
@@ -124,7 +100,31 @@ module top_peppermint #(
   parameter bit RvCoreIbexPipeLine = 1,
   parameter logic [tlul_pkg::RsvdWidth-1:0] RvCoreIbexTlulHostUserRsvdBits = '0,
   parameter logic [31:0] RvCoreIbexCsrMvendorId = '0,
-  parameter logic [31:0] RvCoreIbexCsrMimpId = '0
+  parameter logic [31:0] RvCoreIbexCsrMimpId = '0,
+  // parameters for rv_dm
+  parameter logic [31:0] RvDmIdcodeValue = 32'h0000_0001,
+  parameter bit RvDmUseDmiInterface = 1,
+  parameter bit SecRvDmVolatileRawUnlockEn = 0,
+  parameter logic [tlul_pkg::RsvdWidth-1:0] RvDmTlulHostUserRsvdBits = '0,
+  // parameters for dma
+  parameter bit DmaEnableDataIntgGen = 1'b1,
+  parameter bit DmaEnableRspDataIntgCheck = 1'b1,
+  parameter logic [tlul_pkg::RsvdWidth-1:0] DmaTlUserRsvd = '0,
+  parameter top_racl_pkg::racl_role_t DmaSysRaclRole = '0,
+  parameter int unsigned DmaOtAgentId = 0,
+  // parameters for rstmgr
+  parameter bit SecRstmgrCheck = 0,
+  parameter int SecRstmgrMaxSyncDelay = 2,
+  // parameters for alert_handler
+  parameter int AlertHandlerEscNumSeverities = 4,
+  parameter int AlertHandlerEscPingCountWidth = 16,
+  // parameters for sram_ctrl_ret
+  parameter int SramCtrlRetInstSize = 8192,
+  parameter int SramCtrlRetNumRamInst = 1,
+  parameter bit SramCtrlRetInstrExec = 0,
+  parameter int SramCtrlRetNumPrinceRoundsHalf = 3,
+  parameter int SramCtrlRetNumAddrScrRounds = 2,
+  parameter bit SramCtrlRetEccCorrection = 0
 ) (
   // Externally supplied base clocks
   input clk_aon_i,
@@ -260,10 +260,6 @@ module top_peppermint #(
   .LcCtrlProductId(LcCtrlProductId),
   .LcCtrlRevisionId(LcCtrlRevisionId),
   .LcCtrlIdcodeValue(LcCtrlIdcodeValue),
-  .RvDmIdcodeValue(RvDmIdcodeValue),
-  .RvDmUseDmiInterface(RvDmUseDmiInterface),
-  .SecRvDmVolatileRawUnlockEn(SecRvDmVolatileRawUnlockEn),
-  .RvDmTlulHostUserRsvdBits(RvDmTlulHostUserRsvdBits),
   .AesAESGCMEnable(AesAESGCMEnable),
   .SecAesMasking(SecAesMasking),
   .SecAesSBoxImpl(SecAesSBoxImpl),
@@ -296,11 +292,6 @@ module top_peppermint #(
   .SramCtrlMainEccCorrection(SramCtrlMainEccCorrection),
   .RomCtrlBootRomInitFile(RomCtrlBootRomInitFile),
   .SecRomCtrlDisableScrambling(SecRomCtrlDisableScrambling),
-  .DmaEnableDataIntgGen(DmaEnableDataIntgGen),
-  .DmaEnableRspDataIntgCheck(DmaEnableRspDataIntgCheck),
-  .DmaTlUserRsvd(DmaTlUserRsvd),
-  .DmaSysRaclRole(DmaSysRaclRole),
-  .DmaOtAgentId(DmaOtAgentId),
   .RvCoreIbexPMPEnable(RvCoreIbexPMPEnable),
   .RvCoreIbexPMPGranularity(RvCoreIbexPMPGranularity),
   .RvCoreIbexPMPNumRegions(RvCoreIbexPMPNumRegions),
@@ -332,6 +323,15 @@ module top_peppermint #(
   .RvCoreIbexTlulHostUserRsvdBits(RvCoreIbexTlulHostUserRsvdBits),
   .RvCoreIbexCsrMvendorId(RvCoreIbexCsrMvendorId),
   .RvCoreIbexCsrMimpId(RvCoreIbexCsrMimpId),
+  .RvDmIdcodeValue(RvDmIdcodeValue),
+  .RvDmUseDmiInterface(RvDmUseDmiInterface),
+  .SecRvDmVolatileRawUnlockEn(SecRvDmVolatileRawUnlockEn),
+  .RvDmTlulHostUserRsvdBits(RvDmTlulHostUserRsvdBits),
+  .DmaEnableDataIntgGen(DmaEnableDataIntgGen),
+  .DmaEnableRspDataIntgCheck(DmaEnableRspDataIntgCheck),
+  .DmaTlUserRsvd(DmaTlUserRsvd),
+  .DmaSysRaclRole(DmaSysRaclRole),
+  .DmaOtAgentId(DmaOtAgentId),
   .AlertHandlerEscNumSeverities(AlertHandlerEscNumSeverities),
   .AlertHandlerEscPingCountWidth(AlertHandlerEscPingCountWidth)
   ) peppermint_pd_main (
