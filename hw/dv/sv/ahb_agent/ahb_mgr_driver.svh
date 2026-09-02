@@ -105,7 +105,6 @@ endfunction
 function void ahb_mgr_driver::set_vif(virtual ahb_if vif);
   if (m_vif != null) begin
     `uvm_fatal(get_full_name(), "Cannot call set_vif: there is already an interface.")
-    return;
   end
   m_vif = vif;
 endfunction
@@ -113,13 +112,13 @@ endfunction
 task ahb_mgr_driver::run_phase(uvm_phase phase);
   if (m_vif == null) begin
     `uvm_fatal(get_full_name(), "Cannot drive interface: vif is null.")
-    return;
   end
 
   if (m_vif.if_mode != dv_utils_pkg::Host) begin
-    `uvm_warning(get_full_name(),
-                 $sformatf("Driving interface will have no effect: if_mode is %0s",
-                           m_vif.if_mode.name()))
+    `uvm_fatal(get_full_name(),
+               $sformatf({"Cannot drive interface: if_mode is %0s, but an active manager agent ",
+                          "needs it to be Host."},
+                         m_vif.if_mode.name()))
   end
 
   // Start by clearing the data (and, importantly, setting m_vif.host_cb.hsel = '0). From now, hsel

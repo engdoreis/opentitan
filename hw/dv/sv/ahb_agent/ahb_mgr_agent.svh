@@ -68,8 +68,7 @@ class ahb_mgr_agent extends uvm_agent;
   // Run the layered register vseq, which shouldn't already be running.
   //
   // This sequence will run forever and its layering sequencer can be retrieved with
-  // get_register_layering_sequencer(). If the sequence is already running for some reason, this
-  // generates a uvm_error and hangs.
+  // get_register_layering_sequencer().
   extern task run_layered_register_vseq();
 
   // Get a handle to the sequencer that can be used to access a layered register vseq if it is
@@ -189,8 +188,7 @@ task ahb_mgr_agent::run_layered_register_vseq();
   ahb_mgr_register_layer_vseq layer_vseq;
 
   if (m_layer_vseq_running) begin
-    `uvm_error(get_full_name(), "Layered vseq already running.")
-    wait(0);
+    `uvm_fatal(get_full_name(), "Layered vseq already running.")
   end
   m_layer_vseq_running = 1;
 
