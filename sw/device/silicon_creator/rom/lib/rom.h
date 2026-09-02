@@ -5,9 +5,14 @@
 #ifndef OPENTITAN_SW_DEVICE_SILICON_CREATOR_ROM_LIB_ROM_H_
 #define OPENTITAN_SW_DEVICE_SILICON_CREATOR_ROM_LIB_ROM_H_
 
+#include <stdint.h>
 #include <stdnoreturn.h>
 
+#include "sw/device/lib/base/hardened.h"
+#include "sw/device/lib/base/macros.h"
 #include "sw/device/silicon_creator/lib/boot_data.h"
+#include "sw/device/silicon_creator/lib/cfi.h"
+#include "sw/device/silicon_creator/lib/drivers/lifecycle.h"
 #include "sw/device/silicon_creator/lib/error.h"
 #include "sw/device/silicon_creator/rom/lib/sigverify_otp_keys.h"
 
@@ -15,17 +20,6 @@
 extern "C" {
 #endif  // __cplusplus
 
-/**
- * ROM states run callbacks.
- */
-static OT_WARN_UNUSED_RESULT rom_error_t rom_state_init(void *arg,
-                                                        uint32_t *next_state);
-static OT_WARN_UNUSED_RESULT rom_error_t
-rom_state_bootstrap_check(void *arg, uint32_t *next_state);
-static OT_WARN_UNUSED_RESULT rom_error_t
-rom_state_bootstrap(void *arg, uint32_t *next_state);
-static OT_WARN_UNUSED_RESULT rom_error_t
-rom_state_boot_rom_ext(void *arg, uint32_t *next_state);
 // A context struct with data shared accross ROM states.
 typedef struct rom_ctx {
   // Life cycle state of the chip.
