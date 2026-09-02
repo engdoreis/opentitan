@@ -140,8 +140,7 @@ task ahb_mgr_register_layer_vseq::send_op_item(ahb_reg_op_item item);
   // to actually use might not have all of the bits set.
   bit [127:0] strb_from_size = (128'd1 << (1 << hsize)) - 1;
 
-  // The strb value to send on a write transaction, or the byte mask to use with rdata in a read
-  // response. This takes size and byte_en into account.
+  // The strb value to send on a write transaction. This takes size and byte_en into account.
   bit [127:0] byte_mask = strb_from_size & item.m_rw.byte_en;
 
   if (no_sub) begin

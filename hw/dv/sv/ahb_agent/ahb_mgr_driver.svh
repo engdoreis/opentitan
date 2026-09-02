@@ -299,6 +299,15 @@ task ahb_mgr_driver::set_address_phase_signals();
                            m_cur_addr_phase.m_prot, m_vif.hprot_width))
     end
 
+    // AHB does not allow a transfer that is wider than the data bus
+    if ((1 << m_cur_addr_phase.m_size) > (m_vif.data_width / 8)) begin
+      `uvm_error(get_full_name(),
+                 $sformatf({"Cannot send a transfer of %0d bytes (m_size = %0d). The interface ",
+                            "DATA_WIDTH is %0d, which is %0d bytes."},
+                           1 << m_cur_addr_phase.m_size, m_cur_addr_phase.m_size,
+                           m_vif.data_width, m_vif.data_width / 8))
+    end
+
     m_vif.host_cb.haddr     <= m_cur_addr_phase.m_addr;
     m_vif.host_cb.hburst    <= m_cur_addr_phase.m_burst;
     m_vif.host_cb.hmastlock <= m_cur_addr_phase.m_lock;
@@ -423,9 +432,14 @@ function void ahb_mgr_driver::read_and_send_response();
     ahb_txn_response_item rsp_item = ahb_txn_response_item::type_id::create("rsp_item");
     int unsigned          addr_mod_data_width = m_cur_data_phase.m_addr % (m_vif.data_width / 8);
 
+    // A mask selecting the bits of a transfer of 1 << m_size bytes. AHB leaves the byte lanes
+    // outside the transfer undefined, so they are masked off and m_rdata holds the transfer in its
+    // bottom 1 << m_size bytes.
+    bit [1023:0]          size_data_mask = (1024'd1 << (8 << m_cur_data_phase.m_size)) - 1;
+
     rsp_item.set_id_info(m_cur_data_phase);
 
-    rsp_item.m_rdata = m_vif.host_cb.hrdata_muxed >> (addr_mod_data_width * 8);
+    rsp_item.m_rdata = (m_vif.host_cb.hrdata_muxed >> (addr_mod_data_width * 8)) & size_data_mask;
     rsp_item.m_resp  = m_vif.host_cb.hresp_muxed;
 
     seq_item_port.put_response(rsp_item);
