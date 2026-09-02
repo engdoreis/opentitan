@@ -14,6 +14,14 @@ class ahb_transfer_seq extends uvm_sequence #(ahb_txn_request_item, uvm_sequence
   // m_prot values fit in this many bits.
   int unsigned m_hprot_width = 7;
 
+  // True if the interface has an HWSTRB signal (the Write_Strobes property).
+  //
+  // When it does not, the byte lanes that a write touches follow from HSIZE and HADDR alone and no
+  // signal carries m_wstrb, so the driver accepts only the strobe that HSIZE implies or zero. Items
+  // are constrained to zero, which is the more obviously unused of the two, and m_constrain_wstrb
+  // has no effect on such a bus.
+  bit m_has_write_strobes = 1;
+
   // The subordinate that is being accessed by this burst.
   rand int unsigned m_subordinate_idx;
 
@@ -218,7 +226,9 @@ function void ahb_transfer_seq::randomize_first_item(ahb_txn_request_item item);
         if (local::m_constrain_wdata && m_trans != TransBusy) {
           m_wdata == local::m_fixed_wdata;
         }
-        if (local::m_constrain_wstrb && m_trans != TransBusy) {
+        if (!local::m_has_write_strobes) {
+          m_wstrb == '0;
+        } else if (local::m_constrain_wstrb && m_trans != TransBusy) {
           m_wstrb == local::m_fixed_wstrb;
         }
         (m_prot >> local::m_hprot_width) == '0;
@@ -245,7 +255,9 @@ function void ahb_transfer_seq::randomize_later_item(ahb_txn_request_item item,
         if (local::m_constrain_wdata && m_trans != TransBusy) {
           m_wdata == local::m_fixed_wdata;
         }
-        if (local::m_constrain_wstrb && m_trans != TransBusy) {
+        if (!local::m_has_write_strobes) {
+          m_wstrb == '0;
+        } else if (local::m_constrain_wstrb && m_trans != TransBusy) {
           m_wstrb == local::m_fixed_wstrb;
         }
         (m_prot >> local::m_hprot_width) == '0;
