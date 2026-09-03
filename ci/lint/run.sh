@@ -258,7 +258,8 @@ cat_sv() {
 # Keep both alert-classification checks in the same group: split apart, each
 # leg would pay for its own opentitantool build.
 # ---------------------------------------------------------------------------
-BAZEL_GROUPS=(graph alerts)
+# Temporarily disable these because they were causing (No space left on device) warnings on GitHub hosted runners.
+BAZEL_GROUPS=()
 
 cat_bazel_graph() {
     # Formatting (C/C++, Rust, Starlark) and shellcheck, run from the tools
