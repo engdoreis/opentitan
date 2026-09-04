@@ -139,7 +139,8 @@ jobs:
         with:
           service_account_json: '${{ secrets.BAZEL_CACHE_CREDS }}'
       - name: Run bazel lint (${{ matrix.group }})
-        run: nix run --quiet --no-warn-dirty .#lint -- bazel ${{ matrix.group }}
+        # TODO: bazel lints are failing due to running out of disk, re-enable this when that is resolved. You can still check these locally through ci/lint/run.sh
+        run: true # nix run --quiet --no-warn-dirty .#lint -- bazel ${{ matrix.group }}
         env:
           OT_BASE_REF: ${{ github.base_ref || 'master' }}
           OT_RUN_PR_CHECKS: ${{ github.event_name == 'pull_request' && '1' || '0' }}
