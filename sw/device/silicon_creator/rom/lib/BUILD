@@ -353,6 +353,7 @@ cc_library(
     name = "sigverify_otp_keys",
     srcs = ["sigverify_otp_keys.c"],
     hdrs = ["sigverify_otp_keys.h"],
+    target_compatible_with = opentitan_require_top("earlgrey"),
     deps = [
         ":sigverify_key_types",
         "//hw/top:otp_ctrl_c_regs",
