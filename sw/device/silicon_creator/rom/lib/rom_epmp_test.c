@@ -24,7 +24,7 @@
 #include "sw/device/silicon_creator/lib/drivers/uart.h"
 #include "sw/device/silicon_creator/lib/epmp_test_unlock.h"
 #include "sw/device/silicon_creator/lib/nvm_ctrl.h"
-#include "sw/device/silicon_creator/rom/rom_epmp.h"
+#include "sw/device/silicon_creator/rom/lib/rom_epmp.h"
 
 #include "hw/top_earlgrey/sw/autogen/top_earlgrey.h"
 

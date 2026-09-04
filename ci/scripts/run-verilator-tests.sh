@@ -20,7 +20,7 @@ SMOKE_TESTS=(
     "//sw/device/silicon_creator/lib/drivers:alert_functest_sim_verilator"
     "//sw/device/silicon_creator/lib/drivers:watchdog_functest_sim_verilator"
     "//sw/device/silicon_creator/lib:irq_asm_functest_sim_verilator"
-    "//sw/device/silicon_creator/rom:rom_epmp_test_sim_verilator"
+    "//sw/device/silicon_creator/rom/lib:rom_epmp_test_sim_verilator"
 )
 
 VERILATOR_TESTS=("${SMOKE_TESTS[@]}")
