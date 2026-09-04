@@ -68,7 +68,7 @@ ld_library(
     name = "linker_script",
     script = "rom.ld",
     deps = [
-        "//hw/top_earlgrey/sw/autogen:top_earlgrey_memory",
+        "//hw/top:top_ld",
         "//sw/device:info_sections",
     ],
 )
@@ -77,21 +77,25 @@ cc_library(
     name = "rom_isrs",
     srcs = [
         "rom_isrs.c",
-        "//sw/device/silicon_creator/lib:flash_exc_handler",
-    ],
+    ] + opentitan_select_top(
+        {"earlgrey": ["//sw/device/silicon_creator/lib:rram_exc_handler"]},
+        ["//sw/device/silicon_creator/lib:flash_exc_handler"],
+    ),
     hdrs = ["rom_isrs.h"],
     defines = [
         "INTERRUPT_HANDLER=rom_interrupt_handler",
     ],
     target_compatible_with = [OPENTITAN_CPU],
     deps = [
-        "//hw/top:flash_ctrl_c_regs",
-        "//hw/top_earlgrey/sw/autogen:top_earlgrey",
+        "//hw/top:top_lib",
         "//sw/device/lib/base:csr",
         "//sw/device/lib/base:macros",
         "//sw/device/silicon_creator/lib:error",
         "//sw/device/silicon_creator/lib:shutdown",
-    ],
+    ] + opentitan_select_top(
+        {"earlgrey": ["//hw/top:rram_ctrl_c_regs"]},
+        ["//hw/top:flash_ctrl_c_regs"],
+    ),
 )
 
 cc_library(
@@ -218,11 +222,12 @@ cc_library(
     hdrs = ["rom_epmp.h"],
     target_compatible_with = [OPENTITAN_CPU],
     deps = [
-        "//hw/top_earlgrey/sw/autogen:top_earlgrey",
+        "//hw/top:top_lib",
         "//sw/device/lib/base:bitfield",
         "//sw/device/lib/base:csr",
         "//sw/device/lib/base:memory",
         "//sw/device/silicon_creator/lib:epmp_state",
+        "//sw/device/silicon_creator/lib:nvm_ctrl",
         "//sw/device/silicon_creator/lib/drivers:lifecycle",
     ],
 )
@@ -307,8 +312,8 @@ cc_library(
     deps = [
         "//hw/top:gpio_c_regs",
         "//hw/top:otp_ctrl_c_regs",
+        "//hw/top:top_lib",
         "//hw/top/dt",
-        "//hw/top_earlgrey/sw/autogen:top_earlgrey",
         "//sw/device/lib/base:abs_mmio",
         "//sw/device/lib/base:bitfield",
         "//sw/device/lib/base:hardened",
@@ -328,7 +333,7 @@ cc_test(
         "//hw/top:flash_ctrl_c_regs",
         "//hw/top:gpio_c_regs",
         "//hw/top:otp_ctrl_c_regs",
-        "//hw/top_earlgrey/sw/autogen:top_earlgrey",
+        "//hw/top:top_lib",
         "//sw/device/silicon_creator/lib:bootstrap_unittest_util",
         "@googletest//:gtest_main",
     ],
