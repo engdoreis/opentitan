@@ -288,8 +288,7 @@ static bool sw_read_lock_reg_offset(dif_otp_ctrl_partition_t partition,
 #elif defined(OPENTITAN_IS_PEPPERMINT)
     case kDifOtpCtrlPartitionAuthSlotState:
       *reg_offset = OTP_CTRL_AUTH_SLOT_STATE_READ_LOCK_REG_OFFSET;
-      *index =
-          OTP_CTRL_AUTH_SLOT_STATE_READ_LOCK_AUTH_SLOT_STATE_READ_LOCK_BIT;
+      *index = OTP_CTRL_AUTH_SLOT_STATE_READ_LOCK_AUTH_SLOT_STATE_READ_LOCK_BIT;
       break;
     case kDifOtpCtrlPartitionRotFirmwareAuthSlot0:
       *reg_offset = OTP_CTRL_ROT_FIRMWARE_AUTH_SLOT0_READ_LOCK_REG_OFFSET;
