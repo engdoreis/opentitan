@@ -118,7 +118,7 @@ resp_latency = 1 # Flowthrough
 internal_ecc = "No"
 
 # Instruction cache tags (way 1) for Ibex
-[memory_macros.icahce_tag1]
+[memory_macros.icache_tag1]
 memory_name  = "ICache tag[1] SRAM"
 data_size    = 0 # Not addressable
 word_width   = 28 # Address tag (22 bits) with ECC (6 bits)
