@@ -21,7 +21,7 @@
 #include "sw/device/silicon_creator/lib/drivers/alert.h"
 #include "sw/device/silicon_creator/lib/drivers/hmac.h"
 #include "sw/device/silicon_creator/lib/drivers/ibex.h"
-#include "sw/device/silicon_creator/lib/drivers/keymgr.h"
+#include "sw/device/silicon_creator/lib/drivers/keymgr_dpe.h"
 #include "sw/device/silicon_creator/lib/drivers/lifecycle.h"
 #include "sw/device/silicon_creator/lib/drivers/otp.h"
 #include "sw/device/silicon_creator/lib/drivers/retention_sram.h"
@@ -253,8 +253,8 @@ static void rom_pre_boot_check(rom_ctx_t *ctx) {
  * @return rom_error_t Result of the operation.
  */
 static rom_error_t rom_measure_otp_partitions(
-    rom_ctx_t *ctx, keymgr_binding_value_t *measurement) {
-  memset(measurement, (int)rnd_uint32(), sizeof(keymgr_binding_value_t));
+    rom_ctx_t *ctx, keymgr_dpe_binding_value_t *measurement) {
+  memset(measurement, (int)rnd_uint32(), sizeof(keymgr_dpe_binding_value_t));
   // These is no need to harden these data copies as any poisoning of the OTP
   // measurements will result in the derivation of a different UDS identity
   // which will not be endorsed. Hence we save the cycles of using sec_mmio.
@@ -301,29 +301,26 @@ static rom_error_t rom_boot(rom_ctx_t *ctx, const manifest_t *manifest,
                             uintptr_t imm_section_entry_point,
                             uint32_t nvm_exec) {
   CFI_FUNC_COUNTER_INCREMENT(ctx->rom_counters, kCfiRomBoot, 1);
-  HARDENED_RETURN_IF_ERROR(sc_keymgr_state_check(kScKeymgrStateReset));
+  HARDENED_RETURN_IF_ERROR(sc_keymgr_dpe_state_check(kScKeymgrDPEStateReset));
 
   boot_log_t *boot_log = &retention_sram_get()->creator.boot_log;
   boot_log->rom_ext_slot =
       manifest == boot_policy_manifest_a_get() ? kBootSlotA : kBootSlotB;
   boot_log_digest_update(boot_log);
 
-  keymgr_binding_value_t otp_measurement;
-  const keymgr_binding_value_t *attestation_measurement =
-      &manifest->binding_value;
+  keymgr_dpe_binding_value_t otp_measurement;
   uint32_t use_otp_measurement =
       otp_read32(OTP_CTRL_PARAM_OWNER_SW_CFG_ROM_KEYMGR_OTP_MEAS_EN_OFFSET);
   if (launder32(use_otp_measurement) == kHardenedBoolTrue) {
     HARDENED_CHECK_EQ(use_otp_measurement, kHardenedBoolTrue);
     rom_measure_otp_partitions(ctx, &otp_measurement);
-    attestation_measurement = &otp_measurement;
   } else {
     HARDENED_CHECK_NE(use_otp_measurement, kHardenedBoolTrue);
   }
-  sc_keymgr_sw_binding_set(&manifest->binding_value, attestation_measurement);
-  sc_keymgr_creator_max_ver_set(manifest->max_key_version);
-  SEC_MMIO_WRITE_INCREMENT(kScKeymgrSecMmioSwBindingSet +
-                           kScKeymgrSecMmioCreatorMaxVerSet);
+  sc_keymgr_dpe_sw_binding_set(&manifest->binding_value);
+  sc_keymgr_dpe_max_ver_set(manifest->max_key_version);
+  SEC_MMIO_WRITE_INCREMENT(kScKeymgrDPESecMmioSwBindingSet +
+                           kScKeymgrDPESecMmioMaxVerSet);
 
   sec_mmio_check_counters(/*expected_check_count=*/2);
 

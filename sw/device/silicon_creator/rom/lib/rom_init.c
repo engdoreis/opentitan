@@ -38,9 +38,9 @@
 #include "hw/top/otp_ctrl_regs.h"
 #include "hw/top/rstmgr_regs.h"
 
-// A ram copy of the OTP word controlling how to handle flash ECC errors.
-// This is a global shared with `flash_exception_handler`.
-uint32_t flash_ecc_exc_handler_en = 0;
+// A ram copy of the OTP word controlling how to handle NVM ECC errors.
+// This is a global shared with `nvm_exception_handler`.
+uint32_t nvm_ecc_exc_handler_en = 0;
 
 static inline bool rom_console_enabled(void) {
   return otp_read32(OTP_CTRL_PARAM_OWNER_SW_CFG_ROM_BANNER_EN_OFFSET) !=
@@ -148,8 +148,8 @@ rom_error_t rom_init(rom_ctx_t *ctx) {
 
   nvm_ctrl_init();
   SEC_MMIO_WRITE_INCREMENT(kNvmCtrlSecMmioInit);
-  flash_ecc_exc_handler_en = otp_read32(
-      OTP_CTRL_PARAM_OWNER_SW_CFG_ROM_FLASH_ECC_EXC_HANDLER_EN_OFFSET);
+  nvm_ecc_exc_handler_en = otp_read32(
+      OTP_CTRL_PARAM_OWNER_SW_CFG_ROM_NVM_ECC_EXC_HANDLER_EN_OFFSET);
 
   // Initialize in-memory copy of the ePMP register configuration.
   rom_epmp_state_init(ctx->lc_state);
