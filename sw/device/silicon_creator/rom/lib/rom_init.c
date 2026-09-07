@@ -148,8 +148,8 @@ rom_error_t rom_init(rom_ctx_t *ctx) {
 
   nvm_ctrl_init();
   SEC_MMIO_WRITE_INCREMENT(kNvmCtrlSecMmioInit);
-  nvm_ecc_exc_handler_en = otp_read32(
-      OTP_CTRL_PARAM_OWNER_SW_CFG_ROM_NVM_ECC_EXC_HANDLER_EN_OFFSET);
+  nvm_ecc_exc_handler_en =
+      otp_read32(OTP_CTRL_PARAM_OWNER_SW_CFG_ROM_NVM_ECC_EXC_HANDLER_EN_OFFSET);
 
   // Initialize in-memory copy of the ePMP register configuration.
   rom_epmp_state_init(ctx->lc_state);
