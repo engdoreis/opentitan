@@ -480,7 +480,7 @@ class LocalParam2Systemrdl:
         value = self.get_value()
         name = self.inner.name
         rdl_param = Parameter(rdltypes.get_rdltype(value), name)
-        rdl_param._value = value
+        rdl_param._cached_value = value
         return rdl_param
 
 
