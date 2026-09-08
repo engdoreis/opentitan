@@ -18,17 +18,21 @@ aes = "0.8.2"
 anyhow = { version = "1.0.57", features=["backtrace"] }
 arrayvec = { version = "0.7", features=["serde"] }
 asn1 = "0.22"
+base64 = "0.21.0"
 base64ct = "1.6.0"
 bitflags = { version = "2.1", features = ["serde"] }
 byteorder = "1.4.3"
-chrono = "0.4"
+chrono = "0.4.40"
+ciborium = "0.2.0"
 # Note: this is only used to enable `std` feature of `const-oid`, which
 # is a dependency of RustCrypto crates. The version cannot be upgraded because
 # it needs to match other crates.
 const-oid = { version = "0.9.6", features=["std"] }
 clap = { version = "4.5.47", features = ["derive", "env", "deprecated"] }
+coset = { version = "0.3.5", features = ["std"] }
 crc = "3.0"
 der = { version = "0.7.8", features = ["alloc"] }
+derive_more = { version = "2.1.1", features = ["try_from", "try_into"] }
 deser-hjson = "2.0.0"
 directories = "6"
 ecdsa = { version = "0.16.9", features = ["pkcs8", "pem", "signing", "verifying", "sha2", "std"] }
@@ -44,8 +48,10 @@ ftdi-mpsse = "0.1.1"
 embedded-hal = "1.0.0"
 heck = "0.5"
 hex = { version = "0.4.3", features = ["serde"] }
+hmac = "0.12.1"
 humantime = "2.1.0"
 humantime-serde = "1.1"
+indexmap = { version = "2.0", features = ["serde"] }
 indicatif = "0.18"
 inventory = "0.3"
 itertools = "0.14.0"
@@ -65,7 +71,6 @@ quote = "1.0"
 rand = "0.8.4"
 rand_chacha = "0.3"
 regex = "1.7"
-reqwest = { version = "0.12.9", features = ["http2", "default-tls", "blocking", "json"] }
 rsa = "0.9.7"
 rusb = "0.9.4"
 rustix = { version = "1", features = ["event", "fs", "net", "process", "stdio", "termios"] }
@@ -87,12 +92,6 @@ tokio = { version = "1", features = ["full"] }
 typetag = "0.2"
 zerocopy = { version = "0.8", features = ["derive"] }
 zeroize = "1.8.1"
-
-# hsmtool dependencies
-cryptoki = "0.10.0"
-cryptoki-sys = "0.4.0"
-indexmap = { version = "2.0", features = ["serde"] }
-libloading = "0.8"
 
 # We'd like to reference serde_annotate by its Git repo, but we also need to
 # support airgapped builds and bazel does not support git repo references

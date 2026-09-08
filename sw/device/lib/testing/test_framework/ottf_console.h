@@ -8,7 +8,6 @@
 #include <stdint.h>
 
 #include "sw/device/lib/base/status.h"
-#include "sw/device/lib/dif/dif_gpio.h"
 #ifdef OTTF_CONSOLE_HAS_SPI_DEVICE
 #include "sw/device/lib/testing/test_framework/ottf_console_spi.h"
 #endif
@@ -38,6 +37,7 @@ struct ottf_console {
   size_t buf_size;
   /** Where to write next to the staging buffer. */
   size_t buf_end;
+#if defined(OTTF_CONSOLE_HAS_UART) || defined(OTF_CONSOLE_HAS_SPI_DEVICE)
   /** Auxiliary data, per console type */
   union {
 #ifdef OTTF_CONSOLE_HAS_UART
@@ -49,6 +49,7 @@ struct ottf_console {
     ottf_console_spi_t spi;
 #endif  // OTTF_CONSOLE_HAS_SPI_DEVICE
   } data;
+#endif  // defined(OTTF_CONSOLE_HAS_UART) || defined(OTF_CONSOLE_HAS_SPI_DEVICE)
 };
 
 /**
@@ -131,5 +132,15 @@ status_t ottf_console_flushbuf(void *io);
  * @return The next character or an error.
  */
 status_t ottf_console_getc(void *io);
+
+/**
+ * Get a buffer sink object for a console.
+ *
+ * This buffer sink can be used with `base_fprintf`.
+ *
+ * @param console Pointer to the console object.
+ * @return A buffer sink.
+ */
+buffer_sink_t ottf_console_get_buffer_sink(ottf_console_t *console);
 
 #endif  // OPENTITAN_SW_DEVICE_LIB_TESTING_TEST_FRAMEWORK_OTTF_CONSOLE_H_

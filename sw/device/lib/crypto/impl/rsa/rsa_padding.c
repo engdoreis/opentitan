@@ -12,6 +12,7 @@
 #include "sw/device/lib/crypto/drivers/hmac.h"
 #include "sw/device/lib/crypto/drivers/kmac.h"
 #include "sw/device/lib/crypto/drivers/rv_core_ibex.h"
+#include "sw/device/lib/crypto/include/integrity.h"
 
 // Module ID for status codes.
 #define MODULE_ID MAKE_MODULE_ID('r', 'p', 'a')
@@ -34,7 +35,7 @@ static const uint8_t kSha512DigestIdentifier[] = {
     0x48, 0x86, 0x60, 0x09, 0x06, 0x0d, 0x30, 0x51, 0x30,
 };
 /*
- * SHA-3 digest identifiers adapted from the SHA-2 identifers based on the
+ * SHA-3 digest identifiers adapted from the SHA-2 identifiers based on the
  * algorithm identifiers on
  * https://csrc.nist.gov/projects/computer-security-objects-register/algorithm-registration
  */
@@ -89,7 +90,7 @@ static status_t digest_info_length_get(const otcrypto_hash_mode_t hash_mode,
       *len = sizeof(kSha3_384DigestIdentifier) + kKmacSha3384DigestBytes;
       break;
     case kOtcryptoHashModeSha3_512:
-      *len = sizeof(kSha512DigestIdentifier) + kKmacSha3512DigestBytes;
+      *len = sizeof(kSha3_512DigestIdentifier) + kKmacSha3512DigestBytes;
       break;
     default:
       // Unsupported or unrecognized hash function.
@@ -222,7 +223,7 @@ status_t rsa_padding_pkcs1v15_verify(
                                            expected_encoded_message));
 
   // Compare with the expected value.
-  *result = hardened_memeq(encoded_message, expected_encoded_message,
+  *result = hardened_memeq(expected_encoded_message, encoded_message,
                            ARRAYSIZE(expected_encoded_message));
   // Clear the register file in order to ensure we clear any kHardenedBoolTrue
   // value in there
@@ -277,7 +278,7 @@ static status_t digest_wordlen_get(otcrypto_hash_mode_t hash_mode,
     default:
       return OTCRYPTO_BAD_ARGS;
   }
-  HARDENED_CHECK_GT(num_words, 0);
+  HARDENED_CHECK_GT(*num_words, 0);
   HARDENED_CHECK_EQ(launder32(hash_mode_used), hash_mode);
 
   return OTCRYPTO_OK;
@@ -300,28 +301,30 @@ static status_t digest_wordlen_get(otcrypto_hash_mode_t hash_mode,
 OT_WARN_UNUSED_RESULT
 static status_t hash(otcrypto_hash_mode_t hash_mode, const uint8_t *message,
                      size_t message_len, uint32_t *digest) {
+  otcrypto_const_byte_buf_t message_buf =
+      OTCRYPTO_MAKE_BUF(otcrypto_const_byte_buf_t, message, message_len);
   switch (launder32(hash_mode)) {
     case kOtcryptoHashModeSha256:
       HARDENED_CHECK_EQ(hash_mode, kOtcryptoHashModeSha256);
-      return hmac_hash_sha256(message, message_len, digest);
+      return hmac_hash_sha256(&message_buf, digest);
     case kOtcryptoHashModeSha384:
       HARDENED_CHECK_EQ(hash_mode, kOtcryptoHashModeSha384);
-      return hmac_hash_sha384(message, message_len, digest);
+      return hmac_hash_sha384(&message_buf, digest);
     case kOtcryptoHashModeSha512:
       HARDENED_CHECK_EQ(hash_mode, kOtcryptoHashModeSha512);
-      return hmac_hash_sha512(message, message_len, digest);
+      return hmac_hash_sha512(&message_buf, digest);
     case kOtcryptoHashModeSha3_224:
       HARDENED_CHECK_EQ(hash_mode, kOtcryptoHashModeSha3_224);
-      return kmac_sha3_224(message, message_len, digest);
+      return kmac_sha3_224(&message_buf, digest);
     case kOtcryptoHashModeSha3_256:
       HARDENED_CHECK_EQ(hash_mode, kOtcryptoHashModeSha3_256);
-      return kmac_sha3_256(message, message_len, digest);
+      return kmac_sha3_256(&message_buf, digest);
     case kOtcryptoHashModeSha3_384:
       HARDENED_CHECK_EQ(hash_mode, kOtcryptoHashModeSha3_384);
-      return kmac_sha3_384(message, message_len, digest);
+      return kmac_sha3_384(&message_buf, digest);
     case kOtcryptoHashModeSha3_512:
       HARDENED_CHECK_EQ(hash_mode, kOtcryptoHashModeSha3_512);
-      return kmac_sha3_512(message, message_len, digest);
+      return kmac_sha3_512(&message_buf, digest);
     default:
       return OTCRYPTO_BAD_ARGS;
   }
@@ -713,7 +716,6 @@ status_t rsa_padding_oaep_encode(const otcrypto_hash_mode_t hash_mode,
 
   // Generate a random string the same length as a hash digest (step 2d).
   uint32_t seed[digest_wordlen];
-  HARDENED_TRY(entropy_complex_check());
   HARDENED_TRY(entropy_csrng_instantiate(
       /*disable_trng_input=*/kHardenedBoolFalse, &kEntropyEmptySeed));
   HARDENED_TRY(entropy_csrng_generate(&kEntropyEmptySeed, seed, ARRAYSIZE(seed),
@@ -803,7 +805,6 @@ status_t rsa_padding_oaep_decode(const otcrypto_hash_mode_t hash_mode,
   size_t db_bytelen = encoded_message_bytelen - digest_bytelen - 1;
   size_t db_wordlen = ceil_div(db_bytelen, sizeof(uint32_t));
   uint32_t db[db_wordlen];
-  // memcpy(db, encoded_message_bytes + 1 + sizeof(seed), db_bytelen);
   HARDENED_TRY(randomized_bytecopy(db, encoded_message_bytes + 1 + sizeof(seed),
                                    db_bytelen));
   // Check whether a FI tampered copying the bytes.

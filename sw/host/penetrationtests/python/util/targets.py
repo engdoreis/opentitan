@@ -20,6 +20,8 @@ class TargetConfig:
     interface_type: Optional[str] = None
     pll_frequency: Optional[int] = None
     bitstream: Optional[str] = None
+    rom_vmem: Optional[str] = None
+    otp_vmem: Optional[str] = None
     force_program_bitstream: Optional[bool] = False
     port: Optional[str] = None
     read_timeout: Optional[int] = 1
@@ -44,7 +46,7 @@ class Target:
     # Due to a bug in the UART of the CW340, we need to send each byte separately
     # and add a small timeout before sending the next one.
     # This contains the calculation of the delay.
-    pacing = 20 / baudrate
+    pacing = 10 / baudrate
 
     def __init__(self, target_cfg: TargetConfig):
         self.target_cfg = target_cfg
@@ -56,6 +58,9 @@ class Target:
                 target_cfg.opentitantool,
                 target_cfg.fw_bin,
                 target_cfg.bitstream,
+                target_cfg.force_program_bitstream,
+                target_cfg.rom_vmem,
+                target_cfg.otp_vmem,
                 target_cfg.tool_args,
                 target_cfg.openocd,
                 target_cfg.openocd_chip_config,
@@ -171,7 +176,7 @@ class Target:
                 continue
         return "", False
 
-    def read_response(self, max_tries: Optional[int] = 50):
+    def read_response(self, init_timeout: Optional[int] = 0, max_tries: Optional[int] = 250):
         """
         Args:
             max_tries: Maximum number of attempts to read from UART.
@@ -179,18 +184,13 @@ class Target:
         Returns:
             The JSON response of OpenTitan.
         """
-        it = 0
-        while it < max_tries:
-            try:
-                read_line = str(self.readline().decode().strip())
-            except UnicodeDecodeError:
-                break
+        time.sleep(init_timeout)
+        for _ in range(max_tries):
+            read_line = str(self.readline().decode(errors="replace").strip())
             if len(read_line) > 0:
                 if "RESP_OK" in read_line:
                     return read_line.split("RESP_OK:")[1].split(" CRC:")[0]
-            else:
-                break
-            it += 1
+        print("read_response: maximum attempts reached without a valid response", flush=True)
         return ""
 
     def start_openocd(self, startup_delay=4, print_output=True):

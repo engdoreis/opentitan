@@ -4,6 +4,8 @@
 
 load("@ot_python_deps//:requirements.bzl", "requirement")
 load("@rules_python//python:defs.bzl", "py_binary", "py_library")
+load("//rules/opentitan:exec_env.bzl", select_bitstream = "bitstream_from_env", select_memory = "memory_from_env")
+load("//rules/opentitan:fpga.bzl", "FPGA_LOADED_MEMORIES")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -13,6 +15,7 @@ py_library(
     data = [
         "//sw/host/provisioning/orchestrator/data:products.hjson",
         "//sw/host/provisioning/orchestrator/data/packages:earlgrey_a1.hjson",
+        "//sw/host/provisioning/orchestrator/data/packages:earlgrey_a2.hjson",
     ],
     imports = ["."],
     deps = [
@@ -23,8 +26,8 @@ py_library(
 )
 
 py_binary(
-    name = "ft_devid_gen",
-    srcs = ["ft_devid_gen.py"],
+    name = "devid_header_gen",
+    srcs = ["devid_header_gen.py"],
     data = ["//sw/device/silicon_creator/manuf/keys:ca_data_all"],
     imports = ["."],
     deps = [
@@ -55,6 +58,7 @@ py_library(
     data = [
         "//sw/host/provisioning/orchestrator/data:products.hjson",
         "//sw/host/provisioning/orchestrator/data/packages:earlgrey_a1.hjson",
+        "//sw/host/provisioning/orchestrator/data/packages:earlgrey_a2.hjson",
     ],
     deps = [
         ":ca_config",
@@ -84,11 +88,45 @@ py_library(
     ],
 )
 
+label_flag(
+    name = "env",
+    build_setting_default = "//hw/bitstream/universal:none",
+)
+
+select_bitstream(
+    name = "orchestrator_bitstream",
+    testonly = True,
+    exec_env = ":env",
+    tags = ["manual"],
+)
+
+[
+    label_flag(
+        name = memory,
+        build_setting_default = "//hw/bitstream/universal:none",
+    )
+    for memory in FPGA_LOADED_MEMORIES
+]
+
+[
+    select_memory(
+        name = "orchestrator_{}".format(memory),
+        testonly = True,
+        src = ":{}".format(memory),
+        exec_env = ":env",
+        memory = memory,
+        tags = ["manual"],
+    )
+    for memory in FPGA_LOADED_MEMORIES
+]
+
 filegroup(
     name = "data_dependencies",
     testonly = True,
     srcs = [
-        "//hw/bitstream/universal:splice",
+        ":orchestrator_bitstream",
+        ":orchestrator_otp",
+        ":orchestrator_rom",
         "//sw/device/silicon_creator/manuf/base:ft_personalize_all",
         "//sw/device/silicon_creator/manuf/base:sram_cp_provision",
         "//sw/device/silicon_creator/manuf/base:sram_ft_individualize_all",

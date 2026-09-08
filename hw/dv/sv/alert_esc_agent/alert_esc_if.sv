@@ -148,9 +148,8 @@ interface alert_esc_if(input clk, input rst_n);
                  ! ping_pending);
   endfunction : get_alert
 
-  function automatic bit is_alert_handshaking();
-    return alert_tx_final.alert_p === 1'b1 || alert_rx_final.ack_p === 1'b1;
-  endfunction : is_alert_handshaking
+  bit is_alert_handshaking;
+  assign is_alert_handshaking = alert_tx_final.alert_p === 1'b1 || alert_rx_final.ack_p === 1'b1;
 
   // this task wait for alert_ping request.
   // alert_ping request is detected by level triggered "alert_rx.ping_p/n" signals pairs
@@ -183,6 +182,16 @@ interface alert_esc_if(input clk, input rst_n);
     // so keep blocking until found the ping request
     end while (cycle_cnt > 1 || rst_n != 1'b1);
   endtask : wait_esc_ping
+
+  // Set the alert pins to the requested value (either 1;0 or 0;1) when the interface is active and
+  // configured to act as the alert sender.
+  //
+  // This uses a clocking drive to update the version of the signal in sender_cb (causing the update
+  // to have a lasting effect, and also to be synchronised with the next clock edge).
+  task automatic force_alert(bit alert_p, bit alert_n);
+    sender_cb.alert_tx_int.alert_p <= alert_p;
+    sender_cb.alert_tx_int.alert_n <= alert_n;
+  endtask
 
   // Return true if the current state is PingSt
   //

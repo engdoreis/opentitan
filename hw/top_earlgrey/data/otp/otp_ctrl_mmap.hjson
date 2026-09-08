@@ -48,12 +48,12 @@
             // The other digest configurations below are used for
             // key derivation and token hashing.
             {
-                name:       "FlashDataKey",
+                name:       "NvmDataKey",
                 iv_value:   "<random>",
                 cnst_value: "<random>",
             }
             {
-                name:       "FlashAddrKey",
+                name:       "NvmAddrKey",
                 iv_value:   "<random>",
                 cnst_value: "<random>",
             }
@@ -110,7 +110,7 @@
             items: [
                 {
                     name: "CREATOR_SW_CFG_AST_CFG",
-                    size: "156",
+                    size: "216",
                     desc: '''
                     AST configuration data. These values get blindly copied to
                     the AST CSRs during ROM execution.
@@ -146,35 +146,36 @@
                     '''
                 }
                 {
-                    name: "CREATOR_SW_CFG_FLASH_DATA_DEFAULT_CFG",
+                    name: "CREATOR_SW_CFG_NVM_DATA_DEFAULT_CFG",
                     size: "4",
                     desc: '''
                     The default scrambling, ECC, and high endurance
-                    configuration settings for flash data pages set during ROM
-                    execution.
+                    configuration settings for NVM (flash or RRAM) data pages
+                    set during ROM execution.
                     '''
                 }
                 {
-                    name: "CREATOR_SW_CFG_FLASH_INFO_BOOT_DATA_CFG",
+                    name: "CREATOR_SW_CFG_NVM_INFO_BOOT_DATA_CFG",
                     size: "4",
                     desc: '''
                     The scrambling, ECC, and high endurance configuration
-                    settings for the boot data flash info pages set during ROM
-                    execution.
+                    settings for the boot data NVM (flash or RRAM) info pages
+                    set during ROM execution.
                     '''
                 }
                 {
-                    name: "CREATOR_SW_CFG_FLASH_HW_INFO_CFG_OVERRIDE",
+                    name: "CREATOR_SW_CFG_NVM_HW_INFO_CFG_OVERRIDE",
                     size: "4",
                     desc: '''
                     Scrambling and ECC configuration overrides (set by the ROM)
-                    for the Creator and OwnerSeed flash info pages (pages 1 and
-                    2 in partition 0) that are hardwired to the keygmr. By
-                    default, scrambling and ECC on these flash info pages must
-                    be enabled in order to successfully crank the keygmr (in the
-                    ROM_EXT). However, values of kMultiBitBool4True for each
-                    subfield in this field will disable this requirement. See
-                    the HW_INFO_CFG_OVERRIDE flash_ctrl CSR for more details.
+                    for the Creator and OwnerSeed NVM (flash or RRAM) info
+                    pages that are hardwired to the keygmr. By default,
+                    scrambling and ECC on these info pages must be enabled in
+                    order to successfully crank the keygmr (in the ROM_EXT).
+                    However, values of kMultiBitBool4True for each subfield in
+                    this field will disable this requirement. See the
+                    HW_INFO_CFG_OVERRIDE flash_ctrl/rram_ctrl CSR for more
+                    details.
                     '''
                 }
                 {
@@ -260,7 +261,8 @@
                     PROD_END life cycle states. A value of kHardenedBoolTrue
                     enables, all other values disable. If left disabled,
                     provisioning flows are required to setup boot data pages
-                    prior to enabling ROM execution.
+                    prior to enabling ROM execution. The default personalization
+                    flow in `ft_personalize.c` configures these pages.
                     '''
                 }
                 {
@@ -290,6 +292,9 @@
                     The repetition count health test thresholds to enable
                     entropy_src with during ROM execution.
                     This must be configured if CREATOR_SW_CFG_RNG_EN is true.
+                    The LSBs contain the boot-time / bypass mode threshold
+                    value.
+                    The MSBs contain the value for the FIPS / CC compliant mode.
                     See entropy_src documentation for more details.
                     '''
                 }
@@ -300,6 +305,9 @@
                     The repetition count symbol health test thresholds to enable
                     entropy_src with during ROM execution.
                     This must be configured if CREATOR_SW_CFG_RNG_EN is true.
+                    The LSBs contain the boot-time / bypass mode threshold
+                    value.
+                    The MSBs contain the value for the FIPS / CC compliant mode.
                     See entropy_src documentation for more details.
                     '''
                 }
@@ -310,6 +318,9 @@
                     The adaptive proportion health test high thresholds to
                     enable entropy_src with during ROM execution.
                     This must be configured if CREATOR_SW_CFG_RNG_EN is true.
+                    The LSBs contain the boot-time / bypass mode threshold
+                    value.
+                    The MSBs contain the value for the FIPS / CC compliant mode.
                     See entropy_src documentation for more details.
                     '''
                 }
@@ -320,6 +331,9 @@
                     The adaptive proportion health test low thresholds to enable
                     entropy_src with during ROM execution.
                     This must be configured if CREATOR_SW_CFG_RNG_EN is true.
+                    The LSBs contain the boot-time / bypass mode threshold
+                    value.
+                    The MSBs contain the value for the FIPS / CC compliant mode.
                     See entropy_src documentation for more details.
                     '''
                 }
@@ -330,6 +344,9 @@
                     The bucket health test thresholds to enable entropy_src with
                     during ROM execution.
                     This must be configured if CREATOR_SW_CFG_RNG_EN is true.
+                    The LSBs contain the boot-time / bypass mode threshold
+                    value.
+                    The MSBs contain the value for the FIPS / CC compliant mode.
                     See entropy_src documentation for more details.
                     '''
                 }
@@ -340,6 +357,9 @@
                     The Markov health test high thresholds to enable entropy_src
                     with during ROM execution.
                     This must be configured if CREATOR_SW_CFG_RNG_EN is true.
+                    The LSBs contain the boot-time / bypass mode threshold
+                    value.
+                    The MSBs contain the value for the FIPS / CC compliant mode.
                     See entropy_src documentation for more details.
                     '''
                 }
@@ -350,6 +370,9 @@
                     The Markov health test low thresholds to enable entropy_src
                     with during ROM execution.
                     This must be configured if CREATOR_SW_CFG_RNG_EN is true.
+                    The LSBs contain the boot-time / bypass mode threshold
+                    value.
+                    The MSBs contain the value for the FIPS / CC compliant mode.
                     See entropy_src documentation for more details.
                     '''
                 }
@@ -360,6 +383,9 @@
                     The external health test high thresholds to enable the
                     entropy_src with during ROM execution.
                     This must be configured if CREATOR_SW_CFG_RNG_EN is true.
+                    The LSBs contain the boot-time / bypass mode threshold
+                    value.
+                    The MSBs contain the value for the FIPS / CC compliant mode.
                     See entropy_src documentation for more details.
                     '''
                 }
@@ -370,36 +396,61 @@
                     The external health test low thresholds to enable the
                     entropy_src with during ROM execution.
                     This must be configured if CREATOR_SW_CFG_RNG_EN is true.
+                    The LSBs contain the boot-time / bypass mode threshold
+                    value.
+                    The MSBs contain the value for the FIPS / CC compliant mode.
                     See entropy_src documentation for more details.
                     '''
                 }
                 {
-                    name: "CREATOR_SW_CFG_RNG_ALERT_THRESHOLD",
+                    name: "CREATOR_SW_CFG_RNG_BOOT_ALERT_THRESHOLD",
                     size: "4",
                     desc: '''
                     The alert threshold to configure the entropy_src with during
-                    ROM execution.
+                    ROM execution in boot-time / bypass mode.
                     This must be configured if CREATOR_SW_CFG_RNG_EN is true.
                     See entropy_src documentation for more details.
                     '''
                 }
                 {
-                    name: "CREATOR_SW_CFG_RNG_HEALTH_CONFIG_DIGEST",
+                    name: "CREATOR_SW_CFG_RNG_FIPS_ALERT_THRESHOLD",
                     size: "4",
                     desc: '''
-                    A CRC32 digest of all entropy_src health test threshold
-                    configuration fields above.
+                    The alert threshold to configure the entropy_src with during
+                    ROM execution in FIPS / CC compliant mode.
                     This must be configured if CREATOR_SW_CFG_RNG_EN is true.
                     See entropy_src documentation for more details.
                     '''
                 }
                 {
-                    name: "CREATOR_SW_CFG_SRAM_KEY_RENEW_EN",
+                    name: "CREATOR_SW_CFG_RNG_BOOT_CONFIG_DIGEST",
+                    size: "4",
+                    desc: '''
+                    A CRC32 digest of the entropy_src configuration above for
+                    boot-time / bypass mode.
+                    This must be configured if CREATOR_SW_CFG_RNG_EN is true.
+                    See entropy_src documentation for more details.
+                    '''
+                }
+                {
+                    name: "CREATOR_SW_CFG_RNG_FIPS_CONFIG_DIGEST",
+                    size: "4",
+                    desc: '''
+                    A CRC32 digest of the entropy_src configuration above for
+                    FIPS / CC compliant mode.
+                    This must be configured if CREATOR_SW_CFG_RNG_EN is true.
+                    See entropy_src documentation for more details.
+                    '''
+                }
+                {
+                    name: "CREATOR_SW_CFG_SRAM_KEY_RENEW_AND_INIT_EN",
                     size: "4",
                     desc: '''
                     Whether or not the ROM should request SRAM to be rescrambled
-                    with a new key on every boot. kHardenedBoolFalse disables,
-                    while all other values enable.
+                    with a new key on every boot. This includes renewing the
+                    scrambling key and then initializing SRAM with pseudo-random
+                    data. kHardenedBoolFalse disables, while all other values
+                    enable.
                     '''
                 }
                 {
@@ -431,14 +482,6 @@
                     size: "32",
                     desc: '''
                     SHA256 hash of the immutable ROM_EXT section.
-                    '''
-                }
-                {
-                    name: "CREATOR_SW_CFG_RESERVED",
-                    size: "32",
-                    desc: '''
-                    Unused bits in the CREATOR_SW_CFG OTP partition. These can
-                    be claimed by software as needed.
                     '''
                 }
             ],
@@ -751,24 +794,24 @@
                 {
                     // Datatype: hardened_bool_t
                     // True enables, all other values default behavior.
-                    name: "OWNER_SW_CFG_ROM_FLASH_ECC_EXC_HANDLER_EN",
+                    name: "OWNER_SW_CFG_ROM_NVM_ECC_EXC_HANDLER_EN",
                     size: "4",
                     desc: '''
-                    Whether or not the ROM should use the flash ECC exception
-                    handler during execution. A value of kHardenedBoolTrue
-                    allows the ROM to use an the exception handler that recovers
-                    gracefully and continues the boot process if a flash ECC
-                    error is encountered during verification of a specific
-                    ROM_EXT slot. This enables the ROM to attempt booting the
-                    next ROM_EXT slot if the first slot attempted has been
-                    corrupted. All other values trigger default ROM exception
-                    handling, which is all exceptions trigger a chip shutdown
-                    and reset.
+                    Whether or not the ROM should use the NVM (flash or RRAM)
+                    ECC exception handler during execution. A value of
+                    kHardenedBoolTrue allows the ROM to use the exception
+                    handler that recovers gracefully and continues the boot
+                    process if an NVM ECC error is encountered during
+                    verification of a specific ROM_EXT slot. This enables the
+                    ROM to attempt booting the next ROM_EXT slot if the first
+                    slot attempted has been corrupted. All other values
+                    trigger default ROM exception handling, which is all
+                    exceptions trigger a chip shutdown and reset.
                     '''
                 }
                 {
                     name: "OWNER_SW_CFG_RESERVED",
-                    size: "128",
+                    size: "96",
                     desc: '''
                     Unused bits in the OWNER_SW_CFG OTP partition. These can be
                     claimed by software as needed.
@@ -1090,12 +1133,12 @@
             skip_sw_header: true,
             items: [
                 {
-                    name: "FLASH_ADDR_KEY_SEED",
+                    name: "NVM_ADDR_KEY_SEED",
                     inv_default: "<random>",
                     size: "32"
                 }
                 {
-                    name: "FLASH_DATA_KEY_SEED",
+                    name: "NVM_DATA_KEY_SEED",
                     inv_default: "<random>",
                     size: "32"
                 }
@@ -1106,7 +1149,7 @@
                 }
             ],
             desc: '''Secret partition 1.
-            This contains SRAM and flash scrambling keys.
+            This contains SRAM and NVM scrambling keys.
             '''
         }
         {

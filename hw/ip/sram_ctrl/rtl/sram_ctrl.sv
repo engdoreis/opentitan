@@ -26,6 +26,8 @@ module sram_ctrl
   // PRINCE has 5 half rounds in its original form, which corresponds to 2*5 + 1 effective rounds.
   // Setting this to 3 lowers this to approximately 7 effective rounds.
   parameter int NumPrinceRoundsHalf                        = 3,
+  // Number of address scrambling rounds. Setting this to 0 disables address scrambling.
+  parameter int NumAddrScrRounds                           = 2,
   // Number of outstanding TLUL transfers
   parameter int Outstanding                                = 2,
   // Enable single-bit error correction and error logging
@@ -73,8 +75,8 @@ module sram_ctrl
   output otp_ctrl_pkg::sram_otp_key_req_t                    sram_otp_key_o,
   input  otp_ctrl_pkg::sram_otp_key_rsp_t                    sram_otp_key_i,
   // config
-  input   prim_ram_1p_pkg::ram_1p_cfg_t     [NumRamInst-1:0] cfg_i,
-  output  prim_ram_1p_pkg::ram_1p_cfg_rsp_t [NumRamInst-1:0] cfg_rsp_o,
+  input   prim_ram_1p_pkg::ram_1p_cfg_req_t [NumRamInst-1:0] ram_cfg_i,
+  output  prim_ram_1p_pkg::ram_1p_cfg_rsp_t [NumRamInst-1:0] ram_cfg_o,
   // Error record
   output sram_ctrl_pkg::sram_error_t                         sram_rerror_o
 );
@@ -90,6 +92,10 @@ module sram_ctrl
   import prim_mubi_pkg::MuBi4True;
   import prim_mubi_pkg::MuBi4False;
   import prim_mubi_pkg::mubi8_test_true_strict;
+
+  // The memory can have a non-power-of-2 size (checked inside prim_ram_1p_scr) but the size needs
+  // to be divisible by 4.
+  `ASSERT_INIT(MemSizeRamDivisibleBy4_A, MemSizeRam % 4 == 0)
 
   // This is later on pruned to the correct width at the SRAM wrapper interface.
   localparam int unsigned Depth = MemSizeRam >> 2;
@@ -529,6 +535,7 @@ module sram_ctrl
   tlul_adapter_sram_racl #(
     .SramAw(AddrWidth),
     .SramDw(DataWidth - tlul_pkg::DataIntgWidth),
+    .SramDepth(Depth),
     .Outstanding(Outstanding),
     .ByteAccess(1),
     .CmdIntgCheck(1),
@@ -620,8 +627,8 @@ module sram_ctrl
     assign sram_rerror[1] = uncorrectable_error_q;
 
     // Error log if any error happened
-    assign sram_rerror_o.valid   = sram_rvalid_scr & |ecc_error;
-    assign ecc_error.correctable = sram_rvalid_scr & ~ecc_error[1];
+    assign sram_rerror_o.valid       = sram_rvalid_scr & |ecc_error;
+    assign sram_rerror_o.correctable = sram_rvalid_scr & ~ecc_error[1];
 
     // Translate word address to byte address and fill remaining bits with 0
     always_comb begin
@@ -682,7 +689,8 @@ module sram_ctrl
     .InstDepth(InstDepth),
     .EnableParity(0),
     .DataBitsPerMask(DataWidth),
-    .NumPrinceRoundsHalf(NumPrinceRoundsHalf)
+    .NumPrinceRoundsHalf(NumPrinceRoundsHalf),
+    .NumAddrScrRounds(NumAddrScrRounds)
   ) u_prim_ram_1p_scr (
     .clk_i,
     .rst_ni,
@@ -702,8 +710,8 @@ module sram_ctrl
     .rvalid_o         (sram_rvalid_scr),
     .rerror_o         (sram_rerror_scr),
     .raddr_o          (sram_rerror_addr_scr),
-    .cfg_i,
-    .cfg_rsp_o,
+    .cfg_i            (ram_cfg_i),
+    .cfg_o            (ram_cfg_o),
     .wr_collision_o   (sram_wr_collision),
     .write_pending_o  (sram_wpending),
     .alert_o          (sram_alert)
@@ -766,5 +774,26 @@ module sram_ctrl
   // `tlul_gnt` is the same as `sram_gnt` when there's an active `tlul_req` that isn't being ignored
   // because the SRAM is initializing.
   `ASSERT(TlulGntIsCorrect_A, tlul_req |-> (sram_gnt & ~init_req) == tlul_gnt)
+
+  `ifdef FI_SIM_Z01X
+    // Check if there are any TL-UL integrity errors caused by faults that Z01X has introduced.
+    // Specific to fault injection simulation as Z01X expects that those strobing points are
+    // available in the design.
+    wire ram_tl_intg_err;
+    tlul_rsp_intg_chk #(
+      .EnableRspDataIntgCheck(1)
+    ) u_rsp_chk_ram (
+      .tl_i (ram_tl_o),
+      .err_o(ram_tl_intg_err)
+    );
+
+    wire regs_tl_intg_err;
+    tlul_rsp_intg_chk #(
+      .EnableRspDataIntgCheck(1)
+    ) u_rsp_chk_regs (
+      .tl_i (regs_tl_o),
+      .err_o(regs_tl_intg_err)
+    );
+  `endif
 
 endmodule : sram_ctrl

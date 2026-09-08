@@ -85,16 +85,10 @@ module tb;
 
 
   // KMAC App agent hookup
-  kmac_pkg::app_rsp_t kmac_data_in;
-  kmac_pkg::app_req_t kmac_data_out;
-  assign kmac_data_in = kmac_app_if.kmac_data_rsp;
-  assign kmac_app_if.kmac_data_req = kmac_data_out;
+  wire kmac_pkg::app_rsp_t kmac_data_in;
+  wire kmac_pkg::app_req_t kmac_data_out;
 
-  // KMAC vip
-  kmac_app_intf kmac_app_if (
-    .clk  (clk),
-    .rst_n(rst_n)
-  );
+  kmac_app_if kmac_app_if(.clk_i(clk), .rst_ni(rst_n), .req(kmac_data_out), .rsp(kmac_data_in));
 
   `DV_ALERT_IF_CONNECT()
 
@@ -203,9 +197,9 @@ module tb;
     .lc_clk_byp_req_o(lc_ctrl_if.clk_byp_req_o),
     .lc_clk_byp_ack_i(lc_ctrl_if.clk_byp_ack_i),
 
-    .lc_flash_rma_seed_o(lc_ctrl_if.flash_rma_seed_o),
-    .lc_flash_rma_req_o (lc_ctrl_if.flash_rma_req_o),
-    .lc_flash_rma_ack_i (lc_ctrl_if.flash_rma_ack_i),
+    .lc_nvm_rma_seed_o(lc_ctrl_if.nvm_rma_seed_o),
+    .lc_nvm_rma_req_o (lc_ctrl_if.nvm_rma_req_o),
+    .lc_nvm_rma_ack_i (lc_ctrl_if.nvm_rma_ack_i),
 
     .lc_keymgr_div_o(lc_ctrl_if.keymgr_div_o),
 
@@ -269,7 +263,7 @@ module tb;
     uvm_config_db#(virtual push_pull_if#(.HostDataWidth(OTP_PROG_HDATA_WIDTH),
                                          .DeviceDataWidth(OTP_PROG_DDATA_WIDTH)))::
                    set(null, "*env.m_otp_prog_pull_agent*", "vif", otp_prog_if);
-    uvm_config_db#(virtual kmac_app_intf)::set(null, "*.env.m_kmac_app_agent", "vif", kmac_app_if);
+    uvm_config_db#(virtual kmac_app_if)::set(null, "*.env.m_kmac_app_agent", "vif", kmac_app_if);
 
     // Parameter config object
     parameters_cfg.alert_async_on = AlertAsyncOn;
@@ -310,21 +304,19 @@ module tb;
   `DV_ASSERT_CTRL(
       "KmacIfSyncReqAckAckNeedsReq",
       dut.u_lc_ctrl_kmac_if.u_prim_sync_reqack_data_in.u_prim_sync_reqack.SyncReqAckAckNeedsReq)
-  `DV_ASSERT_CTRL("KmacIfSyncReqAckAckNeedsReq",
-                  kmac_app_if.req_data_if.H_DataStableWhenValidAndNotReady_A)
-  `DV_ASSERT_CTRL("KmacIfSyncReqAckAckNeedsReq", kmac_app_if.req_data_if.ValidHighUntilReady_A)
   `DV_ASSERT_CTRL("FsmClkBypAckSync", dut.u_lc_ctrl_fsm.u_prim_lc_sync_clk_byp_ack)
   for (genvar k = 0; k < NUM_RMA_ACK_SIGS; k++) begin : gen_sync_asserts
-    `DV_ASSERT_CTRL("FsmClkFlashRmaAckSync",
-                    dut.u_lc_ctrl_fsm.gen_syncs[k].u_prim_lc_sync_flash_rma_ack)
+    `DV_ASSERT_CTRL("FsmClkNvmRmaAckSync",
+                    dut.u_lc_ctrl_fsm.gen_syncs[k].u_prim_lc_sync_nvm_rma_ack)
   end
-  `DV_ASSERT_CTRL("FsmClkFlashRmaAckBuf", dut.u_lc_ctrl_fsm.u_prim_lc_sync_flash_rma_ack_buf)
+  `DV_ASSERT_CTRL("FsmClkNvmRmaAckBuf", dut.u_lc_ctrl_fsm.u_prim_lc_sync_nvm_rma_ack_buf)
   `DV_ASSERT_CTRL("FsmOtpTestTokensValidSync", dut.u_lc_ctrl_fsm.u_prim_lc_sync_test_token_valid)
   `DV_ASSERT_CTRL("FsmOtpRmaTokenValidSync", dut.u_lc_ctrl_fsm.u_prim_lc_sync_rma_token_valid)
   `DV_ASSERT_CTRL("StateRegs_A", tb.dut.u_lc_ctrl_fsm.u_state_regs_A)
   `DV_ASSERT_CTRL("StateRegs_A", tb.dut.FpvSecCmCtrlLcStateCheck_A)
   `DV_ASSERT_CTRL("FsmStateRegs_A", tb.dut.u_lc_ctrl_fsm.u_fsm_state_regs_A)
   `DV_ASSERT_CTRL("FsmStateRegs_A", tb.dut.FpvSecCmCtrlLcFsmCheck_A)
+  `DV_ASSERT_CTRL("FsmStateRegs_A", tb.dut.LcInitDoneSticky_A)
   `DV_ASSERT_CTRL("CountRegs_A", tb.dut.u_lc_ctrl_fsm.u_cnt_regs_A)
   `DV_ASSERT_CTRL("CountRegs_A", tb.dut.FpvSecCmCtrlLcCntCheck_A)
   `DV_ASSERT_CTRL("KmacFsmStateRegs_A", tb.dut.u_lc_ctrl_kmac_if.u_state_regs_A)

@@ -3,13 +3,17 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include "sw/device/lib/crypto/drivers/entropy.h"
-#include "sw/device/lib/crypto/impl/integrity.h"
 #include "sw/device/lib/crypto/impl/keyblob.h"
+#include "sw/device/lib/crypto/include/config.h"
+#include "sw/device/lib/crypto/include/cryptolib_build_info.h"
 #include "sw/device/lib/crypto/include/datatypes.h"
+#include "sw/device/lib/crypto/include/entropy_src.h"
 #include "sw/device/lib/crypto/include/hmac.h"
+#include "sw/device/lib/crypto/include/integrity.h"
 #include "sw/device/lib/runtime/log.h"
 #include "sw/device/lib/testing/test_framework/check.h"
 #include "sw/device/lib/testing/test_framework/ottf_main.h"
+#include "sw/device/tests/crypto/lib/crypto_test_lib.h"
 
 enum {
   /**
@@ -46,6 +50,9 @@ static const uint32_t kTestMask[ARRAYSIZE(kLongTestKey)] = {
     0x04b2a1b9, 0x764a9630, 0x78b8f9c5, 0x3f2a1d8e,
 };
 
+static otcrypto_key_security_level_t current_sec_level =
+    kOtcryptoKeySecurityLevelLow;
+
 /**
  * Call the `otcrypto_mac` API and check the resulting tag.
  *
@@ -60,12 +67,12 @@ static status_t run_test(const uint32_t *key, size_t key_len,
                          const uint32_t *exp_tag) {
   // Construct blinded key.
   otcrypto_key_config_t config = {
-      .version = kOtcryptoLibVersion1,
+      .version = otcrypto_lib_version(),
       .key_mode = kOtcryptoKeyModeHmacSha384,
       .key_length = key_len,
       .hw_backed = kHardenedBoolFalse,
       .exportable = kHardenedBoolFalse,
-      .security_level = kOtcryptoKeySecurityLevelLow,
+      .security_level = current_sec_level,
   };
 
   uint32_t keyblob[keyblob_num_words(config)];
@@ -76,15 +83,13 @@ static status_t run_test(const uint32_t *key, size_t key_len,
       .keyblob_length = sizeof(keyblob),
       .checksum = 0,
   };
-  blinded_key.checksum = integrity_blinded_checksum(&blinded_key);
+  blinded_key.checksum = otcrypto_integrity_blinded_checksum(&blinded_key);
 
   uint32_t act_tag[kTagLenWords];
-  otcrypto_word32_buf_t tag_buf = {
-      .data = act_tag,
-      .len = ARRAYSIZE(act_tag),
-  };
+  otcrypto_word32_buf_t tag_buf =
+      OTCRYPTO_MAKE_BUF(otcrypto_word32_buf_t, act_tag, ARRAYSIZE(act_tag));
 
-  TRY(otcrypto_hmac(&blinded_key, msg, tag_buf));
+  TRY(otcrypto_hmac(&blinded_key, &msg, &tag_buf));
   TRY_CHECK_ARRAYS_EQ(act_tag, exp_tag, kTagLenWords);
   return OK_STATUS();
 }
@@ -98,10 +103,9 @@ static status_t run_test(const uint32_t *key, size_t key_len,
  */
 static status_t simple_test(void) {
   const char plaintext[] = "Test message.";
-  otcrypto_const_byte_buf_t msg_buf = {
-      .data = (unsigned char *)plaintext,
-      .len = sizeof(plaintext) - 1,
-  };
+  otcrypto_const_byte_buf_t msg_buf =
+      OTCRYPTO_MAKE_BUF(otcrypto_const_byte_buf_t, (unsigned char *)plaintext,
+                        sizeof(plaintext) - 1);
   const uint32_t exp_tag[] = {
       0xe069ba2f, 0x9751a19b, 0x378df8af, 0x00eeaa68, 0x5789b69c, 0xcd1dc363,
       0x6d14d0f1, 0xd062444e, 0xed683c1a, 0xe1cee642, 0xa44b7be6, 0x0518dd8b,
@@ -121,10 +125,8 @@ static status_t empty_test(void) {
       0xe97192b6, 0xa45d5f4f, 0xb2cd3703, 0x2b41d3f2, 0x7b8b566d, 0x716fa851,
       0x4f45f809, 0x6c27343c, 0x985b4af4, 0xabe37c99, 0x0b17598f, 0xf9711f6e,
   };
-  otcrypto_const_byte_buf_t msg_buf = {
-      .data = NULL,
-      .len = 0,
-  };
+  otcrypto_const_byte_buf_t msg_buf =
+      OTCRYPTO_MAKE_BUF(otcrypto_const_byte_buf_t, NULL, 0);
   return run_test(kBasicTestKey, sizeof(kBasicTestKey), msg_buf, exp_tag);
 }
 
@@ -137,15 +139,85 @@ static status_t empty_test(void) {
  */
 static status_t long_key_test(void) {
   const char plaintext[] = "Test message.";
-  otcrypto_const_byte_buf_t msg_buf = {
-      .data = (unsigned char *)plaintext,
-      .len = sizeof(plaintext) - 1,
-  };
+  otcrypto_const_byte_buf_t msg_buf =
+      OTCRYPTO_MAKE_BUF(otcrypto_const_byte_buf_t, (unsigned char *)plaintext,
+                        sizeof(plaintext) - 1);
   const uint32_t exp_tag[] = {
       0x2d6accaa, 0x92eead9a, 0x7c46788c, 0xb081a802, 0x6b8afc0a, 0xcf094d00,
       0x92a4b805, 0x5c5f1a65, 0x98bcd4f8, 0xbdb29885, 0x72f05431, 0xc08db439,
   };
   return run_test(kLongTestKey, sizeof(kLongTestKey), msg_buf, exp_tag);
+}
+
+/**
+ * Simple streaming test.
+ *
+ * HMAC-SHA384(kBasicTestKey, 'Test message.')
+ *   =
+ * 0x2fba69e09ba15197aff88d3768aaee009cb6895763c31dcdf1d0146d4e4462d01a3c68ed42e6cee1e67b4ba48bdd1805
+ */
+static status_t streaming_test(void) {
+  const char plaintext[] = "Test message.";
+  otcrypto_const_byte_buf_t msg_buf =
+      OTCRYPTO_MAKE_BUF(otcrypto_const_byte_buf_t, (unsigned char *)plaintext,
+                        sizeof(plaintext) - 1);
+  const uint32_t exp_tag[] = {
+      0xe069ba2f, 0x9751a19b, 0x378df8af, 0x00eeaa68, 0x5789b69c, 0xcd1dc363,
+      0x6d14d0f1, 0xd062444e, 0xed683c1a, 0xe1cee642, 0xa44b7be6, 0x0518dd8b,
+  };
+
+  // Construct blinded key.
+  otcrypto_key_config_t config = {
+      .version = otcrypto_lib_version(),
+      .key_mode = kOtcryptoKeyModeHmacSha384,
+      .key_length = sizeof(kBasicTestKey),
+      .hw_backed = kHardenedBoolFalse,
+      .exportable = kHardenedBoolFalse,
+      .security_level = current_sec_level,
+  };
+
+  uint32_t keyblob[keyblob_num_words(config)];
+  TRY(keyblob_from_key_and_mask(kBasicTestKey, kTestMask, config, keyblob));
+  otcrypto_blinded_key_t blinded_key = {
+      .config = config,
+      .keyblob = keyblob,
+      .keyblob_length = sizeof(keyblob),
+      .checksum = 0,
+  };
+  blinded_key.checksum = otcrypto_integrity_blinded_checksum(&blinded_key);
+
+  uint32_t act_tag[kTagLenWords];
+  otcrypto_word32_buf_t tag_buf =
+      OTCRYPTO_MAKE_BUF(otcrypto_word32_buf_t, act_tag, ARRAYSIZE(act_tag));
+
+  // First, try using the streaming interface but passing input all at once.
+  otcrypto_hmac_context_t ctx;
+  TRY(otcrypto_hmac_init(&ctx, &blinded_key));
+  TRY(otcrypto_hmac_update(&ctx, &msg_buf));
+  TRY(otcrypto_hmac_final(&ctx, &tag_buf));
+  TRY_CHECK_ARRAYS_EQ(act_tag, exp_tag, kTagLenWords);
+
+  // Clear the destination buffer.
+  memset(act_tag, 0, sizeof(act_tag));
+
+  // Next, try smaller chunks.
+  size_t chunk_size = 3;
+  const unsigned char *msg_bytes = msg_buf.data;
+  size_t msg_len = msg_buf.len;
+  TRY(otcrypto_hmac_init(&ctx, &blinded_key));
+  size_t offset = 0;
+  for (; offset + chunk_size < msg_len; offset += chunk_size) {
+    otcrypto_const_byte_buf_t chunk =
+        OTCRYPTO_MAKE_BUF(otcrypto_const_byte_buf_t, msg_bytes, chunk_size);
+    TRY(otcrypto_hmac_update(&ctx, &chunk));
+    msg_bytes += chunk_size;
+  }
+  otcrypto_const_byte_buf_t msg_final_buffer = OTCRYPTO_MAKE_BUF(
+      otcrypto_const_byte_buf_t, (unsigned char *)msg_bytes, msg_len - offset);
+  TRY(otcrypto_hmac_update(&ctx, &msg_final_buffer));
+  TRY(otcrypto_hmac_final(&ctx, &tag_buf));
+  TRY_CHECK_ARRAYS_EQ(act_tag, exp_tag, kTagLenWords);
+  return OK_STATUS();
 }
 
 OTTF_DEFINE_TEST_CONFIG();
@@ -155,9 +227,25 @@ static volatile status_t test_result;
 
 bool test_main(void) {
   test_result = OK_STATUS();
-  CHECK_STATUS_OK(entropy_complex_init());
-  EXECUTE_TEST(test_result, empty_test);
-  EXECUTE_TEST(test_result, simple_test);
-  EXECUTE_TEST(test_result, long_key_test);
+
+  // Testing overall cryptolib low security, i.e., no jittery clock or dummy
+  // instructions
+  CHECK_STATUS_OK(otcrypto_init(kOtcryptoKeySecurityLevelLow));
+
+  for (size_t i = 0; i < ARRAYSIZE(available_security_levels); ++i) {
+    current_sec_level = available_security_levels[i];
+    LOG_INFO("Running HMAC-SHA384 tests with security level: %d",
+             current_sec_level);
+
+    EXECUTE_TEST(test_result, streaming_test);
+    EXECUTE_TEST(test_result, empty_test);
+    EXECUTE_TEST(test_result, simple_test);
+    EXECUTE_TEST(test_result, long_key_test);
+
+    if (status_err(test_result)) {
+      break;
+    }
+  }
+
   return status_ok(test_result);
 }

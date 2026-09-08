@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use std::io::{self, Read};
+use std::os::fd::BorrowedFd;
 use std::rc::Rc;
 use std::time::Duration;
 
@@ -106,81 +107,9 @@ pub trait Uart: ConsoleDevice {
     fn set_break(&self, _enable: bool) -> Result<()> {
         Err(TransportError::UnsupportedOperation.into())
     }
-}
 
-impl<T: Uart + ?Sized> Uart for &T {
-    fn get_baudrate(&self) -> Result<u32> {
-        T::get_baudrate(self)
-    }
-
-    fn set_baudrate(&self, baudrate: u32) -> Result<()> {
-        T::set_baudrate(self, baudrate)
-    }
-
-    fn get_flow_control(&self) -> Result<FlowControl> {
-        T::get_flow_control(self)
-    }
-
-    fn set_flow_control(&self, flow_control: bool) -> Result<()> {
-        T::set_flow_control(self, flow_control)
-    }
-
-    fn get_device_path(&self) -> Result<String> {
-        T::get_device_path(self)
-    }
-
-    fn clear_rx_buffer(&self) -> Result<()> {
-        T::clear_rx_buffer(self)
-    }
-
-    fn set_parity(&self, parity: Parity) -> Result<()> {
-        T::set_parity(self, parity)
-    }
-
-    fn get_parity(&self) -> Result<Parity> {
-        T::get_parity(self)
-    }
-
-    fn set_break(&self, enable: bool) -> Result<()> {
-        T::set_break(self, enable)
-    }
-}
-
-impl<T: Uart + ?Sized> Uart for Rc<T> {
-    fn get_baudrate(&self) -> Result<u32> {
-        T::get_baudrate(self)
-    }
-
-    fn set_baudrate(&self, baudrate: u32) -> Result<()> {
-        T::set_baudrate(self, baudrate)
-    }
-
-    fn get_flow_control(&self) -> Result<FlowControl> {
-        T::get_flow_control(self)
-    }
-
-    fn set_flow_control(&self, flow_control: bool) -> Result<()> {
-        T::set_flow_control(self, flow_control)
-    }
-
-    fn get_device_path(&self) -> Result<String> {
-        T::get_device_path(self)
-    }
-
-    fn clear_rx_buffer(&self) -> Result<()> {
-        T::clear_rx_buffer(self)
-    }
-
-    fn set_parity(&self, parity: Parity) -> Result<()> {
-        T::set_parity(self, parity)
-    }
-
-    fn get_parity(&self) -> Result<Parity> {
-        T::get_parity(self)
-    }
-
-    fn set_break(&self, enable: bool) -> Result<()> {
-        T::set_break(self, enable)
+    fn borrow_fd(&self) -> Result<BorrowedFd<'_>> {
+        Err(TransportError::UnsupportedOperation.into())
     }
 }
 

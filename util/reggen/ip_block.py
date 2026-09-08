@@ -69,6 +69,10 @@ KNOWN_CIP_IDS = {
     42: 'soc_dbg_ctrl',
     43: 'racl_ctrl',
     44: 'otp_macro',
+    45: 'rram_ctrl',
+    46: 'rram_macro',
+    47: 'i3c',
+    48: 'cheriot'
 }
 
 REQUIRED_ALIAS_FIELDS = {
@@ -179,6 +183,7 @@ class IpBlock:
     inter_signals: list[InterSignal]
     bus_interfaces: BusInterfaces
     clocking: Clocking
+    # Tuple with (InOut, In, Out) signals.
     xputs: tuple[Sequence[Signal], Sequence[Signal], Sequence[Signal]]
     wakeups: Sequence[Signal]
     reset_requests: Sequence[Signal]

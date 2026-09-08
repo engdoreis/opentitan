@@ -6,7 +6,6 @@ load("//rules:const.bzl", "CONST", "get_lc_items")
 load("//rules/opentitan:keyutils.bzl", "ECDSA_SPX_KEY_STRUCTS")
 load(
     "//rules/opentitan:defs.bzl",
-    "cw310_params",
     "fpga_params",
     "opentitan_test",
 )
@@ -86,11 +85,11 @@ SPX_ALLOWED_IN_LC_STATES = {
 # LC states.
 KEY_TYPE_ECDSA_TESTS = [
     {
-        "name": key.ecdsa.name,
+        "name": "ecdsa_{}".format(key.ecdsa.name),
         "exit_failure": ECDSA_ALLOWED_IN_LC_STATES["exit_failure"][key.ecdsa.name],
         "exit_success": ECDSA_ALLOWED_IN_LC_STATES["exit_success"][key.ecdsa.name],
         "ecdsa_key": {key.ecdsa.label: key.ecdsa.name},
-        "spx_key": {"//sw/device/silicon_creator/rom/keys/fake/spx:prod_key_0_spx": "prod_key_0_spx"},
+        "spx_key": {"//sw/device/silicon_creator/rom/keys/fake/spx:spx_keyset": "prod_key_0"},
     }
     for key in ECDSA_SPX_KEY_STRUCTS
 ]
@@ -99,10 +98,10 @@ KEY_TYPE_ECDSA_TESTS = [
 # LC states.
 KEY_TYPE_SPX_TESTS = [
     {
-        "name": key.spx.name,
+        "name": "spx_{}".format(key.spx.name),
         "exit_failure": SPX_ALLOWED_IN_LC_STATES["exit_failure"][key.spx.name],
         "exit_success": SPX_ALLOWED_IN_LC_STATES["exit_success"][key.spx.name],
-        "ecdsa_key": {"//sw/device/silicon_creator/rom/keys/fake/ecdsa:prod_key_0_ecdsa_p256": "prod_key_0"},
+        "ecdsa_key": {"//sw/device/silicon_creator/rom/keys/fake/ecdsa:ecdsa_keyset": "prod_key_0"},
         "spx_key": {key.spx.label: key.spx.name},
     }
     for key in ECDSA_SPX_KEY_STRUCTS
@@ -144,7 +143,7 @@ otp_json(
         ],
         ecdsa_key = test["ecdsa_key"],
         exec_env = {
-            "//hw/top_earlgrey:fpga_cw310_rom_with_fake_keys": None,
+            "//hw/top_earlgrey:fpga_cw340_rom_with_fake_keys": None,
         },
         fpga = fpga_params(
             exit_failure = test["exit_failure"][lc_state],

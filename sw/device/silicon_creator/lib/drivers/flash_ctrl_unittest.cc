@@ -14,6 +14,7 @@
 #include "sw/device/silicon_creator/lib/base/mock_sec_mmio.h"
 #include "sw/device/silicon_creator/lib/drivers/mock_otp.h"
 #include "sw/device/silicon_creator/lib/error.h"
+#include "sw/device/silicon_creator/lib/nvm_ctrl.h"
 #include "sw/device/silicon_creator/testing/rom_test.h"
 
 #include "hw/top/flash_ctrl_regs.h"
@@ -94,6 +95,14 @@ struct InitCase {
    */
   flash_ctrl_cfg_t cfg;
   /**
+   * Configuration override settings to be read from OTP.
+   */
+  uint32_t override_val;
+  /**
+   * Expected value to be written to the cfg override register.
+   */
+  uint32_t override_write_val;
+  /**
    * Expected value to be written to the info config register.
    */
   uint32_t info_write_val;
@@ -117,14 +126,19 @@ uint32_t CfgToOtp(flash_ctrl_cfg_t cfg) {
 TEST_P(InitTest, Initialize) {
   EXPECT_CALL(
       otp_,
-      read32(OTP_CTRL_PARAM_CREATOR_SW_CFG_FLASH_HW_INFO_CFG_OVERRIDE_OFFSET))
-      .WillOnce(Return(0));
+      read32(OTP_CTRL_PARAM_CREATOR_SW_CFG_NVM_HW_INFO_CFG_OVERRIDE_OFFSET))
+      .WillOnce(Return(GetParam().override_val));
+
+  if (GetParam().override_val != 0) {
+    EXPECT_SEC_WRITE32(base_ + FLASH_CTRL_HW_INFO_CFG_OVERRIDE_REG_OFFSET,
+                       GetParam().override_write_val);
+  }
 
   EXPECT_ABS_WRITE32(base_ + FLASH_CTRL_INIT_REG_OFFSET,
                      {{FLASH_CTRL_INIT_VAL_BIT, true}});
 
-  EXPECT_CALL(
-      otp_, read32(OTP_CTRL_PARAM_CREATOR_SW_CFG_FLASH_DATA_DEFAULT_CFG_OFFSET))
+  EXPECT_CALL(otp_,
+              read32(OTP_CTRL_PARAM_CREATOR_SW_CFG_NVM_DATA_DEFAULT_CFG_OFFSET))
       .WillOnce(Return(CfgToOtp(GetParam().cfg)));
   EXPECT_SEC_READ32(base_ + FLASH_CTRL_DEFAULT_REGION_REG_OFFSET,
                     FLASH_CTRL_DEFAULT_REGION_REG_RESVAL);
@@ -132,8 +146,7 @@ TEST_P(InitTest, Initialize) {
                      GetParam().data_write_val);
 
   EXPECT_CALL(
-      otp_,
-      read32(OTP_CTRL_PARAM_CREATOR_SW_CFG_FLASH_INFO_BOOT_DATA_CFG_OFFSET))
+      otp_, read32(OTP_CTRL_PARAM_CREATOR_SW_CFG_NVM_INFO_BOOT_DATA_CFG_OFFSET))
       .WillOnce(Return(CfgToOtp(GetParam().cfg)));
   auto info_page = InfoPages().at(&kFlashCtrlInfoPageBootData0);
   EXPECT_SEC_READ32(base_ + info_page.cfg_offset,
@@ -155,6 +168,8 @@ INSTANTIATE_TEST_SUITE_P(AllCases, InitTest,
                                  .cfg = {.scrambling = kMultiBitBool4True,
                                          .ecc = kMultiBitBool4False,
                                          .he = kMultiBitBool4False},
+                                 .override_val = 0,
+                                 .override_write_val = 0,
                                  .info_write_val = 0x9969996,
                                  .data_write_val = 0x996999,
                              },
@@ -163,6 +178,8 @@ INSTANTIATE_TEST_SUITE_P(AllCases, InitTest,
                                  .cfg = {.scrambling = kMultiBitBool4False,
                                          .ecc = kMultiBitBool4True,
                                          .he = kMultiBitBool4False},
+                                 .override_val = 0,
+                                 .override_write_val = 0,
                                  .info_write_val = 0x9699996,
                                  .data_write_val = 0x969999,
                              },
@@ -171,6 +188,8 @@ INSTANTIATE_TEST_SUITE_P(AllCases, InitTest,
                                  .cfg = {.scrambling = kMultiBitBool4False,
                                          .ecc = kMultiBitBool4False,
                                          .he = kMultiBitBool4True},
+                                 .override_val = 0,
+                                 .override_write_val = 0,
                                  .info_write_val = 0x6999996,
                                  .data_write_val = 0x699999,
                              },
@@ -179,6 +198,38 @@ INSTANTIATE_TEST_SUITE_P(AllCases, InitTest,
                                  .cfg = {.scrambling = kMultiBitBool4True,
                                          .ecc = kMultiBitBool4True,
                                          .he = kMultiBitBool4False},
+                                 .override_val = 0,
+                                 .override_write_val = 0,
+                                 .info_write_val = 0x9669996,
+                                 .data_write_val = 0x966999,
+                             },
+                             // Override scrambling disable.
+                             InitCase{
+                                 .cfg = {.scrambling = kMultiBitBool4True,
+                                         .ecc = kMultiBitBool4False,
+                                         .he = kMultiBitBool4False},
+                                 .override_val = 0x0006,
+                                 .override_write_val = 0x96,
+                                 .info_write_val = 0x9969996,
+                                 .data_write_val = 0x996999,
+                             },
+                             // Override ECC disable.
+                             InitCase{
+                                 .cfg = {.scrambling = kMultiBitBool4False,
+                                         .ecc = kMultiBitBool4True,
+                                         .he = kMultiBitBool4False},
+                                 .override_val = 0x0600,
+                                 .override_write_val = 0x69,
+                                 .info_write_val = 0x9699996,
+                                 .data_write_val = 0x969999,
+                             },
+                             // Override scrambling and ECC disable.
+                             InitCase{
+                                 .cfg = {.scrambling = kMultiBitBool4True,
+                                         .ecc = kMultiBitBool4True,
+                                         .he = kMultiBitBool4False},
+                                 .override_val = 0x0606,
+                                 .override_write_val = 0x66,
                                  .info_write_val = 0x9669996,
                                  .data_write_val = 0x966999,
                              }));
@@ -694,7 +745,7 @@ TEST_F(FlashCtrlTest, CreatorInfoLockdown) {
     EXPECT_SEC_WRITE32(base_ + info_page.cfg_wen_offset, 0);
   }
 
-  flash_ctrl_creator_info_pages_lockdown();
+  nvm_ctrl_creator_info_pages_lockdown();
 }
 
 TEST_F(FlashCtrlTest, BankErasePermsSet) {
@@ -725,8 +776,8 @@ TEST_F(FlashCtrlTest, CertInfoCreatorCfg) {
     EXPECT_SEC_WRITE32(base_ + info_page.cfg_offset, 0x9666666);
   }
 
-  flash_ctrl_cert_info_page_creator_cfg(&kFlashCtrlInfoPageAttestationKeySeeds);
-  flash_ctrl_cert_info_page_creator_cfg(&kFlashCtrlInfoPageDiceCerts);
+  nvm_ctrl_cert_info_page_creator_cfg(kNvmInfoPageAttestationKeySeeds);
+  nvm_ctrl_cert_info_page_creator_cfg(kNvmInfoPageDiceCerts);
 }
 
 TEST_F(FlashCtrlTest, CertInfoOwnerRestrict) {
@@ -741,9 +792,8 @@ TEST_F(FlashCtrlTest, CertInfoOwnerRestrict) {
     EXPECT_SEC_WRITE32(base_ + info_page.cfg_wen_offset, 0);
   }
 
-  flash_ctrl_cert_info_page_owner_restrict(
-      &kFlashCtrlInfoPageAttestationKeySeeds);
-  flash_ctrl_cert_info_page_owner_restrict(&kFlashCtrlInfoPageDiceCerts);
+  nvm_ctrl_cert_info_page_owner_restrict(kNvmInfoPageAttestationKeySeeds);
+  nvm_ctrl_cert_info_page_owner_restrict(kNvmInfoPageDiceCerts);
 }
 
 struct EraseVerifyCase {

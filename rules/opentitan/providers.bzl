@@ -11,8 +11,13 @@ OpenTitanBinaryInfo = provider(
     },
 )
 
-Cw310BinaryInfo = provider(
-    doc = "CW310 Binary Info",
+OpenTitanTestInfo = provider(
+    doc = "A provider that describes the information about an opentitan test",
+    fields = {
+        "exec_env": "Execution environment for this test (ExecEnvInfo)",
+        "test_suite": "Test suite to which this test belongs (label string)",
+        "tags": "List of tags (list of strings)",
+    },
 )
 
 Cw305BinaryInfo = provider(
@@ -40,7 +45,6 @@ SimQemuBinaryInfo = provider(
 )
 
 ALL_BINARY_PROVIDERS = [
-    Cw310BinaryInfo,
     Cw340BinaryInfo,
     SiliconBinaryInfo,
     SimDvBinaryInfo,

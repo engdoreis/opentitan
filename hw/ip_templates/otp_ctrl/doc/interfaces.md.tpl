@@ -115,10 +115,10 @@ In all other life cycle states this signal will be clamped to zero.
 
 ${"###"} Interface to Key Manager
 
-The interface to the key manager is a simple struct that outputs the CREATOR_ROOT_KEY_SHARE0 and CREATOR_ROOT_KEY_SHARE1 keys via `otp_keymgr_key_o` if these secrets have been provisioned and locked (via CREATOR_KEY_LOCK).
-Otherwise, this signal is tied to a random netlist constant.
+Each individual secret key material (CREATOR_ROOT_KEY, OWNER_SEED, CREATOR_SEED) gets its own connection to the keymgr.
+These secrets are provided to the keymgr if they have been provisioned and locked (via CREATOR_KEY_LOCK), otherwise these signals are tied to random netlist constants.
 
-Since the key manager may run in a different clock domain, key manager is responsible for synchronizing the `otp_keymgr_key_o` signals.
+Since the key manager may run in a different clock domain, key manager is responsible for synchronizing the `keymgr_creator_root_key_o`, `keymgr_creator_seed_o`, `keymgr_owner_seed_o` signals.
 
 ${"###"} Interfaces to SRAM and OTBN Scramblers
 
@@ -151,27 +151,27 @@ Note that the key and nonce output signals on the OTP controller side are guaran
 Hence, if the scrambling device clock is faster or in the same order of magnitude as the OTP clock, the data can be directly sampled upon assertion of `src_ack_o`.
 If the scrambling device runs on a significantly slower clock than OTP, an additional register (as indicated with dashed grey lines in the figure) has to be added.
 
-% if enable_flash_key:
-${"###"} Interface to Flash Scrambler
+% if enable_nvm_key:
+${"###"} Interface to NVM Scrambler
 
-The interface to the FLASH scrambling device is a simple req/ack interface that provides the flash controller with the two 128bit keys for data and address scrambling.
+The interface to the NVM scrambling device is a simple req/ack interface that provides the nvm controller with the two 128bit keys for data and address scrambling.
 
 The keys can be requested as illustrated below:
 
 ```wavejson
 {signal: [
-  {name: 'clk_i',                      wave: 'p...........'},
-  {name: 'flash_otp_key_i.data_req',   wave: '01.|..0.|...'},
-  {name: 'flash_otp_key_i.addr_req',   wave: '01.|....|..0'},
-  {name: 'flash_otp_key_o.data_ack',   wave: '0..|.10.|...'},
-  {name: 'flash_otp_key_o.addr_ack',   wave: '0..|....|.10'},
-  {name: 'flash_otp_key_o.key',        wave: '0..|.30.|.40'},
-  {name: 'flash_otp_key_o.seed_valid', wave: '0..|.10.|.10'},
+  {name: 'clk_i',                    wave: 'p...........'},
+  {name: 'nvm_otp_key_i.data_req',   wave: '01.|..0.|...'},
+  {name: 'nvm_otp_key_i.addr_req',   wave: '01.|....|..0'},
+  {name: 'nvm_otp_key_o.data_ack',   wave: '0..|.10.|...'},
+  {name: 'nvm_otp_key_o.addr_ack',   wave: '0..|....|.10'},
+  {name: 'nvm_otp_key_o.key',        wave: '0..|.30.|.40'},
+  {name: 'nvm_otp_key_o.seed_valid', wave: '0..|.10.|.10'},
 ]}
 ```
 
-The keys are derived from the FLASH_DATA_KEY_SEED and FLASH_ADDR_KEY_SEED values stored in the `SECRET1` partition using the [scrambling primitive](#scrambling-datapath).
-If the key seeds have not yet been provisioned, the keys are derived from all-zero constants, and the `flash_otp_key_o.seed_valid` signal will be set to 0 in the response.
+The keys are derived from the NVM_DATA_KEY_SEED and NVM_ADDR_KEY_SEED values stored in the `SECRET1` partition using the [scrambling primitive](#scrambling-datapath).
+If the key seeds have not yet been provisioned, the keys are derived from all-zero constants, and the `nvm_otp_key_o.seed_valid` signal will be set to 0 in the response.
 The resulting scrambling key is still ephemeral (i.e., it is derived using entropy from CSRNG) and okay to be used.
 
 Note that the req/ack protocol runs on the OTP clock.

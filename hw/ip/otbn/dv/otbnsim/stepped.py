@@ -69,7 +69,16 @@ prefixed with "0x" if they are hexadecimal.
 
     send_err_escalation     React to an injected error.
 
+    send_stall_request      Make the model stall instead of retiring the next
+                            instruction. In case there is a pending halt, the
+                            stall request is ignored except if it is enforced.
+
     set_software_errs_fatal Set software_errs_fatal bit.
+
+    set_wfi_enabled         Set the wfi_enabled bit.
+
+    wfi_resume              Resume a wfi instruction that is paused (the host
+                            has issued the RESUME command).
 '''
 
 import binascii
@@ -338,7 +347,7 @@ def on_invalidate_imem(sim: OTBNSim, args: List[str]) -> Optional[OTBNSim]:
 def on_invalidate_dmem(sim: OTBNSim, args: List[str]) -> Optional[OTBNSim]:
     check_arg_count('invalidate_dmem', 0, args)
 
-    sim.state.dmem.empty_dmem()
+    sim.state.dmem.invalidate_dmem()
     return None
 
 
@@ -348,6 +357,22 @@ def on_set_software_errs_fatal(sim: OTBNSim,
     new_val = read_word('error', args[0], 1)
     assert new_val in [0, 1]
     sim.state.software_errs_fatal = new_val != 0
+
+    return None
+
+
+def on_set_wfi_enabled(sim: OTBNSim, args: List[str]) -> Optional[OTBNSim]:
+    check_arg_count('set_wfi_enabled', 1, args)
+    new_val = read_word('enabled', args[0], 1)
+    assert new_val in [0, 1]
+    sim.state.wfi_enabled = new_val != 0
+
+    return None
+
+
+def on_wfi_resume(sim: OTBNSim, args: List[str]) -> Optional[OTBNSim]:
+    check_arg_count('wfi_resume', 0, args)
+    sim.state.request_wfi_resume()
 
     return None
 
@@ -380,6 +405,13 @@ def on_send_err_escalation(sim: OTBNSim, args: List[str]) -> Optional[OTBNSim]:
     err_val = read_word('err_val', args[0], 32)
     lock_immediately = bool(read_word('lock_immediately', args[1], 1))
     sim.send_err_escalation(err_val, lock_immediately)
+    return None
+
+
+def on_send_stall_request(sim: OTBNSim, args: List[str]) -> Optional[OTBNSim]:
+    check_arg_count('send_stall_request', 1, args)
+    enforced = bool(read_word('enforced', args[0], 1))
+    sim.send_stall_request(enforced)
     return None
 
 
@@ -426,9 +458,12 @@ _HANDLERS = {
     'set_keymgr_value': on_set_keymgr_value,
     'step_crc': on_step_crc,
     'send_err_escalation': on_send_err_escalation,
+    'send_stall_request': on_send_stall_request,
     'set_rma_req': on_set_rma_req,
     'initial_secure_wipe': on_initial_secure_wipe,
-    'set_software_errs_fatal': on_set_software_errs_fatal
+    'set_software_errs_fatal': on_set_software_errs_fatal,
+    'set_wfi_enabled': on_set_wfi_enabled,
+    'wfi_resume': on_wfi_resume,
 }
 
 

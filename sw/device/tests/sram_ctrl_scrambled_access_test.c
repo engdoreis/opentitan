@@ -6,6 +6,7 @@
 #include <stdint.h>
 
 #include "hw/top/dt/rstmgr.h"
+#include "hw/top/dt/rv_core_ibex.h"
 #include "hw/top/dt/sram_ctrl.h"
 #include "sw/device/lib/base/macros.h"
 #include "sw/device/lib/base/mmio.h"
@@ -17,6 +18,7 @@
 #include "sw/device/lib/testing/rstmgr_testutils.h"
 #include "sw/device/lib/testing/sram_ctrl_testutils.h"
 #include "sw/device/lib/testing/test_framework/check.h"
+#include "sw/device/lib/testing/test_framework/ottf_alerts.h"
 #include "sw/device/lib/testing/test_framework/ottf_main.h"
 #include "sw/device/lib/testing/test_framework/ottf_utils.h"
 
@@ -30,13 +32,13 @@ enum {
  * Retention SRAM start address (inclusive).
  */
 #if defined(OPENTITAN_IS_EARLGREY)
-  kRetSramBaseAddr = TOP_EARLGREY_SRAM_CTRL_RET_AON_RAM_BASE_ADDR,
+  kRetSramBaseAddr = TOP_EARLGREY_SRAM_CTRL_RET_RAM_BASE_ADDR,
   kRetRamLastAddr =
-      kRetSramBaseAddr + TOP_EARLGREY_SRAM_CTRL_RET_AON_RAM_SIZE_BYTES - 1,
+      kRetSramBaseAddr + TOP_EARLGREY_SRAM_CTRL_RET_RAM_SIZE_BYTES - 1,
 #elif defined(OPENTITAN_IS_DARJEELING)
-  kRetSramBaseAddr = TOP_DARJEELING_SRAM_CTRL_RET_AON_RAM_BASE_ADDR,
+  kRetSramBaseAddr = TOP_DARJEELING_SRAM_CTRL_RET_RAM_BASE_ADDR,
   kRetRamLastAddr =
-      kRetSramBaseAddr + TOP_DARJEELING_SRAM_CTRL_RET_AON_RAM_SIZE_BYTES - 1,
+      kRetSramBaseAddr + TOP_DARJEELING_SRAM_CTRL_RET_RAM_SIZE_BYTES - 1,
 #else
 #error Unsupported top
 #endif
@@ -134,6 +136,30 @@ static const uint32_t kRamTestPattern2[kTestBufferSizeWords] = {
  */
 static const uint8_t kBackdoorExpectedBytes[kTestBufferSizeBytes];
 
+/*
+ * Decide whether to perform ECC error count checks after memory is scrambled.
+ *
+ * This is not done on CW305/CW310 FPGAs because interrupts for ECC errors are
+ * only triggered when the SecureIbex parameter is enabled. This parameter is
+ * disabled for these boards due to resource constraints. On CW340 and the
+ * other targets, this parameter is enabled.
+ */
+static bool expect_ecc_errors(void) {
+  switch (kDeviceType) {
+    case kDeviceFpgaCw305:
+    case kDeviceFpgaCw310:
+      return false;
+    case kDeviceFpgaCw340:
+    case kDeviceSilicon:
+    case kDeviceSimDV:
+    case kDeviceSimVerilator:
+      return true;
+    default:
+      CHECK(false, "Device type not handled: %d", kDeviceType);
+      return false;
+  }
+}
+
 /**
  * Performs scrambling, saves the test relevant data and resets the system.
  *
@@ -154,6 +180,14 @@ static noreturn void main_sram_scramble(void) {
   // platforms and the number of ECC errors will be doubled.
   if (kDeviceType == kDeviceSimDV) {
     copy_len += sizeof(reference_frame->backdoor);
+  }
+
+  // If we expect ECC errors from copying our pattern buffers then we have to
+  // disable the fatal alert associated with bus integrity checks. This is a
+  // fatal alert so we cannot "expect" it.
+  if (expect_ecc_errors()) {
+    CHECK_STATUS_OK(ottf_alerts_ignore_alert(dt_rv_core_ibex_alert_to_alert_id(
+        kDtRvCoreIbex, kDtRvCoreIbexAlertFatalHwErr)));
   }
 
   asm volatile(
@@ -204,7 +238,7 @@ static noreturn void main_sram_scramble(void) {
         [mainFrame] "r"(&scrambling_frame), [retFrame] "r"(&reference_frame),
         [kCopyLen] "r"(copy_len),
 
-        [kRstMgrRegsBase] "r"(dt_rstmgr_primary_reg_block(kDtRstmgrAon)),
+        [kRstMgrRegsBase] "r"(dt_rstmgr_primary_reg_block(kDtRstmgr)),
         [kRstMgrResetReq] "I"(RSTMGR_RESET_REQ_REG_OFFSET)
       : "t0", "t1", "a2", "a3");
 
@@ -265,6 +299,16 @@ static void execute_main_sram_test(void) {
 }
 
 static void check_sram_data(scramble_test_frame *mem_frame) {
+  bool check_ecc_errors = expect_ecc_errors();
+
+  // If we expect ECC errors from copying our pattern buffers then we have to
+  // disable the fatal alert associated with bus integrity checks. This is a
+  // fatal alert so we cannot "expect" it.
+  if (check_ecc_errors) {
+    CHECK_STATUS_OK(ottf_alerts_ignore_alert(dt_rv_core_ibex_alert_to_alert_id(
+        kDtRvCoreIbex, kDtRvCoreIbexAlertFatalHwErr)));
+  }
+
   LOG_INFO("Checking addr 0x%x", mem_frame->pattern);
   uint32_t tmp_buffer[kTestBufferSizeWords];
   memcpy(tmp_buffer, (const uint8_t *)mem_frame->pattern, sizeof(tmp_buffer));
@@ -273,29 +317,6 @@ static void check_sram_data(scramble_test_frame *mem_frame) {
                   kTestBufferSizeWords);
   CHECK_ARRAYS_NE((uint32_t *)tmp_buffer, kRamTestPattern2,
                   kTestBufferSizeWords);
-
-  // Decide whether to perform ECC error count checks after memory is scrambled.
-  //
-  // This is not done on CW305/CW310 FPGAs because interrupts for ECC errors are
-  // only triggered when the SecureIbex parameter is enabled. This parameter is
-  // disabled for these boards due to resource constraints. On CW340 and the
-  // other targets, this parameter is enabled.
-  bool check_ecc_errors = false;
-  switch (kDeviceType) {
-    case kDeviceFpgaCw305:
-    case kDeviceFpgaCw310:
-      check_ecc_errors = false;
-      break;
-    case kDeviceFpgaCw340:
-    case kDeviceSilicon:
-    case kDeviceSimDV:
-    case kDeviceSimVerilator:
-      check_ecc_errors = true;
-      break;
-    default:
-      CHECK(false, "Device type not handled: %d", kDeviceType);
-      return;
-  }
 
   if (check_ecc_errors) {
     LOG_INFO("Checking ECC error count of %d",
@@ -449,9 +470,9 @@ extern uint8_t _stack_start[];
 extern uint8_t _freertos_heap_start[];
 
 bool test_main(void) {
-  CHECK_DIF_OK(dif_rstmgr_init_from_dt(kDtRstmgrAon, &rstmgr));
+  CHECK_DIF_OK(dif_rstmgr_init_from_dt(kDtRstmgr, &rstmgr));
 
-  CHECK_DIF_OK(dif_sram_ctrl_init_from_dt(kDtSramCtrlRetAon, &ret_sram));
+  CHECK_DIF_OK(dif_sram_ctrl_init_from_dt(kDtSramCtrlRet, &ret_sram));
 
   main_sram_addr = OT_ALIGN_MEM(rand_testutils_gen32_range(
       (uintptr_t)_freertos_heap_start,

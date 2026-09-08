@@ -123,6 +123,12 @@ struct ISSWrapper {
   // Set software_errs_fatal bit in ISS model.
   void set_software_errs_fatal(bool new_val);
 
+  // Set wfi_enabled bit in ISS model.
+  void set_wfi_enabled(bool new_val);
+
+  // Resume a paused wfi instruction (host issued the RESUME command).
+  void wfi_resume();
+
   void initial_secure_wipe();
 
   // Step a CRC calculation with 48 bits of data
@@ -137,6 +143,11 @@ struct ISSWrapper {
 
   // Send an error escalation
   void send_err_escalation(uint32_t err_val, bool lock_immediately);
+
+  // Stall for one cycle instead of retiring the next instruction.
+  // In case there is a pending halt, the stall request is ignored except if
+  // enforced is True.
+  void send_stall_request(bool enforced);
 
   // Set the RMA request input
   void set_rma_req(uint8_t rma_req);

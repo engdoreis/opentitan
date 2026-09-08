@@ -2,7 +2,7 @@
 // Licensed under the Apache License, Version 2.0, see LICENSE for details.
 // SPDX-License-Identifier: Apache-2.0
 
-class csrng_agent_cfg extends dv_base_agent_cfg;
+class csrng_agent_cfg extends dv_reactive_agent_cfg;
 
   // interface handle used by driver, monitor & the sequencer, via cfg handle
   virtual csrng_if vif;
@@ -22,7 +22,6 @@ class csrng_agent_cfg extends dv_base_agent_cfg;
                     reseed_cnt, generate_cnt, generate_between_reseeds_cnt;
   bit               cmd_zero_delays;
   bit               cmd_force_ack;
-  bit               under_reset;
   csrng_cmd_sts_e   rsp_sts_err;
 
 endclass

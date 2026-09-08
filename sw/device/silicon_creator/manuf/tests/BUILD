@@ -5,6 +5,8 @@
 load("//rules:const.bzl", "CONST", "get_lc_items")
 load("//rules:lc.bzl", "lc_raw_unlock_token")
 load("//rules/opentitan:keyutils.bzl", "ECDSA_SPX_KEY_STRUCTS")
+load("//rules/opentitan:cc.bzl", "opentitan_binary_assemble")
+load("//hw/top:defs.bzl", "opentitan_require_top")
 load(
     "//rules:otp.bzl",
     "OTP_SIGVERIFY_FAKE_KEYS",
@@ -18,6 +20,10 @@ load(
     "opentitan_test",
     "silicon_params",
     "spx_key_for_lc_state",
+)
+load(
+    "//sw/device/silicon_creator/rom/e2e:defs.bzl",
+    "SLOTS",
 )
 
 package(default_visibility = ["//visibility:public"])
@@ -73,21 +79,17 @@ _MANUF_TEST_LOCKED_KEY = None
         srcs = ["empty_functest.c"],
         ecdsa_key = _MANUF_TEST_LOCKED_KEY if (lc_state, lc_val) in _TEST_LOCKED_LC_ITEMS else ecdsa_key_for_lc_state(ECDSA_SPX_KEY_STRUCTS, lc_val),
         exec_env = {
+            "//hw/top_earlgrey:sim_dv": None,
             "//hw/top_earlgrey:fpga_cw340_sival": None,
-            "//hw/top_earlgrey:fpga_cw310_rom_with_fake_keys": None,
         },
         fpga = fpga_params(
-            changes_otp = True,
             lc_state = lc_state,  # will be expanded in test_cmd
             needs_jtag = True,
             otp = "//hw/top_earlgrey/data/otp:img_{}".format(lc_state.lower()),
             tags = ["manuf"],
-            test_cmd = (
-                "" if (
-                    (lc_state, lc_val) in _TEST_LOCKED_LC_ITEMS
-                ) else "--bootstrap={firmware}"
-            ) + " --initial-lc-state={lc_state}",
+            test_cmd = "--initial-lc-state={lc_state}",
             test_harness = "//sw/host/tests/manuf/manuf_scrap",
+            testopt_bootstrap = str((lc_state, lc_val) not in _TEST_LOCKED_LC_ITEMS),
         ),
         deps = [
             "//sw/device/lib/runtime:log",
@@ -115,14 +117,13 @@ opentitan_test(
     srcs = ["//sw/device/silicon_creator/rom/e2e:empty_test.c"],
     exec_env = {
         "//hw/top_earlgrey:fpga_cw340_sival": None,
-        "//hw/top_earlgrey:fpga_cw310_rom_with_fake_keys": None,
     },
     fpga = fpga_params(
-        changes_otp = True,
         needs_jtag = True,
         otp = "//hw/top_earlgrey/data/otp:img_raw",
         tags = ["manuf"],
         test_harness = "//sw/host/tests/manuf/manuf_cp_unlock_raw",
+        testopt_bootstrap = "False",
     ),
     deps = [
         "//hw/top:otp_ctrl_c_regs",
@@ -137,14 +138,14 @@ opentitan_test(
     name = "manuf_cp_volatile_unlock_raw_functest",
     srcs = ["//sw/device/silicon_creator/rom/e2e:empty_test.c"],
     exec_env = {
-        "//hw/top_earlgrey:fpga_cw310_rom_with_fake_keys": None,
+        "//hw/top_earlgrey:fpga_cw340_rom_with_fake_keys": None,
     },
     fpga = fpga_params(
-        changes_otp = True,
         needs_jtag = True,
         otp = "//hw/top_earlgrey/data/otp:img_raw",
         tags = ["manuf"],
         test_harness = "//sw/host/tests/manuf/manuf_cp_volatile_unlock_raw",
+        testopt_bootstrap = "False",
     ),
     deps = [
         "//hw/top:otp_ctrl_c_regs",
@@ -175,16 +176,15 @@ opentitan_test(
         srcs = ["//sw/device/silicon_creator/rom/e2e:empty_test.c"],
         exec_env = {
             "//hw/top_earlgrey:fpga_cw340_sival": None,
-            "//hw/top_earlgrey:fpga_cw310_rom_with_fake_keys": None,
         },
         fpga = fpga_params(
-            changes_otp = True,
             lc_state = lc_state,  # will be expanded in test_cmd
             needs_jtag = True,
             otp = ":otp_img_rom_exec_disabled_{}".format(lc_state.lower()),
             tags = ["manuf"],
             test_cmd = "--initial-lc-state={lc_state}",
             test_harness = "//sw/host/tests/manuf/manuf_cp_yield_test",
+            testopt_bootstrap = "False",
         ),
         deps = [
             "//hw/top:otp_ctrl_c_regs",
@@ -211,7 +211,7 @@ cc_library(
     srcs = ["test_wafer_auth_secret.h"],
     visibility = ["//visibility:private"],
     deps = [
-        "//sw/device/silicon_creator/manuf/lib:flash_info_fields",
+        "//sw/device/silicon_creator/manuf/lib:nvm_info_field",
     ],
 )
 
@@ -247,26 +247,29 @@ cc_library(
         srcs = ["sram_empty_functest.c"],
         exec_env = {
             "//hw/top_earlgrey:fpga_cw340_sival": None,
-            "//hw/top_earlgrey:fpga_cw310_rom_with_fake_keys": None,
             "//hw/top_earlgrey:silicon_creator": None,
         },
         fpga = fpga_params(
             needs_jtag = True,
             otp = ":otp_img_sram_exec_en_{}".format(lc_state.lower()),
-            tags = ["manuf"],
+            tags = [
+                "manuf",
+                # Flaky in CI and locally, see #29555.
+                "broken",
+            ],
             test_cmd = "--elf={firmware}",
             test_harness = "//sw/host/tests/manuf/manuf_sram_program_crc_check",
+            testopt_bootstrap = "False",
         ),
         kind = "ram",
         linker_script = "//sw/device/silicon_creator/manuf/lib:sram_program_linker_script",
         silicon = silicon_params(
-            interface = "cw310",
             needs_jtag = True,
             test_cmd = "--elf={firmware}",
             test_harness = "//sw/host/tests/manuf/manuf_sram_program_crc_check",
         ),
         deps = [
-            "//hw/top_earlgrey/sw/autogen:top_earlgrey",
+            "//hw/top:top_lib",
             "//sw/device/lib/arch:device",
             "//sw/device/lib/base:macros",
             "//sw/device/lib/dif:pinmux",
@@ -292,35 +295,34 @@ test_suite(
 )
 
 opentitan_binary(
-    name = "sram_device_info_flash_wr_functest",
+    name = "sram_device_info_nvm_wr_functest",
     testonly = True,
-    srcs = ["sram_device_info_flash_wr_functest.c"],
+    srcs = ["sram_device_info_nvm_wr_functest.c"],
     exec_env = {
-        "//hw/top_earlgrey:fpga_cw310_rom_with_fake_keys": None,
         "//hw/top_earlgrey:fpga_cw340_sival": None,
     },
     kind = "ram",
     linker_script = "//sw/device/silicon_creator/manuf/lib:sram_program_linker_script",
+    target_compatible_with = opentitan_require_top("earlgrey"),
     deps = [
         ":test_wafer_auth_secret",
         "//hw/top:otp_ctrl_c_regs",
-        "//hw/top_earlgrey/sw/autogen:top_earlgrey",
+        "//hw/top:top_lib",
         "//sw/device/lib/arch:device",
         "//sw/device/lib/base:macros",
-        "//sw/device/lib/dif:flash_ctrl",
         "//sw/device/lib/dif:lc_ctrl",
         "//sw/device/lib/dif:otp_ctrl",
         "//sw/device/lib/dif:pinmux",
         "//sw/device/lib/runtime:log",
-        "//sw/device/lib/testing:flash_ctrl_testutils",
+        "//sw/device/lib/testing:nvm_testutils",
         "//sw/device/lib/testing:otp_ctrl_testutils",
         "//sw/device/lib/testing:pinmux_testutils",
         "//sw/device/lib/testing/test_framework:check",
         "//sw/device/lib/testing/test_framework:ottf_console",
         "//sw/device/lib/testing/test_framework:ottf_test_config",
         "//sw/device/lib/testing/test_framework:status",
-        "//sw/device/silicon_creator/manuf/lib:flash_info_fields",
         "//sw/device/silicon_creator/manuf/lib:individualize_sw_cfg_sv00",
+        "//sw/device/silicon_creator/manuf/lib:nvm_info_field",
         "//sw/device/silicon_creator/manuf/lib:sram_start",
     ],
 )
@@ -331,7 +333,7 @@ opentitan_binary(
             init_lc_state.lower(),
             target_lc_state.lower(),
         ),
-        srcs = ["flash_device_info_flash_wr_functest.c"],
+        srcs = ["nvm_device_info_nvm_wr_functest.c"],
         # We select the PROD key since the SRAM test program does an LC transition to DEV.
         ecdsa_key = ecdsa_key_for_lc_state(
             ECDSA_SPX_KEY_STRUCTS,
@@ -339,16 +341,17 @@ opentitan_binary(
         ),
         exec_env = {
             "//hw/top_earlgrey:fpga_cw340_sival": None,
-            "//hw/top_earlgrey:fpga_cw310_rom_with_fake_keys": None,
         },
         fpga = fpga_params(
             binaries = {
-                ":sram_device_info_flash_wr_functest": "sram_program",
+                ":sram_device_info_nvm_wr_functest": "sram_program",
             },
-            changes_otp = True,
             needs_jtag = True,
             otp = ":otp_img_rom_exec_disabled_{}".format(init_lc_state.lower()),
-            tags = ["manuf"],
+            tags = [
+                "manuf",
+                "skip_in_ci",
+            ],
             target_lc_state = target_lc_state,  # will be expanded in test_cmd
             test_cmd = """
                 --bootstrap={firmware}
@@ -356,6 +359,7 @@ opentitan_binary(
                 --elf={sram_program}
             """,
             test_harness = "//sw/host/tests/manuf/manuf_cp_device_info_flash_wr",
+            testopt_bootstrap = "False",
         ),
         spx_key = spx_key_for_lc_state(
             ECDSA_SPX_KEY_STRUCTS,
@@ -363,12 +367,11 @@ opentitan_binary(
         ),
         deps = [
             ":test_wafer_auth_secret",
-            "//sw/device/lib/dif:flash_ctrl",
             "//sw/device/lib/dif:lc_ctrl",
             "//sw/device/lib/runtime:log",
-            "//sw/device/lib/testing:flash_ctrl_testutils",
+            "//sw/device/lib/testing:nvm_testutils",
             "//sw/device/lib/testing/test_framework:ottf_main",
-            "//sw/device/silicon_creator/manuf/lib:flash_info_fields",
+            "//sw/device/silicon_creator/manuf/lib:nvm_info_field",
         ],
     )
     for init_lc_state, _ in _TEST_UNLOCKED_LC_ITEMS
@@ -393,14 +396,14 @@ opentitan_binary(
     testonly = True,
     srcs = ["sram_exec_test.c"],
     exec_env = {
-        "//hw/top_earlgrey:fpga_cw310_rom_with_fake_keys": None,
         "//hw/top_earlgrey:fpga_cw340_rom_with_fake_keys": None,
     },
     kind = "ram",
     linker_script = "//sw/device/silicon_creator/manuf/lib:sram_program_linker_script",
+    target_compatible_with = opentitan_require_top("earlgrey"),
     deps = [
         "//hw/top:otp_ctrl_c_regs",
-        "//hw/top_earlgrey/sw/autogen:top_earlgrey",
+        "//hw/top:top_lib",
         "//sw/device/lib/arch:device",
         "//sw/device/lib/base:macros",
         "//sw/device/lib/dif:otp_ctrl",
@@ -425,7 +428,6 @@ opentitan_binary(
         srcs = ["idle_functest.c"],
         exec_env = {
             "//hw/top_earlgrey:fpga_cw340_sival": None,
-            "//hw/top_earlgrey:fpga_cw310_rom_with_fake_keys": None,
         },
         fpga = fpga_params(
             binaries = {
@@ -433,11 +435,15 @@ opentitan_binary(
             },
             needs_jtag = True,
             otp = ":otp_img_rom_exec_disabled_{}".format(lc_state.lower()),
-            tags = ["manuf"],
+            tags = [
+                "manuf",
+                "skip_in_ci",
+            ],
             test_cmd = """
                 --elf={sram_program}
             """,
             test_harness = "//sw/host/tests/manuf/manuf_cp_ast_test_execution",
+            testopt_bootstrap = "False",
         ),
         deps = [
             "//sw/device/lib/runtime:log",
@@ -463,14 +469,13 @@ opentitan_test(
     srcs = ["//sw/device/silicon_creator/rom/e2e:empty_test.c"],
     exec_env = {
         "//hw/top_earlgrey:fpga_cw340_sival": None,
-        "//hw/top_earlgrey:fpga_cw310_rom_with_fake_keys": None,
     },
     fpga = fpga_params(
-        changes_otp = True,
         needs_jtag = True,
         otp = ":otp_img_otp_ctrl_functest",
         tags = ["manuf"],
         test_harness = "//sw/host/tests/manuf/manuf_cp_test_lock",
+        testopt_bootstrap = "False",
     ),
     deps = [
         "//hw/top:otp_ctrl_c_regs",
@@ -491,14 +496,14 @@ opentitan_test(
     name = "otp_ctrl_functest",
     srcs = [":empty_functest.c"],
     exec_env = {
-        "//hw/top_earlgrey:fpga_cw310_rom_with_fake_keys": None,
+        "//hw/top_earlgrey:fpga_cw340_rom_with_fake_keys": None,
     },
     fpga = fpga_params(
-        changes_otp = True,
         needs_jtag = True,
         otp = ":otp_img_otp_ctrl_functest",
         tags = ["manuf"],
         test_harness = "//sw/host/tests/manuf/otp_ctrl:otp_ctrl",
+        testopt_bootstrap = "False",
     ),
     deps = [
         "//hw/top:otp_ctrl_c_regs",
@@ -506,5 +511,78 @@ opentitan_test(
         "//sw/device/silicon_creator/lib/drivers:lifecycle",
         "//sw/device/silicon_creator/lib/drivers:otp",
         "//sw/device/silicon_creator/lib/sigverify:spx_verify",
+    ],
+)
+
+[
+    opentitan_binary(
+        name = "empty_test_{}".format(slot),
+        testonly = True,
+        srcs = ["empty_functest.c"],
+        exec_env = {
+            "//hw/top_earlgrey:sim_dv": None,
+            "//hw/top_earlgrey:silicon_creator": None,
+        },
+        linker_script = "//sw/device/lib/testing/test_framework:ottf_ld_silicon_creator_slot_{}".format(slot),
+        deps = [
+            "//sw/device/lib/runtime:log",
+            "//sw/device/lib/testing/test_framework:ottf_main",
+        ],
+    )
+    for slot in SLOTS.keys()
+]
+
+opentitan_binary_assemble(
+    name = "multislot_empty_test",
+    testonly = True,
+    bins = {
+        ":empty_test_a": SLOTS["a"],
+        ":empty_test_b": SLOTS["b"],
+    },
+    exec_env = [
+        "//hw/top_earlgrey:sim_dv",
+        "//hw/top_earlgrey:silicon_creator",
+    ],
+)
+
+# The below alias is needed to run the multislot_empty_test in DV.
+alias(
+    name = "multislot_empty_test_sim_dv",
+    actual = "multislot_empty_test",
+)
+
+opentitan_test(
+    name = "ujson_msg_size_functest",
+    srcs = ["ujson_msg_size_functest.c"],
+    exec_env = {
+        "//hw/top_earlgrey:fpga_cw340_sival": None,
+    },
+    fpga = fpga_params(
+        tags = ["manuf"],
+        test_harness = "//sw/host/tests/manuf/manuf_ujson_msg_size",
+    ),
+    deps = [
+        "//sw/device/lib/runtime:log",
+        "//sw/device/lib/testing/json:provisioning_data",
+        "//sw/device/lib/testing/test_framework:ottf_main",
+        "//sw/device/lib/testing/test_framework:ujson_ottf",
+    ],
+)
+
+opentitan_test(
+    name = "ujson_msg_padding_functest",
+    srcs = ["ujson_msg_padding_functest.c"],
+    exec_env = {
+        "//hw/top_earlgrey:fpga_cw340_sival": None,
+    },
+    fpga = fpga_params(
+        tags = ["manuf"],
+        test_harness = "//sw/host/tests/manuf/manuf_ujson_msg_padding",
+    ),
+    deps = [
+        "//sw/device/lib/runtime:log",
+        "//sw/device/lib/testing/json:provisioning_data",
+        "//sw/device/lib/testing/test_framework:ottf_main",
+        "//sw/device/lib/testing/test_framework:ujson_ottf",
     ],
 )

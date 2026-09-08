@@ -21,7 +21,7 @@
         {
           name: MainPwr
           desc: main power glitch reset request
-          module: pwrmgr_aon
+          module: pwrmgr
         }
         {
           name: Esc
@@ -42,7 +42,7 @@
         {
           name: aon_timer_rst_req
           width: "1"
-          module: aon_timer_aon
+          module: aon_timer
           desc: Watchdog reset request.
           enabled_after_reset: false
         }
@@ -51,7 +51,7 @@
     power_domains:
     [
       Aon
-      "0"
+      Main
     ]
     num_rstreqs: 1
     sw_rsts:
@@ -72,7 +72,7 @@
         ]
         shadowed: false
         sw: false
-        path: rstmgr_aon_resets.rst_por_aon_n
+        path: rst_por_aon_n
         clock: aon
       }
       {
@@ -85,7 +85,7 @@
         ]
         shadowed: false
         sw: false
-        path: rstmgr_aon_resets.rst_por_n
+        path: rst_por_n
         parent: por_aon
         clock: main
       }
@@ -99,7 +99,7 @@
         ]
         shadowed: false
         sw: false
-        path: rstmgr_aon_resets.rst_por_io_n
+        path: rst_por_io_n
         parent: por_aon
         clock: io
       }
@@ -113,7 +113,7 @@
         ]
         shadowed: false
         sw: false
-        path: rstmgr_aon_resets.rst_por_io_div2_n
+        path: rst_por_io_div2_n
         parent: por_aon
         clock: io_div2
       }
@@ -127,7 +127,7 @@
         ]
         shadowed: true
         sw: false
-        path: rstmgr_aon_resets.rst_por_io_div4_n
+        path: rst_por_io_div4_n
         parent: por_aon
         clock: io_div4
       }
@@ -141,7 +141,7 @@
         ]
         shadowed: false
         sw: false
-        path: rstmgr_aon_resets.rst_por_usb_n
+        path: rst_por_usb_n
         parent: por_aon
         clock: usb
       }
@@ -151,11 +151,11 @@
         type: top
         domains:
         [
-          "0"
+          Main
         ]
         shadowed: true
         sw: false
-        path: rstmgr_aon_resets.rst_lc_n
+        path: rst_lc_n
         parent: lc_src
         clock: main
       }
@@ -165,12 +165,12 @@
         type: top
         domains:
         [
-          "0"
+          Main
           Aon
         ]
         shadowed: false
         sw: false
-        path: rstmgr_aon_resets.rst_lc_io_div4_n
+        path: rst_lc_io_div4_n
         parent: lc_src
         clock: io_div4
       }
@@ -180,11 +180,11 @@
         type: top
         domains:
         [
-          "0"
+          Main
         ]
         shadowed: true
         sw: false
-        path: rstmgr_aon_resets.rst_sys_n
+        path: rst_sys_n
         parent: sys_src
         clock: main
       }
@@ -194,12 +194,12 @@
         type: top
         domains:
         [
-          "0"
+          Main
           Aon
         ]
         shadowed: false
         sw: false
-        path: rstmgr_aon_resets.rst_sys_io_div4_n
+        path: rst_sys_io_div4_n
         parent: sys_src
         clock: io_div4
       }
@@ -209,12 +209,12 @@
         type: top
         domains:
         [
-          "0"
+          Main
           Aon
         ]
         shadowed: false
         sw: false
-        path: rstmgr_aon_resets.rst_sys_aon_n
+        path: rst_sys_aon_n
         parent: sys_src
         clock: aon
       }
@@ -224,11 +224,11 @@
         type: top
         domains:
         [
-          "0"
+          Main
         ]
         shadowed: false
         sw: true
-        path: rstmgr_aon_resets.rst_spi_device_n
+        path: rst_spi_device_n
         parent: sys_src
         clock: io_div2
       }
@@ -238,11 +238,11 @@
         type: top
         domains:
         [
-          "0"
+          Main
         ]
         shadowed: false
         sw: true
-        path: rstmgr_aon_resets.rst_spi_host0_n
+        path: rst_spi_host0_n
         parent: sys_src
         clock: io
       }
@@ -252,11 +252,11 @@
         type: top
         domains:
         [
-          "0"
+          Main
         ]
         shadowed: false
         sw: true
-        path: rstmgr_aon_resets.rst_usb_n
+        path: rst_usb_n
         parent: sys_src
         clock: usb
       }
@@ -273,7 +273,7 @@
         ]
         shadowed: false
         sw: false
-        path: rstmgr_aon_resets.rst_por_n
+        path: rst_por_n
         parent: por_aon
         clock: main
       }
@@ -287,7 +287,7 @@
         ]
         shadowed: false
         sw: false
-        path: rstmgr_aon_resets.rst_por_io_n
+        path: rst_por_io_n
         parent: por_aon
         clock: io
       }
@@ -301,7 +301,7 @@
         ]
         shadowed: false
         sw: false
-        path: rstmgr_aon_resets.rst_por_io_div2_n
+        path: rst_por_io_div2_n
         parent: por_aon
         clock: io_div2
       }
@@ -315,7 +315,7 @@
         ]
         shadowed: true
         sw: false
-        path: rstmgr_aon_resets.rst_por_io_div4_n
+        path: rst_por_io_div4_n
         parent: por_aon
         clock: io_div4
       }
@@ -329,7 +329,7 @@
         ]
         shadowed: false
         sw: false
-        path: rstmgr_aon_resets.rst_por_usb_n
+        path: rst_por_usb_n
         parent: por_aon
         clock: usb
       }
@@ -339,11 +339,11 @@
         type: top
         domains:
         [
-          "0"
+          Main
         ]
         shadowed: true
         sw: false
-        path: rstmgr_aon_resets.rst_lc_n
+        path: rst_lc_n
         parent: lc_src
         clock: main
       }
@@ -353,12 +353,12 @@
         type: top
         domains:
         [
-          "0"
+          Main
           Aon
         ]
         shadowed: false
         sw: false
-        path: rstmgr_aon_resets.rst_lc_io_div4_n
+        path: rst_lc_io_div4_n
         parent: lc_src
         clock: io_div4
       }
@@ -368,11 +368,11 @@
         type: top
         domains:
         [
-          "0"
+          Main
         ]
         shadowed: true
         sw: false
-        path: rstmgr_aon_resets.rst_sys_n
+        path: rst_sys_n
         parent: sys_src
         clock: main
       }
@@ -382,12 +382,12 @@
         type: top
         domains:
         [
-          "0"
+          Main
           Aon
         ]
         shadowed: false
         sw: false
-        path: rstmgr_aon_resets.rst_sys_io_div4_n
+        path: rst_sys_io_div4_n
         parent: sys_src
         clock: io_div4
       }
@@ -397,12 +397,12 @@
         type: top
         domains:
         [
-          "0"
+          Main
           Aon
         ]
         shadowed: false
         sw: false
-        path: rstmgr_aon_resets.rst_sys_aon_n
+        path: rst_sys_aon_n
         parent: sys_src
         clock: aon
       }
@@ -412,11 +412,11 @@
         type: top
         domains:
         [
-          "0"
+          Main
         ]
         shadowed: false
         sw: true
-        path: rstmgr_aon_resets.rst_spi_device_n
+        path: rst_spi_device_n
         parent: sys_src
         clock: io_div2
       }
@@ -426,11 +426,11 @@
         type: top
         domains:
         [
-          "0"
+          Main
         ]
         shadowed: false
         sw: true
-        path: rstmgr_aon_resets.rst_spi_host0_n
+        path: rst_spi_host0_n
         parent: sys_src
         clock: io
       }
@@ -440,11 +440,11 @@
         type: top
         domains:
         [
-          "0"
+          Main
         ]
         shadowed: false
         sw: true
-        path: rstmgr_aon_resets.rst_usb_n
+        path: rst_usb_n
         parent: sys_src
         clock: usb
       }

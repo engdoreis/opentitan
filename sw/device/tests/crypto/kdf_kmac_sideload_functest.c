@@ -2,20 +2,26 @@
 // Licensed under the Apache License, Version 2.0, see LICENSE for details.
 // SPDX-License-Identifier: Apache-2.0
 
-#include "sw/device/lib/crypto/drivers/entropy.h"
 #include "sw/device/lib/crypto/drivers/kmac.h"
-#include "sw/device/lib/crypto/impl/integrity.h"
 #include "sw/device/lib/crypto/impl/keyblob.h"
+#include "sw/device/lib/crypto/include/config.h"
+#include "sw/device/lib/crypto/include/cryptolib_build_info.h"
 #include "sw/device/lib/crypto/include/datatypes.h"
+#include "sw/device/lib/crypto/include/entropy_src.h"
+#include "sw/device/lib/crypto/include/integrity.h"
 #include "sw/device/lib/crypto/include/key_transport.h"
 #include "sw/device/lib/crypto/include/kmac_kdf.h"
 #include "sw/device/lib/crypto/include/sha3.h"
 #include "sw/device/lib/runtime/log.h"
-#include "sw/device/lib/testing/keymgr_testutils.h"
+#include "sw/device/lib/testing/keymgr_dpe_testutils.h"
 #include "sw/device/lib/testing/test_framework/check.h"
 #include "sw/device/lib/testing/test_framework/ottf_main.h"
 
 #define MODULE_ID MAKE_MODULE_ID('t', 's', 't')
+
+// DPE context slot for testing, must match the slot defined in the
+// keymgr_dpe_testutils.
+static const uint32_t kKeymgrDpeSrcSlot = kCreatorRootKeyParams.slot_dst_sel;
 
 // Most fields of the following structs are not used during sideload testing
 // but they are copied over from KDF-KMAC testing for consistency. Later, we can
@@ -69,10 +75,10 @@ static kdf_kmac_test_vector_t kKdfTestVectors[] = {
             {
                 .config =
                     {
-                        .version = kOtcryptoLibVersion1,
                         .key_mode = kOtcryptoKeyModeKdfKmac128,
                         .key_length = 32,
                         .hw_backed = kHardenedBoolTrue,
+                        .keymgr_dpe_slot_idx = kKeymgrDpeSrcSlot,
                         .security_level = kOtcryptoKeySecurityLevelLow,
                         .exportable = kHardenedBoolFalse,
                     },
@@ -128,10 +134,10 @@ static kdf_kmac_test_vector_t kKdfTestVectors[] = {
             {
                 .config =
                     {
-                        .version = kOtcryptoLibVersion1,
                         .key_mode = kOtcryptoKeyModeKdfKmac128,
                         .key_length = 32,
                         .hw_backed = kHardenedBoolTrue,
+                        .keymgr_dpe_slot_idx = kKeymgrDpeSrcSlot,
                         .security_level = kOtcryptoKeySecurityLevelHigh,
                         .exportable = kHardenedBoolFalse,
                     },
@@ -211,10 +217,10 @@ static kdf_kmac_test_vector_t kKdfTestVectors[] = {
             {
                 .config =
                     {
-                        .version = kOtcryptoLibVersion1,
                         .key_mode = kOtcryptoKeyModeKdfKmac256,
                         .key_length = 32,
                         .hw_backed = kHardenedBoolTrue,
+                        .keymgr_dpe_slot_idx = kKeymgrDpeSrcSlot,
                         .security_level = kOtcryptoKeySecurityLevelHigh,
                         .exportable = kHardenedBoolFalse,
                     },
@@ -318,13 +324,16 @@ static status_t run_test_vector(void) {
   uint32_t km_buffer1[km_keyblob_len];
   uint32_t km_buffer2[km_keyblob_len];
 
+  *(otcrypto_lib_version_t *)&current_test_vector->key_derivation_key.config
+       .version = otcrypto_lib_version();
   current_test_vector->key_derivation_key.checksum =
-      integrity_blinded_checksum(&current_test_vector->key_derivation_key);
+      otcrypto_integrity_blinded_checksum(
+          &current_test_vector->key_derivation_key);
 
   otcrypto_key_config_t km_config = {
+      .version = otcrypto_lib_version(),
       // The following key_mode is a dummy placeholder. It does not
       // necessarily match the `key_length`.
-      .version = kOtcryptoLibVersion1,
       .key_mode = kOtcryptoKeyModeKdfKmac128,
       .key_length = km_key_len,
       .hw_backed = kHardenedBoolFalse,
@@ -355,18 +364,29 @@ static status_t run_test_vector(void) {
       .len = ARRAYSIZE(digest),
   };
 
+  otcrypto_const_byte_buf_t label_buf = OTCRYPTO_MAKE_BUF(
+      otcrypto_const_byte_buf_t, current_test_vector->label.data,
+      current_test_vector->label.len);
+  otcrypto_const_byte_buf_t context_buf = OTCRYPTO_MAKE_BUF(
+      otcrypto_const_byte_buf_t, current_test_vector->context.data,
+      current_test_vector->context.len);
+  otcrypto_const_byte_buf_t sha3_input_buf = OTCRYPTO_MAKE_BUF(
+      otcrypto_const_byte_buf_t, sha3_test_vector.input_msg.data,
+      sha3_test_vector.input_msg.len);
+
   LOG_INFO("Running the first KDF-KMAC sideload operation.");
-  TRY(otcrypto_kmac_kdf(&current_test_vector->key_derivation_key,
-                        current_test_vector->label,
-                        current_test_vector->context, &keying_material1));
+  TRY(otcrypto_kmac_kdf(&current_test_vector->key_derivation_key, &label_buf,
+                        &context_buf, &keying_material1));
 
   // Export the derived blinded key
   uint32_t km_share0[km_keyblob_share_len];
   uint32_t km_share1[km_keyblob_share_len];
-  TRY(otcrypto_export_blinded_key(
-      &keying_material1,
-      (otcrypto_word32_buf_t){.data = km_share0, .len = ARRAYSIZE(km_share0)},
-      (otcrypto_word32_buf_t){.data = km_share1, .len = ARRAYSIZE(km_share1)}));
+  otcrypto_word32_buf_t km_share0_buf =
+      OTCRYPTO_MAKE_BUF(otcrypto_word32_buf_t, km_share0, ARRAYSIZE(km_share0));
+  otcrypto_word32_buf_t km_share1_buf =
+      OTCRYPTO_MAKE_BUF(otcrypto_word32_buf_t, km_share1, ARRAYSIZE(km_share1));
+  TRY(otcrypto_export_blinded_key(&keying_material1, &km_share0_buf,
+                                  &km_share1_buf));
 
   // Unmask the derived key
   uint32_t first_key[km_key_len];
@@ -378,16 +398,16 @@ static status_t run_test_vector(void) {
   LOG_INFO("Running the intermediate SHA3 operation.");
   switch (sha3_test_vector.security_strength) {
     case 224:
-      TRY(otcrypto_sha3_224(sha3_test_vector.input_msg, &digest_buf));
+      TRY(otcrypto_sha3_224(&sha3_input_buf, &digest_buf));
       break;
     case 256:
-      TRY(otcrypto_sha3_256(sha3_test_vector.input_msg, &digest_buf));
+      TRY(otcrypto_sha3_256(&sha3_input_buf, &digest_buf));
       break;
     case 384:
-      TRY(otcrypto_sha3_384(sha3_test_vector.input_msg, &digest_buf));
+      TRY(otcrypto_sha3_384(&sha3_input_buf, &digest_buf));
       break;
     case 512:
-      TRY(otcrypto_sha3_512(sha3_test_vector.input_msg, &digest_buf));
+      TRY(otcrypto_sha3_512(&sha3_input_buf, &digest_buf));
       break;
     default:
       LOG_INFO("Invalid security level for SHA3: %d bits",
@@ -396,15 +416,12 @@ static status_t run_test_vector(void) {
   }
 
   LOG_INFO("Running the second KDF-KMAC sideload operation for comparison.");
-  TRY(otcrypto_kmac_kdf(&current_test_vector->key_derivation_key,
-                        current_test_vector->label,
-                        current_test_vector->context, &keying_material2));
+  TRY(otcrypto_kmac_kdf(&current_test_vector->key_derivation_key, &label_buf,
+                        &context_buf, &keying_material2));
 
   // Export the second derived blinded key
-  TRY(otcrypto_export_blinded_key(
-      &keying_material2,
-      (otcrypto_word32_buf_t){.data = km_share0, .len = ARRAYSIZE(km_share0)},
-      (otcrypto_word32_buf_t){.data = km_share1, .len = ARRAYSIZE(km_share1)}));
+  TRY(otcrypto_export_blinded_key(&keying_material2, &km_share0_buf,
+                                  &km_share1_buf));
 
   // Unmask the second derived key
   uint32_t second_key[km_key_len];
@@ -419,19 +436,20 @@ static status_t run_test_vector(void) {
 
 OTTF_DEFINE_TEST_CONFIG();
 bool test_main(void) {
-  // Initialize keymgr and advance to CreatorRootKey state.
-  dif_keymgr_t keymgr;
+  // Initialize keymgr dpe and advance to CreatorRootKey state.
+  dif_keymgr_dpe_t keymgr_dpe;
   dif_kmac_t kmac;
-  CHECK_STATUS_OK(keymgr_testutils_initialize(&keymgr, &kmac));
+  CHECK_STATUS_OK(keymgr_dpe_testutils_initialize(&keymgr_dpe, &kmac));
 
   const char *state_name;
-  CHECK_STATUS_OK(keymgr_testutils_state_string_get(&keymgr, &state_name));
+  CHECK_STATUS_OK(
+      keymgr_dpe_testutils_state_string_get(&keymgr_dpe, &state_name));
 
-  LOG_INFO("Keymgr entered %s State", state_name);
+  LOG_INFO("Keymgr DPE entered %s State", state_name);
   LOG_INFO("Testing cryptolib KDF-KMAC driver with sideloaded key.");
 
+  CHECK_STATUS_OK(otcrypto_init(kOtcryptoKeySecurityLevelLow));
   // Initialize the core with default parameters
-  CHECK_STATUS_OK(entropy_complex_init());
   CHECK_STATUS_OK(kmac_hwip_default_configure());
 
   status_t test_result = OK_STATUS();

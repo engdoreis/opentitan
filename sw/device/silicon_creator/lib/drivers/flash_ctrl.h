@@ -131,27 +131,27 @@ FLASH_CTRL_INFO_PAGES_DEFINE(INFO_PAGE_STRUCT_DECL_);
 #undef INFO_PAGE_STRUCT_DECL_
 
 /**
- * Bitfields for `CREATOR_SW_CFG_FLASH_DATA_DEFAULT_CFG` and
- * `CREATOR_SW_CFG_FLASH_INFO_BOOT_DATA_CFG` OTP items.
+ * Bitfields for `CREATOR_SW_CFG_NVM_DATA_DEFAULT_CFG` and
+ * `CREATOR_SW_CFG_NVM_INFO_BOOT_DATA_CFG` OTP items.
  *
  * Defined here to be able to use in tests.
  */
 #define FLASH_CTRL_OTP_FIELD_SCRAMBLING \
-  (bitfield_field32_t) { .mask = UINT8_MAX, .index = CHAR_BIT * 0 }
+  (bitfield_field32_t){.mask = UINT8_MAX, .index = CHAR_BIT * 0}
 #define FLASH_CTRL_OTP_FIELD_ECC \
-  (bitfield_field32_t) { .mask = UINT8_MAX, .index = CHAR_BIT * 1 }
+  (bitfield_field32_t){.mask = UINT8_MAX, .index = CHAR_BIT * 1}
 #define FLASH_CTRL_OTP_FIELD_HE \
-  (bitfield_field32_t) { .mask = UINT8_MAX, .index = CHAR_BIT * 2 }
+  (bitfield_field32_t){.mask = UINT8_MAX, .index = CHAR_BIT * 2}
 
 /**
- * Bitfields for `CREATOR_SW_CFG_FLASH_HW_INFO_CFG_OVERRIDE` OTP item.
+ * Bitfields for `CREATOR_SW_CFG_NVM_HW_INFO_CFG_OVERRIDE` OTP item.
  *
  * Defined here to be able to use in tests.
  */
 #define FLASH_CTRL_OTP_FIELD_HW_INFO_CFG_OVERRIDE_SCRAMBLE_DIS \
-  (bitfield_field32_t) { .mask = UINT8_MAX, .index = CHAR_BIT * 0 }
+  (bitfield_field32_t){.mask = UINT8_MAX, .index = CHAR_BIT * 0}
 #define FLASH_CTRL_OTP_FIELD_HW_INFO_CFG_OVERRIDE_ECC_DIS \
-  (bitfield_field32_t) { .mask = UINT8_MAX, .index = CHAR_BIT * 1 }
+  (bitfield_field32_t){.mask = UINT8_MAX, .index = CHAR_BIT * 1}
 
 /**
  * The following constants represent the expected number of sec_mmio
@@ -165,19 +165,18 @@ FLASH_CTRL_INFO_PAGES_DEFINE(INFO_PAGE_STRUCT_DECL_);
  * ```
  */
 enum {
-  kFlashCtrlSecMmioCertInfoPageCreatorCfg = 2,
-  kFlashCtrlSecMmioCertInfoPageOwnerRestrict = 2,
   kFlashCtrlSecMmioCertInfoPagesOwnerRestrict = 5,
-  kFlashCtrlSecMmioCreatorInfoPagesLockdown = 14,
   kFlashCtrlSecMmioDataDefaultCfgSet = 1,
   kFlashCtrlSecMmioDataDefaultPermsSet = 1,
   kFlashCtrlSecMmioExecSet = 1,
   kFlashCtrlSecMmioInfoCfgSet = 1,
   kFlashCtrlSecMmioInfoCfgLock = 1,
+  kFlashCtrlSecMmioInfoPageLockdown = 2,
   kFlashCtrlSecMmioInfoPermsSet = 1,
   kFlashCtrlSecMmioBankErasePermsSet = 1,
   kFlashCtrlSecMmioInit = 3,
-  kFlashCtrlSecMmioDataRegionProtect = 1,
+  // 2 writes: MP_REGION_${region} and MP_REGION_CFG_${region}.
+  kFlashCtrlSecMmioDataRegionProtect = 2,
   kFlashCtrlSecMmioDataRegionProtectLock = 1,
 };
 
@@ -345,15 +344,6 @@ OT_WARN_UNUSED_RESULT
 rom_error_t flash_ctrl_info_read_zeros_on_read_error(
     const flash_ctrl_info_page_t *info_page, uint32_t offset,
     uint32_t word_count, void *data);
-
-/**
- * Locks the configuration of an information page.
- *
- * This writes a zero to the write-enable register for info page configuration.
- *
- * @param info_page Information page to read from.
- */
-void flash_ctrl_info_lock(const flash_ctrl_info_page_t *info_page);
 
 /**
  * Writes data to the data partition.
@@ -554,6 +544,13 @@ void flash_ctrl_data_default_cfg_set(flash_ctrl_cfg_t cfg);
 flash_ctrl_cfg_t flash_ctrl_data_default_cfg_get(void);
 
 /**
+ * Reads the boot data info page configuration settings from OTP.
+ *
+ * @return Current OTP configuration settings.
+ */
+flash_ctrl_cfg_t flash_ctrl_boot_data_cfg_get(void);
+
+/**
  * A type for flash_ctrl memory protection region indices.
  */
 typedef uint32_t flash_ctrl_region_index_t;
@@ -604,6 +601,20 @@ void flash_ctrl_info_cfg_set(const flash_ctrl_info_page_t *info_page,
 void flash_ctrl_info_cfg_lock(const flash_ctrl_info_page_t *info_page);
 
 /**
+ * Disables all access to an info page and locks its configuration until reset.
+ *
+ * Zeroes both the cfg register (clearing all permissions and configuration
+ * bits) and the cfg_wen register (preventing further writes to cfg).
+ *
+ * The caller is responsible for calling
+ * `SEC_MMIO_WRITE_INCREMENT(kFlashCtrlSecMmioInfoPageLockdown)` when sec_mmio
+ * is being used to check expectations.
+ *
+ * @param info_page An information page.
+ */
+void flash_ctrl_info_page_lockdown(const flash_ctrl_info_page_t *info_page);
+
+/**
  * Set bank erase permissions for both flash banks.
  *
  * The caller is responsible for calling
@@ -629,53 +640,6 @@ void flash_ctrl_bank_erase_perms_set(hardened_bool_t enable);
  * disable execution.
  */
 void flash_ctrl_exec_set(uint32_t exec_val);
-
-/**
- * Disables all access to silicon creator info pages until next reset.
- *
- * This function must be called in ROM_EXT before handing over execution to the
- * first owner boot stage.
- *
- * The caller is responsible for calling
- * `SEC_MMIO_WRITE_INCREMENT(kFlashCtrlSecMmioCreatorInfoPagesLockdown)` when
- * sec_mmio is being used to check expectations.
- */
-void flash_ctrl_creator_info_pages_lockdown(void);
-
-/**
- * Certificate info page configurations and permissions.
- *
- * Certificate info pages are fully accessable by the creator code (ROM +
- * ROM_EXT), but read-only for owner code.
- */
-extern const flash_ctrl_cfg_t kCertificateInfoPageCfg;
-extern const flash_ctrl_perms_t kCertificateInfoPageCreatorAccess;
-extern const flash_ctrl_perms_t kCertificateInfoPageOwnerAccess;
-
-/**
- * Configures certificate flash info pages for access by the silicon creator.
- *
- * Flash info pages that hold device certificates are fully accessable by the
- * silicon creator, but are restricted to read-only access by the ROM_EXT before
- * handing over execution to the owner boot stage.
- *
- * The caller is responsible for calling
- * `SEC_MMIO_WRITE_INCREMENT(kFlashCtrlSecMmioCertInfoPageCreatorCfg)`
- * when sec_mmio is being used to check expectations.
- */
-void flash_ctrl_cert_info_page_creator_cfg(
-    const flash_ctrl_info_page_t *info_page);
-
-/**
- * Restricts access of certificate flash info pages to read-only for the silicon
- * owner.
- *
- * The caller is responsible for calling
- * `SEC_MMIO_WRITE_INCREMENT(kFlashCtrlSecMmioCertInfoPagesOwnerRestrict)`
- * when sec_mmio is being used to check expectations.
- */
-void flash_ctrl_cert_info_page_owner_restrict(
-    const flash_ctrl_info_page_t *info_page);
 
 #ifdef __cplusplus
 }

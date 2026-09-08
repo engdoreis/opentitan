@@ -10,21 +10,18 @@ class tl_host_driver extends tl_base_driver;
   // haven't yet had a response on the D channel.
   protected tl_seq_item pending_a_req[$];
 
-  // A flag that is true whenever reset is asserted on the bus. This is maintained by the
-  // reset_signals task.
-  protected bit reset_asserted;
-
   extern function new (string name, uvm_component parent);
 
   // Drive items received from the sequencer. This implements a task declared in dv_base_driver.
   extern task get_and_drive();
 
-  // Clear output signals and internal state whenever a reset happens. This task runs forever,
-  // looping over resets.
-  //
-  // This also controls an internal reset_asserted flag, which is used by other tasks in the class
-  // to detect resets. This implements a task declared in dv_base_driver.
-  extern task reset_signals();
+  // Called at the start of a reset. Clear output signals and internal state. This implements a task
+  // declared in dv_base_driver.
+  extern task on_enter_reset();
+
+  // Called at the end of a reset. Make sure that all sequence items have been properly flushed
+  // while we were in reset.
+  extern function void on_leave_reset();
 
   // Wait for the next edge of host_cb. Stops early if reset is asserted.
   extern protected task wait_clk_or_rst();
@@ -37,11 +34,33 @@ class tl_host_driver extends tl_base_driver;
   extern protected task a_channel_thread();
 
   // Send a request, req, on the A channel
+  //
+  // The steps to drive the request:
+  //
+  //    - Wait until there is no pending response for req.a_source.
+  //    - Call send_a_request_body to assert a_valid and similar signals, looping if
+  //      send_a_request_body reports a timeout.
+  //
+  // Once the request has been driven call seq_item_port.item_done(), causing the sequencer to allow
+  // the item to finish.
+  //
+  // If a reset is asserted at any point, the task will stop driving the request and send a response
+  // as well as calling seq_item_port.item_done() (representing the D channel message that would
+  // normally come back).
   extern protected task send_a_channel_request(tl_seq_item req);
 
   // Send the body of a request on the A channel.
   //
+  // To do so, this writes a_valid and the other A signals and then waits for a clock edge where we
+  // see a_ready true, at which point the A channel transaction has been made.
+  //
+  // If a_ready doesn't go high, it's possible that there will be a timeout after a_valid_len
+  // cycles. If this is enabled and the timeout happens then remove the item from pendng_a_req,
+  // and invalidate the channel.
+  //
   // req:            The request whose body should be sent.
+  //
+  // a_valid_delay:  The number of host clock cycles to wait before asserting a_valid.
   //
   // a_valid_len:    The number of host clock cycles a_valid is held high waiting for a_ready to go
   //                 high and accept the request. If req has req_abort_after_a_valid_len set, or if
@@ -52,8 +71,11 @@ class tl_host_driver extends tl_base_driver;
   //
   // req_abort [out] This is set to 1'b1 if the host decides to drop a_valid because the receiver
   //                 hasn't responded with a_ready.
-  extern protected task send_a_request_body(tl_seq_item req, int a_valid_len,
-                                            output bit req_done, output bit req_abort);
+  extern local task send_a_request_body(tl_seq_item  req,
+                                        int unsigned a_valid_delay,
+                                        int unsigned a_valid_len,
+                                        output bit   req_done,
+                                        output bit   req_abort);
 
   // Drive the d_ready pin (as the host) forever to allow a device to send responses back
   //
@@ -73,18 +95,21 @@ class tl_host_driver extends tl_base_driver;
   // When a match is found, this task puts a response to seq_item_port (sending it back to the
   // sequencer), then deletes the pending request.
   //
-  // If the internal reset_asserted flag is high, this task responds to all pending requests (with
-  // potentially silly data values)
+  // If the cfg.in_reset is high, this task responds to all pending requests (with potentially silly
+  // data values)
   extern protected task d_channel_thread();
 
   // Return true if the given source is the a_source value of some pending request.
   extern protected function bit is_source_in_pending_req(bit [SourceWidth-1:0] source);
 
-  // Write rubbish to the A channel to invalidate it and set a_valid to zero
+  // Set a_valid to zero and write rubbish to the A channel to invalidate it.
+  //
+  // If direct is true, this directly drives the vif.h2d_int signal as well as setting signals in
+  // host_cb (meaning that this will have immediate effect, even if the clock is not running).
   //
   // If cfg.invalidate_a_x is true then all fields other than a_valid will be set to 'x. If it is
   // false then all the fields will be randomised.
-  extern protected function void invalidate_a_channel();
+  extern local task invalidate_a_channel(bit direct);
 endclass : tl_host_driver
 
 function tl_host_driver::new (string name, uvm_component parent);
@@ -102,83 +127,49 @@ task tl_host_driver::get_and_drive();
   join_none
 endtask
 
-task tl_host_driver::reset_signals();
-  reset_asserted = (cfg.vif.rst_n === 1'b0);
-  forever begin
-    // At the start of the loop body, we should either be at the start of the simulation or have
-    // just entered reset. Invalidate all signals and mark ourselves as not ready on the D channel.
-    invalidate_a_channel();
-    cfg.vif.h2d_int.d_ready <= 1'b0;
-
-    // Now wait to come out of reset then clear the reset_asserted signal. (Note that if the
-    // simulation started not in reset then this first wait will take zero time).
-    wait(cfg.vif.rst_n);
-    reset_asserted = 1'b0;
-
-    // When we were in reset, we should have flushed all sequence items immediately. To check this
-    // has worked correctly, the following things should be true when we leave reset:
-    //
-    //  - The pending_a_req queue should be empty (d_channel_thread should have sent responses and
-    //    flushed the requests).
-    //
-    //  - The sequencer shouldn't have any items available through seq_item_port. If an item had
-    //    been available, we should have taken it immediately in get_and_drive.
-    `DV_CHECK_EQ(pending_a_req.size(), 0)
-    `DV_CHECK_EQ(seq_item_port.has_do_available(), 0)
-
-    // At this point, we're in the main part of the simulation and the get_and_drive task will be
-    // driving sequence items over the bus. Wait until reset is asserted then set the reset_asserted
-    // signal again.
-    wait(!cfg.vif.rst_n);
-    reset_asserted = 1'b1;
-  end
+task tl_host_driver::on_enter_reset();
+  // Since we've just started a period of reset, invalidate all signals and mark ourselves as not
+  // ready on the D channel (both directly and through the clocking block)
+  invalidate_a_channel(1'b1);
+  cfg.vif.h2d_int.d_ready     <= 1'b0;
+  cfg.vif.host_cb.h2d.d_ready <= 1'b0;
 endtask
 
+function void tl_host_driver::on_leave_reset();
+  // We should have flushed all sequence items immediately when we were in reset. To check this has
+  // worked correctly, the following things should be true when we leave reset:
+  //
+  //  - The pending_a_req queue should be empty (d_channel_thread should have sent responses and
+  //    flushed the requests).
+  //
+  //  - The sequencer shouldn't have any items available through seq_item_port. If an item had been
+  //    available, we should have taken it immediately in get_and_drive.
+  `DV_CHECK_EQ(pending_a_req.size(), 0)
+  `DV_CHECK_EQ(seq_item_port.has_do_available(), 0)
+endfunction
+
 task tl_host_driver::wait_clk_or_rst();
-  `DV_SPINWAIT_EXIT(@(cfg.vif.host_cb);, wait(reset_asserted);)
+  `DV_SPINWAIT_EXIT(@(cfg.vif.host_cb);, wait(cfg.in_reset);)
 endtask
 
 task tl_host_driver::a_channel_thread();
-  // Each time the body of the main loop of a_channel_thread, we expect either to be synchronised
-  // with the TL clock or to be in reset. Make sure that is true from the start of the task.
   wait_clk_or_rst();
 
   forever begin
-    // Grab as many items as we can from seq_item_port and immediately send them on the bus. The
-    // calls to try_next_item will not block, but sending the items on the bus probably will (unless
-    // we enter reset).
-    forever begin
-      seq_item_port.try_next_item(req);
-      if (req == null) break;
-      send_a_channel_request(req);
+    // At the start of the loop, either the interface is in reset or we are either aligned with a
+    // clock edge. Look to see whether there is a request ready to be sent.
+    seq_item_port.try_next_item(req);
+
+    // If there was not a request ready, use get_next_item(). Since that task blocks, we then have
+    // to resynchronise with the clock edge (or see a reset) before starting to drive the item.
+    if (req == null) begin
+      seq_item_port.get_next_item(req);
+      wait_clk_or_rst();
     end
 
-    // We just looked and seq_item_port didn't have an item. Wait a clock before we try again, but
-    // stop waiting if we happen to enter reset.
-    wait_clk_or_rst();
-
-    // If we are not in reset, we've just waited the cycle we wanted to wait and we should go back
-    // to the start of the loop and try again.
-    if (!reset_asserted) continue;
-
-    // If we get here, we *are* in reset and we should switch to a different mode where we
-    // continuously flush seq_item_port.
-    forever begin
-      // Wait for the next item, but drop out early if we leave reset
-      `DV_SPINWAIT_EXIT(seq_item_port.get_next_item(req);,
-                        wait(!reset_asserted);)
-      if (!reset_asserted) break;
-
-      // If we get here then we are still in reset and the get_next_item() call yielded an item in
-      // req. Send the A-channel request (which will complete in zero time)
-      send_a_channel_request(req);
-    end
-
-    // At this point, we've just come out of reset. Resynchronise to the TL clock before we go
-    // around the loop again. If we go into reset again before the clock edge, we'll go back to the
-    // top of the loop, but nothing will consume time until we get back to the forever loop we've
-    // just finished.
-    wait_clk_or_rst();
+    // At this point, we have a request to send and either the interface is in reset or we are
+    // aligned with a clock edge. Send that request.
+    send_a_channel_request(req);
   end
 endtask
 
@@ -194,9 +185,9 @@ task tl_host_driver::send_a_channel_request(tl_seq_item req);
   // need to insert additional delays to ensure we do not end up sending the new request whose
   // a_source matches one of the pending requests.
   `DV_SPINWAIT_EXIT(while (is_source_in_pending_req(req.a_source)) @(cfg.vif.host_cb);,
-                    wait(reset_asserted);)
+                    wait(cfg.in_reset);)
 
-  while (!req_done && !req_abort && !reset_asserted) begin
+  while (!req_done && !req_abort && !cfg.in_reset) begin
     if (cfg.use_seq_item_a_valid_delay) begin
       a_valid_delay = req.a_valid_delay;
     end else begin
@@ -211,35 +202,19 @@ task tl_host_driver::send_a_channel_request(tl_seq_item req);
       end
     end
 
-    // break delay loop if reset asserted to release blocking
-    `DV_SPINWAIT_EXIT(repeat (a_valid_delay) @(cfg.vif.host_cb);,
-                      wait(reset_asserted);)
-
-    if (!reset_asserted) begin
-      pending_a_req.push_back(req);
-      cfg.vif.host_cb.h2d_int.a_address <= req.a_addr;
-      cfg.vif.host_cb.h2d_int.a_opcode  <= tl_a_op_e'(req.a_opcode);
-      cfg.vif.host_cb.h2d_int.a_size    <= req.a_size;
-      cfg.vif.host_cb.h2d_int.a_param   <= req.a_param;
-      cfg.vif.host_cb.h2d_int.a_data    <= req.a_data;
-      cfg.vif.host_cb.h2d_int.a_mask    <= req.a_mask;
-      cfg.vif.host_cb.h2d_int.a_user    <= req.a_user;
-      cfg.vif.host_cb.h2d_int.a_source  <= req.a_source;
-      cfg.vif.host_cb.h2d_int.a_valid   <= 1'b1;
-    end else begin
-      req_abort = 1;
-    end
-    // drop valid if it lasts for a_valid_len, even there is no a_ready
-    `DV_SPINWAIT_EXIT(send_a_request_body(req, a_valid_len, req_done, req_abort);,
-                      wait(reset_asserted);)
-
-    // when reset and host_cb.h2d_int.a_valid <= 1 occur at the same time, if clock is off,
-    // there is a race condition and invalidate_a_channel can't clear a_valid.
-    if (reset_asserted) cfg.vif.host_cb.h2d_int.a_valid <= 1'b0;
-    invalidate_a_channel();
+    fork : isolation_fork begin
+      fork
+        begin
+          wait(cfg.in_reset);
+          req_abort = 1;
+        end
+        send_a_request_body(req, a_valid_delay, a_valid_len, req_done, req_abort);
+      join_any
+      disable fork;
+    end join
   end
   seq_item_port.item_done();
-  if (req_abort || reset_asserted) begin
+  if (req_abort || cfg.in_reset) begin
     req.req_completed = 0;
     // Just wire the d_source back to a_source to avoid errors in upstream logic.
     req.d_source = req.a_source;
@@ -251,13 +226,32 @@ task tl_host_driver::send_a_channel_request(tl_seq_item req);
                                        req.convert2string()), UVM_HIGH)
 endtask
 
-task tl_host_driver::send_a_request_body(tl_seq_item req, int a_valid_len,
-                                         output bit req_done, output bit req_abort);
+task tl_host_driver::send_a_request_body(tl_seq_item  req,
+                                         int unsigned a_valid_delay,
+                                         int unsigned a_valid_len,
+                                         output bit   req_done,
+                                         output bit   req_abort);
   int unsigned a_valid_cnt = 0;
   req_done = 1'b0;
   req_abort = 1'b0;
 
-  while (1) begin
+  // If there is a delay before sending the item, wait that number of cycles
+  repeat (a_valid_delay) @(cfg.vif.host_cb);
+
+  // Set signals on the A channel and add the request to pending_a_req, then wait for one clock
+  // edge, which causes the signals to actually be presented as signals on the interface.
+  pending_a_req.push_back(req);
+  cfg.vif.host_cb.h2d.a_address <= req.a_addr;
+  cfg.vif.host_cb.h2d.a_opcode  <= tl_a_op_e'(req.a_opcode);
+  cfg.vif.host_cb.h2d.a_size    <= req.a_size;
+  cfg.vif.host_cb.h2d.a_param   <= req.a_param;
+  cfg.vif.host_cb.h2d.a_data    <= req.a_data;
+  cfg.vif.host_cb.h2d.a_mask    <= req.a_mask;
+  cfg.vif.host_cb.h2d.a_user    <= req.a_user;
+  cfg.vif.host_cb.h2d.a_source  <= req.a_source;
+  cfg.vif.host_cb.h2d.a_valid   <= 1'b1;
+
+  forever begin
     @(cfg.vif.host_cb);
     a_valid_cnt++;
     if (cfg.vif.host_cb.d2h.a_ready) begin
@@ -266,14 +260,15 @@ task tl_host_driver::send_a_request_body(tl_seq_item req, int a_valid_len,
     end else if ((req.req_abort_after_a_valid_len || cfg.allow_a_valid_drop_wo_a_ready) &&
                  a_valid_cnt >= a_valid_len) begin
       if (req.req_abort_after_a_valid_len) req_abort = 1;
-      cfg.vif.host_cb.h2d_int.a_valid <= 1'b0;
       // remove unaccepted item
       void'(pending_a_req.pop_back());
-      invalidate_a_channel();
-      @(cfg.vif.host_cb);
       break;
     end
   end
+
+  // Finally, clear up the A channel signals (because the transaction has either happened or been
+  // aborted). The cleared signals will be visible on the interface on the next clock edge.
+  invalidate_a_channel(1'b0);
 endtask
 
 task tl_host_driver::d_ready_rsp();
@@ -285,13 +280,13 @@ task tl_host_driver::d_ready_rsp();
     d_ready_delay = $urandom_range(cfg.d_ready_delay_min, cfg.d_ready_delay_max);
     // if a_valid high then d_ready must be high, exit the delay when a_valid is set
     repeat (d_ready_delay) begin
-      if (!cfg.host_can_stall_rsp_when_a_valid_high && cfg.vif.h2d_int.a_valid) break;
+      if (!cfg.host_can_stall_rsp_when_a_valid_high && cfg.vif.h2d.a_valid) break;
       @(cfg.vif.host_cb);
     end
 
-    cfg.vif.host_cb.h2d_int.d_ready <= 1'b1;
+    cfg.vif.host_cb.h2d.d_ready <= 1'b1;
     @(cfg.vif.host_cb);
-    cfg.vif.host_cb.h2d_int.d_ready <= 1'b0;
+    cfg.vif.host_cb.h2d.d_ready <= 1'b0;
   end
 endtask
 
@@ -300,11 +295,11 @@ task tl_host_driver::d_channel_thread();
   tl_seq_item rsp;
 
   forever begin
-    if ((cfg.vif.host_cb.d2h.d_valid && cfg.vif.h2d_int.d_ready && !reset_asserted) ||
-        ((pending_a_req.size() != 0) & reset_asserted)) begin
+    if ((cfg.vif.host_cb.d2h.d_valid && cfg.vif.h2d.d_ready && !cfg.in_reset) ||
+        ((pending_a_req.size() != 0) & cfg.in_reset)) begin
       // Use the source ID to find the matching request
       foreach (pending_a_req[i]) begin
-        if ((pending_a_req[i].a_source == cfg.vif.host_cb.d2h.d_source) | reset_asserted) begin
+        if ((pending_a_req[i].a_source == cfg.vif.host_cb.d2h.d_source) | cfg.in_reset) begin
           rsp = pending_a_req[i];
           rsp.d_opcode = cfg.vif.host_cb.d2h.d_opcode;
           rsp.d_data   = cfg.vif.host_cb.d2h.d_data;
@@ -313,15 +308,15 @@ task tl_host_driver::d_channel_thread();
           rsp.d_size   = cfg.vif.host_cb.d2h.d_size;
           rsp.d_user   = cfg.vif.host_cb.d2h.d_user;
           // set d_error = 0 and rsp_completed = 0 when reset occurs
-          rsp.d_error  = reset_asserted ? 0 : cfg.vif.host_cb.d2h.d_error;
+          rsp.d_error  = cfg.in_reset ? 0 : cfg.vif.host_cb.d2h.d_error;
           // make sure every req has a rsp with same source even during reset
-          if (reset_asserted) rsp.d_source = rsp.a_source;
+          if (cfg.in_reset) rsp.d_source = rsp.a_source;
           else                rsp.d_source = cfg.vif.host_cb.d2h.d_source;
           seq_item_port.put_response(rsp);
           pending_a_req.delete(i);
           `uvm_info(get_full_name(), $sformatf("Got response %0s, pending req:%0d",
                                      rsp.convert2string(), pending_a_req.size()), UVM_HIGH)
-          rsp.rsp_completed = !reset_asserted;
+          rsp.rsp_completed = !cfg.in_reset;
           break;
         end
       end
@@ -337,8 +332,8 @@ task tl_host_driver::d_channel_thread();
       // Ignore the response either way: we're a driver and there is definitely no sequence that
       // is waiting for the response here. If there's a bug in the design and we're generating
       // spurious responses, we expect something to fail in tlul_assert.
-    end else if (reset_asserted) begin
-      wait(!reset_asserted);
+    end else if (cfg.in_reset) begin
+      wait(!cfg.in_reset);
     end
     wait_clk_or_rst();
   end
@@ -351,23 +346,36 @@ function bit tl_host_driver::is_source_in_pending_req(bit [SourceWidth-1:0] sour
   return 0;
 endfunction
 
-function void tl_host_driver::invalidate_a_channel();
+task tl_host_driver::invalidate_a_channel(bit direct);
+  // To invalidate the A channel, we will drive a_valid to zero and drive all the other A channel
+  // signals to either 'x or to a random value. Since there's just one signal on the D channel, the
+  // easiest way to do this is to drive all the signals, but make sure to set the d_ready signal to
+  // the value it had before.
+  //
+  // If either current d_ready value is not known, consider it to be 0.
+  bit cb_d_ready  = cfg.vif.mon_cb.h2d.d_ready;
+  bit raw_d_ready = cfg.vif.mon_cb.h2d.d_ready;
+
   if (cfg.invalidate_a_x) begin
-    cfg.vif.h2d_int.a_opcode <= tlul_pkg::tl_a_op_e'('x);
-    cfg.vif.h2d_int.a_param <= '{default:'x};
-    cfg.vif.h2d_int.a_size <= '{default:'x};
-    cfg.vif.h2d_int.a_source <= '{default:'x};
-    cfg.vif.h2d_int.a_address <= '{default:'x};
-    cfg.vif.h2d_int.a_mask <= '{default:'x};
-    cfg.vif.h2d_int.a_data <= '{default:'x};
-    // The assignment to instr_type must have a cast since the LRM doesn't allow enum assignment of
-    // values not belonging to the enumeration set.
-    cfg.vif.h2d_int.a_user <= '{instr_type:prim_mubi_pkg::mubi4_t'('x), default:'x};
-    cfg.vif.h2d_int.a_valid <= 1'b0;
+    cfg.vif.host_cb.h2d         <= tl_h2d_t'('x);
+    cfg.vif.host_cb.h2d.a_valid <= 1'b0;
+    cfg.vif.host_cb.h2d.d_ready <= cb_d_ready;
+
+    if (direct) begin
+      cfg.vif.h2d_int         <= tl_h2d_t'('x);
+      cfg.vif.h2d_int.a_valid <= 1'b0;
+      cfg.vif.h2d_int.d_ready <= raw_d_ready;
+    end
   end else begin
     tlul_pkg::tl_h2d_t h2d;
-    `DV_CHECK_STD_RANDOMIZE_FATAL(h2d)
-    h2d.a_valid = 1'b0;
-    cfg.vif.h2d_int <= h2d;
+    if (!std::randomize(h2d) with { h2d.a_valid == 1'b0; h2d.d_ready == cb_d_ready; }) begin
+      `uvm_fatal(get_full_name(), "Failed to randomize h2d.")
+    end
+
+    cfg.vif.host_cb.h2d <= h2d;
+    if (direct) begin
+      h2d.d_ready = raw_d_ready;
+      cfg.vif.h2d_int <= h2d;
+    end
   end
-endfunction
+endtask

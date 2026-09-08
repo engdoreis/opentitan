@@ -102,8 +102,10 @@ package chip_env_pkg;
     SpiDeviceIngressMem
   } chip_mem_e;
 
-  // On OpenTitan, we deal with 4 types of SW - ROM, the main test, the OTBN test and the OTP image.
+  // On Darjeeling, we deal with 8 types of SW.
   // This basically puts these SW types into 'slots' that the external regression tool can set.
+  // Note: This enum must be consistent across tops.
+  // Note: If this enum is updated, then also update the file `build_sw_collateral_for_sim.py`.
   typedef enum {
     SwTypeRom       = 0, // Ibex SW - first stage boot ROM.
     SwTypeTestSlotA = 1, // Ibex SW - test SW in (flash) slot A.
@@ -115,7 +117,7 @@ package chip_env_pkg;
     SwTypeSecondRom = 7  // Ibex SW - second stage boot ROM
   } sw_type_e;
 
-  // Our dvsim.py configuration always generates five base OTP images (in various lifecycle states)
+  // Our dvsim configuration always generates five base OTP images (in various lifecycle states)
   // to allow tests configurations to choose from. Additionally, we support specifying a custom OTP
   // image, via the `sw_images` plusarg, that is built by the SW build system.
   typedef enum {
@@ -140,7 +142,7 @@ package chip_env_pkg;
     LcTransitionCntError,
     LcTransitionError,
     LcTokenError,
-    LcFlashRmaError,
+    LcNvmRmaError,
     LcOtpError,
     LcStateError,
     LcBusIntegError,

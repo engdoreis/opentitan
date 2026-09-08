@@ -158,7 +158,8 @@ def _manifest_impl(ctx):
     mf["usage_constraints"] = uc
 
     if ctx.attr.extensions:
-        mf["extensions"] = ctx.attr.extensions
+        extensions = [e or None for e in ctx.attr.extensions]
+        mf["extensions"] = extensions
     else:
         mf["extensions"] = [
             "spx_key",
@@ -185,6 +186,21 @@ def _manifest_impl(ctx):
                 "integrator_specific_firmware_binding": json.decode(ctx.attr.integrator_specific_firmware_binding),
             },
         )
+
+    secver_write = ctx.attr.secver_write
+    if secver_write == "none":
+        # nothing to do
+        pass
+    elif secver_write in ("false", "true"):
+        mf["extension_params"].append(
+            {
+                "secver_write": {
+                    "secver_write": json.decode(secver_write),
+                },
+            },
+        )
+    else:
+        fail("Unknown value for secver_write:", secver_write)
 
     if ctx.attr.isfb_erase_allowed_policy:
         mf["extension_params"].append(
@@ -229,6 +245,7 @@ _manifest = rule(
         "extensions": attr.string_list(doc = "Names of the manifest extensions as an array of strings"),
         "integrator_specific_firmware_binding": attr.string(doc = "Create an Integrator Specific Firmware Block (ISFB) JSON object"),
         "isfb_erase_allowed_policy": attr.string(doc = "Create an ISFB Erase Allowed Policy JSON object"),
+        "secver_write": attr.string(default = "none", values = ["none", "false", "true"], doc = "Add the secver_write extension with the specified value"),
     },
 )
 

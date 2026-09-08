@@ -46,6 +46,7 @@ top_required = {
     'clocks': ['g', 'group of clock properties'],
     'resets': ['l', 'list of resets'],
     'addr_spaces': ['g', 'list of address spaces'],
+    'power': ['g', 'power domains supported by the design'],
     'module': ['l', 'list of modules to instantiate'],
     'xbar': ['l', 'List of the xbar used in the top'],
     'pinout': ['g', 'Pinout configuration'],
@@ -64,17 +65,21 @@ top_optional = {
     'inter_module': ['g', 'define the signal connections between the modules'],
     'interrupts': ['g', 'interrupt controller configuration'],
     'interrupt_module': ['l', 'list of the modules that connects to rv_plic'],
+    'plic_info': ['g', 'info about all PLICs present and number of interrupt sources'],
     'num_cores': ['pn', "number of computing units"],
     'outgoing_alert': ['g', 'the outgoing alert groups'],
     'outgoing_interrupt': ['g', 'the outgoing interrupt groups'],
-    'power': ['g', 'power domains supported by the design'],
     'port': ['g', 'assign special attributes to specific ports'],
     'racl_config': ['s', 'Path to a RACL configuration HJSON file'],
     'reset_requests': ['g', 'define reset requests grouped by type'],
     'seed': ['g', "Seed information for topgen and subsequent flows"],
     'unmanaged_resets': ['l', 'List of unmanaged external resets'],
     'default_alert_handler': ['s', 'Modules not defining alert_handler have alerts sent here'],
-    'default_plic': ['s', 'Modules not defining plic have interrupts sent here']
+    'default_plic': ['s', 'Modules not defining plic have interrupts sent here'],
+    'inter_pd': ['g', 'auto-generated struct containing multi-pd data objects'],
+    'keymgr_dpe_seed_selector':
+    ['s', 'Source for creator / owner seed for the keymgr_dpe, '
+        'legal values are either nvm_ctrl or otp_ctrl']
 }
 
 top_added = {
@@ -109,6 +114,7 @@ pinmux_optional = {
     'num_wkup_detect': ['d', 'Number of wakeup detectors'],
     'wkup_cnt_width': ['d', 'Number of bits in wakeup detector counters'],
     'signals': ['l', 'List of Dedicated IOs.'],
+    'inter_pd': ['g', 'Info about inter-PD pinmux related signals.'],
 }
 pinmux_added = {
     'ios': ['l', 'Full list of IO'],
@@ -183,8 +189,19 @@ target_required = {
     'pinout': ['g', 'Target-specific pinout configuration'],
     'pinmux': ['g', 'Target-specific pinmux configuration']
 }
-target_optional = {}
+target_optional = {
+    'chiplevel': ['g', 'Target-specific chiplevel configuration']
+}
 target_added = {}
+
+target_chiplevel_required = {
+    'port_overrides': [
+        'l', 'List of ports to manually assign a connected signal or '
+        'leave unconnected (or stub for inputs).'
+    ],
+}
+target_chiplevel_optional = {}
+target_chiplevel_added = {}
 
 target_pinmux_required = {
     'special_signals':
@@ -251,7 +268,10 @@ module_required = {
 }
 
 module_optional = {
-    'domain': ['l', 'optional list of power domains, defaults to Domain0'],
+    'domain': [
+        's', 'power domain of the module, defaults to the domain specified '
+        'in top["power"]["default"]'
+    ],
     'clock_reset_export': [
         'l', 'optional list with prefixes for exported '
         'clocks and resets at the chip level'
@@ -407,6 +427,7 @@ interrupt_required = {
     'default_val': ['s', 'a string interpreted as boolean'],
     'incoming': ['s', 'a string interpreted as boolean'],
     'outgoing': ['s', 'boolean (as string) whether interrupt leaves toplevel'],
+    'domain': ['s', 'string that identifies the originating power domain'],
 }
 interrupt_optional = {
     'desc': ['s', 'the description of the interrupt'],
@@ -655,6 +676,19 @@ def check_outgoing_alerts(top: ConfigT, prefix: str) -> int:
     return error
 
 
+def check_keymgr_dpe_seed_selector(top: ConfigT, prefix: str) -> int:
+    error = 0
+    if 'keymgr_dpe_seed_selector' not in top:
+        return 0
+    # check if keymgr_dpe_seed_selector contains one of the legal values
+    if top['keymgr_dpe_seed_selector'] not in ['nvm_ctrl', 'otp_ctrl']:
+        error += 1
+        log.error(f"Invalid 'keymgr_dpe_seed_selector' "
+                  f"{top['keymgr_dpe_seed_selector']} defined! Valid option are: "
+                  f"'nvm_ctrl', 'otp_ctrl'")
+    return error
+
+
 def check_outgoing_interrupts(top: ConfigT, prefix: str) -> int:
     if "outgoing_interrupt" not in top:
         return 0
@@ -829,6 +863,11 @@ def check_implementation_targets(top: ConfigT, prefix: str) -> int:
             error += 1
         known_names[target['name']] = 1
 
+        if 'chiplevel' in target:
+            error += check_keys(target['chiplevel'], target_chiplevel_required,
+                                target_chiplevel_optional, target_chiplevel_added,
+                                prefix + ' Target chiplevel')
+
         error += check_keys(target['pinmux'], target_pinmux_required,
                             target_pinmux_optional, target_pinmux_added,
                             prefix + ' Target pinmux')
@@ -910,11 +949,6 @@ def check_clocks_resets(top: ConfigT, ip_name_to_block: IpBlocksT,
 
     error = 0
 
-    # all defined clock/reset nets
-    if isinstance(top['resets'], Resets):
-        reset_nets = [reset.name for reset in top['resets'].nodes.values()]
-    else:
-        reset_nets = [reset['name'] for reset in top['resets']['nodes']]
     clock_srcs = list(top['clocks'].all_srcs.keys())
     unmanaged_clock_srcs = list(top['unmanaged_clocks'].clks.keys())
     unmanaged_resets = top.get('unmanaged_resets')
@@ -932,8 +966,8 @@ def check_clocks_resets(top: ConfigT, ip_name_to_block: IpBlocksT,
     for ipcfg in top['module']:
         ipcfg_name = ipcfg['type']
         log.info("Checking clock/resets for %s" % ipcfg_name)
-        error += validate_reset(ipcfg, ip_name_to_block[ipcfg_name],
-                                reset_nets, unmanaged_reset_nets)
+        error += validate_reset(top, ipcfg, ip_name_to_block[ipcfg_name],
+                                unmanaged_reset_nets)
         error += validate_clock(ipcfg, ip_name_to_block[ipcfg_name],
                                 clock_srcs, unmanaged_clock_srcs)
 
@@ -945,8 +979,8 @@ def check_clocks_resets(top: ConfigT, ip_name_to_block: IpBlocksT,
     for xbarcfg in top['xbar']:
         xbarcfg_name = xbarcfg['name'].lower()
         log.info("Checking clock/resets for xbar %s" % xbarcfg_name)
-        error += validate_reset(xbarcfg, xbar_name_to_block[xbarcfg_name],
-                                reset_nets, unmanaged_reset_nets, "xbar")
+        error += validate_reset(top, xbarcfg, xbar_name_to_block[xbarcfg_name],
+                                unmanaged_reset_nets, "xbar")
         error += validate_clock(xbarcfg, xbar_name_to_block[xbarcfg_name],
                                 clock_srcs, unmanaged_clock_srcs, "xbar")
 
@@ -997,12 +1031,18 @@ def check_wakeups(top: ConfigT, component: str) -> int:
 #   port at the destination and defined reset net
 # - There are the same number of defined connections as there are ports
 def validate_reset(top: ConfigT,
+                   module: ConfigT,
                    inst: Union[IpBlock, ConfigT],
-                   reset_nets: List[str],
                    unmanaged_reset_nets: List[str],
                    prefix="") -> int:
     # Gather inst port list
     error = 0
+
+    # all defined clock/reset nets
+    if isinstance(top['resets'], Resets):
+        reset_nets = [reset.name for reset in top['resets'].nodes.values()]
+    else:
+        reset_nets = [reset['name'] for reset in top['resets']['nodes']]
 
     # Handle either an IpBlock (generated by reggen) or an OrderedDict
     # (generated by topgen for a crossbar)
@@ -1023,35 +1063,35 @@ def validate_reset(top: ConfigT,
     # If value is a string, the module can only have ONE domain
     # If value is a dict, it must have the keys name / domain, and the
     # value of domain must match that defined for the module.
-    for port, reset in top["reset_connections"].items():
+    for port, reset in module['reset_connections'].items():
         if isinstance(reset, str):
-            top["reset_connections"][port] = {}
-            top["reset_connections"][port]['name'] = reset
+            module['reset_connections'][port] = {}
+            module['reset_connections'][port]['name'] = reset
+            module['reset_connections'][port]['domain'] = top['power']['default']
 
-            if len(top["domain"]) > 1:
-                raise ValueError(f"{top['name']} reset connection {reset} "
-                                 "has no assigned domain")
-            else:
-                top["reset_connections"][port]['domain'] = top["domain"][0]
-
-        if isinstance(reset, dict):
+        elif isinstance(reset, dict):
             error += check_keys(reset, reset_connection_required,
                                 reset_connection_optional,
                                 reset_connection_added,
                                 'dict structure for reset connections')
 
-            if reset['domain'] not in top["domain"]:
+            if reset['domain'] not in top['power']['domains']:
                 error += 1
                 log.error(f"domain {reset['domain']} defined for reset "
                           f"{reset['name']} is not a domain of {top['name']}")
 
+        else:
+            log.error(f"specified connection for reset port {port} of module "
+                      f"{module['name']} is of type {type(reset)}, but must be "
+                      f"of type string or dict")
+
     # Check if the reset connections are fully populated
-    if len(top['reset_connections']) != len(reset_signals):
+    if len(module['reset_connections']) != len(reset_signals):
         error += 1
         log.error(f"{prefix} {name} mismatched number of reset ports and nets")
 
     missing_port = [
-        port for port in top['reset_connections'].keys()
+        port for port in module['reset_connections'].keys()
         if port not in reset_signals
     ]
 
@@ -1061,7 +1101,7 @@ def validate_reset(top: ConfigT,
         [log.error(f"{port}") for port in missing_port]
 
     missing_net = [
-        net['name'] for net in top['reset_connections'].values()
+        net['name'] for net in module['reset_connections'].values()
         if net['name'] not in reset_nets + unmanaged_reset_nets
     ]
 
@@ -1158,6 +1198,9 @@ def validate_alert(top, module, block, handlers, default_handler=None):
 
 
 def check_power_domains(top: ConfigT):
+    # check that a default power domain is specified
+    if 'default' not in top['power']:
+        raise ValueError("No default power domain specified")
 
     # check that the default domain is valid
     if top['power']['default'] not in top['power']['domains']:
@@ -1169,12 +1212,11 @@ def check_power_domains(top: ConfigT):
     # If there is one defined, check that it is a valid definition
     for end_point in top['module'] + top['xbar']:
         if 'domain' not in end_point:
-            end_point['domain'] = [top['power']['default']]
+            end_point['domain'] = top['power']['default']
 
-        for d in end_point['domain']:
-            if d not in top['power']['domains']:
-                raise ValueError(
-                    f"{end_point['name']} defined invalid domain {d}")
+        if end_point['domain'] not in top['power']['domains']:
+            raise ValueError(
+                f"{end_point['name']} defines invalid domain {end_point['domain']}")
 
 
 def check_modules(top: ConfigT, prefix: str) -> int:
@@ -1309,5 +1351,7 @@ def validate_top(top: ConfigT, ip_name_to_block: IpBlocksT,
     error += check_outgoing_interrupts(top, component)
     error += check_interrupts(top, component)
     error += check_incoming_interrupts(top, component)
+
+    error += check_keymgr_dpe_seed_selector(top, component)
 
     return top, error

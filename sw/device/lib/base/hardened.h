@@ -241,7 +241,8 @@ inline uint32_t launder32(uint32_t val) {
 
   // When we're building for static analysis, reduce false positives by
   // short-circuiting the inline assembly block.
-#if OT_BUILD_FOR_STATIC_ANALYZER || OT_DISABLE_HARDENING
+#if OT_BUILD_FOR_STATIC_ANALYZER || \
+    (defined(OT_DISABLE_HARDENING) && OT_DISABLE_HARDENING)
   return val;
 #endif
 
@@ -263,7 +264,8 @@ inline uint32_t launder32(uint32_t val) {
  */
 OT_WARN_UNUSED_RESULT
 inline uintptr_t launderw(uintptr_t val) {
-#if OT_BUILD_FOR_STATIC_ANALYZER || OT_DISABLE_HARDENING
+#if OT_BUILD_FOR_STATIC_ANALYZER || \
+    (defined(OT_DISABLE_HARDENING) && OT_DISABLE_HARDENING)
   return val;
 #endif
   asm volatile("" : "+r"(val));
@@ -584,6 +586,8 @@ inline uintptr_t ct_cmovw(ct_boolw_t c, uintptr_t a, uintptr_t b) {
   do {                                        \
     asm volatile(HARDENED_UNIMP_SEQUENCE_()); \
   } while (false)
+// COVERAGE (FI CM) Expected this is unreachable as this is used in code that
+// are only reached due to fault injections.
 
 #else  // OT_DISABLE_HARDENING
 // We allow disabling hardening to measure the impact of the hardened sequences
@@ -618,6 +622,8 @@ inline uintptr_t ct_cmovw(ct_boolw_t c, uintptr_t a, uintptr_t b) {
  * executed.
  */
 #define HARDENED_TRAP() HARDENED_TRAP_()
+// COVERAGE (FI CM) Expected this is unreachable as this is used in code that
+// are only reached due to fault injections.
 
 /**
  * Compare two values in a way that is *manifestly* true: that is, under normal

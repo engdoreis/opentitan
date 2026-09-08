@@ -14,6 +14,7 @@
 #include "sw/device/lib/base/hardened.h"
 #include "sw/device/lib/base/macros.h"
 #include "sw/device/lib/base/multibits.h"
+#include "sw/device/lib/coverage/api.h"
 #include "sw/device/silicon_creator/lib/drivers/otp.h"
 
 #ifdef OT_PLATFORM_RV32
@@ -24,7 +25,7 @@
 #include "hw/top/rstmgr_regs.h"
 
 static inline uint32_t rstmgr_base(void) {
-  return dt_rstmgr_primary_reg_block(kDtRstmgrAon);
+  return dt_rstmgr_primary_reg_block(kDtRstmgr);
 }
 
 void rstmgr_alert_info_collect(rstmgr_info_t *info) {
@@ -137,6 +138,7 @@ rom_error_t rstmgr_info_en_check(uint32_t reset_reasons) {
 }
 
 void rstmgr_reset(void) {
+  coverage_report();
   abs_mmio_write32(rstmgr_base() + RSTMGR_RESET_REQ_REG_OFFSET,
                    kMultiBitBool4True);
 #ifdef OT_PLATFORM_RV32
@@ -167,4 +169,9 @@ bool rstmgr_is_hw_reset_reason(dt_rstmgr_t dt, uint32_t reasons,
   }
 
   return false;
+}
+
+void rstmgr_reboot(void) {
+  rstmgr_reason_clear(1 << kRstmgrReasonPowerOn);
+  rstmgr_reset();
 }

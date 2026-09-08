@@ -40,6 +40,10 @@ module core_ibex_tb_top;
   // `define is used that can be set from the command line. If no value has been specified, this
   // gives a default. Other simulators don't take the detour via `define and can override the
   // corresponding parameters directly.
+  `ifndef IBEX_CFG_BASE_ISA
+    `define IBEX_CFG_BASE_ISA ibex_pkg::BaseIsaRV32IorCHERIoT
+  `endif
+
   `ifndef IBEX_CFG_RV32M
     `define IBEX_CFG_RV32M ibex_pkg::RV32MFast
   `endif
@@ -48,11 +52,12 @@ module core_ibex_tb_top;
     `define IBEX_CFG_RV32B ibex_pkg::RV32BNone
   `endif
 
-  `ifndef IBEX_CFG_RegFile
-    `define IBEX_CFG_RegFile ibex_pkg::RegFileFF
+  `ifndef IBEX_CFG_REG_FILE
+    `define IBEX_CFG_REG_FILE ibex_pkg::RegFileFF
   `endif
 
   // Ibex Parameters
+  parameter ibex_pkg::base_isa_e BaseIsa  = `IBEX_CFG_BASE_ISA;
   parameter bit          PMPEnable        = 1'b0;
   parameter int unsigned PMPGranularity   = 0;
   parameter int unsigned PMPNumRegions    = 4;
@@ -61,13 +66,15 @@ module core_ibex_tb_top;
   parameter bit RV32E                     = 1'b0;
   parameter ibex_pkg::rv32m_e RV32M       = `IBEX_CFG_RV32M;
   parameter ibex_pkg::rv32b_e RV32B       = `IBEX_CFG_RV32B;
-  parameter ibex_pkg::regfile_e RegFile   = `IBEX_CFG_RegFile;
+  parameter ibex_pkg::regfile_e RegFile   = `IBEX_CFG_REG_FILE;
   parameter bit BranchTargetALU           = 1'b0;
   parameter bit WritebackStage            = 1'b0;
   parameter bit ICache                    = 1'b0;
   parameter bit ICacheECC                 = 1'b0;
+  parameter bit ICacheTweakInfection      = 1'b0;
   parameter bit BranchPredictor           = 1'b0;
   parameter bit SecureIbex                = 1'b0;
+  parameter int unsigned LockstepOffset   = 1;
   parameter bit ICacheScramble            = 1'b0;
   parameter bit DbgTriggerEn              = 1'b0;
   parameter int unsigned DmBaseAddr       = 32'h`DM_ADDR;
@@ -93,27 +100,30 @@ module core_ibex_tb_top;
   assign {scramble_key, scramble_nonce} = scrambling_key_if.d_data;
 
   ibex_top_tracing #(
-    .PMPEnable        (PMPEnable        ),
-    .PMPGranularity   (PMPGranularity   ),
-    .PMPNumRegions    (PMPNumRegions    ),
-    .MHPMCounterNum   (MHPMCounterNum   ),
-    .MHPMCounterWidth (MHPMCounterWidth ),
-    .RV32E            (RV32E            ),
-    .RV32M            (RV32M            ),
-    .RV32B            (RV32B            ),
-    .RegFile          (RegFile          ),
-    .BranchTargetALU  (BranchTargetALU  ),
-    .WritebackStage   (WritebackStage   ),
-    .ICache           (ICache           ),
-    .ICacheECC        (ICacheECC        ),
-    .SecureIbex       (SecureIbex       ),
-    .ICacheScramble   (ICacheScramble   ),
-    .BranchPredictor  (BranchPredictor  ),
-    .DbgTriggerEn     (DbgTriggerEn     ),
-    .DmBaseAddr       (DmBaseAddr       ),
-    .DmAddrMask       (DmAddrMask       ),
-    .DmHaltAddr       (DmHaltAddr       ),
-    .DmExceptionAddr  (DmExceptionAddr  )
+    .BaseIsa              (BaseIsa             ),
+    .PMPEnable            (PMPEnable           ),
+    .PMPGranularity       (PMPGranularity      ),
+    .PMPNumRegions        (PMPNumRegions       ),
+    .MHPMCounterNum       (MHPMCounterNum      ),
+    .MHPMCounterWidth     (MHPMCounterWidth    ),
+    .RV32E                (RV32E               ),
+    .RV32M                (RV32M               ),
+    .RV32B                (RV32B               ),
+    .RegFile              (RegFile             ),
+    .BranchTargetALU      (BranchTargetALU     ),
+    .WritebackStage       (WritebackStage      ),
+    .ICache               (ICache              ),
+    .ICacheECC            (ICacheECC           ),
+    .ICacheTweakInfection (ICacheTweakInfection),
+    .SecureIbex           (SecureIbex          ),
+    .LockstepOffset       (LockstepOffset      ),
+    .ICacheScramble       (ICacheScramble      ),
+    .BranchPredictor      (BranchPredictor     ),
+    .DbgTriggerEn         (DbgTriggerEn        ),
+    .DmBaseAddr           (DmBaseAddr          ),
+    .DmAddrMask           (DmAddrMask          ),
+    .DmHaltAddr           (DmHaltAddr          ),
+    .DmExceptionAddr      (DmExceptionAddr     )
 
   ) dut (
     .clk_i                     (clk                        ),
@@ -121,13 +131,14 @@ module core_ibex_tb_top;
 
     .test_en_i                 (1'b0                       ),
     .scan_rst_ni               (1'b1                       ),
-    .ram_cfg_icache_tag_i      ('b0                        ),
-    .ram_cfg_rsp_icache_tag_o  (                           ),
-    .ram_cfg_icache_data_i     ('b0                        ),
-    .ram_cfg_rsp_icache_data_o (                           ),
+    .ram_cfg_icache_tag_i      ('{default: prim_ram_1p_pkg::RAM_1P_CFG_REQ_DEFAULT}),
+    .ram_cfg_icache_tag_o      (                           ),
+    .ram_cfg_icache_data_i     ('{default: prim_ram_1p_pkg::RAM_1P_CFG_REQ_DEFAULT}),
+    .ram_cfg_icache_data_o     (                           ),
 
     .hart_id_i                 (32'b0                      ),
     .boot_addr_i               (BootAddr                   ),
+    .trvk_heap_base_addr_i     (32'b0                      ),
 
     .instr_req_o               (instr_mem_vif.request      ),
     .instr_gnt_i               (instr_mem_vif.grant        ),
@@ -145,9 +156,19 @@ module core_ibex_tb_top;
     .data_be_o                 (data_mem_vif.be            ),
     .data_rdata_i              (data_mem_vif.rdata         ),
     .data_rdata_intg_i         (data_mem_vif.rintg         ),
+    .data_tag_i                (1'b0                       ),
     .data_wdata_o              (data_mem_vif.wdata         ),
     .data_wdata_intg_o         (data_mem_vif.wintg         ),
+    .data_tag_o                (                           ),
     .data_err_i                (data_mem_vif.error         ),
+
+    .trvk_revbm_req_o          (                           ),
+    .trvk_revbm_gnt_i          (1'b0                       ),
+    .trvk_revbm_rvalid_i       (1'b0                       ),
+    .trvk_revbm_addr_o         (                           ),
+    .trvk_revbm_rdata_i        ('b0                        ),
+    .trvk_revbm_rdata_intg_i   ('b0                        ),
+    .trvk_revbm_err_i          (1'b0                       ),
 
     .irq_software_i            (irq_vif.irq_software       ),
     .irq_timer_i               (irq_vif.irq_timer          ),
@@ -164,11 +185,25 @@ module core_ibex_tb_top;
     .crash_dump_o              (                           ),
     .double_fault_seen_o       (dut_if.double_fault_seen   ),
 
+    .cheriot_enable_i          (ibex_pkg::IbexMuBiOff      ),
+
     .fetch_enable_i            (dut_if.fetch_enable        ),
+    .mcounteren_writable_i     (dut_if.mcounteren_writable ),
     .alert_minor_o             (dut_if.alert_minor         ),
     .alert_major_internal_o    (dut_if.alert_major_internal),
     .alert_major_bus_o         (dut_if.alert_major_bus     ),
-    .core_sleep_o              (dut_if.core_sleep          )
+    .core_sleep_o              (dut_if.core_sleep          ),
+
+    .lockstep_cmp_en_o         (                           ),
+    .data_req_shadow_o         (                           ),
+    .data_we_shadow_o          (                           ),
+    .data_be_shadow_o          (                           ),
+    .data_addr_shadow_o        (                           ),
+    .data_wdata_shadow_o       (                           ),
+    .data_wdata_intg_shadow_o  (                           ),
+
+    .instr_req_shadow_o        (                           ),
+    .instr_addr_shadow_o       (                           )
   );
 
   `define IBEX_RF_PATH core_ibex_tb_top.dut.u_ibex_top.gen_regfile_ff.register_file_i
@@ -177,10 +212,6 @@ module core_ibex_tb_top;
   `ASSERT(NoAlertsTriggered,
     !dut_if.alert_minor && !dut_if.alert_major_internal && !dut_if.alert_major_bus, clk, !rst_n)
   `DV_ASSERT_CTRL("tb_no_alerts_triggered", core_ibex_tb_top.NoAlertsTriggered)
-  `DV_ASSERT_CTRL("tb_rf_rd_mux_a_onehot",
-    `IBEX_RF_PATH.gen_rdata_mux_check.u_rdata_a_mux.SelIsOnehot_A)
-  `DV_ASSERT_CTRL("tb_rf_rd_mux_b_onehot",
-    `IBEX_RF_PATH.gen_rdata_mux_check.u_rdata_b_mux.SelIsOnehot_A)
 
   `DV_ASSERT_CTRL("tb_no_spurious_response",
     core_ibex_tb_top.dut.u_ibex_top.u_ibex_core.NoMemResponseWithoutPendingAccess)
@@ -195,10 +226,15 @@ module core_ibex_tb_top;
       `IBEX_LOCKSTEP_PATH.u_shadow_core.NoMemResponseWithoutPendingAccess)
   end
 
-`ifndef DV_FCOV_DISABLE
-  assign dut.u_ibex_top.u_ibex_core.u_fcov_bind.rf_we_glitch_err =
-    dut.u_ibex_top.rf_alert_major_internal;
+  if (BaseIsa == ibex_pkg::BaseIsaRV32IorCHERIoT) begin : g_trvk_assert_ctrl
+    // Disable TRVK's alignment FIFO assertion alongside the other spurious response checks.
+    `DV_ASSERT_CTRL("tb_no_spurious_response",
+      core_ibex_tb_top.dut.u_ibex_top.gen_cheriot_trvk.i_ibex_trvk.AlignValidOnRsp_A)
+  end
 
+`ifndef DV_FCOV_DISABLE
+  assign dut.u_ibex_top.u_ibex_core.u_fcov_bind.rf_glitch_err =
+    dut.u_ibex_top.alert_major_internal_o;
   assign dut.u_ibex_top.u_ibex_core.u_fcov_bind.lockstep_glitch_err =
     dut.u_ibex_top.lockstep_alert_major_internal;
 `endif
@@ -267,14 +303,15 @@ module core_ibex_tb_top;
   assign dut_if.rf_rd_a_wb_match = dut.u_ibex_top.u_ibex_core.rf_rd_a_wb_match;
   assign dut_if.rf_rd_b_wb_match = dut.u_ibex_top.u_ibex_core.rf_rd_b_wb_match;
   assign dut_if.rf_write_wb      = dut.u_ibex_top.u_ibex_core.rf_write_wb;
-  assign dut_if.sync_exc_seen    = dut.u_ibex_top.u_ibex_core.cs_registers_i.cpuctrlsts_part_q.sync_exc_seen;
+  assign dut_if.sync_exc_seen    =
+      dut.u_ibex_top.u_ibex_core.cs_registers_i.cpuctrlsts_part_q.sync_exc_seen;
   assign dut_if.csr_save_cause   = dut.u_ibex_top.u_ibex_core.csr_save_cause;
   assign dut_if.exc_cause        = dut.u_ibex_top.u_ibex_core.exc_cause;
   assign dut_if.wb_exception     = dut.u_ibex_top.u_ibex_core.id_stage_i.wb_exception;
   // Instruction monitor connections
   assign instr_monitor_if.reset        = ~rst_n;
   assign instr_monitor_if.valid_id     = dut.u_ibex_top.u_ibex_core.id_stage_i.instr_valid_i;
-  assign instr_monitor_if.instr_new_id = dut.u_ibex_top.u_ibex_core.instr_new_id;
+  assign instr_monitor_if.rvfi_id_done = dut.u_ibex_top.u_ibex_core.rvfi_id_done;
 
   assign instr_monitor_if.err_id =
     dut.u_ibex_top.u_ibex_core.id_stage_i.controller_i.instr_fetch_err;
@@ -371,30 +408,19 @@ module core_ibex_tb_top;
 
     uvm_config_db#(bit [31:0])::set(null, "*", "MHPMCounterNum", MHPMCounterNum);
     uvm_config_db#(bit)::set(null, "*", "SecureIbex", SecureIbex);
+    uvm_config_db#(bit)::set(null, "*", "CHERIoT",
+                             BaseIsa == ibex_pkg::BaseIsaRV32IorCHERIoT);
     uvm_config_db#(bit)::set(null, "*", "ICache", ICache);
 
     run_test();
   end
 
   // Manually set unused_assert_connected = 1 to disable the AssertConnected_A assertion for
-  // prim_count in case lockstep (set by SecureIbex) is enabled. If not disabled, DV fails.
-  if (SecureIbex) begin : gen_disable_count_check
-    assign dut.u_ibex_top.gen_lockstep.u_ibex_lockstep.u_rst_shadow_cnt.
+  // prim_count in case lockstep (set by SecureIbex) is enabled and the lockstep offset is
+  // larger than 1. If not disabled, DV fails.
+  if (SecureIbex && LockstepOffset > 1) begin : gen_disable_count_check
+    assign dut.u_ibex_top.gen_lockstep.u_ibex_lockstep.gen_reset_counter.u_rst_shadow_cnt.
           unused_assert_connected = 1;
-  end
-
-  // Disable the assertion for onehot check in case WrenCheck (set by SecureIbex) is enabled.
-  if (SecureIbex) begin : gen_disable_onehot_check
-    assign dut.u_ibex_top.gen_regfile_ff.register_file_i.gen_wren_check.u_prim_onehot_check.
-          unused_assert_connected = 1;
-  end
-
-  // Disable the assertion for onehot check in case RdataMuxCheck (set by SecureIbex) is enabled.
-  if (SecureIbex) begin : gen_disable_rdata_mux_check
-    assign dut.u_ibex_top.gen_regfile_ff.register_file_i.gen_rdata_mux_check.
-          u_prim_onehot_check_raddr_a.unused_assert_connected = 1;
-    assign dut.u_ibex_top.gen_regfile_ff.register_file_i.gen_rdata_mux_check.
-          u_prim_onehot_check_raddr_b.unused_assert_connected = 1;
   end
 
   ibex_pkg::ctrl_fsm_e controller_state;

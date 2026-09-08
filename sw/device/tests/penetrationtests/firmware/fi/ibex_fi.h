@@ -392,14 +392,14 @@ status_t handle_ibex_fi_char_csr_write(ujson_t *uj);
  * - AES_IV_0: Unprotected register
  * - HMAC_MSG_LENGTH_LOWER: Unprotected register
  * - HMAC_DIGEST_0: Unprotected register
- * - KEYMGR_SEALING_SW_BINDING_7: Unprotected register
- * - KEYMGR_SALT_0: Unprotected register
+ * - KEYMGR_DPE_SW_BINDING_7: Unprotected register
+ * - KEYMGR_DPE_SALT_0: Unprotected register
  * - CSRNG_RESEED_INTERVAL: Unprotected register
  * - RAM_CTRL_READBACK: Register only accepting kMultiBitBool4True and
  * kMultiBitBool4False
  * - AES_CTRL: Shadowed register only accepting one-hot
  * encodings for each part of the register
- * - KEYMGR_RESEED_INTERVAL: Shadowed
+ * - KEYMGR_DPE_RESEED_INTERVAL: Shadowed
  * register
  * - CSRNG_CTRL_REG_OFFSET: Register only accepting kMultiBitBool4True and
  * kMultiBitBool4False
@@ -438,6 +438,25 @@ status_t handle_ibex_fi_char_csr_combi(ujson_t *uj);
  * @return OK or error.
  */
 status_t handle_ibex_fi_char_flash_read(ujson_t *uj);
+
+/**
+ * ibex.fi.char.flash_read_static command handler.
+ *
+ * This FI penetration tests executes the following instructions:
+ * - If the init Boolean is set, write reference values into flash.
+ * - Set the trigger.
+ * - Provide a 1000 NOPS of delay.
+ * - Unset the trigger.
+ * - Read and compare the values.
+ * - Return the values over UART.
+ *
+ * Faults are injected during the trigger_high & trigger_low or at device sleep
+ * using the stateful Boolean init input.
+ *
+ * @param uj An initialized uJSON context.
+ * @return OK or error.
+ */
+status_t handle_ibex_fi_char_flash_read_static(ujson_t *uj);
 
 /**
  * ibex.fi.char.flash_write command handler.

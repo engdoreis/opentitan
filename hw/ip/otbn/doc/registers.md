@@ -16,8 +16,8 @@
 | otbn.[`FATAL_ALERT_CAUSE`](#fatal_alert_cause) | 0x20     |        4 | Fatal Alert Cause Register                      |
 | otbn.[`INSN_CNT`](#insn_cnt)                   | 0x24     |        4 | Instruction Count Register                      |
 | otbn.[`LOAD_CHECKSUM`](#load_checksum)         | 0x28     |        4 | A 32-bit CRC checksum of data written to memory |
-| otbn.[`IMEM`](#imem)                           | 0x4000   |     8192 | Instruction Memory Access                       |
-| otbn.[`DMEM`](#dmem)                           | 0x8000   |     3072 | Data Memory Access                              |
+| otbn.[`IMEM`](#imem)                           | 0x4000   |    16384 | Instruction Memory Access                       |
+| otbn.[`DMEM`](#dmem)                           | 0x8000   |    16384 | Data Memory Access                              |
 
 ## INTR_STATE
 Interrupt State Register
@@ -31,10 +31,10 @@ Interrupt State Register
 {"reg": [{"name": "done", "bits": 1, "attr": ["rw1c"], "rotate": -90}, {"bits": 31}], "config": {"lanes": 1, "fontsize": 10, "vspace": 80}}
 ```
 
-|  Bits  |  Type  |  Reset  | Name   | Description                       |
-|:------:|:------:|:-------:|:-------|:----------------------------------|
-|  31:1  |        |         |        | Reserved                          |
-|   0    |  rw1c  |   0x0   | done   | OTBN has completed the operation. |
+|  Bits  |  Type  |  Reset  | Name   | Description                                                                           |
+|:------:|:------:|:-------:|:-------|:--------------------------------------------------------------------------------------|
+|  31:1  |        |         |        | Reserved                                                                              |
+|   0    |  rw1c  |   0x0   | done   | OTBN has completed the operation, encountered a WFI instruction or has locked itself. |
 
 ## INTR_ENABLE
 Interrupt Enable Register
@@ -91,13 +91,14 @@ Alert Test Register
 ## CMD
 Command Register
 
-A command initiates an OTBN operation. While performing the operation,
+Any command except `RESUME` initiates an OTBN operation. While performing the operation,
 OTBN is busy; the [`STATUS`](#status) register reflects that.
 
 All operations signal their completion by raising the done
 interrupt; alternatively, software may poll the [`STATUS`](#status) register.
 
-Writes are ignored if OTBN is not idle.
+The EXECUTE, SEC_WIPE_DMEM, and SEC_WIPE_IMEM commands take only effect if OTBN is idle.
+The RESUME command only takes effect if OTBN is paused.
 Unrecognized commands are ignored.
 - Offset: `0x10`
 - Reset default: `0x0`
@@ -122,23 +123,26 @@ The operation to perform.
 | 0xd8  | EXECUTE       | Starts the execution of the program stored in the instruction memory, starting at address zero. |
 | 0xc3  | SEC_WIPE_DMEM | Securely removes all contents from the data memory. |
 | 0x1e  | SEC_WIPE_IMEM | Securely removes all contents from the instruction  memory. |
+| 0xa6  | RESUME        | Resumes execution of a program that was previously paused by a WFI instruction. |
 
 ## CTRL
 Control Register
 - Offset: `0x14`
 - Reset default: `0x0`
-- Reset mask: `0x1`
+- Reset mask: `0x7`
 
 ### Fields
 
 ```wavejson
-{"reg": [{"name": "software_errs_fatal", "bits": 1, "attr": ["rw"], "rotate": -90}, {"bits": 31}], "config": {"lanes": 1, "fontsize": 10, "vspace": 210}}
+{"reg": [{"name": "software_errs_fatal", "bits": 1, "attr": ["rw"], "rotate": -90}, {"name": "wfi_enabled", "bits": 1, "attr": ["rw"], "rotate": -90}, {"name": "urnd_ctrl_enabled", "bits": 1, "attr": ["rw"], "rotate": -90}, {"bits": 29}], "config": {"lanes": 1, "fontsize": 10, "vspace": 210}}
 ```
 
-|  Bits  |  Type  |  Reset  | Name                | Description                                                                                                                                                      |
-|:------:|:------:|:-------:|:--------------------|:-----------------------------------------------------------------------------------------------------------------------------------------------------------------|
-|  31:1  |        |         |                     | Reserved                                                                                                                                                         |
-|   0    |   rw   |   0x0   | software_errs_fatal | Controls the reaction to software errors. When set software errors produce fatal errors, rather than recoverable errors. Writes are ignored if OTBN is not idle. |
+|  Bits  |  Type  |  Reset  | Name                | Description                                                                                                                                                                                                                    |
+|:------:|:------:|:-------:|:--------------------|:-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+|  31:3  |        |         |                     | Reserved                                                                                                                                                                                                                       |
+|   2    |   rw   |   0x0   | urnd_ctrl_enabled   | Controls whether the URND_CTRL CSR is enabled. When set, OTBN SW can use the functionality provided by the URND_CTRL CSR. When cleared, writes to URND_CTRL have no effect. Writes are ignored if OTBN is not idle.            |
+|   1    |   rw   |   0x0   | wfi_enabled         | Controls whether the WFI instruction is enabled. When set, the WFI instruction can be used to pause execution. When cleared, the WFI instruction is treated as an invalid instruction. Writes are ignored if OTBN is not idle. |
+|   0    |   rw   |   0x0   | software_errs_fatal | Controls the reaction to software errors. When set software errors produce fatal errors, rather than recoverable errors. Writes are ignored if OTBN is not idle.                                                               |
 
 ## STATUS
 Status Register
@@ -170,6 +174,7 @@ All BUSY values represent an operation started by a write to the
 | 0x02  | BUSY_SEC_WIPE_DMEM | OTBN is busy securely wiping the data memory.         |
 | 0x03  | BUSY_SEC_WIPE_IMEM | OTBN is busy securely wiping the instruction memory.  |
 | 0x04  | BUSY_SEC_WIPE_INT  | OTBN is busy securely wiping the internal state.      |
+| 0x05  | PAUSED             | OTBN is paused due to a WFI instruction.              |
 | 0xFF  | LOCKED             | OTBN is locked as reaction to a fatal error, and must be reset to unlock it again. See also the section "Reaction to Fatal Errors". |
 
 
@@ -185,12 +190,12 @@ The host CPU can clear this register when OTBN is not running,
 by writing any value. Write attempts while OTBN is running are ignored.
 - Offset: `0x1c`
 - Reset default: `0x0`
-- Reset mask: `0xff00ff`
+- Reset mask: `0xff01ff`
 
 ### Fields
 
 ```wavejson
-{"reg": [{"name": "bad_data_addr", "bits": 1, "attr": ["rw"], "rotate": -90}, {"name": "bad_insn_addr", "bits": 1, "attr": ["rw"], "rotate": -90}, {"name": "call_stack", "bits": 1, "attr": ["rw"], "rotate": -90}, {"name": "illegal_insn", "bits": 1, "attr": ["rw"], "rotate": -90}, {"name": "loop", "bits": 1, "attr": ["rw"], "rotate": -90}, {"name": "key_invalid", "bits": 1, "attr": ["rw"], "rotate": -90}, {"name": "rnd_rep_chk_fail", "bits": 1, "attr": ["rw"], "rotate": -90}, {"name": "rnd_fips_chk_fail", "bits": 1, "attr": ["rw"], "rotate": -90}, {"bits": 8}, {"name": "imem_intg_violation", "bits": 1, "attr": ["rw"], "rotate": -90}, {"name": "dmem_intg_violation", "bits": 1, "attr": ["rw"], "rotate": -90}, {"name": "reg_intg_violation", "bits": 1, "attr": ["rw"], "rotate": -90}, {"name": "bus_intg_violation", "bits": 1, "attr": ["rw"], "rotate": -90}, {"name": "bad_internal_state", "bits": 1, "attr": ["rw"], "rotate": -90}, {"name": "illegal_bus_access", "bits": 1, "attr": ["rw"], "rotate": -90}, {"name": "lifecycle_escalation", "bits": 1, "attr": ["rw"], "rotate": -90}, {"name": "fatal_software", "bits": 1, "attr": ["rw"], "rotate": -90}, {"bits": 8}], "config": {"lanes": 1, "fontsize": 10, "vspace": 220}}
+{"reg": [{"name": "bad_data_addr", "bits": 1, "attr": ["rw"], "rotate": -90}, {"name": "bad_insn_addr", "bits": 1, "attr": ["rw"], "rotate": -90}, {"name": "call_stack", "bits": 1, "attr": ["rw"], "rotate": -90}, {"name": "illegal_insn", "bits": 1, "attr": ["rw"], "rotate": -90}, {"name": "loop", "bits": 1, "attr": ["rw"], "rotate": -90}, {"name": "key_invalid", "bits": 1, "attr": ["rw"], "rotate": -90}, {"name": "rnd_rep_chk_fail", "bits": 1, "attr": ["rw"], "rotate": -90}, {"name": "rnd_fips_chk_fail", "bits": 1, "attr": ["rw"], "rotate": -90}, {"name": "mai_software_error", "bits": 1, "attr": ["rw"], "rotate": -90}, {"bits": 7}, {"name": "imem_intg_violation", "bits": 1, "attr": ["rw"], "rotate": -90}, {"name": "dmem_intg_violation", "bits": 1, "attr": ["rw"], "rotate": -90}, {"name": "reg_intg_violation", "bits": 1, "attr": ["rw"], "rotate": -90}, {"name": "bus_intg_violation", "bits": 1, "attr": ["rw"], "rotate": -90}, {"name": "bad_internal_state", "bits": 1, "attr": ["rw"], "rotate": -90}, {"name": "illegal_bus_access", "bits": 1, "attr": ["rw"], "rotate": -90}, {"name": "lifecycle_escalation", "bits": 1, "attr": ["rw"], "rotate": -90}, {"name": "fatal_software", "bits": 1, "attr": ["rw"], "rotate": -90}, {"bits": 8}], "config": {"lanes": 1, "fontsize": 10, "vspace": 220}}
 ```
 
 |  Bits  |  Type  |  Reset  | Name                 | Description                                  |
@@ -204,7 +209,8 @@ by writing any value. Write attempts while OTBN is running are ignored.
 |   18   |   rw   |   0x0   | reg_intg_violation   | A `REG_INTG_VIOLATION` error was observed.   |
 |   17   |   rw   |   0x0   | dmem_intg_violation  | A `DMEM_INTG_VIOLATION` error was observed.  |
 |   16   |   rw   |   0x0   | imem_intg_violation  | A `IMEM_INTG_VIOLATION` error was observed.  |
-|  15:8  |        |         |                      | Reserved                                     |
+|  15:9  |        |         |                      | Reserved                                     |
+|   8    |   rw   |   0x0   | mai_software_error   | An `MAI_SOFTWARE_ERROR` error was observed.  |
 |   7    |   rw   |   0x0   | rnd_fips_chk_fail    | An `RND_FIPS_CHK_FAIL` error was observed.   |
 |   6    |   rw   |   0x0   | rnd_rep_chk_fail     | An `RND_REP_CHK_FAIL` error was observed.    |
 |   5    |   rw   |   0x0   | key_invalid          | A `KEY_INVALID` error was observed.          |
@@ -303,8 +309,8 @@ are ignored.
 If OTBN is busy, any access additionally triggers an
 ILLEGAL_BUS_ACCESS fatal error.
 
-- Word Aligned Offset Range: `0x4000`to`0x5ffc`
-- Size (words): `2048`
+- Word Aligned Offset Range: `0x4000`to`0x7ffc`
+- Size (words): `4096`
 - Access: `rw`
 - Byte writes are *not* supported.
 
@@ -319,11 +325,11 @@ are ignored.
 If OTBN is busy, any access additionally triggers an
 ILLEGAL_BUS_ACCESS fatal error.
 
-Note that DMEM is actually 4kiB in size, but only the first 3kiB of
+Note that DMEM is actually 32kiB in size, but only the first 16kiB of
 the memory is visible through this register interface.
 
-- Word Aligned Offset Range: `0x8000`to`0x8bfc`
-- Size (words): `768`
+- Word Aligned Offset Range: `0x8000`to`0xbffc`
+- Size (words): `4096`
 - Access: `rw`
 - Byte writes are *not* supported.
 

@@ -11,51 +11,55 @@
  * Instruction and data bus are 32 bit wide TileLink-UL (TL-UL).
  */
 module rv_core_ibex
+  import ibex_pkg::*;
   import rv_core_ibex_pkg::*;
   import rv_core_ibex_reg_pkg::*;
 #(
-  parameter logic [NumAlerts-1:0]   AlertAsyncOn        = {NumAlerts{1'b1}},
+  parameter logic [NumAlerts-1:0]           AlertAsyncOn                = {NumAlerts{1'b1}},
   // Number of cycles a differential skew is tolerated on the alert and escalation signal
-  parameter int unsigned            AlertSkewCycles     = 1,
-  parameter bit                     PMPEnable           = 1'b1,
-  parameter int unsigned            PMPGranularity      = 0,
-  parameter int unsigned            PMPNumRegions       = 16,
-  parameter int unsigned            MHPMCounterNum      = 10,
-  parameter int unsigned            MHPMCounterWidth    = 32,
-  parameter ibex_pkg::pmp_cfg_t     PMPRstCfg[16]       = ibex_pkg::PmpCfgRst,
-  parameter logic [33:0]            PMPRstAddr[16]      = ibex_pkg::PmpAddrRst,
-  parameter ibex_pkg::pmp_mseccfg_t PMPRstMsecCfg       = ibex_pkg::PmpMseccfgRst,
-  parameter bit                     RV32E               = 0,
-  parameter ibex_pkg::rv32m_e       RV32M               = ibex_pkg::RV32MSingleCycle,
-  parameter ibex_pkg::rv32b_e       RV32B               = ibex_pkg::RV32BOTEarlGrey,
-  parameter ibex_pkg::regfile_e     RegFile             = ibex_pkg::RegFileFF,
-  parameter bit                     BranchTargetALU     = 1'b1,
-  parameter bit                     WritebackStage      = 1'b1,
-  parameter bit                     ICache              = 1'b1,
-  parameter bit                     ICacheECC           = 1'b1,
-  parameter bit                     ICacheScramble      = 1'b1,
-  parameter int unsigned            ICacheNWays         = 2,
-  parameter bit                     BranchPredictor     = 1'b0,
-  parameter bit                     DbgTriggerEn        = 1'b1,
-  parameter int unsigned            DbgHwBreakNum       = 4,
-  parameter bit                     SecureIbex          = 1'b1,
-  parameter ibex_pkg::lfsr_seed_t   RndCnstLfsrSeed     = ibex_pkg::RndCnstLfsrSeedDefault,
-  parameter ibex_pkg::lfsr_perm_t   RndCnstLfsrPerm     = ibex_pkg::RndCnstLfsrPermDefault,
-  parameter int unsigned            DmBaseAddr          = 32'h1A110000,
-  parameter int unsigned            DmAddrMask          = 32'h00000FFF,
-  parameter int unsigned            DmHaltAddr          = 32'h1A110800,
-  parameter int unsigned            DmExceptionAddr     = 32'h1A110808,
-  parameter bit                     PipeLine            = 1'b0,
-  parameter bit                     InstructionPipeline = 1'b0,
-  parameter logic [ibex_pkg::SCRAMBLE_KEY_W-1:0] RndCnstIbexKeyDefault =
-      ibex_pkg::RndCnstIbexKeyDefault,
-  parameter logic [ibex_pkg::SCRAMBLE_NONCE_W-1:0] RndCnstIbexNonceDefault =
-      ibex_pkg::RndCnstIbexNonceDefault,
-  parameter int unsigned                    NEscalationSeverities = 4,
-  parameter int unsigned                    WidthPingCounter      = 16,
-  parameter logic [tlul_pkg::RsvdWidth-1:0] TlulHostUserRsvdBits   = 0,
-  parameter logic [31:0]            CsrMvendorId                   = 32'b0,
-  parameter logic [31:0]            CsrMimpId                      = 32'b0
+  parameter int unsigned                    AlertSkewCycles             = 1,
+  parameter bit                             PMPEnable                   = 1'b1,
+  parameter int unsigned                    PMPGranularity              = 0,
+  parameter int unsigned                    PMPNumRegions               = 16,
+  parameter int unsigned                    MHPMCounterNum              = 10,
+  parameter int unsigned                    MHPMCounterWidth            = 32,
+  parameter pmp_cfg_t                       PMPRstCfg[PMP_MAX_REGIONS]  = PmpCfgRst,
+  parameter logic [PMP_ADDR_MSB:0]          PMPRstAddr[PMP_MAX_REGIONS] = PmpAddrRst,
+  parameter pmp_mseccfg_t                   PMPRstMsecCfg               = PmpMseccfgRst,
+  parameter bit                             RV32E                       = 0,
+  parameter rv32m_e                         RV32M                       = RV32MSingleCycle,
+  parameter rv32b_e                         RV32B                       = RV32BOTEarlGrey,
+  parameter rv32zc_e                        RV32ZC                      = RV32ZcaZcbZcmp,
+  parameter regfile_e                       RegFile                     = RegFileFF,
+  parameter bit                             BranchTargetALU             = 1'b1,
+  parameter bit                             WritebackStage              = 1'b1,
+  parameter bit                             ICache                      = 1'b1,
+  parameter bit                             ICacheECC                   = 1'b1,
+  parameter bit                             ICacheScramble              = 1'b1,
+  parameter int unsigned                    ICacheNWays                 = 2,
+  parameter bit                             BranchPredictor             = 1'b0,
+  parameter bit                             DbgTriggerEn                = 1'b1,
+  parameter int unsigned                    DbgHwBreakNum               = 4,
+  parameter bit                             SecureIbex                  = 1'b1,
+  parameter int unsigned                    LockstepOffset              = 1,
+  parameter lfsr_seed_t                     RndCnstLfsrSeed             = RndCnstLfsrSeedDefault,
+  parameter lfsr_perm_t                     RndCnstLfsrPerm             = RndCnstLfsrPermDefault,
+  parameter int unsigned                    DmBaseAddr                  = 32'h1A110000,
+  parameter int unsigned                    DmAddrMask                  = 32'h00000FFF,
+  parameter int unsigned                    DmHaltAddr                  = 32'h1A110800,
+  parameter int unsigned                    DmExceptionAddr             = 32'h1A110808,
+  parameter bit                             PipeLine                    = 1'b0,
+  parameter bit                             InstructionPipeline         = 1'b0,
+  parameter logic [SCRAMBLE_KEY_W-1:0]      RndCnstIbexKey              = RndCnstIbexKeyDefault,
+  parameter logic [SCRAMBLE_NONCE_W-1:0]    RndCnstIbexNonce            = RndCnstIbexNonceDefault,
+  parameter int unsigned                    NEscalationSeverities       = 4,
+  parameter int unsigned                    WidthPingCounter            = 16,
+  parameter logic [tlul_pkg::RsvdWidth-1:0] TlulHostUserRsvdBits        = 0,
+  parameter logic [31:0]                    CsrMvendorId                = 32'b0,
+  parameter logic [31:0]                    CsrMimpId                   = 32'b0,
+  parameter int unsigned                    CheriotRevBitmapAddrWidth   = 32'd11,
+  parameter int unsigned                    CheriotRevBitmapBaseAddr    = 32'h0,
+  parameter int unsigned                    CheriotTrvkHeapBaseAddr     = 32'h0
 ) (
   // Clock and Reset
   input  logic        clk_i,
@@ -69,13 +73,15 @@ module rv_core_ibex
   // Reset feedback to rstmgr
   output logic        rst_cpu_n_o,
 
-  input  prim_ram_1p_pkg::ram_1p_cfg_t                       ram_cfg_icache_tag_i,
-  output prim_ram_1p_pkg::ram_1p_cfg_rsp_t [ICacheNWays-1:0] ram_cfg_rsp_icache_tag_o,
-  input  prim_ram_1p_pkg::ram_1p_cfg_t                       ram_cfg_icache_data_i,
-  output prim_ram_1p_pkg::ram_1p_cfg_rsp_t [ICacheNWays-1:0] ram_cfg_rsp_icache_data_o,
+  input  prim_ram_1p_pkg::ram_1p_cfg_req_t [ICacheNWays-1:0] ram_cfg_icache_tag_i,
+  output prim_ram_1p_pkg::ram_1p_cfg_rsp_t [ICacheNWays-1:0] ram_cfg_icache_tag_o,
+  input  prim_ram_1p_pkg::ram_1p_cfg_req_t [ICacheNWays-1:0] ram_cfg_icache_data_i,
+  output prim_ram_1p_pkg::ram_1p_cfg_rsp_t [ICacheNWays-1:0] ram_cfg_icache_data_o,
 
   input  logic [31:0] hart_id_i,
   input  logic [31:0] boot_addr_i,
+
+  output prim_mubi_pkg::mubi4_t cheriot_ena_o,
 
   // Instruction memory interface
   output tlul_pkg::tl_h2d_t     corei_tl_h_o,
@@ -84,6 +90,14 @@ module rv_core_ibex
   // Data memory interface
   output tlul_pkg::tl_h2d_t     cored_tl_h_o,
   input  tlul_pkg::tl_d2h_t     cored_tl_h_i,
+
+  // CHERIoT capability tags
+  output logic cored_tag_h2d_o,
+  input  logic cored_tag_d2h_i,
+
+  // CHERIoT TRVK revocation bitmap (revbm) memory interface
+  output tlul_pkg::tl_h2d_t     corerevbm_tl_o,
+  input  tlul_pkg::tl_d2h_t     corerevbm_tl_i,
 
   // Interrupt inputs
   input  logic        irq_software_i,
@@ -149,33 +163,59 @@ module rv_core_ibex
   // ICache creates more outstanding transactions
   localparam int NumOutstandingReqs = ICache ? 8 : 2;
 
-  // Instruction interface (internal)
-  logic        instr_req, instr_req_q;
-  logic        instr_gnt, instr_gnt_ibex;
-  logic        instr_rvalid;
-  logic [31:0] instr_addr, instr_addr_q;
-  logic [31:0] instr_rdata;
-  logic [6:0]  instr_rdata_intg;
-  logic        instr_err;
+  // Main core instruction interface (internal)
+  logic        main_core_instr_req, main_core_instr_req_q;
+  logic        main_core_instr_gnt, main_core_instr_gnt_ibex;
+  logic        main_core_instr_rvalid;
+  logic [31:0] main_core_instr_addr, main_core_instr_addr_q;
+  logic [31:0] main_core_instr_rdata;
+  logic [6:0]  main_core_instr_rdata_intg;
+  logic        main_core_instr_err;
 
-  // Data interface (internal)
-  logic        data_req;
-  logic        data_gnt;
-  logic        data_rvalid;
-  logic        data_we;
-  logic [3:0]  data_be;
-  logic [31:0] data_addr;
-  logic [31:0] data_wdata;
-  logic [6:0]  data_wdata_intg;
-  logic [31:0] data_rdata;
-  logic [6:0]  data_rdata_intg;
-  logic        data_err;
+  // Shadow core instruction interface (internal)
+  logic        shadow_core_instr_req;
+  logic [31:0] shadow_core_instr_addr;
+
+  // Main core data interface (internal)
+  logic        main_core_data_req;
+  logic        main_core_data_gnt;
+  logic        main_core_data_rvalid;
+  logic        main_core_data_we;
+  logic [3:0]  main_core_data_be;
+  logic [31:0] main_core_data_addr;
+  logic [31:0] main_core_data_wdata;
+  logic [6:0]  main_core_data_wdata_intg;
+  logic [31:0] main_core_data_rdata;
+  logic [6:0]  main_core_data_rdata_intg;
+  logic        main_core_data_err;
+
+  // Shadow core data interface (internal)
+  logic        shadow_core_data_req;
+  logic        shadow_core_data_we;
+  logic [3:0]  shadow_core_data_be;
+  logic [31:0] shadow_core_data_addr;
+  logic [31:0] shadow_core_data_wdata;
+  logic [6:0]  shadow_core_data_wdata_intg;
+
+  // Main core CHERIoT TRVK revocation bitmap (revbm) interface (internal)
+  logic        main_core_revbm_req;
+  logic        main_core_revbm_gnt;
+  logic [31:0] main_core_revbm_addr;
+  logic        main_core_revbm_rvalid;
+  logic [31:0] main_core_revbm_rdata;
+  logic [6:0]  main_core_revbm_rdata_intg;
+  logic        main_core_revbm_err;
+
+  // Lockstep interface
+  ibex_pkg::ibex_mubi_t core_lockstep_cmp_en;
 
   // Pipeline interfaces
   tl_h2d_t tl_i_ibex2fifo;
   tl_d2h_t tl_i_fifo2ibex;
-  tl_h2d_t tl_d_ibex2fifo;
+  tl_h2d_t tl_d_ibex2fifo_main_core;
   tl_d2h_t tl_d_fifo2ibex;
+  tl_h2d_t tl_revbm_ibex2fifo;
+  tl_d2h_t tl_revbm_fifo2ibex;
 
   // TLUL LC Gate interfaces
   tl_h2d_t tl_d_fifo2gate;
@@ -184,33 +224,50 @@ module rv_core_ibex
   logic tlul_lc_gate_core_d_error;
 
 `ifdef RVFI
-  logic        rvfi_valid;
-  logic [63:0] rvfi_order;
-  logic [31:0] rvfi_insn;
-  logic        rvfi_trap;
-  logic        rvfi_halt;
-  logic        rvfi_intr;
-  logic [ 1:0] rvfi_mode;
-  logic [ 1:0] rvfi_ixl;
-  logic [ 4:0] rvfi_rs1_addr;
-  logic [ 4:0] rvfi_rs2_addr;
-  logic [ 4:0] rvfi_rs3_addr;
-  logic [31:0] rvfi_rs1_rdata;
-  logic [31:0] rvfi_rs2_rdata;
-  logic [31:0] rvfi_rs3_rdata;
-  logic [ 4:0] rvfi_rd_addr;
-  logic [31:0] rvfi_rd_wdata;
-  logic [31:0] rvfi_pc_rdata;
-  logic [31:0] rvfi_pc_wdata;
-  logic [31:0] rvfi_mem_addr;
-  logic [ 3:0] rvfi_mem_rmask;
-  logic [ 3:0] rvfi_mem_wmask;
-  logic [31:0] rvfi_mem_rdata;
-  logic [31:0] rvfi_mem_wdata;
+  logic                   rvfi_valid;
+  logic [63:0]            rvfi_order;
+  logic [31:0]            rvfi_insn;
+  logic                   rvfi_trap;
+  logic                   rvfi_halt;
+  logic                   rvfi_intr;
+  logic [ 1:0]            rvfi_mode;
+  logic [ 1:0]            rvfi_ixl;
+  logic [ 4:0]            rvfi_rs1_addr;
+  logic [ 4:0]            rvfi_rs2_addr;
+  logic [ 4:0]            rvfi_rs3_addr;
+  logic [31:0]            rvfi_rs1_rdata;
+  logic [31:0]            rvfi_rs2_rdata;
+  logic [31:0]            rvfi_rs3_rdata;
+  logic [ 4:0]            rvfi_rd_addr;
+  logic [31:0]            rvfi_rd_wdata;
+  logic [31:0]            rvfi_pc_rdata;
+  logic [31:0]            rvfi_pc_wdata;
+  logic [31:0]            rvfi_mem_addr;
+  logic [ 3:0]            rvfi_mem_rmask;
+  logic [ 3:0]            rvfi_mem_wmask;
+  logic [31:0]            rvfi_mem_rdata;
+  logic [31:0]            rvfi_mem_wdata;
+  logic                   rvfi_ext_expanded_insn_valid;
+  logic [15:0]            rvfi_ext_expanded_insn;
+  ibex_cheriot_pkg::cap_t rvfi_rs1_rcap;
+  ibex_cheriot_pkg::cap_t rvfi_rs2_rcap;
+  ibex_cheriot_pkg::cap_t rvfi_rd_wcap;
+  logic                   rvfi_mem_is_cap;
+  ibex_cheriot_pkg::cap_t rvfi_mem_rcap;
+  ibex_cheriot_pkg::cap_t rvfi_mem_wcap;
 `endif
+
+  import tlul_pkg::tl_h2d_t;
+  import tlul_pkg::tl_d2h_t;
+  localparam int TlH2DWidth = $bits(tl_h2d_t);
+  localparam int TlD2HWidth = $bits(tl_d2h_t);
 
   // core sleeping
   logic core_sleep;
+
+  // CHERIoT signals
+  logic                  cheriot_switch_error;
+  ibex_pkg::ibex_mubi_t  cheriot_enable_ibex;
 
   // The following intermediate signals are created to aid in simulations.
   //
@@ -229,17 +286,24 @@ module rv_core_ibex
 
   // errors and core alert events
   logic ibus_intg_err, dbus_intg_err;
+  logic revbmbus_intg_err;
   logic alert_minor, alert_major_internal, alert_major_bus;
   logic double_fault;
   logic fatal_intg_err, fatal_core_err, recov_core_err;
+  logic alert_rv_d_tlul_comparison;
+  logic alert_rv_i_tlul_comparison;
 
   // alert events to peripheral module
   logic fatal_intg_event;
   logic fatal_core_event;
   logic recov_core_event;
   // SEC_CM: BUS.INTEGRITY
-  assign fatal_intg_event = ibus_intg_err | dbus_intg_err | alert_major_bus;
-  assign fatal_core_event = alert_major_internal | double_fault | tlul_lc_gate_core_d_error;
+  assign fatal_intg_event = ibus_intg_err | dbus_intg_err | revbmbus_intg_err | alert_major_bus;
+  assign fatal_core_event = alert_major_internal        |
+                            double_fault                |
+                            tlul_lc_gate_core_d_error   |
+                            alert_rv_d_tlul_comparison  |
+                            alert_rv_i_tlul_comparison;
   assign recov_core_event = alert_minor;
 
   // configurations for address translation
@@ -392,8 +456,26 @@ module rv_core_ibex
                                                   lc_ctrl_pkg::lc_tx_and_hi(lc_cpu_en[0],
                                                                             pwrmgr_cpu_en[0]));
 
+  prim_mubi_pkg::mubi4_t mcounteren_writable_mubi4;
+  ibex_pkg::ibex_mubi_t mcounteren_writable_ibex;
+  assign mcounteren_writable_mubi4 = prim_mubi_pkg::mubi4_t'(reg2hw.mcounteren_writable.q);
+  // Convert the mubi4 to ibex_mubi. They are both four bit, but with different encodings.
+  assign mcounteren_writable_ibex = mcounteren_writable_mubi4 == prim_mubi_pkg::MuBi4True ?
+                                    ibex_pkg::IbexMuBiOn : ibex_pkg::IbexMuBiOff;
+  // Convert the mubi4 to ibex_mubi for the cheriot_enable signal. Invalid mubi inputs must not
+  // accidentally map to a valid ibex_mubi value and switch modes, so the default arm produces an
+  // invalid ibex_mubi value that the core can detect and escalate.
+  always_comb begin
+    unique case (cheriot_ena_o)
+      prim_mubi_pkg::MuBi4True:  cheriot_enable_ibex = ibex_pkg::IbexMuBiOn;
+      prim_mubi_pkg::MuBi4False: cheriot_enable_ibex = ibex_pkg::IbexMuBiOff;
+      default:                   cheriot_enable_ibex = ibex_pkg::ibex_mubi_t'('0);
+    endcase
+  end
+
   ibex_pkg::crash_dump_t crash_dump;
   ibex_top #(
+    .BaseIsa                     ( ibex_pkg::BaseIsaRV32IorCHERIoT ),
     .PMPEnable                   ( PMPEnable                ),
     .PMPGranularity              ( PMPGranularity           ),
     .PMPNumRegions               ( PMPNumRegions            ),
@@ -402,9 +484,12 @@ module rv_core_ibex
     .PMPRstCfg                   ( PMPRstCfg                ),
     .PMPRstAddr                  ( PMPRstAddr               ),
     .PMPRstMsecCfg               ( PMPRstMsecCfg            ),
+    .CheriotRevBitmapAddrWidth   ( CheriotRevBitmapAddrWidth),
+    .CheriotRevBitmapBaseAddr    ( CheriotRevBitmapBaseAddr ),
     .RV32E                       ( RV32E                    ),
     .RV32M                       ( RV32M                    ),
     .RV32B                       ( RV32B                    ),
+    .RV32ZC                      ( RV32ZC                   ),
     .RegFile                     ( RegFile                  ),
     .BranchTargetALU             ( BranchTargetALU          ),
     .WritebackStage              ( WritebackStage           ),
@@ -428,10 +513,11 @@ module rv_core_ibex
     // SEC_CM: EXCEPTION.CTRL_FLOW.GLOBAL_ESC, EXCEPTION.CTRL_FLOW.LOCAL_ESC
     // SEC_CM: DATA_REG_SW.INTEGRITY, DATA_REG_SW.GLITCH_DETECT
     .SecureIbex                  ( SecureIbex               ),
+    .LockstepOffset              ( LockstepOffset           ),
     .RndCnstLfsrSeed             ( RndCnstLfsrSeed          ),
     .RndCnstLfsrPerm             ( RndCnstLfsrPerm          ),
-    .RndCnstIbexKey              ( RndCnstIbexKeyDefault    ),
-    .RndCnstIbexNonce            ( RndCnstIbexNonceDefault  ),
+    .RndCnstIbexKey              ( RndCnstIbexKey           ),
+    .RndCnstIbexNonce            ( RndCnstIbexNonce         ),
     .DmBaseAddr                  ( DmBaseAddr               ),
     .DmAddrMask                  ( DmAddrMask               ),
     .DmHaltAddr                  ( DmHaltAddr               ),
@@ -447,32 +533,45 @@ module rv_core_ibex
     .scan_rst_ni,
 
     .ram_cfg_icache_tag_i,
-    .ram_cfg_rsp_icache_tag_o,
+    .ram_cfg_icache_tag_o,
     .ram_cfg_icache_data_i,
-    .ram_cfg_rsp_icache_data_o,
+    .ram_cfg_icache_data_o,
 
     .hart_id_i,
     .boot_addr_i,
 
-    .instr_req_o        ( instr_req        ),
-    .instr_gnt_i        ( instr_gnt_ibex   ),
-    .instr_rvalid_i     ( instr_rvalid     ),
-    .instr_addr_o       ( instr_addr       ),
-    .instr_rdata_i      ( instr_rdata      ),
-    .instr_rdata_intg_i ( instr_rdata_intg ),
-    .instr_err_i        ( instr_err        ),
+    .cheriot_enable_i     (cheriot_enable_ibex),
+    .trvk_heap_base_addr_i(CheriotTrvkHeapBaseAddr), // SRAM base address
 
-    .data_req_o         ( data_req         ),
-    .data_gnt_i         ( data_gnt         ),
-    .data_rvalid_i      ( data_rvalid      ),
-    .data_we_o          ( data_we          ),
-    .data_be_o          ( data_be          ),
-    .data_addr_o        ( data_addr        ),
-    .data_wdata_o       ( data_wdata       ),
-    .data_wdata_intg_o  ( data_wdata_intg  ),
-    .data_rdata_i       ( data_rdata       ),
-    .data_rdata_intg_i  ( data_rdata_intg  ),
-    .data_err_i         ( data_err         ),
+    .instr_req_o        (main_core_instr_req),
+    .instr_gnt_i        (main_core_instr_gnt_ibex),
+    .instr_rvalid_i     (main_core_instr_rvalid),
+    .instr_addr_o       (main_core_instr_addr),
+    .instr_rdata_i      (main_core_instr_rdata),
+    .instr_rdata_intg_i (main_core_instr_rdata_intg),
+    .instr_err_i        (main_core_instr_err),
+
+    .data_req_o         (main_core_data_req),
+    .data_gnt_i         (main_core_data_gnt),
+    .data_rvalid_i      (main_core_data_rvalid),
+    .data_we_o          (main_core_data_we),
+    .data_be_o          (main_core_data_be),
+    .data_addr_o        (main_core_data_addr),
+    .data_wdata_o       (main_core_data_wdata),
+    .data_wdata_intg_o  (main_core_data_wdata_intg),
+    .data_tag_o         (cored_tag_h2d_o),
+    .data_rdata_i       (main_core_data_rdata),
+    .data_rdata_intg_i  (main_core_data_rdata_intg),
+    .data_tag_i         (cored_tag_d2h_i),
+    .data_err_i         (main_core_data_err),
+
+    .trvk_revbm_req_o       (main_core_revbm_req),
+    .trvk_revbm_gnt_i       (main_core_revbm_gnt),
+    .trvk_revbm_rvalid_i    (main_core_revbm_rvalid),
+    .trvk_revbm_addr_o      (main_core_revbm_addr),
+    .trvk_revbm_rdata_i     (main_core_revbm_rdata),
+    .trvk_revbm_rdata_intg_i(main_core_revbm_rdata_intg),
+    .trvk_revbm_err_i       (main_core_revbm_err),
 
     .irq_software_i     ( irq_software     ),
     .irq_timer_i        ( irq_timer        ),
@@ -516,26 +615,52 @@ module rv_core_ibex
     .rvfi_mem_wmask,
     .rvfi_mem_rdata,
     .rvfi_mem_wdata,
+    // CHERIoT capability RVFI signals
+    .rvfi_rs1_rcap,
+    .rvfi_rs2_rcap,
+    .rvfi_rd_wcap,
+    .rvfi_mem_is_cap,
+    .rvfi_mem_rcap,
+    .rvfi_mem_wcap,
     // Unused ports from the RVFI interface
-    .rvfi_ext_pre_mip         (),
-    .rvfi_ext_post_mip        (),
-    .rvfi_ext_nmi             (),
-    .rvfi_ext_nmi_int         (),
-    .rvfi_ext_debug_req       (),
-    .rvfi_ext_debug_mode      (),
-    .rvfi_ext_rf_wr_suppress  (),
-    .rvfi_ext_mcycle          (),
-    .rvfi_ext_mhpmcounters    (),
-    .rvfi_ext_mhpmcountersh   (),
-    .rvfi_ext_ic_scr_key_valid(),
-    .rvfi_ext_irq_valid       (),
+    .rvfi_ext_pre_mip            (),
+    .rvfi_ext_post_mip           (),
+    .rvfi_ext_nmi                (),
+    .rvfi_ext_nmi_int            (),
+    .rvfi_ext_debug_req          (),
+    .rvfi_ext_debug_mode         (),
+    .rvfi_ext_rf_wr_suppress     (),
+    .rvfi_ext_mcycle             (),
+    .rvfi_ext_mhpmcounters       (),
+    .rvfi_ext_mhpmcountersh      (),
+    .rvfi_ext_ic_scr_key_valid   (),
+    .rvfi_ext_irq_valid          (),
+    .rvfi_ext_expanded_insn_valid(),
+    .rvfi_ext_expanded_insn      (),
+    .rvfi_ext_expanded_insn_last (),
 `endif
     // SEC_CM: FETCH.CTRL.LC_GATED
     .fetch_enable_i         (fetch_enable),
+    .mcounteren_writable_i  (mcounteren_writable_ibex),
     .alert_minor_o          (alert_minor),
     .alert_major_internal_o (alert_major_internal),
     .alert_major_bus_o      (alert_major_bus),
-    .core_sleep_o           (core_sleep)
+    .core_sleep_o           (core_sleep),
+
+    // Lockstep outputs.
+    .lockstep_cmp_en_o        (core_lockstep_cmp_en),
+
+    // Shadow core data interface outputs.
+    .data_req_shadow_o        (shadow_core_data_req),
+    .data_we_shadow_o         (shadow_core_data_we),
+    .data_be_shadow_o         (shadow_core_data_be),
+    .data_addr_shadow_o       (shadow_core_data_addr),
+    .data_wdata_shadow_o      (shadow_core_data_wdata),
+    .data_wdata_intg_shadow_o (shadow_core_data_wdata_intg),
+
+    // Shadow core instruction interface outputs.
+    .instr_req_shadow_o       (shadow_core_instr_req),
+    .instr_addr_shadow_o      (shadow_core_instr_addr)
   );
 
   logic core_sleep_q;
@@ -580,30 +705,30 @@ module rv_core_ibex
   // Add an optional pipeline stage between Ibex and the address translation
   if (InstructionPipeline) begin : gen_instr_req_pipe
     // Request is granted for Ibex if the pipeline's request is granted or if the pipeline is empty
-    assign instr_gnt_ibex = instr_gnt || !instr_req_q;
+    assign main_core_instr_gnt_ibex = main_core_instr_gnt || !main_core_instr_req_q;
     always_ff @(posedge clk_i or negedge rst_ni) begin
       if (!rst_ni) begin
-        instr_req_q  <= 1'b0;
-        instr_addr_q <= 32'h0;
-      end else if (instr_gnt_ibex) begin
+        main_core_instr_req_q  <= 1'b0;
+        main_core_instr_addr_q <= 32'h0;
+      end else if (main_core_instr_gnt_ibex) begin
         // The request is captured if the pipeline's request is granted or if the pipeline is empty
-        instr_req_q  <= instr_req;
+        main_core_instr_req_q  <= main_core_instr_req;
         // Only capture the address if the request is valid
-        if (instr_req) begin
-          instr_addr_q <= instr_addr;
+        if (main_core_instr_req) begin
+          main_core_instr_addr_q <= main_core_instr_addr;
         end
       end
     end
   end else begin : gen_no_instr_req_pipe
-    assign instr_req_q = instr_req;
-    assign instr_addr_q = instr_addr;
-    assign instr_gnt_ibex = instr_gnt;
+    assign main_core_instr_req_q = main_core_instr_req;
+    assign main_core_instr_addr_q = main_core_instr_addr;
+    assign main_core_instr_gnt_ibex = main_core_instr_gnt;
   end
 
   //
   // Convert ibex data/instruction bus to TL-UL
   //
-  logic [31:0] instr_addr_trans;
+  logic [31:0] main_core_instr_addr_trans;
   rv_core_ibex_addr_trans #(
     .AddrWidth(32),
     .NumRegions(NumRegions)
@@ -611,8 +736,8 @@ module rv_core_ibex
     .clk_i,
     .rst_ni(addr_trans_rst_ni),
     .region_cfg_i(ibus_region_cfg),
-    .addr_i(instr_addr_q),
-    .addr_o(instr_addr_trans)
+    .addr_i(main_core_instr_addr_q),
+    .addr_o(main_core_instr_addr_trans)
   );
 
   logic [6:0]  instr_wdata_intg;
@@ -628,19 +753,19 @@ module rv_core_ibex
   ) tl_adapter_host_i_ibex (
     .clk_i,
     .rst_ni,
-    .req_i        (instr_req_q),
+    .req_i        (main_core_instr_req_q),
     .instr_type_i (prim_mubi_pkg::MuBi4True),
-    .gnt_o        (instr_gnt),
-    .addr_i       (instr_addr_trans),
+    .gnt_o        (main_core_instr_gnt),
+    .addr_i       (main_core_instr_addr_trans),
     .we_i         (1'b0),
     .wdata_i      (32'b0),
     .wdata_intg_i (instr_wdata_intg),
     .be_i         (4'hF),
     .user_rsvd_i  (TlulHostUserRsvdBits),
-    .valid_o      (instr_rvalid),
-    .rdata_o      (instr_rdata),
-    .rdata_intg_o (instr_rdata_intg),
-    .err_o        (instr_err),
+    .valid_o      (main_core_instr_rvalid),
+    .rdata_o      (main_core_instr_rdata),
+    .rdata_intg_o (main_core_instr_rdata_intg),
+    .err_o        (main_core_instr_err),
     .intg_err_o   (ibus_intg_err),
     .tl_o         (tl_i_ibex2fifo),
     .tl_i         (tl_i_fifo2ibex)
@@ -663,7 +788,10 @@ module rv_core_ibex
     .spare_rsp_i (1'b0),
     .spare_rsp_o ());
 
-  logic [31:0] data_addr_trans;
+  /////////////////////////////////////////////////////
+  // Main Core Address Translation and TL-UL Adapter //
+  ////////////////////////////////////////////////////
+  logic [31:0] main_core_data_addr_trans;
   rv_core_ibex_addr_trans #(
     .AddrWidth(32),
     .NumRegions(NumRegions)
@@ -671,8 +799,8 @@ module rv_core_ibex
     .clk_i,
     .rst_ni(addr_trans_rst_ni),
     .region_cfg_i(dbus_region_cfg),
-    .addr_i(data_addr),
-    .addr_o(data_addr_trans)
+    .addr_i(main_core_data_addr),
+    .addr_o(main_core_data_addr_trans)
   );
 
   // SEC_CM: BUS.INTEGRITY
@@ -682,21 +810,21 @@ module rv_core_ibex
   ) tl_adapter_host_d_ibex (
     .clk_i,
     .rst_ni,
-    .req_i        (data_req),
+    .req_i        (main_core_data_req),
     .instr_type_i (prim_mubi_pkg::MuBi4False),
-    .gnt_o        (data_gnt),
-    .addr_i       (data_addr_trans),
-    .we_i         (data_we),
-    .wdata_i      (data_wdata),
-    .wdata_intg_i (data_wdata_intg),
-    .be_i         (data_be),
+    .gnt_o        (main_core_data_gnt),
+    .addr_i       (main_core_data_addr_trans),
+    .we_i         (main_core_data_we),
+    .wdata_i      (main_core_data_wdata),
+    .wdata_intg_i (main_core_data_wdata_intg),
+    .be_i         (main_core_data_be),
     .user_rsvd_i  (TlulHostUserRsvdBits),
-    .valid_o      (data_rvalid),
-    .rdata_o      (data_rdata),
-    .rdata_intg_o (data_rdata_intg),
-    .err_o        (data_err),
+    .valid_o      (main_core_data_rvalid),
+    .rdata_o      (main_core_data_rdata),
+    .rdata_intg_o (main_core_data_rdata_intg),
+    .err_o        (main_core_data_err),
     .intg_err_o   (dbus_intg_err),
-    .tl_o         (tl_d_ibex2fifo),
+    .tl_o         (tl_d_ibex2fifo_main_core),
     .tl_i         (tl_d_fifo2ibex)
   );
 
@@ -708,7 +836,7 @@ module rv_core_ibex
   ) fifo_d (
     .clk_i,
     .rst_ni,
-    .tl_h_i      (tl_d_ibex2fifo),
+    .tl_h_i      (tl_d_ibex2fifo_main_core),
     .tl_h_o      (tl_d_fifo2ibex),
     .tl_d_o      (tl_d_fifo2gate),
     .tl_d_i      (tl_d_gate2fifo),
@@ -737,10 +865,61 @@ module rv_core_ibex
     .err_o          (tlul_lc_gate_core_d_error)
   );
 
+  logic [6:0]  revbm_wdata_intg;
+  logic [top_pkg::TL_DW-1:0] unused_revbm_data;
+  // tl_adapter_host_revbm_ibex only reads the revocation bitmap. a_data is always 0
+  assign {revbm_wdata_intg, unused_revbm_data} = prim_secded_pkg::prim_secded_inv_39_32_enc('0);
+  // SEC_CM: BUS.INTEGRITY
+  tlul_adapter_host #(
+    .MAX_REQS(NumOutstandingReqs),
+    // if secure ibex is not set, data integrity is not generated
+    // from ibex, therefore generate it in the gasket instead.
+    .EnableDataIntgGen(~SecureIbex)
+  ) tl_adapter_host_revbm_ibex (
+    .clk_i,
+    .rst_ni,
+    .req_i        (main_core_revbm_req),
+    .instr_type_i (prim_mubi_pkg::MuBi4False),
+    .gnt_o        (main_core_revbm_gnt),
+    .addr_i       (main_core_revbm_addr),
+    .we_i         (1'b0),
+    .wdata_i      (32'b0),
+    .wdata_intg_i (revbm_wdata_intg),
+    .be_i         (4'hF),
+    .user_rsvd_i  (TlulHostUserRsvdBits),
+    .valid_o      (main_core_revbm_rvalid),
+    .rdata_o      (main_core_revbm_rdata),
+    .rdata_intg_o (main_core_revbm_rdata_intg),
+    .err_o        (main_core_revbm_err),
+    .intg_err_o   (revbmbus_intg_err),
+    .tl_o         (tl_revbm_ibex2fifo),
+    .tl_i         (tl_revbm_fifo2ibex)
+  );
+
+  tlul_fifo_sync #(
+    .ReqPass(FifoPass),
+    .RspPass(FifoPass),
+    .ReqDepth(FifoDepth),
+    .RspDepth(FifoDepth)
+  ) fifo_revbm (
+    .clk_i,
+    .rst_ni,
+    .tl_h_i      (tl_revbm_ibex2fifo),
+    .tl_h_o      (tl_revbm_fifo2ibex),
+    .tl_d_o      (corerevbm_tl_o),
+    .tl_d_i      (corerevbm_tl_i),
+    .spare_req_i (1'b0),
+    .spare_req_o (),
+    .spare_rsp_i (1'b0),
+    .spare_rsp_o ()
+  );
+
 `ifdef RVFI
   ibex_tracer ibex_tracer_i (
     .clk_i,
     .rst_ni,
+
+    .cheriot_enable_i (cheriot_enable_ibex),
 
     .hart_id_i,
 
@@ -766,7 +945,15 @@ module rv_core_ibex
     .rvfi_mem_rmask,
     .rvfi_mem_wmask,
     .rvfi_mem_rdata,
-    .rvfi_mem_wdata
+    .rvfi_mem_wdata,
+    .rvfi_rs1_rcap,
+    .rvfi_rs2_rcap,
+    .rvfi_rd_wcap,
+    .rvfi_mem_is_cap,
+    .rvfi_mem_rcap,
+    .rvfi_mem_wcap,
+    .rvfi_ext_expanded_insn_valid,
+    .rvfi_ext_expanded_insn
   );
 `endif
 
@@ -774,7 +961,8 @@ module rv_core_ibex
   // Peripheral functions
   //////////////////////////////////
 
-  logic intg_err;
+  logic cfg_reg_intg_err;
+  logic cfg_reg_intg_err_shadow;
   tlul_pkg::tl_h2d_t tl_win_h2d;
   tlul_pkg::tl_d2h_t tl_win_d2h;
   rv_core_ibex_cfg_reg_top u_reg_cfg (
@@ -784,7 +972,7 @@ module rv_core_ibex
     .tl_o(cfg_tl_d_o),
     .reg2hw,
     .hw2reg,
-    .intg_err_o (intg_err),
+    .intg_err_o (cfg_reg_intg_err),
     .tl_win_o(tl_win_h2d),
     .tl_win_i(tl_win_d2h)
   );
@@ -793,16 +981,28 @@ module rv_core_ibex
   // Region assignments
   ///////////////////////
 
+  logic [NumRegions-1:0] unused_ibus_region_cfg_qe;
   for(genvar i = 0; i < NumRegions; i++) begin : gen_ibus_region_cfgs
-    assign ibus_region_cfg[i].en = reg2hw.ibus_addr_en[i];
-    assign ibus_region_cfg[i].matching_region = reg2hw.ibus_addr_matching[i];
-    assign ibus_region_cfg[i].remap_addr = reg2hw.ibus_remap_addr[i];
+    assign ibus_region_cfg[i].en = reg2hw.ibus_addr_en[i].q;
+    assign ibus_region_cfg[i].matching_region = reg2hw.ibus_addr_matching[i].q;
+    assign ibus_region_cfg[i].remap_addr = reg2hw.ibus_remap_addr[i].q;
+    // Tie off the unused `qe` signals as they are only used in the shadow cfg registers in the
+    // TLUL lockstep.
+    assign unused_ibus_region_cfg_qe[i] = ^{reg2hw.ibus_addr_en[i].qe,
+                                            reg2hw.ibus_addr_matching[i].qe,
+                                            reg2hw.ibus_remap_addr[i].qe};
   end
 
+  logic [NumRegions-1:0] unused_dbus_region_cfg_qe;
   for(genvar i = 0; i < NumRegions; i++) begin : gen_dbus_region_cfgs
-    assign dbus_region_cfg[i].en = reg2hw.dbus_addr_en[i];
-    assign dbus_region_cfg[i].matching_region = reg2hw.dbus_addr_matching[i];
-    assign dbus_region_cfg[i].remap_addr = reg2hw.dbus_remap_addr[i];
+    assign dbus_region_cfg[i].en = reg2hw.dbus_addr_en[i].q;
+    assign dbus_region_cfg[i].matching_region = reg2hw.dbus_addr_matching[i].q;
+    assign dbus_region_cfg[i].remap_addr = reg2hw.dbus_remap_addr[i].q;
+    // Tie off the unused `qe` signals as they are only used in the shadow cfg registers in the
+    // TLUL lockstep.
+    assign unused_dbus_region_cfg_qe[i] = ^{reg2hw.dbus_addr_en[i].qe,
+                                            reg2hw.dbus_addr_matching[i].qe,
+                                            reg2hw.dbus_remap_addr[i].qe};
   end
 
   ///////////////////////
@@ -814,7 +1014,7 @@ module rv_core_ibex
   assign recov_core_err = recov_core_event;
 
   assign hw2reg.err_status.reg_intg_err.d = 1'b1;
-  assign hw2reg.err_status.reg_intg_err.de = intg_err;
+  assign hw2reg.err_status.reg_intg_err.de = cfg_reg_intg_err | cfg_reg_intg_err_shadow;
   assign hw2reg.err_status.fatal_intg_err.d = 1'b1;
   assign hw2reg.err_status.fatal_intg_err.de = fatal_intg_err;
   assign hw2reg.err_status.fatal_core_err.d = 1'b1;
@@ -845,7 +1045,8 @@ module rv_core_ibex
   import prim_mubi_pkg::mubi4_t;
   assign alert_events[0] = mubi4_test_true_loose(mubi4_t'(reg2hw.sw_fatal_err.q));
   assign alert_events[1] = mubi4_test_true_loose(mubi4_t'(reg2hw.sw_recov_err.q));
-  assign alert_events[2] = intg_err | fatal_intg_err | fatal_core_err;
+  assign alert_events[2] = cfg_reg_intg_err | cfg_reg_intg_err_shadow |
+                           fatal_intg_err | fatal_core_err | cheriot_switch_error;
   assign alert_events[3] = recov_core_err;
 
   logic unused_alert_acks;
@@ -935,6 +1136,21 @@ module rv_core_ibex
   assign hw2reg.rnd_status.rnd_data_valid.d = rnd_valid_q;
   assign hw2reg.rnd_status.rnd_data_fips.d  = rnd_fips_q;
 
+  ////////////////////
+  // CHERIoT switch
+  ////////////////////
+
+  // SEC_CM: CHERIOT_SWITCH.FSM.SPARSE
+  rv_core_ibex_cheriot_switch u_cheriot_switch (
+    .clk_i,
+    .rst_ni,
+    .ena_i        (mubi4_t'(reg2hw.cheriot_ena.q)),
+    .lock_i       (mubi4_t'(reg2hw.cheriot_lock.q)),
+    .lock_access_i(reg2hw.cheriot_lock.qe),
+    .ena_o        (cheriot_ena_o),
+    .error_o      (cheriot_switch_error)
+  );
+
   logic unused_reg2hw;
   assign unused_reg2hw = |reg2hw.rnd_data.q;
 
@@ -942,14 +1158,369 @@ module rv_core_ibex
   // fpga build info hook-up
   assign hw2reg.fpga_info.d = fpga_info_i;
 
+  if (SecureIbex) begin : gen_tlul_lockstep
+    /////////////////////////////////////////////////////
+    // Shadow Core instruction and data region config. //
+    /////////////////////////////////////////////////////
+
+    rv_core_ibex_cfg_reg2hw_t reg2hw_shadow;
+    region_cfg_t [NumRegions-1:0] ibus_region_cfg_shadow;
+    region_cfg_t [NumRegions-1:0] dbus_region_cfg_shadow;
+    logic        [NumRegions-1:0] ibus_region_cfg_shadow_changed;
+    logic        [NumRegions-1:0] dbus_region_cfg_shadow_changed;
+
+    tlul_pkg::tl_h2d_t unused_tl_win_h2d_shadow;
+    tlul_pkg::tl_d2h_t unused_cfg_tl_d_shadow;
+
+    rv_core_ibex_cfg_reg_top u_reg_cfg_shadow (
+      .clk_i,
+      .rst_ni,
+      .tl_i       (cfg_tl_d_i),
+      .tl_o       (unused_cfg_tl_d_shadow),
+      .reg2hw     (reg2hw_shadow),
+      .hw2reg     (rv_core_ibex_cfg_hw2reg_t'('0)),
+      .intg_err_o (cfg_reg_intg_err_shadow),
+      .tl_win_o   (unused_tl_win_h2d_shadow),
+      .tl_win_i   (tl_win_d2h)
+    );
+
+    for(genvar i = 0; i < NumRegions; i++) begin : gen_ibus_region_cfg_shadows
+      assign ibus_region_cfg_shadow[i].en = reg2hw_shadow.ibus_addr_en[i].q;
+      assign ibus_region_cfg_shadow[i].matching_region = reg2hw_shadow.ibus_addr_matching[i].q;
+      assign ibus_region_cfg_shadow[i].remap_addr = reg2hw_shadow.ibus_remap_addr[i].q;
+      assign ibus_region_cfg_shadow_changed[i] = reg2hw_shadow.ibus_addr_en[i].qe |
+                                                 reg2hw_shadow.ibus_addr_matching[i].qe |
+                                                 reg2hw_shadow.ibus_remap_addr[i].qe;
+    end
+
+    for(genvar i = 0; i < NumRegions; i++) begin : gen_dbus_region_cfg_shadows
+      assign dbus_region_cfg_shadow[i].en = reg2hw_shadow.dbus_addr_en[i].q;
+      assign dbus_region_cfg_shadow[i].matching_region = reg2hw_shadow.dbus_addr_matching[i].q;
+      assign dbus_region_cfg_shadow[i].remap_addr = reg2hw_shadow.dbus_remap_addr[i].q;
+      assign dbus_region_cfg_shadow_changed[i] = reg2hw_shadow.dbus_addr_en[i].qe |
+                                                 reg2hw_shadow.dbus_addr_matching[i].qe |
+                                                 reg2hw_shadow.dbus_remap_addr[i].qe;
+    end
+
+    // When the dbus or ibus region configuration register shadow has been updated, which is
+    // detected by the write enable (.qe) signal, delay this write enable by LockstepOffset
+    // cycles and disable the lockstep comparison in this time.
+    logic tlul_lockstep_cmp_en;
+    logic [LockstepOffset-1:0] reg_cfg_shadow_updated_q;
+    if (LockstepOffset > 1) begin : gen_multi_cycle_delay
+      always_ff @(posedge clk_i or negedge rst_ni) begin
+        if (!rst_ni) begin
+          reg_cfg_shadow_updated_q <= '0;
+        end else begin
+          reg_cfg_shadow_updated_q <= {reg_cfg_shadow_updated_q[LockstepOffset-2:0],
+                                       (|dbus_region_cfg_shadow_changed) |
+                                       (|ibus_region_cfg_shadow_changed)};
+        end
+      end
+    end else begin : gen_single_cycle_delay
+      always_ff @(posedge clk_i or negedge rst_ni) begin
+        if (!rst_ni) begin
+          reg_cfg_shadow_updated_q <= '0;
+        end else begin
+          reg_cfg_shadow_updated_q <= |{dbus_region_cfg_shadow_changed,
+                                        ibus_region_cfg_shadow_changed};
+        end
+      end
+    end
+
+    // Enable the lockstep comparison if no change in the register has been observed.
+    assign tlul_lockstep_cmp_en = ~|reg_cfg_shadow_updated_q &
+                                  ~|dbus_region_cfg_shadow_changed &
+                                  ~|ibus_region_cfg_shadow_changed;
+
+    // Tie off unused signals.
+    logic unused_reg_cfg_signals;
+    logic unused_reg2hw_shadow;
+    assign unused_reg_cfg_signals = ^{unused_tl_win_h2d_shadow, unused_cfg_tl_d_shadow};
+
+    assign unused_reg2hw_shadow = ^{reg2hw_shadow.alert_test, reg2hw_shadow.nmi_enable,
+                                    reg2hw_shadow.nmi_state, reg2hw_shadow.rnd_data,
+                                    reg2hw_shadow.sw_fatal_err, reg2hw_shadow.sw_recov_err,
+                                    reg2hw_shadow.mcounteren_writable,
+                                    reg2hw_shadow.cheriot_ena, reg2hw_shadow.cheriot_lock};
+
+    /////////////////////////////////////////////////////////////////
+    // Shadow Core Data Address Translation Unit and TL-UL Adapter //
+    /////////////////////////////////////////////////////////////////
+    // TL-UL output signals
+    tl_h2d_t      tl_d_shadow_core;
+
+    // Translated addresses.
+    logic [31:0]  shadow_core_data_addr_trans;
+
+    // Delayed signals.
+    tl_d2h_t tl_d_fifo2ibex_delayed;
+    tl_h2d_t tl_d_main_core_delayed;
+
+    // Buffer the incoming TL-UL request from the main core to avoid synthesis optimizations.
+    tl_d2h_t tl_d_fifo2ibex_buf;
+
+    prim_buf #(
+      .Width(TlD2HWidth)
+    ) u_tl_d_fifo2ibex_buf (
+      .in_i(tl_d_fifo2ibex),
+      .out_o(tl_d_fifo2ibex_buf)
+    );
+
+    // Delay the main core TL-UL input and outputs.
+    if (LockstepOffset > 1) begin : gen_tl_d_multi_cycle_delay
+      tl_h2d_t tl_d_main_core_q [LockstepOffset];
+      tl_d2h_t tl_d_fifo2ibex_q [LockstepOffset];
+
+      assign tl_d_main_core_delayed = tl_d_main_core_q[0];
+      assign tl_d_fifo2ibex_delayed = tl_d_fifo2ibex_q[0];
+
+      always_ff @(posedge clk_i or negedge rst_ni) begin
+        if (!rst_ni) begin
+          for (int unsigned i = 0; i < LockstepOffset; i++) begin
+            tl_d_main_core_q[i] <= tl_h2d_t'('0);
+            tl_d_fifo2ibex_q[i] <= tl_d2h_t'('0);
+          end
+        end else begin
+          for (int unsigned i = 0; i < LockstepOffset - 1; i++) begin
+            tl_d_main_core_q[i] <= tl_d_main_core_q[i+1];
+            tl_d_fifo2ibex_q[i] <= tl_d_fifo2ibex_q[i+1];
+          end
+          tl_d_main_core_q[LockstepOffset-1] <= tl_d_ibex2fifo_main_core;
+          tl_d_fifo2ibex_q[LockstepOffset-1] <= tl_d_fifo2ibex_buf;
+        end
+      end
+    end else begin : gen_tl_d_single_cycle_delay
+      tl_h2d_t tl_d_main_core_q;
+      tl_d2h_t tl_d_fifo2ibex_q;
+
+      assign tl_d_main_core_delayed = tl_d_main_core_q;
+      assign tl_d_fifo2ibex_delayed = tl_d_fifo2ibex_q;
+
+      always_ff @(posedge clk_i or negedge rst_ni) begin
+        if (!rst_ni) begin
+          tl_d_main_core_q <= tl_h2d_t'('0);
+          tl_d_fifo2ibex_q <= tl_d2h_t'('0);
+        end else begin
+          tl_d_main_core_q <= tl_d_ibex2fifo_main_core;
+          tl_d_fifo2ibex_q <= tl_d_fifo2ibex_buf;
+        end
+      end
+    end
+
+    rv_core_ibex_addr_trans #(
+      .AddrWidth    (32),
+      .NumRegions   (NumRegions)
+    ) u_dbus_trans_shadow_core (
+      .clk_i,
+      .rst_ni       (addr_trans_rst_ni),
+      .region_cfg_i (dbus_region_cfg_shadow),
+      .addr_i       (shadow_core_data_addr),
+      .addr_o       (shadow_core_data_addr_trans)
+    );
+
+    logic unused_shadow_core_valid, unused_shadow_core_gnt;
+    logic unused_shadow_core_err, unused_shadow_core_intg_err;
+    logic [31:0] unused_shadow_core_rdata;
+    logic [6:0]  unused_shadow_core_rdata_intg;
+
+    tlul_adapter_host #(
+      .MAX_REQS(2),
+      .EnableDataIntgGen(~SecureIbex)
+    ) tl_adapter_host_d_ibex_shadow_core  (
+      .clk_i,
+      .rst_ni,
+      .req_i        (shadow_core_data_req),
+      .instr_type_i (prim_mubi_pkg::MuBi4False),
+      .gnt_o        (unused_shadow_core_gnt),
+      .addr_i       (shadow_core_data_addr_trans),
+      .we_i         (shadow_core_data_we),
+      .wdata_i      (shadow_core_data_wdata),
+      .wdata_intg_i (shadow_core_data_wdata_intg),
+      .be_i         (shadow_core_data_be),
+      .user_rsvd_i  (TlulHostUserRsvdBits),
+      .valid_o      (unused_shadow_core_valid),
+      .rdata_o      (unused_shadow_core_rdata),
+      .rdata_intg_o (unused_shadow_core_rdata_intg),
+      .err_o        (unused_shadow_core_err),
+      .intg_err_o   (unused_shadow_core_intg_err),
+      .tl_o         (tl_d_shadow_core),
+      .tl_i         (tl_d_fifo2ibex_delayed)
+    );
+
+    // Compare the main and shadow core TL-UL outputs.
+    assign alert_rv_d_tlul_comparison =
+      ((core_lockstep_cmp_en != ibex_pkg::IbexMuBiOff) &
+       (tlul_lockstep_cmp_en == 1'b1) &
+       (tl_d_main_core_delayed != tl_d_shadow_core));
+
+    // Tie off unused signals.
+    logic unused_tlul_d_signals;
+    assign unused_tlul_d_signals = ^{unused_shadow_core_rdata_intg, unused_shadow_core_rdata,
+                                     unused_shadow_core_err, unused_shadow_core_intg_err,
+                                     unused_shadow_core_valid, unused_shadow_core_gnt};
+
+    ////////////////////////////////////////////////////////////////////////
+    // Shadow Core Instruction Address Translation Unit and TL-UL Adapter //
+    ////////////////////////////////////////////////////////////////////////
+
+    // Shadow core instruction interface (internal)
+    logic        shadow_core_instr_gnt, shadow_core_instr_gnt_ibex;
+    logic        shadow_core_instr_req_q;
+    logic [31:0] shadow_core_instr_addr_q;
+    logic [31:0] shadow_core_instr_addr_trans;
+
+    // TL-UL output signals
+    tl_h2d_t tl_i_shadow_core;
+
+    // Buffer the incoming TL-UL request from the main core to avoid synthesis optimizations.
+    tl_d2h_t tl_i_fifo2ibex_buf;
+
+    // Delayed signals.
+    tl_d2h_t tl_i_fifo2ibex_delayed;
+    tl_h2d_t tl_i_main_core_delayed;
+
+    prim_buf #(
+      .Width(TlD2HWidth)
+    ) u_tl_i_fifo2ibex_buf (
+      .in_i(tl_i_fifo2ibex),
+      .out_o(tl_i_fifo2ibex_buf)
+    );
+
+    // Add an optional pipeline stage between Ibex and the address translation
+    if (InstructionPipeline) begin : gen_instr_req_pipe_lockstep
+      // Request is granted for Ibex if the pipeline's request is granted or if the pipeline
+      // is empty
+      assign shadow_core_instr_gnt_ibex = shadow_core_instr_gnt || !shadow_core_instr_req_q;
+      always_ff @(posedge clk_i or negedge rst_ni) begin
+        if (!rst_ni) begin
+          shadow_core_instr_req_q  <= 1'b0;
+          shadow_core_instr_addr_q <= 32'h0;
+        end else if (shadow_core_instr_gnt_ibex) begin
+          // The request is captured if the pipeline's request is granted or if the pipeline
+          // is empty
+          shadow_core_instr_req_q  <= shadow_core_instr_req;
+          // Only capture the address if the request is valid
+          if (shadow_core_instr_req) begin
+            shadow_core_instr_addr_q <= shadow_core_instr_addr;
+          end
+        end
+      end
+    end else begin : gen_no_instr_req_pipe_lockstep
+      assign shadow_core_instr_req_q = shadow_core_instr_req;
+      assign shadow_core_instr_addr_q = shadow_core_instr_addr;
+      assign shadow_core_instr_gnt_ibex = shadow_core_instr_gnt;
+
+      // Tie off unused signal.
+      logic unused_instr_gnt_signal;
+      assign unused_instr_gnt_signal = shadow_core_instr_gnt_ibex;
+    end
+
+    // Delay the main core TL-UL input and outputs.
+    if (LockstepOffset > 1) begin : gen_tl_i_multi_cycle_delay
+      tl_h2d_t tl_i_main_core_q [LockstepOffset];
+      tl_d2h_t tl_i_fifo2ibex_q [LockstepOffset];
+
+      assign tl_i_main_core_delayed = tl_i_main_core_q[0];
+      assign tl_i_fifo2ibex_delayed = tl_i_fifo2ibex_q[0];
+
+      always_ff @(posedge clk_i or negedge rst_ni) begin
+        if (!rst_ni) begin
+          for (int unsigned i = 0; i < LockstepOffset; i++) begin
+            tl_i_main_core_q[i] <= tl_h2d_t'('0);
+            tl_i_fifo2ibex_q[i] <= tl_d2h_t'('0);
+          end
+        end else begin
+          for (int unsigned i = 0; i < LockstepOffset - 1; i++) begin
+            tl_i_main_core_q[i] <= tl_i_main_core_q[i+1];
+            tl_i_fifo2ibex_q[i] <= tl_i_fifo2ibex_q[i+1];
+          end
+          tl_i_main_core_q[LockstepOffset-1] <= tl_i_ibex2fifo;
+          tl_i_fifo2ibex_q[LockstepOffset-1] <= tl_i_fifo2ibex_buf;
+        end
+      end
+    end else begin : gen_tl_i_single_cycle_delay
+      tl_h2d_t tl_i_main_core_q;
+      tl_d2h_t tl_i_fifo2ibex_q;
+
+      assign tl_i_main_core_delayed = tl_i_main_core_q;
+      assign tl_i_fifo2ibex_delayed = tl_i_fifo2ibex_q;
+
+      always_ff @(posedge clk_i or negedge rst_ni) begin
+        if (!rst_ni) begin
+          tl_i_main_core_q <= tl_h2d_t'('0);
+          tl_i_fifo2ibex_q <= tl_d2h_t'('0);
+        end else begin
+          tl_i_main_core_q <= tl_i_ibex2fifo;
+          tl_i_fifo2ibex_q <= tl_i_fifo2ibex_buf;
+        end
+      end
+    end
+
+    rv_core_ibex_addr_trans #(
+      .AddrWidth    (32),
+      .NumRegions   (NumRegions)
+    ) u_ibus_trans_shadow_core (
+      .clk_i,
+      .rst_ni       (addr_trans_rst_ni),
+      .region_cfg_i (ibus_region_cfg_shadow),
+      .addr_i       (shadow_core_instr_addr_q),
+      .addr_o       (shadow_core_instr_addr_trans)
+    );
+
+    logic unused_shadow_core_instr_rvalid;
+    logic unused_shadow_core_instr_err, unused_shadow_core_ibus_intg_err;
+    logic [31:0] unused_shadow_core_instr_rdata;
+    logic [6:0]  unused_shadow_core_instr_rdata_intg;
+
+    tlul_adapter_host #(
+      .MAX_REQS(NumOutstandingReqs),
+      // if secure ibex is not set, data integrity is not generated
+      // from ibex, therefore generate it in the gasket instead.
+      .EnableDataIntgGen(~SecureIbex)
+    ) tl_adapter_host_i_ibex_shadow_core (
+      .clk_i,
+      .rst_ni,
+      .req_i        (shadow_core_instr_req_q),
+      .instr_type_i (prim_mubi_pkg::MuBi4True),
+      .gnt_o        (shadow_core_instr_gnt),
+      .addr_i       (shadow_core_instr_addr_trans),
+      .we_i         (1'b0),
+      .wdata_i      (32'b0),
+      .wdata_intg_i (instr_wdata_intg),
+      .be_i         (4'hF),
+      .user_rsvd_i  (TlulHostUserRsvdBits),
+      .valid_o      (unused_shadow_core_instr_rvalid),
+      .rdata_o      (unused_shadow_core_instr_rdata),
+      .rdata_intg_o (unused_shadow_core_instr_rdata_intg),
+      .err_o        (unused_shadow_core_instr_err),
+      .intg_err_o   (unused_shadow_core_ibus_intg_err),
+      .tl_o         (tl_i_shadow_core),
+      .tl_i         (tl_i_fifo2ibex_delayed)
+    );
+
+    // Compare the main and shadow core TL-UL outputs.
+    assign alert_rv_i_tlul_comparison =
+      ((core_lockstep_cmp_en != ibex_pkg::IbexMuBiOff) &
+       (tlul_lockstep_cmp_en == 1'b1) &
+       (tl_i_main_core_delayed != tl_i_shadow_core));
+
+    // Tie off unused signals.
+    logic unused_tlul_i_signals;
+    assign unused_tlul_i_signals = ^{unused_shadow_core_instr_rvalid,
+                                     unused_shadow_core_instr_rdata,
+                                     unused_shadow_core_instr_rdata_intg,
+                                     unused_shadow_core_instr_err,
+                                     unused_shadow_core_ibus_intg_err};
+  end else begin : gen_no_tlul_lockstep
+    assign alert_rv_d_tlul_comparison = 1'b0;
+    assign alert_rv_i_tlul_comparison = 1'b0;
+    assign cfg_reg_intg_err_shadow = 1'b0;
+  end
+
   /////////////////////////////////////
   // The carved out space is for DV emulation purposes only
   /////////////////////////////////////
-
-  import tlul_pkg::tl_h2d_t;
-  import tlul_pkg::tl_d2h_t;
-  localparam int TlH2DWidth = $bits(tl_h2d_t);
-  localparam int TlD2HWidth = $bits(tl_d2h_t);
 
   logic [TlH2DWidth-1:0] tl_win_h2d_int;
   logic [TlD2HWidth-1:0] tl_win_d2h_int;
@@ -1023,14 +1594,10 @@ module rv_core_ibex
 
   // Alert assertions for reg_we onehot check
   `ASSERT_PRIM_REG_WE_ONEHOT_ERROR_TRIGGER_ALERT(RegWeOnehotCheck_A, u_reg_cfg, alert_tx_o[2])
-  `ASSERT_PRIM_ONEHOT_ERROR_TRIGGER_ALERT(RvCoreRegWeOnehotCheck_A,
-      u_core.gen_regfile_ff.register_file_i.gen_wren_check.u_prim_onehot_check, alert_tx_o[2])
-  `ASSERT_PRIM_ONEHOT_ERROR_TRIGGER_ALERT(RvCoreRegWeOnehotCheckRAddrA_A,
-        u_core.gen_regfile_ff.register_file_i.gen_rdata_mux_check.u_prim_onehot_check_raddr_a,
-        alert_tx_o[2])
-  `ASSERT_PRIM_ONEHOT_ERROR_TRIGGER_ALERT(RvCoreRegWeOnehotCheckRAddrB_A,
-        u_core.gen_regfile_ff.register_file_i.gen_rdata_mux_check.u_prim_onehot_check_raddr_b,
-        alert_tx_o[2])
+  if (SecureIbex) begin : gen_u_reg_cfg_shadow_assert
+    `ASSERT_PRIM_REG_WE_ONEHOT_ERROR_TRIGGER_ALERT(RegWeOnehotCheckShdw_A,
+        gen_tlul_lockstep.u_reg_cfg_shadow, alert_tx_o[2])
+  end
 
 `ifdef INC_ASSERT
   if (ICache && ICacheScramble) begin : gen_icache_scramble_asserts
@@ -1091,10 +1658,15 @@ module rv_core_ibex
       lsu_store_resp_intg_err)
   `ASSERT_IBEX_CORE_ERROR_TRIGGER_ALERT(IbexInstrIntgErrCheck_A, alert_tx_o[2], u_ibex_core,
       instr_intg_err)
-  `ASSERT_PRIM_COUNT_ERROR_TRIGGER_ALERT(IbexLockstepResetCountAlertCheck_A,
-      u_core.gen_lockstep.u_ibex_lockstep.u_rst_shadow_cnt, alert_tx_o[2])
+  if (LockstepOffset > 1) begin: gen_lockstep_rst_cnt_assert
+    `ASSERT_PRIM_COUNT_ERROR_TRIGGER_ALERT(IbexLockstepResetCountAlertCheck_A,
+      u_core.gen_lockstep.u_ibex_lockstep.gen_reset_counter.u_rst_shadow_cnt, alert_tx_o[2])
+  end
   `ASSERT_PRIM_FSM_ERROR_TRIGGER_ALERT(CoredTlLcGateFsm_A,
       u_tlul_lc_gate_cored.u_state_regs, alert_tx_o[2])
+
+  `ASSERT_PRIM_FSM_ERROR_TRIGGER_ALERT(CheriotSwitchFsm_A,
+      u_cheriot_switch.u_state_regs, alert_tx_o[2])
 
 `endif // ifdef INC_ASSERT
 endmodule

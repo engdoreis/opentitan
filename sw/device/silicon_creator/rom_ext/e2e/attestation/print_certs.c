@@ -6,7 +6,7 @@
 #include "sw/device/lib/runtime/log.h"
 #include "sw/device/lib/runtime/print.h"
 #include "sw/device/lib/testing/test_framework/ottf_main.h"
-#include "sw/device/silicon_creator/lib/drivers/flash_ctrl.h"
+#include "sw/device/silicon_creator/lib/nvm_ctrl.h"
 #include "sw/device/silicon_creator/manuf/base/perso_tlv_data.h"
 
 OTTF_DEFINE_TEST_CONFIG();
@@ -29,17 +29,17 @@ static void base64_encode(char *dest, const uint8_t *data, int32_t len) {
   *dest = '\0';
 }
 
-static status_t print_cert(char *dest,
-                           const flash_ctrl_info_page_t *info_page) {
+static status_t print_cert(char *dest, nvm_info_page_t info_page) {
   uint8_t data[2048];
-  TRY(flash_ctrl_info_read_zeros_on_read_error(
+  TRY(nvm_ctrl_info_read_zeros_on_read_error(
       info_page, 0, sizeof(data) / sizeof(uint32_t), data));
 
   uint32_t offset = 0;
   size_t len = sizeof(data);
   while (true) {
     perso_tlv_cert_obj_t obj = {0};
-    rom_error_t err = perso_tlv_get_cert_obj(data + offset, len, &obj);
+    rom_error_t err =
+        perso_tlv_get_cert_obj(data + offset, len, kPersoBlobVersionV0, &obj);
     if (err != kErrorOk) {
       break;
     }
@@ -52,11 +52,9 @@ static status_t print_cert(char *dest,
   return OK_STATUS();
 }
 
-static status_t print_owner_block(char *dest,
-                                  const flash_ctrl_info_page_t *info_page) {
+static status_t print_owner_block(char *dest, nvm_info_page_t info_page) {
   uint8_t data[2048];
-  TRY(flash_ctrl_info_read(info_page, 0, sizeof(data) / sizeof(uint32_t),
-                           data));
+  TRY(nvm_ctrl_info_read(info_page, 0, sizeof(data) / sizeof(uint32_t), data));
   base64_encode(dest, data, sizeof(data));
   return OK_STATUS();
 }
@@ -64,14 +62,21 @@ static status_t print_owner_block(char *dest,
 static status_t print_certs(void) {
   char buf[3072];
   // Print certificates.
-  TRY(print_cert(buf, &kFlashCtrlInfoPageFactoryCerts));
-  TRY(print_cert(buf, &kFlashCtrlInfoPageDiceCerts));
+  // TODO: print factory certs on FPGA;
+  // On non-silicon targets, the factory certs pages will not be provisioned,
+  // and it is not updated by the ROM_EXT if it is not provisioned. This will
+  // trigger an ECC error when trying to read a page that has scrambling setup
+  // by the ROM_EXT but is not erased after.
+  if (kDeviceType == kDeviceSilicon) {
+    TRY(print_cert(buf, kNvmInfoPageFactoryCerts));
+  }
+  TRY(print_cert(buf, kNvmInfoPageDiceCerts));
 
   // Print owner information.
-  TRY(print_owner_block(buf, &kFlashCtrlInfoPageOwnerSlot0));
+  TRY(print_owner_block(buf, kNvmInfoPageOwnerSlot0));
   LOG_INFO("OWNER_PAGE_0: %s", buf);
 
-  TRY(print_owner_block(buf, &kFlashCtrlInfoPageOwnerSlot1));
+  TRY(print_owner_block(buf, kNvmInfoPageOwnerSlot1));
   LOG_INFO("OWNER_PAGE_1: %s", buf);
 
   return OK_STATUS();

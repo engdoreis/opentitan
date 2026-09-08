@@ -127,7 +127,12 @@ ${make_ral_pkg_window_class(dv_base_names.mem, esc_if_name, window)}
     endfunction : new
 
     virtual function void build(uvm_reg_addr_t base_addr,
-                                csr_excl_item csr_excl = null);
+                                csr_excl_item  csr_excl,
+                                int unsigned   addr_width,
+                                int unsigned   data_width,
+                                int unsigned   be_width);
+      super.build(base_addr, csr_excl, addr_width, data_width, be_width);
+
       // create default map
       this.default_map = create_map(.name("default_map"),
                                     .base_addr(base_addr),
@@ -453,7 +458,6 @@ reg_field_name, field)">\
 % if field.alias_target is not None:
       ${fname}.set_alias_name("${field.alias_target.lower()}");
 % endif
-      ${fname}.set_original_access("${field_access}");
 % if field.mubi:
       ${fname}.set_mubi_width(${field_size});
 % endif
@@ -604,7 +608,7 @@ reg_field_name, field)">\
           "${shadowed_reg_path}.committed_reg.q", // verilog_lint: waive line-length
           ${field.bits.lsb}, ${field.bits.width()}, 0, "BkdrRegPathRtl");
       ${reg_inst}.add_hdl_path_slice(
-          "${shadowed_reg_path}.shadow_reg.q", // verilog_lint: waive line-length
+          "${shadowed_reg_path}.shadow_q", // verilog_lint: waive line-length
           ${field.bits.lsb}, ${field.bits.width()}, 0, "BkdrRegPathRtlShadow");
     % endfor
   % endif
@@ -637,7 +641,7 @@ reg_field_name, field)">\
           "${reg_block_path}.u_${reg_field_name}.committed_reg.q",
           ${field.bits.lsb}, ${field_size}, 0, "BkdrRegPathRtl");
       ${reg_inst}.add_hdl_path_slice(
-          "${reg_block_path}.u_${reg_field_name}.shadow_reg.q",
+          "${reg_block_path}.u_${reg_field_name}.shadow_q",
           ${field.bits.lsb}, ${field_size}, 0, "BkdrRegPathRtlShadow");
 %   endif
 % endfor

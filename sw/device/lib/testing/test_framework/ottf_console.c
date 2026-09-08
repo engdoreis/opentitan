@@ -38,8 +38,10 @@ void ottf_console_configure_null(ottf_console_t *console) {
 }
 
 void ottf_console_init(void) {
+#if defined(OTTF_CONSOLE_HAS_UART) || defined(OTTF_CONSOLE_HAS_SPI_DEVICE)
   // Initialize/Configure the console device.
   uintptr_t base_addr = kOttfTestConfig.console.base_addr;
+#endif
 
   switch (kOttfTestConfig.console.type) {
 #ifdef OTTF_CONSOLE_HAS_UART
@@ -78,19 +80,19 @@ void ottf_console_init(void) {
       break;
   }
 
-  base_set_stdout((buffer_sink_t){.data = (void *)&main_console,
-                                  .sink = main_console.sink});
+  base_set_stdout(ottf_console_get_buffer_sink(&main_console));
 }
 
 uint32_t ottf_console_get_flow_control_irqs(void) { return flow_control_irqs; }
 
 bool ottf_console_flow_control_isr(uint32_t *exc_info) {
-  flow_control_irqs += 1;
 #ifdef OTTF_CONSOLE_HAS_UART
-  return ottf_console_uart_flow_control_isr(exc_info, &main_console);
-#else
-  return false;
+  if (main_console.type == kOttfConsoleUart) {
+    flow_control_irqs += 1;
+    return ottf_console_uart_flow_control_isr(exc_info, &main_console);
+  }
 #endif
+  return false;
 }
 
 status_t ottf_console_flow_control(ottf_console_t *console,
@@ -186,4 +188,8 @@ status_t ottf_console_putbuf(void *io, const char *buf, size_t len) {
 status_t ottf_console_getc(void *io) {
   ottf_console_t *console = io;
   return console->getc(io);
+}
+
+buffer_sink_t ottf_console_get_buffer_sink(ottf_console_t *console) {
+  return (buffer_sink_t){.data = (void *)console, .sink = console->sink};
 }

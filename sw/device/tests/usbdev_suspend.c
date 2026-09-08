@@ -129,7 +129,7 @@
  * Timeout constants in microseconds;
  */
 enum {
-  TimeoutResumeMissed = 40U * 1000U,
+  TimeoutResumeMissed = 400U * 1000U,
   TimeoutResetMissed = 60U * 1000U,
   TimeoutWakeupResume = 30000u,
   TimeoutFinishMissed = 2000u,
@@ -346,7 +346,7 @@ enum {
   /**
    * Retention SRAM start address
    */
-  kRetSramBaseAddr = TOP_EARLGREY_SRAM_CTRL_RET_AON_RAM_BASE_ADDR,
+  kRetSramBaseAddr = TOP_EARLGREY_SRAM_CTRL_RET_RAM_BASE_ADDR,
   /**
    * Retention SRAM address at which we may store some state.
    */
@@ -1532,7 +1532,7 @@ static status_t state_service(usbdev_suspend_ctx_t *ctx) {
             // TODO: experimental test code! DO NOT MERGE
             if (false) {
               static uint8_t buf[4096];
-              extern void usbutils_gather(dif_usbdev_t * dev, uint8_t * buf,
+              extern void usbutils_gather(dif_usbdev_t * dev, uint8_t *buf,
                                           size_t n);
 
               while (!sense) {
@@ -1819,7 +1819,7 @@ bool usbdev_suspend_test(usbdev_suspend_phase_t init_phase,
       host_resumes = true;
       host_resets = true;
       host_disconnects = true;
-      verbose = false;
+      verbose = true;
       break;
 
     default:
@@ -1838,7 +1838,7 @@ bool usbdev_suspend_test(usbdev_suspend_phase_t init_phase,
 
       // Presently, the FPGA build is expected to be observed/monitored by a
       // developer, so verbose reporting is appropriate.
-      verbose = false;  // true;
+      verbose = true;  // true;
       break;
   }
 
@@ -1946,8 +1946,8 @@ bool usbdev_suspend_test(usbdev_suspend_phase_t init_phase,
     // Keep going if we're advancing to the next phase.
     //  (NextPhase means that we advance whilst still active and can thus skip
     //   device setup and configuratinon)
-  } while (ctx->test_state == kSuspendStateNextPhase ||    // from Resume
-           ctx->test_state == kSuspendStateBusReset ||     // after Bus Reset
+  } while (ctx->test_state == kSuspendStateNextPhase ||  // from Resume
+           ctx->test_state == kSuspendStateBusReset ||   // after Bus Reset
            ctx->test_state == kSuspendStatePowerOnReset);  // after Disconnect
 
   if (verbose) {

@@ -97,8 +97,11 @@ hardened_bool_t hardened_memeq(const uint32_t *lhs, const uint32_t *rhs,
  * Constant time memeq implementation that can also handle non 32-bit aligned
  * buffers.
  *
- * Important: not hardened against SCA leakage, only guarantees constant time
- * execution.
+ * SCA protection is provided by choosing a random start index for the
+ * comparison.
+ *
+ * CAUTION! This function is not considered as secure as `hardened_memeq` due to
+ * the byte-sized memory accesses vs. 32b word accesses.
  *
  * @param lhs The first buffer to compare.
  * @param rhs The second buffer to compare.
@@ -175,6 +178,132 @@ status_t randomized_bytecopy(void *OT_RESTRICT dest,
 status_t randomized_bytexor_in_place(void *OT_RESTRICT x,
                                      const void *OT_RESTRICT y,
                                      size_t byte_len);
+
+/**
+ * Combines two word buffers with ADD and store the result in the dest. buffer.
+ *
+ * Warning: Only limited SCA hardening measures are applied due to the nature of
+ * arithmetic operations. guaranteed. The function is hardened against fault
+ * injections.
+ *
+ * This mimics the OTBN `add`.
+ *
+ * @param x Pointer to the first operand.
+ * @param y Pointer to the second operand.
+ * @param word_len Length in words of each operand.
+ * @param dest[out] Pointer to the output buffer.
+ * @return OK or error.
+ */
+status_t hardened_add(const uint32_t *OT_RESTRICT x,
+                      const uint32_t *OT_RESTRICT y, size_t word_len,
+                      uint32_t *OT_RESTRICT dest);
+
+/**
+ * Combines two word buffers with SUB and store the result in the dest. buffer.
+ *
+ * Warning: the side-channel protection of this function call can not be
+ * guaranteed.
+ * The function is hardened against fault injections.
+ *
+ * This mimics the OTBN `sub`.
+ *
+ * @param x Pointer to the first operand.
+ * @param y Pointer to the second operand.
+ * @param word_len Length in words of each operand.
+ * @param dest[out] Pointer to the output buffer.
+ * @return OK or error.
+ */
+status_t hardened_sub(const uint32_t *OT_RESTRICT x,
+                      const uint32_t *OT_RESTRICT y, size_t word_len,
+                      uint32_t *OT_RESTRICT dest);
+
+/**
+ * Perform a modular subtraction of two multi-word values.
+ *
+ * It computes (x - y) mod n. The values are expected to follow a
+ * little-endian layout.
+ *
+ * Warning: the side-channel protection of this function call can not be
+ * guaranteed. The function is hardened against fault injections and is
+ * constant time in the value being reduced.
+ *
+ * In order to have this function constant time, it conditionally adds n only
+ * once.
+ * This function mimics OTBN's subm.
+ *
+ * @param x Pointer to the first operand.
+ * @param y Pointer to the second operand.
+ * @param n Pointer to the multi-word modulus.
+ * @param word_len Length in words of each operand and the modulus.
+ * @param[out] dest Pointer to the multi-word result.
+ * @return OK or error.
+ */
+status_t hardened_sub_mod(const uint32_t *OT_RESTRICT x,
+                          const uint32_t *OT_RESTRICT y,
+                          const uint32_t *OT_RESTRICT n, size_t word_len,
+                          uint32_t *OT_RESTRICT dest);
+
+/**
+ * Perform a modular addition of two multi-word values.
+ *
+ * It computes (x + y) mod n. The values are expected to follow a
+ * little-endian layout.
+ *
+ * Warning: the side-channel protection of this function call can not be
+ * guaranteed. The function is hardened against fault injections and is
+ * constant time in the value being reduced.
+ *
+ * In order to have this function constant time, it conditionally subtracts n
+ * only once.
+ * This function mimics OTBN's addm.
+ *
+ * @param x Pointer to the first operand.
+ * @param y Pointer to the second operand.
+ * @param n Pointer to the multi-word modulus.
+ * @param word_len Length in words of each operand and the modulus.
+ * @param[out] dest Pointer to the multi-word result.
+ * @return OK or error.
+ */
+status_t hardened_add_mod(const uint32_t *OT_RESTRICT x,
+                          const uint32_t *OT_RESTRICT y,
+                          const uint32_t *OT_RESTRICT n, size_t word_len,
+                          uint32_t *OT_RESTRICT dest);
+
+/**
+ * Perform a range check whether the value is larger than zero and smaller than
+ * N. Namely, it checks whether 0 < value < N. Values are expected to follow
+ * little-endian layout.
+ *
+ * Warning: the side-channel protection of this function call can not be
+ * guaranteed.
+ * The function is hardened against fault injections and is constant time.
+ *
+ * @param value Pointer to the value to check.
+ * @param N Pointer to the upper limit of the range.
+ * @param word_len Length in words of value and N.
+ * @return OK or error.
+ */
+status_t hardened_range_check(const uint32_t *value, const uint32_t *N,
+                              size_t word_len);
+
+/**
+ * Perform a modular reduction of a multi-word value by a multi-word modulus.
+ *
+ * It checks whether value % n. The value is expected to follow a
+ * little-endian layout.
+ *
+ * Warning: the side-channel protection of this function call can not be
+ * guaranteed. The function is hardened against fault injections and is
+ * constant time in the value being reduced.
+ *
+ * @param value Pointer to the value to check.
+ * @param n Pointer to the multi-word modulus.
+ * @param word_len Length in words of value.
+ * @param[out] result Pointer to the multi-word result.
+ * @return OK or error.
+ */
+status_t hardened_mod_reduce(const uint32_t *value, const uint32_t *n,
+                             size_t word_len, uint32_t *result);
 
 #ifdef __cplusplus
 }  // extern "C"

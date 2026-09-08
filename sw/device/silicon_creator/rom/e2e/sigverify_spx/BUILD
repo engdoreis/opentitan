@@ -4,7 +4,6 @@
 
 load(
     "//rules/opentitan:defs.bzl",
-    "cw310_params",
     "ecdsa_key_for_lc_state",
     "fpga_params",
     "opentitan_binary",
@@ -95,7 +94,7 @@ opentitan_binary(
         CONST.LCV.RMA,
     ),
     exec_env = [
-        "//hw/top_earlgrey:fpga_cw310_rom_with_fake_keys",
+        "//hw/top_earlgrey:fpga_cw340_rom_with_fake_keys",
         "//hw/top_earlgrey:sim_dv",
         "//hw/top_earlgrey:sim_verilator",
     ],
@@ -157,7 +156,7 @@ opentitan_binary(
             lc_state_val,
         ),
         exec_env = {
-            "//hw/top_earlgrey:fpga_cw310_rom_with_fake_keys": None,
+            "//hw/top_earlgrey:fpga_cw340_rom_with_fake_keys": None,
         },
         fpga = fpga_params(
             exit_success = t["exit_success"][lc_state],
@@ -201,16 +200,16 @@ opentitan_test(
     name = "sigverify_spx_prehashed_test",
     srcs = ["sigverify_spx_test.c"],
     ecdsa_key = {
-        "//sw/device/silicon_creator/rom/keys/fake/ecdsa:prod_key_1_ecdsa_p256": "prod_key_1",
+        "//sw/device/silicon_creator/rom/keys/fake/ecdsa:ecdsa_keyset": "prod_key_1",
     },
     exec_env = {
-        "//hw/top_earlgrey:fpga_cw310_rom_with_fake_keys": None,
+        "//hw/top_earlgrey:fpga_cw340_rom_with_fake_keys": None,
     },
     fpga = fpga_params(
         otp = ":otp_img_sigverify_spx_prod_enabled_true",
     ),
     spx_key = {
-        "//sw/device/silicon_creator/rom/keys/fake/spx:prod_key_1_spx_key": "prod_key_1",
+        "//sw/device/silicon_creator/rom/keys/fake/spx:spx_keyset": "prod_key_1",
     },
     deps = [
         "//hw/top:otp_ctrl_c_regs",

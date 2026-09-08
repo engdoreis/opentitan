@@ -14,16 +14,12 @@ load(
 load(
     "@lowrisc_opentitan//rules/opentitan:cc.bzl",
     _opentitan_binary = "opentitan_binary",
+    _opentitan_binary_blob = "opentitan_binary_blob",
     _opentitan_test = "opentitan_test",
-)
-load(
-    "@lowrisc_opentitan//rules/opentitan:ci.bzl",
-    "ci_orchestrator",
 )
 load(
     "@lowrisc_opentitan//rules/opentitan:fpga.bzl",
     _fpga_cw305 = "fpga_cw305",
-    _fpga_cw310 = "fpga_cw310",
     _fpga_cw340 = "fpga_cw340",
     _fpga_params = "fpga_params",
 )
@@ -73,6 +69,7 @@ load(
     "@provisioning_exts//:cfg.bzl",
     "EXT_EXEC_ENV_SILICON_ROM_EXT",
 )
+load("//rules/opentitan:providers.bzl", "OpenTitanTestInfo")
 
 # The following definition is used to clear the key set in the signing
 # configuration for execution environments (exec_env) and opentitan_test
@@ -84,13 +81,10 @@ OPENTITAN_CPU = _OPENTITAN_CPU
 OPENTITAN_PLATFORM = _OPENTITAN_PLATFORM
 opentitan_transition = _opentitan_transition
 
+opentitan_binary_blob = _opentitan_binary_blob
 fpga_cw305 = _fpga_cw305
-fpga_cw310 = _fpga_cw310
 fpga_cw340 = _fpga_cw340
 fpga_params = _fpga_params
-
-# Temporary export of the old name to prevent merge skew breakage.
-cw310_params = _fpga_params
 
 silicon = _silicon
 silicon_params = _silicon_params
@@ -117,8 +111,8 @@ opentitan_manual_test = _opentitan_manual_test
 
 # The default set of test environments for Earlgrey.
 EARLGREY_TEST_ENVS = {
-    "//hw/top_earlgrey:fpga_cw310_sival_rom_ext": None,
-    "//hw/top_earlgrey:fpga_cw310_rom_with_fake_keys": None,
+    "//hw/top_earlgrey:fpga_cw340_sival_rom_ext": None,
+    "//hw/top_earlgrey:fpga_cw340_rom_with_fake_keys": None,
     "//hw/top_earlgrey:sim_dv": None,
     "//hw/top_earlgrey:sim_verilator": None,
     "//hw/top_earlgrey:sim_qemu_rom_with_fake_keys": None,
@@ -177,13 +171,32 @@ def _parameter_name(env, pname):
             fail("Unable to identify parameter block name:", env)
     return pname
 
+def _default_kind_for_top(top):
+    """The default `opentitan_test()` kind for `top`, when not overridden.
+
+    RRAM is only earlgrey's active NVM backend; every other top still boots
+    from flash, so only earlgrey should default to "rram".
+    """
+    return "rram" if top == "earlgrey" else "flash"
+
+def _qemu_kind_unsupported(env, kind):
+    """True if `env` is a QEMU exec_env and QEMU doesn't support `kind` yet.
+
+    QEMU only knows how to boot "rom", "ram", and "flash" kind binaries (see
+    qemu.bzl); rather than let bazel discover this the hard way at analysis
+    time when a broad build/test wildcard sweeps up the target, mark it
+    target_compatible_with incompatible so it's simply skipped.
+    """
+    (_, suffix) = env.split(":")
+    return suffix.startswith("sim_qemu") and kind == "rram"
+
 def _hacky_tags(env):
     (_, suffix) = env.split(":")
     tags = []
     if suffix.startswith("fpga"):
         tags.append("fpga")
 
-        # We have tags like "cw310_rom_with_real_keys" or "cw310_test_rom"
+        # We have tags like "cw340_rom_with_real_keys" or "cw340_test_rom"
         # applied to our tests.  Since there is no way to adjust tags in a
         # rule's implementation, we have to infer these tag names from the
         # label name.
@@ -215,7 +228,7 @@ def exec_env_to_top_map(exec_env):
       //hw/top_earlgrey:<name_of_exec_env>. This directory is determined from the path
       of the top's hjson created by topgen.
     - or the target name must start with "top_<topname>", e.g.
-      top_earlgrey_fpga_cw310_sival_rom_ext_no_hyper
+      top_earlgrey_fpga_cw340_sival_rom_ext_no_hyper
     """
     top_map = {}
     for top in ALL_TOPS:
@@ -254,7 +267,7 @@ def exec_env_to_top_map(exec_env):
 # binaries which can be compiled for the active top.
 #
 # See exec_env_to_top_map() for constraints on the exec_env for this work.
-def opentitan_binary(name, exec_env, **kwargs):
+def opentitan_binary(name, exec_env, kind = None, **kwargs):
     # Filter execution environments by top.
     ev_map = exec_env_to_top_map(exec_env)
     select_map = {}
@@ -272,9 +285,15 @@ def opentitan_binary(name, exec_env, **kwargs):
             ["@platforms//:incompatible"],
         )
 
+    # Default `kind` to "rram" on earlgrey, same as opentitan_test(), unless
+    # the caller passes an explicit `kind`.
+    if kind == None:
+        kind = opentitan_select_top({"earlgrey": _default_kind_for_top("earlgrey")}, "flash")
+
     _opentitan_binary(
         name = name,
         exec_env = opentitan_select_top(select_map, []),
+        kind = kind,
         **kwargs
     )
 
@@ -289,7 +308,7 @@ def opentitan_binary(name, exec_env, **kwargs):
 def opentitan_test(
         name,
         srcs = [],
-        kind = "flash",
+        kind = None,
         deps = [],
         copts = [],
         defines = [],
@@ -316,7 +335,9 @@ def opentitan_test(
       name: The base name of the test.  The name will be extended with the name
             of the execution environment.
       srcs: The source files for this test.
-      kind: The kind of test (flash, ram, rom).
+      kind: The kind of test (flash, rram, ram, rom). Defaults to "rram" for
+            earlgrey and "flash" for every other top; pass explicitly to
+            override this per-top default uniformly across all tops.
       deps: Dependecies for this test.
       copts: Compiler options for this test.
       defines: Compiler defines for this test.
@@ -341,7 +362,6 @@ def opentitan_test(
       kwargs: Additional execution overrides identified by the `exec_env` dict.
     """
     test_parameters = {
-        "cw310": fpga,
         "fpga": fpga,
         "dv": dv,
         "silicon": silicon,
@@ -352,35 +372,22 @@ def opentitan_test(
     kwargs_unused = kwargs.keys()
 
     # Build a map from execution environment to test parameters.
-    # Find all exec_env which are not marked as broken at the same time.
     env_to_tparam = {}
-    non_broken_exec_env = []
+
     for (env, pname) in exec_env.items():
         pname = _parameter_name(env, pname)
 
-        # Temporary fallback to "cw310" if "fpga" parameters were not provided.
-        # Prevents merge skew problems while the default parameter name changes.
-        if pname == "fpga" and pname not in kwargs_unused:
-            pname = "cw310"
         if pname in kwargs_unused:
             kwargs_unused.remove(pname)
         if pname not in test_parameters:
             fail("execution environment {} wants test parameters '{}' but those are not specified".format(env, pname))
         env_to_tparam[env] = test_parameters[pname]
-        if not "broken" in env_to_tparam[env].tags:
-            non_broken_exec_env.append(env)
 
     # Make sure that we used all elements in kwargs.
     if len(kwargs_unused) > 0:
         fail("the following arguments passed to opentitan_test were not used: {}".format(", ".join(kwargs_unused)))
 
-    # Compute set of exec_env that should be marked as skip_in_ci.
-    if run_in_ci == None:
-        skip_in_ci = sets.make(ci_orchestrator(name, non_broken_exec_env))
-        all_envs = sets.make(exec_env.keys())
-        run_in_ci = sets.difference(all_envs, skip_in_ci)
-    else:
-        run_in_ci = sets.make(run_in_ci)
+    run_in_ci = sets.make(run_in_ci or [])
 
     # List of test parameters and how they map to the _opentitan_test attributes
     # and which default values they use if not present.
@@ -419,9 +426,10 @@ def opentitan_test(
         test_args["data"] = data + test_args["data"]
         test_args["tags"] = test_args["tags"] + _hacky_tags(env)
 
-        # Tag test if it must not run in CI.
-        if not sets.contains(run_in_ci, env):
-            test_args["tags"].append("skip_in_ci")
+        # Encode run_in_ci as a tag.
+        if sets.contains(run_in_ci, env):
+            test_args["tags"].append("run_in_ci")
+
         all_test_kwargs[env] = test_args
 
     # With multitop, it is possible to have several exec_env with the same suffix
@@ -438,6 +446,14 @@ def opentitan_test(
 
     all_tests = []
     for (suffix, env_list) in suffix_map.items():
+        # Per-env kind: the caller's explicit `kind` if given (applies
+        # uniformly across every top), otherwise each env's own top-aware
+        # default (see `_default_kind_for_top`).
+        kind_by_env = {
+            env: kind if kind != None else _default_kind_for_top(ev_to_top_map[env])
+            for env in env_list
+        }
+
         # Build a list of kwargs with select statements in them.
         test_kwargs = {}
         test_kwargs["exec_env"] = opentitan_select_top(
@@ -447,9 +463,18 @@ def opentitan_test(
             },
             None,
         )
+        test_kwargs["kind"] = opentitan_select_top(
+            {
+                ev_to_top_map[env]: kind_by_env[env]
+                for env in env_list
+            },
+            "flash",
+        )
         test_kwargs["target_compatible_with"] = opentitan_select_top(
             {
-                ev_to_top_map[env]: []
+                ev_to_top_map[env]: (
+                    ["@platforms//:incompatible"] if _qemu_kind_unsupported(env, kind_by_env[env]) else []
+                )
                 for env in env_list
             },
             ["@platforms//:incompatible"],
@@ -480,7 +505,6 @@ def opentitan_test(
         _opentitan_test(
             name = test_name,
             srcs = srcs,
-            kind = kind,
             deps = deps,
             copts = copts,
             local_defines = local_defines,
@@ -492,6 +516,8 @@ def opentitan_test(
             rsa_key = rsa_key,
             spx_key = spx_key,
             manifest = manifest,
+            # Point to test suite created below.
+            test_suite = str(Label(":{}".format(name))),
             **test_kwargs
         )
 
@@ -500,3 +526,50 @@ def opentitan_test(
         tests = all_tests,
         tags = ["manual"],
     )
+
+# This provider holds tags which are extracted from a target through the
+# _query_tags aspect.
+_OpenTitanQueryTags = provider(fields = {"tags": "list of tags"})
+
+def _query_tags_impl(target, ctx):
+    return [_OpenTitanQueryTags(tags = ctx.rule.attr.tags)]
+
+# This aspect extracts the tags of a target and reports them in the
+# _OpenTitanQueryTags provider.
+_query_tags = aspect(
+    implementation = _query_tags_impl,
+)
+
+def _opentitan_test_alias_impl(ctx):
+    PROVIDERS = [RunEnvironmentInfo, OutputGroupInfo, InstrumentedFilesInfo]
+    actual = ctx.attr.actual
+
+    executable = ctx.actions.declare_file(ctx.attr.name)
+    ctx.actions.symlink(output = executable, target_file = ctx.executable.actual, is_executable = True)
+
+    result = [DefaultInfo(
+        runfiles = actual[DefaultInfo].default_runfiles,
+        files = actual[DefaultInfo].files,
+        executable = executable,
+    )]
+    result.append(OpenTitanTestInfo(
+        test_suite = str(ctx.label),
+        tags = actual[_OpenTitanQueryTags].tags,
+    ))
+    result += [actual[prov] for prov in PROVIDERS if prov in actual]
+    return result
+
+opentitan_alias_test = rule(
+    implementation = _opentitan_test_alias_impl,
+    test = True,
+    attrs = {
+        "actual": attr.label(executable = True, doc = "Label of the test to run", cfg = "exec", aspects = [_query_tags]),
+    },
+    doc = """
+    This rule can be used to register tests with the CI when the test rule cannot be modified to include an `OpenTitanTestInfo`
+    provider. This is the case for example of `sh_test`. The rule will automatically extract the tags of the target specified
+    in the `actual` attribute and make them available through the `OpenTitanTestInfo` provider. Users of this rule should
+    never specify tags on this rule so that the test will only appear once when queried with --test_tag_filters,
+    and only once when queried via the `OpenTitanTestInfo` provider.
+""",
+)

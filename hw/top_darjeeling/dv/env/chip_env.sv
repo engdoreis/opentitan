@@ -22,6 +22,8 @@ class chip_env extends cip_base_env #(
   `uvm_component_new
 
   function void build_phase(uvm_phase phase);
+    bit use_tl_agent_dmi;
+
     super.build_phase(phase);
     // configure the cpu d tl agent
     // get the vifs from config db
@@ -34,9 +36,10 @@ class chip_env extends cip_base_env #(
 
     // Set DMI tl_agent's is_active bit only when in stub_cpu mode *and* the
     // JTAG DMI agent is not in use.
-    cfg.m_tl_agent_cfgs["chip_soc_dbg_reg_block"].is_active =
-      !cfg.use_jtag_dmi && cfg.chip_vif.stub_cpu;
-    cfg.chip_vif.configure_jtag_dmi(cfg.use_jtag_dmi || !cfg.chip_vif.stub_cpu);
+    use_tl_agent_dmi = cfg.chip_vif.stub_cpu && !cfg.m_jtag_riscv_agent_cfg.use_jtag_dmi;
+
+    cfg.m_tl_agent_cfgs["chip_soc_dbg_reg_block"].is_active = use_tl_agent_dmi;
+    cfg.chip_vif.configure_jtag_dmi(!use_tl_agent_dmi);
 
     if (cfg.use_mbx_if || !cfg.chip_vif.stub_cpu) cfg.chip_vif.connect_mbx_if();
 
@@ -153,6 +156,12 @@ class chip_env extends cip_base_env #(
 
     if (cfg.is_active && cfg.m_jtag_riscv_agent_cfg.is_active) begin
       virtual_sequencer.jtag_sequencer_h = m_jtag_riscv_agent.sequencer;
+    end
+
+    // If we are using JTAG DMI, cfg.m_jtag_dtm_ral will have been constructed (when the build_phase
+    // for the next level up called cfg.set_use_jtag_dmi). If not, it will be null.
+    if (cfg.m_jtag_dtm_ral != null) begin
+      m_jtag_riscv_agent.set_dtm_reg_map(cfg.m_jtag_dtm_ral.get_default_map());
     end
 
     if (cfg.is_active && cfg.m_spi_host_agent_cfg.is_active) begin

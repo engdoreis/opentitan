@@ -21,7 +21,8 @@
 #include "sw/device/lib/base/memory.h"
 #include "sw/device/lib/base/multibits.h"
 #include "sw/device/lib/base/stdasm.h"
-#include "sw/device/silicon_creator/lib/chip_info.h"
+#include "sw/device/lib/coverage/api.h"
+#include "sw/device/silicon_creator/lib/build_info.h"
 #include "sw/device/silicon_creator/lib/drivers/alert.h"
 #include "sw/device/silicon_creator/lib/drivers/lifecycle.h"
 #include "sw/device/silicon_creator/lib/drivers/otp.h"
@@ -29,12 +30,14 @@
 #include "sw/device/silicon_creator/lib/epmp_defs.h"
 #include "sw/device/silicon_creator/lib/stack_utilization.h"
 
-#ifdef HAS_FLASH_CTRL
+#if defined(USE_FLASH)
 #include "sw/device/silicon_creator/lib/drivers/flash_ctrl.h"
+#elif defined(USE_RRAM)
+#include "sw/device/silicon_creator/lib/drivers/rram_ctrl.h"
 #endif
 
-#ifdef HAS_KEYMGR
-#include "sw/device/silicon_creator/lib/drivers/keymgr.h"
+#ifdef HAS_KEYMGR_DPE
+#include "sw/device/silicon_creator/lib/drivers/keymgr_dpe.h"
 #endif
 
 #include "hw/top/alert_handler_regs.h"
@@ -432,7 +435,7 @@ SHUTDOWN_FUNC(NO_MODIFIERS, shutdown_report_error(rom_error_t reason)) {
   shutdown_print(kShutdownLogPrefixBootFault, redacted_error);
   shutdown_print(kShutdownLogPrefixLifecycle, raw_state);
   shutdown_print(kShutdownLogPrefixVersion,
-                 kChipInfo.scm_revision.scm_revision_high);
+                 kBuildInfo.scm_revision.scm_revision_high);
 }
 
 SHUTDOWN_FUNC(NO_MODIFIERS, shutdown_software_escalate(void)) {
@@ -444,27 +447,29 @@ SHUTDOWN_FUNC(NO_MODIFIERS, shutdown_software_escalate(void)) {
 }
 
 SHUTDOWN_FUNC(NO_MODIFIERS, shutdown_reset(void)) {
-  const uint32_t rstmgr_base = dt_rstmgr_primary_reg_block(kDtRstmgrAon);
+  const uint32_t rstmgr_base = dt_rstmgr_primary_reg_block(kDtRstmgr);
   abs_mmio_write32(rstmgr_base + RSTMGR_RESET_REQ_REG_OFFSET,
                    kMultiBitBool4True);
 }
 
-SHUTDOWN_FUNC(NO_MODIFIERS, shutdown_flash_kill(void)) {
-#ifdef HAS_FLASH_CTRL
+SHUTDOWN_FUNC(NO_MODIFIERS, shutdown_nvm_kill(void)) {
+#if defined(USE_FLASH)
   flash_ctrl_disable();
+#elif defined(USE_RRAM)
+  rram_ctrl_disable();
 #endif
 }
 
-SHUTDOWN_FUNC(NO_MODIFIERS, shutdown_keymgr_kill(void)) {
-#ifdef HAS_KEYMGR
-  sc_keymgr_disable();
+SHUTDOWN_FUNC(NO_MODIFIERS, shutdown_keymgr_dpe_kill(void)) {
+#ifdef HAS_KEYMGR_DPE
+  OT_DISCARD(sc_keymgr_dpe_disable());
 #endif
 }
 
 SHUTDOWN_FUNC(noreturn, shutdown_hang(void)) {
   const uint32_t sram_ctrl_base =
       dt_sram_ctrl_primary_reg_block(kDtSramCtrlMain);
-  const uint32_t rstmgr_base = dt_rstmgr_primary_reg_block(kDtRstmgrAon);
+  const uint32_t rstmgr_base = dt_rstmgr_primary_reg_block(kDtRstmgr);
 
   // Disable SRAM execution and lock the register.
   // Note: In addition to this register, which is disabled by default at reset,
@@ -529,14 +534,18 @@ SHUTDOWN_FUNC(noreturn, shutdown_hang(void)) {
 __attribute__((section(".shutdown")))
 #endif
 void shutdown_finalize(rom_error_t reason) {
+  // Report coverage before error reporting for tests expecting BFV.
+  coverage_report();
   shutdown_report_error(reason);
   // In a normal build, this function inlines to nothing.
   stack_utilization_print();
   shutdown_software_escalate();
-  shutdown_keymgr_kill();
-  // Reset before killing the flash to be able to use this also in flash.
+  shutdown_keymgr_dpe_kill();
+  // Report coverage again to ensure the calls above are reported.
+  coverage_report();
+  // Reset before killing NVM to be able to use this also in NVM.
   shutdown_reset();
-  shutdown_flash_kill();
+  shutdown_nvm_kill();
   // If we get here, we'll wait for the watchdog to reset the chip.
   shutdown_hang();
 }

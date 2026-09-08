@@ -27,7 +27,7 @@
 #include "hw/top/sensor_ctrl_regs.h"
 #include "hw/top_earlgrey/sw/autogen/top_earlgrey.h"
 
-OTTF_DEFINE_TEST_CONFIG();
+OTTF_DEFINE_TEST_CONFIG(.ignore_alerts = true);
 
 enum {
   kAstInitEnOffset = OTP_CTRL_PARAM_CREATOR_SW_CFG_AST_INIT_EN_OFFSET -
@@ -89,7 +89,7 @@ status_t test_chip_specific_startup(ujson_t *uj) {
       mmio_region_from_addr(TOP_EARLGREY_OTP_CTRL_CORE_BASE_ADDR), &otp_ctrl));
   TRY(dif_lc_ctrl_init(
       mmio_region_from_addr(TOP_EARLGREY_LC_CTRL_REGS_BASE_ADDR), &lc));
-  TRY(dif_clkmgr_init(mmio_region_from_addr(TOP_EARLGREY_CLKMGR_AON_BASE_ADDR),
+  TRY(dif_clkmgr_init(mmio_region_from_addr(TOP_EARLGREY_CLKMGR_BASE_ADDR),
                       &clkmgr));
 
   LOG_INFO("Querying hardware");
@@ -135,7 +135,7 @@ status_t test_chip_specific_startup(ujson_t *uj) {
   // Read out the AST_DONE bit.  The test harness will evaluate it for
   // correctness based on the OTP configuration.
   mmio_region_t sensor_ctrl =
-      mmio_region_from_addr(TOP_EARLGREY_SENSOR_CTRL_AON_BASE_ADDR);
+      mmio_region_from_addr(TOP_EARLGREY_SENSOR_CTRL_BASE_ADDR);
   cs.ast_init_done = bitfield_bit32_read(
       mmio_region_read32(sensor_ctrl, SENSOR_CTRL_STATUS_REG_OFFSET),
       SENSOR_CTRL_STATUS_AST_INIT_DONE_BIT);

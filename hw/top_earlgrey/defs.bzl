@@ -13,7 +13,10 @@ EARLGREY = opentitan_top(
     top_lib = "//hw/top_earlgrey/sw/autogen:top_earlgrey",
     top_rtl = "//hw/top_earlgrey:rtl_files",
     top_verilator_core = ["lowrisc:dv:top_earlgrey_chip_verilator_sim"],
-    top_verilator_binary = {"binary": ["lowrisc_dv_top_earlgrey_chip_verilator_sim_0.1/sim-verilator/Vchip_sim_tb"]},
+    top_verilator_binary = {
+        "binary": ["lowrisc_dv_top_earlgrey_chip_verilator_sim_0.1/sim-verilator/Vchip_sim_tb"],
+        "files_to_hash": ["lowrisc_dv_top_earlgrey_chip_verilator_sim_0.1/sim-verilator/src/"],
+    },
     top_ld = "//hw/top_earlgrey/sw/autogen:top_earlgrey_memory",
     otp_map = "//hw/top_earlgrey/data/otp:otp_ctrl_mmap.hjson",
     std_otp_overlay = EARLGREY_STD_OTP_OVERLAYS,
@@ -25,10 +28,23 @@ EARLGREY = opentitan_top(
     silicon_creator_hooks = "//hw/top_earlgrey/sw/device/silicon_creator:hooks",
 )
 
-EARLGREY_SLOTS = {
+EARLGREY_SLOTS_NORMAL = {
     "rom_ext_slot_a": "0x0",
-    "rom_ext_slot_b": "0x80000",
+    "rom_ext_slot_b": "0x100000",
     "owner_slot_a": "0x10000",
-    "owner_slot_b": "0x90000",
+    "owner_slot_b": "0x110000",
     "rom_ext_size": "0x10000",
 }
+
+EARLGREY_SLOTS_COVERAGE = {
+    "rom_ext_slot_a": "0x0",
+    "rom_ext_slot_b": "0x100000",
+    "owner_slot_a": "0x20000",
+    "owner_slot_b": "0x120000",
+    "rom_ext_size": "0x20000",
+}
+
+EARLGREY_SLOTS = select({
+    "@lowrisc_opentitan//rules/coverage:enabled": EARLGREY_SLOTS_COVERAGE,
+    "//conditions:default": EARLGREY_SLOTS_NORMAL,
+})

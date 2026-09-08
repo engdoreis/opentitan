@@ -206,6 +206,10 @@ pub struct RawUnlock {
     #[arg(long)]
     pub token: String,
 
+    /// Whether to use the external clock for the transition.
+    #[arg(long, default_value = "false")]
+    pub use_external_clk: bool,
+
     #[command(flatten)]
     pub jtag_params: JtagParams,
 }
@@ -236,7 +240,7 @@ impl CommandDispatch for RawUnlock {
             jtag,
             DifLcCtrlState::TestUnlocked0,
             Some(token.into_register_values()),
-            /*use_external_clk=*/ true,
+            self.use_external_clk,
             /*reset_tap_straps=*/ Some(JtagTap::LcTap),
         )?;
 
@@ -261,9 +265,17 @@ pub struct Transition {
     #[arg(value_enum, value_parser = DifLcCtrlState::parse_lc_state_str, default_value = "test_unlocked0")]
     pub target_lc_state: DifLcCtrlState,
 
+    /// Whether to use the external clock for the transition.
+    #[arg(long, default_value = "false")]
+    pub use_external_clk: bool,
+
     /// The token needed for this transition as a hexstring.
     #[arg(long, default_value = "0x00000000000000000000000000000000")]
     pub token: String,
+
+    /// Whether to assert ROM RMA bootstrap strapping during the transition.
+    #[arg(long, default_value = "false")]
+    pub use_rma_bootstrap: bool,
 
     #[command(flatten)]
     pub jtag_params: JtagParams,
@@ -285,14 +297,20 @@ impl CommandDispatch for Transition {
             .create(transport)?
             .connect(JtagTap::LcTap)?;
 
+        let strap_name = if self.use_rma_bootstrap {
+            "RMA_BOOTSTRAP"
+        } else {
+            "ROM_BOOTSTRAP"
+        };
+
         // In order to be on the safe side, we're asserting ROM bootstrap and
         // reset the chip to prevent ROM from going into a reset loop.
-        let rom_bootstrap = transport.pin_strapping("ROM_BOOTSTRAP")?;
+        let rom_bootstrap = transport.pin_strapping(strap_name)?;
+        log::info!("Asserting {} strapping during transition.", strap_name);
         rom_bootstrap.apply()?;
 
         // Reset the chip so that LC_CTRL is in a clean state.
         let _ = transport.reset_with_delay(UartRx::Keep, Duration::from_millis(50));
-        std::thread::sleep(Duration::from_millis(50));
 
         // Check whether this is a valid transition.
         let token = parse_token_str(self.token.as_str())?;
@@ -303,7 +321,7 @@ impl CommandDispatch for Transition {
             jtag,
             self.target_lc_state,
             Some(token.into_register_values()),
-            /*use_external_clk=*/ true,
+            self.use_external_clk,
             /*reset_tap_straps=*/ Some(JtagTap::LcTap),
         )?;
 
@@ -338,7 +356,7 @@ pub struct LcStatusResult {
     pub transition_count_error: bool,
     pub transition_error: bool,
     pub token_error: bool,
-    pub flash_rma_error: bool,
+    pub nvm_rma_error: bool,
     pub otp_error: bool,
     pub state_error: bool,
     pub bus_integrity_error: bool,
@@ -371,7 +389,7 @@ impl CommandDispatch for Status {
             transition_count_error: (status & LcCtrlStatus::TRANSITION_COUNT_ERROR.bits()) != 0,
             transition_error: (status & LcCtrlStatus::TRANSITION_ERROR.bits()) != 0,
             token_error: (status & LcCtrlStatus::TOKEN_ERROR.bits()) != 0,
-            flash_rma_error: (status & LcCtrlStatus::FLASH_RMA_ERROR.bits()) != 0,
+            nvm_rma_error: (status & LcCtrlStatus::NVM_RMA_ERROR.bits()) != 0,
             otp_error: (status & LcCtrlStatus::OTP_ERROR.bits()) != 0,
             state_error: (status & LcCtrlStatus::STATE_ERROR.bits()) != 0,
             bus_integrity_error: (status & LcCtrlStatus::BUS_INTEG_ERROR.bits()) != 0,

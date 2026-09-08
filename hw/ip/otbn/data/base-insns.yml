@@ -392,13 +392,13 @@
   operands: [grd, grs1, offset]
   straight-line: false
   doc: |
-    The JALR instruction has the same behavior as in RV32I, jumping by `<grs1> + <offset>` and writing `PC+4` as a link address to the destination register.
+    The JALR instruction has the same behavior as in RV32I, jumping by `grs1 + offset` and writing `PC+4` as a link address to the destination register.
 
     OTBN has a hardware managed call stack, accessed through `x1`, which should be used when calling and returning from subroutines.
     To return from a subroutine, use `jalr x0, x1, 0`.
     This pops a link address from the call stack and branches to it.
     To call a subroutine through a function pointer, use `jalr x1, <grs1>, 0`.
-    This jumps to the address in `<grs1>` and pushes the link address onto the call stack.
+    This jumps to the address in `grs1` and pushes the link address onto the call stack.
   errs:
     - *grs1-call-stack
     - *grd1-call-stack
@@ -570,6 +570,28 @@
       rd: b00000
       opcode: b11100
 
+- mnemonic: wfi
+  synopsis: Wait For Interrupt
+  operands: []
+  straight-line: false
+  doc: |
+    Stalls an OTBN program until a host issues the RESUME command in the CMD register.
+    Once the RESUME command is issued, OTBN will continue executing the next instruction (PC + 4).
+    Triggers the `done` interrupt to indicate that OTBN is now paused.
+
+    This instruction is only valid when CTRL.wfi_enabled is set to 1.
+    Otherwise an invalid instruction error is raised.
+  errs:
+    - An `ILLEGAL_INSN` error if CTRL.wfi_enabled is 0.
+  encoding:
+    scheme: I
+    mapping:
+      imm: b000100000101
+      rs1: b00000
+      funct3: b000
+      rd: b00000
+      opcode: b11100
+
 - mnemonic: loop
   synopsis: Loop (indirect)
   operands:
@@ -594,7 +616,7 @@
     `LOOP`, `LOOPI`, jump and branch instructions are all permitted inside a loop but may not appear as the last instruction in a loop.
     OTBN will stop on that instruction, setting bit `loop` in `ERR_BITS`.
 
-    For more information on how to correctly use `LOOP` see [loop nesting](programmers_guide.md#loop-nesting).
+    For more information on how to correctly use `LOOP` see [loop nesting](developers_guide.md#loop-nesting).
   errs:
     - &grs-call-stack A `CALL_STACK` error from using `x1` as `grs` when the call stack is empty.
     - A `LOOP` error if the value in `grs` is zero.
@@ -626,7 +648,7 @@
     `LOOP`, `LOOPI`, jump and branch instructions are all permitted inside a loop but may not appear as the last instruction in a loop.
     OTBN will stop on that instruction, setting bit `loop` in `ERR_BITS`.
 
-    For more information on how to correctly use `LOOPI` see [loop nesting](programmers_guide.md#loop-nesting).
+    For more information on how to correctly use `LOOPI` see [loop nesting](developers_guide.md#loop-nesting).
   encoding:
     scheme: loopi
     mapping:

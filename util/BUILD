@@ -14,7 +14,6 @@ filegroup(
     srcs = glob(["**/*.md"]) + [
         "//util/design:doc_files",
         "//util/dtgen:doc_files",
-        "//util/dvsim:doc_files",
         "//util/fpvgen:doc_files",
         "//util/i2csvg:doc_files",
         "//util/ipgen:doc_files",
@@ -30,6 +29,7 @@ py_binary(
     srcs = ["otbn_build.py"],
     imports = ["../hw/ip/otbn/util/"],
     deps = [
+        requirement("lz4"),
         requirement("pyelftools"),
         "//hw/ip/otbn/util:otbn_as",
         "//hw/ip/otbn/util:otbn_ld",
@@ -37,16 +37,21 @@ py_binary(
 )
 
 py_binary(
-    name = "rom_chip_info",
-    srcs = ["rom_chip_info.py"],
+    name = "build_info",
+    srcs = ["build_info.py"],
 )
 
 py_test(
-    name = "rom_chip_info_test",
+    name = "build_info_test",
     srcs = [
-        "rom_chip_info.py",
-        "rom_chip_info_test.py",
+        "build_info.py",
+        "build_info_test.py",
     ],
+)
+
+py_binary(
+    name = "cryptolib_build_info",
+    srcs = ["cryptolib_build_info.py"],
 )
 
 py_binary(

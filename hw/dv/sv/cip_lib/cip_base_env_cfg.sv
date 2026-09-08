@@ -130,14 +130,25 @@ class cip_base_env_cfg #(type RAL_T = dv_base_reg_block) extends dv_base_env_cfg
 
   `uvm_object_new
 
-  virtual function void initialize(bit [BUS_AW-1:0] csr_base_addr = '1);
-    super.initialize(csr_base_addr);
-    // Create downstream agent cfg objects.
-    foreach (ral_model_names[i]) begin
-      string ral_name = ral_model_names[i];
+  // Initialize the register models in the environment
+  //
+  // This works by calling initialize_ral (implemented in dv_base_env_cfg) after ral_model_names has
+  // been initialised. To add a new RAL model, a subclass should extend cip_base_env_cfg::initialize
+  // with a function that adds the model's name to ral_model_names before calling
+  // super.initialize().
+  virtual function void initialize(bit inherit_ral_models = 1'b0);
+    // Initialize the register models themselves. This uses initialize_ral, which is implemented in
+    // dv_base_env_cfg.
+    initialize_ral(bus_params_pkg::BUS_AW,
+                   bus_params_pkg::BUS_DW,
+                   bus_params_pkg::BUS_DBW,
+                   inherit_ral_models);
 
+    // Create downstream agent cfg objects.
+    foreach (ral_model_names[ral_name]) begin
       m_tl_agent_cfgs[ral_name] = tl_agent_cfg::type_id::create({"m_tl_agent_cfg_", ral_name});
-      m_tl_agent_cfgs[ral_name].if_mode = dv_utils_pkg::Host;
+      m_tl_agent_cfgs[ral_name].is_active = is_active;
+      m_tl_agent_cfgs[ral_name].if_mode = (is_active ? dv_utils_pkg::Host : dv_utils_pkg::Monitor);
       // TL host cannot support device same cycle response. Host may drive d_ready=0 when a_valid=1.
       m_tl_agent_cfgs[ral_name].host_can_stall_rsp_when_a_valid_high = $urandom_range(0, 1);
 
@@ -149,8 +160,8 @@ class cip_base_env_cfg #(type RAL_T = dv_base_reg_block) extends dv_base_env_cfg
 
     // Assign handle to the default `m_tl_agent_cfg` for default `RAL_T`
     if (ral_model_names.size > 0) begin
-      `DV_CHECK_FATAL(m_tl_agent_cfgs.exists(RAL_T::type_name))
-      m_tl_agent_cfg = m_tl_agent_cfgs[RAL_T::type_name];
+      `DV_CHECK_FATAL(m_tl_agent_cfgs.exists(ral_type_name))
+      m_tl_agent_cfg = m_tl_agent_cfgs[ral_type_name];
       `DV_CHECK_NE_FATAL(m_tl_agent_cfg, null)
     end
 
@@ -161,11 +172,13 @@ class cip_base_env_cfg #(type RAL_T = dv_base_reg_block) extends dv_base_env_cfg
         string alert_name = list_of_alerts[i];
         m_alert_agent_cfgs[alert_name] = alert_esc_agent_cfg::type_id::create(
             $sformatf("m_alert_agent_cfgs[%s]", alert_name));
-        `DV_CHECK_RANDOMIZE_FATAL(m_alert_agent_cfgs[alert_name])
-        m_alert_agent_cfgs[alert_name].if_mode = dv_utils_pkg::Device;
+        m_alert_agent_cfgs[alert_name].is_active = is_active;
+        m_alert_agent_cfgs[alert_name].if_mode = (is_active ?
+                                                  dv_utils_pkg::Device : dv_utils_pkg::Monitor);
         m_alert_agent_cfgs[alert_name].is_async = 1; // default async_on, can override this
         m_alert_agent_cfgs[alert_name].en_ping_cov = 0;
         m_alert_agent_cfgs[alert_name].en_lpg_cov = 0;
+        `DV_CHECK_RANDOMIZE_FATAL(m_alert_agent_cfgs[alert_name])
       end
     end
 

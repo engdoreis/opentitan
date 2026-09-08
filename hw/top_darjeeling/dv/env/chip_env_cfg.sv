@@ -7,9 +7,7 @@ class chip_env_cfg #(type RAL_T = chip_ral_pkg::chip_reg_block) extends cip_base
   );
 
   // Testbench settings
-  bit                 en_uart_logger;
   uart_agent_pkg::baud_rate_e uart_baud_rate = uart_agent_pkg::BaudRate1Mbps;
-  bit                 use_gpio_for_sw_test_status;
 
   // Write logs from sw test to separate log file as well, in addition to the simulator log file.
   bit                 write_sw_logs_to_file = 1'b1;
@@ -26,10 +24,6 @@ class chip_env_cfg #(type RAL_T = chip_ral_pkg::chip_reg_block) extends cip_base
   // Memory backdoor util instances for all memory instances in the chip.
   mem_bkdr_util mem_bkdr_util_h[chip_mem_e];
 
-  // If this is true, the environment will connect DMI over JTAG. If this is enabled through a
-  // plusarg, the test calls set_use_jtag_dmi() to set this bit as part of the build phase.
-  bit use_jtag_dmi = 0;
-
   // Creator SW config region in OTP that holds the AST config data. Randomized for open source.
   //
   // These are written via backdoor to the OTP region that starts at
@@ -41,15 +35,6 @@ class chip_env_cfg #(type RAL_T = chip_ral_pkg::chip_reg_block) extends cip_base
   // In closed source, tests can modify this data directly in the extended sequence's dut_init(),
   // before invoking super.dut_init(), or any other suitable place.
   rand uint creator_sw_cfg_ast_cfg_data[ast_pkg::AstRegsNum];
-
-  // A knob that controls whether the AST initialization is done, enabled by default.
-  // Can be updated with plusarg.
-  bit do_creator_sw_cfg_ast_cfg = 1;
-
-  // sw related
-  // In OpenTitan, the same SW test image can be built for DV, Verilator and FPGA. SW build for
-  // other platforms can be run on DV as well. We allow that by specifying the SW build device.
-  string sw_build_device = "sim_dv";
 
   // Types of SW images used in the test.
   //
@@ -91,6 +76,7 @@ class chip_env_cfg #(type RAL_T = chip_ral_pkg::chip_reg_block) extends cip_base
   rand spi_agent_cfg        m_spi_device_agent_cfgs[NUM_SPI_HOSTS];
   rand jtag_riscv_agent_cfg m_jtag_riscv_agent_cfg;
   rand jtag_agent_cfg       m_jtag_agent_cfg;
+  rand jtag_dtm_reg_block   m_jtag_dtm_ral;
   rand spi_agent_cfg        m_spi_host_agent_cfg;
   rand i2c_agent_cfg        m_i2c_agent_cfgs[NUM_I2CS];
 
@@ -145,7 +131,7 @@ class chip_env_cfg #(type RAL_T = chip_ral_pkg::chip_reg_block) extends cip_base
   `uvm_object_utils_end
 
 
-  virtual function void initialize(bit [TL_AW-1:0] csr_base_addr = '1);
+  virtual function void initialize(bit inherit_ral_models = 1'b0);
     dv_base_reg_block soc_dbg_base_reg_block;
     dv_base_reg_block soc_mbx_base_reg_block;
     list_of_alerts = chip_common_pkg::LIST_OF_ALERTS;
@@ -158,9 +144,11 @@ class chip_env_cfg #(type RAL_T = chip_ral_pkg::chip_reg_block) extends cip_base
     // User can read `loc_alert_cause` to check ping timeout.
     en_scb_ping_chk = 0;
 
-    ral_model_names.push_back("chip_soc_dbg_reg_block");
-    ral_model_names.push_back("chip_soc_mbx_reg_block");
-    super.initialize(csr_base_addr);
+    // Add the debug and mailbox register blocks to ral_model_names (we just need the keys in the
+    // array; the values have no meaning)
+    ral_model_names["chip_soc_dbg_reg_block"] = 1'b0;
+    ral_model_names["chip_soc_mbx_reg_block"] = 1'b0;
+    super.initialize(inherit_ral_models);
     `uvm_info(`gfn, $sformatf("ral_model_names: %0p", ral_model_names), UVM_LOW);
     soc_dbg_base_reg_block = ral_models["chip_soc_dbg_reg_block"];
     `downcast(chip_soc_dbg_ral, soc_dbg_base_reg_block);
@@ -237,15 +225,13 @@ class chip_env_cfg #(type RAL_T = chip_ral_pkg::chip_reg_block) extends cip_base
     num_otbn_dmem_tiles = 1;
   endfunction
 
-  // Set the use_jtag_dmi field to be true, which will cause the chip environment to run a DMI agent
-  // over a JTAG connection.
+  // Configure the environment to run a DMI agent over a JTAG connection.
   //
-  // This should be called as part of build_phase in the test, before build_phase for the
-  // environment runs.
+  // To enable DMI over JTAG, the testbench or test must call this function before the chip
+  // environment's build_phase.
   function void set_use_jtag_dmi();
-    if (this.use_jtag_dmi) return;
+    if (m_jtag_riscv_agent_cfg.use_jtag_dmi) return;
 
-    this.use_jtag_dmi = 1;
     m_jtag_riscv_agent_cfg.use_jtag_dmi = 1;
 
     // Both, the regs only supports 1 outstanding.
@@ -256,15 +242,20 @@ class chip_env_cfg #(type RAL_T = chip_ral_pkg::chip_reg_block) extends cip_base
     m_jtag_agent_cfg.is_active = 1'b1;
     m_jtag_agent_cfg.ir_len = JTAG_IR_LEN;
 
-    // Set the 'correct' IDCODE register value to the JTAG DTM RAL.
-    m_jtag_agent_cfg.jtag_dtm_ral.idcode.set_reset(RV_DM_JTAG_IDCODE);
+    // Create a JTAG DTM RAL and give it the right IDCODE register value.
+    m_jtag_dtm_ral = create_jtag_dtm_reg_block("m_jtag_dtm_ral");
+    m_jtag_dtm_ral.idcode.set_reset(RV_DM_JTAG_IDCODE);
+
     m_jtag_riscv_agent_cfg.m_jtag_agent_cfg = m_jtag_agent_cfg;
 
     // Create the DMI register block. Because use_jtag_dmi was false at the start of the function,
     // we know it is currently null.
     if (jtag_dmi_ral != null) `uvm_fatal(`gfn, "jtag_dmi_ral unexpectedly set")
 
-    jtag_dmi_ral = create_jtag_dmi_reg_block(m_jtag_riscv_agent_cfg.m_jtag_agent_cfg);
+    jtag_dmi_ral = create_jtag_dmi_reg_block("jtag_dmi_ral",
+                                             m_jtag_agent_cfg,
+                                             m_jtag_dtm_ral.dmi,
+                                             m_jtag_dtm_ral.dtmcs);
 
     // Fix the reset values of these fields based on our design.
     `uvm_info(`gfn, "Fixing reset values in jtag_dmi_ral", UVM_LOW)
@@ -305,6 +296,12 @@ class chip_env_cfg #(type RAL_T = chip_ral_pkg::chip_reg_block) extends cip_base
     foreach (regs[i]) begin
       regs[i].clear_hdl_path("ALL");
     end
+
+    // Accesses to rv_dm's debug memory window land on a single TL device port, which passes both
+    // the CSRs and the debug ROM straight to dm_top without distinguishing a read from a fetch.
+    // There is thus nothing that stops a fetch from the CSRs in that window. This matches what
+    // rv_dm_env_cfg does for the block-level environment.
+    chip_ral.rv_dm_mem.set_allows_csr_fetch(1'b1);
   endfunction
 
   // Apply RAL exclusions externally since the RAL itself is considered generic. The IP it is used
@@ -395,7 +392,8 @@ class chip_env_cfg #(type RAL_T = chip_ral_pkg::chip_reg_block) extends cip_base
   // attached to the SW image. They can be used to treat the SW image in a specific way. The flag
   // "signed" for example, is used to set the SW image extension correctly. The flag "test_in_rom"
   // is used to indicate a test runs directly out of ROM instead of flash.
-  virtual function void parse_sw_images_string(string sw_images_string);
+  virtual function void parse_sw_images_string(string sw_build_device,
+                                               string sw_images_string);
     string sw_images_split[$];
 
     // Split sw_images with space.
@@ -422,11 +420,11 @@ class chip_env_cfg #(type RAL_T = chip_ral_pkg::chip_reg_block) extends cip_base
         sw_image_flags[sw_type] = sw_image_fields[2:$];
       end
     end
-    resolve_sw_image_paths();
+    resolve_sw_image_paths(sw_build_device);
   endfunction
 
   // Finalize the SW image paths, once all SW image settings are done.
-  virtual function void resolve_sw_image_paths();
+  local function void resolve_sw_image_paths(string sw_build_device);
     foreach (sw_images[i]) begin
       if ("prebuilt" inside {sw_image_flags[i]}) begin
         sw_images[i] = $sformatf("%0s", sw_images[i]);
@@ -469,7 +467,8 @@ class chip_env_cfg #(type RAL_T = chip_ral_pkg::chip_reg_block) extends cip_base
           // A flash image could be signed, and if it is, Bazel will attach a
           // suffix to the image name.
           if ("signed" inside {sw_image_flags[i]}) begin
-            // Options match DEFAULT_SIGNING_KEYS in `rules/opentitan.bzl`.
+            // Options match SILICON_CREATOR_KEYS / ECDSA_ONLY_KEY_STRUCTS in
+            // `rules/opentitan/keyutils.bzl`.
             if ("fake_rsa_dev_key_0" inside {sw_image_flags[i]}) begin
               sw_images[i] = $sformatf("%0s.fake_rsa_dev_key_0.signed", sw_images[i]);
             end else if ("fake_rsa_prod_key_0" inside {sw_image_flags[i]}) begin

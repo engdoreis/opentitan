@@ -1,4 +1,5 @@
 // Copyright lowRISC contributors.
+// Copyright Microsoft Corporation
 // Licensed under the Apache License, Version 2.0, see LICENSE for details.
 // SPDX-License-Identifier: Apache-2.0
 
@@ -6,31 +7,39 @@
  * Top level module of the ibex RISC-V core with tracing enabled
  */
 
-module ibex_top_tracing import ibex_pkg::*; #(
-  parameter bit          PMPEnable        = 1'b0,
-  parameter int unsigned PMPGranularity   = 0,
-  parameter int unsigned PMPNumRegions    = 4,
-  parameter int unsigned MHPMCounterNum   = 0,
-  parameter int unsigned MHPMCounterWidth = 40,
-  parameter bit          RV32E            = 1'b0,
-  parameter rv32m_e      RV32M            = RV32MFast,
-  parameter rv32b_e      RV32B            = RV32BNone,
-  parameter regfile_e    RegFile          = RegFileFF,
-  parameter bit          BranchTargetALU  = 1'b0,
-  parameter bit          WritebackStage   = 1'b0,
-  parameter bit          ICache           = 1'b0,
-  parameter bit          ICacheECC        = 1'b0,
-  parameter bit          BranchPredictor  = 1'b0,
-  parameter bit          DbgTriggerEn     = 1'b0,
-  parameter int unsigned DbgHwBreakNum    = 1,
-  parameter bit          SecureIbex       = 1'b0,
-  parameter bit          ICacheScramble   = 1'b0,
-  parameter lfsr_seed_t  RndCnstLfsrSeed  = RndCnstLfsrSeedDefault,
-  parameter lfsr_perm_t  RndCnstLfsrPerm  = RndCnstLfsrPermDefault,
-  parameter int unsigned DmBaseAddr       = 32'h1A110000,
-  parameter int unsigned DmAddrMask       = 32'h00000FFF,
-  parameter int unsigned DmHaltAddr       = 32'h1A110800,
-  parameter int unsigned DmExceptionAddr  = 32'h1A110808
+module ibex_top_tracing import ibex_pkg::*; import ibex_cheriot_pkg::*; #(
+  parameter base_isa_e   BaseIsa                   = BaseIsaRV32I,
+  parameter bit          PMPEnable                 = 1'b0,
+  parameter int unsigned PMPGranularity            = 0,
+  parameter int unsigned PMPNumRegions             = 4,
+  parameter int unsigned MHPMCounterNum            = 0,
+  parameter int unsigned MHPMCounterWidth          = 40,
+  parameter bit          RV32E                     = 1'b0,
+  parameter rv32m_e      RV32M                     = RV32MFast,
+  parameter rv32b_e      RV32B                     = RV32BNone,
+  parameter rv32zc_e     RV32ZC                    = RV32ZcaZcbZcmp,
+  parameter regfile_e    RegFile                   = RegFileFF,
+  parameter bit          BranchTargetALU           = 1'b0,
+  parameter bit          WritebackStage            = 1'b0,
+  parameter bit          ICache                    = 1'b0,
+  parameter bit          ICacheECC                 = 1'b0,
+  parameter bit          ICacheTweakInfection      = 1'b0,
+  parameter bit          BranchPredictor           = 1'b0,
+  parameter bit          DbgTriggerEn              = 1'b0,
+  parameter int unsigned DbgHwBreakNum             = 1,
+  parameter bit          SecureIbex                = 1'b0,
+  parameter int unsigned LockstepOffset            = 1,
+  parameter bit          MemECC                    = SecureIbex,
+  parameter int unsigned MemDataWidth              = MemECC ? 32 + 7 : 32,
+  parameter bit          ICacheScramble            = 1'b0,
+  parameter lfsr_seed_t  RndCnstLfsrSeed           = RndCnstLfsrSeedDefault,
+  parameter lfsr_perm_t  RndCnstLfsrPerm           = RndCnstLfsrPermDefault,
+  parameter int unsigned DmBaseAddr                = 32'h1A110000,
+  parameter int unsigned DmAddrMask                = 32'h00000FFF,
+  parameter int unsigned DmHaltAddr                = 32'h1A110800,
+  parameter int unsigned DmExceptionAddr           = 32'h1A110808,
+  parameter int unsigned CheriotRevBitmapAddrWidth = 32'd11,
+  parameter int unsigned CheriotRevBitmapBaseAddr  = 32'h0
 ) (
   // Clock and Reset
   input  logic                                                         clk_i,
@@ -39,12 +48,14 @@ module ibex_top_tracing import ibex_pkg::*; #(
   // enable all clock gates for testing
   input  logic                                                         test_en_i,
   input  logic                                                         scan_rst_ni,
-  input  prim_ram_1p_pkg::ram_1p_cfg_t                                 ram_cfg_icache_tag_i,
-  output prim_ram_1p_pkg::ram_1p_cfg_rsp_t [ibex_pkg::IC_NUM_WAYS-1:0] ram_cfg_rsp_icache_tag_o,
-  input  prim_ram_1p_pkg::ram_1p_cfg_t                                 ram_cfg_icache_data_i,
-  output prim_ram_1p_pkg::ram_1p_cfg_rsp_t [ibex_pkg::IC_NUM_WAYS-1:0] ram_cfg_rsp_icache_data_o,
+  input  prim_ram_1p_pkg::ram_1p_cfg_req_t [ibex_pkg::IC_NUM_WAYS-1:0] ram_cfg_icache_tag_i,
+  output prim_ram_1p_pkg::ram_1p_cfg_rsp_t [ibex_pkg::IC_NUM_WAYS-1:0] ram_cfg_icache_tag_o,
+  input  prim_ram_1p_pkg::ram_1p_cfg_req_t [ibex_pkg::IC_NUM_WAYS-1:0] ram_cfg_icache_data_i,
+  output prim_ram_1p_pkg::ram_1p_cfg_rsp_t [ibex_pkg::IC_NUM_WAYS-1:0] ram_cfg_icache_data_o,
 
+  input  logic [31:0]                                                  trvk_heap_base_addr_i,
 
+  input  ibex_mubi_t                                                   cheriot_enable_i,
   input  logic [31:0]                                                  hart_id_i,
   input  logic [31:0]                                                  boot_addr_i,
 
@@ -66,9 +77,20 @@ module ibex_top_tracing import ibex_pkg::*; #(
   output logic [31:0]                                                  data_addr_o,
   output logic [31:0]                                                  data_wdata_o,
   output logic [6:0]                                                   data_wdata_intg_o,
+  output logic                                                         data_tag_o,
   input  logic [31:0]                                                  data_rdata_i,
   input  logic [6:0]                                                   data_rdata_intg_i,
+  input  logic                                                         data_tag_i,
   input  logic                                                         data_err_i,
+
+  // TRVK revocation bitmap read interface
+  output logic                                                         trvk_revbm_req_o,
+  input  logic                                                         trvk_revbm_gnt_i,
+  input  logic                                                         trvk_revbm_rvalid_i,
+  output logic [31:0]                                                  trvk_revbm_addr_o,
+  input  logic [31:0]                                                  trvk_revbm_rdata_i,
+  input  logic [6:0]                                                   trvk_revbm_rdata_intg_i,
+  input  logic                                                         trvk_revbm_err_i,
 
   // Interrupt inputs
   input  logic                                                         irq_software_i,
@@ -91,11 +113,26 @@ module ibex_top_tracing import ibex_pkg::*; #(
 
   // CPU Control Signals
   input  ibex_mubi_t                                                   fetch_enable_i,
+  input  ibex_mubi_t                                                   mcounteren_writable_i,
   output logic                                                         alert_minor_o,
   output logic                                                         alert_major_internal_o,
   output logic                                                         alert_major_bus_o,
-  output logic                                                         core_sleep_o
+  output logic                                                         core_sleep_o,
 
+  // Lockstep signals
+  output ibex_mubi_t                                                  lockstep_cmp_en_o,
+
+  // Shadow core data interface outputs
+  output logic                                                        data_req_shadow_o,
+  output logic                                                        data_we_shadow_o,
+  output logic [3:0]                                                  data_be_shadow_o,
+  output logic [31:0]                                                 data_addr_shadow_o,
+  output logic [31:0]                                                 data_wdata_shadow_o,
+  output logic [6:0]                                                  data_wdata_intg_shadow_o,
+
+  // Shadow core instruction interface outputs
+  output logic                                                        instr_req_shadow_o,
+  output logic [31:0]                                                 instr_addr_shadow_o
 );
 
   // ibex_tracer relies on the signals from the RISC-V Formal Interface
@@ -115,10 +152,15 @@ module ibex_top_tracing import ibex_pkg::*; #(
   logic [ 4:0] rvfi_rs2_addr;
   logic [ 4:0] rvfi_rs3_addr;
   logic [31:0] rvfi_rs1_rdata;
+  cap_t        rvfi_rs1_rcap;
+  cap_t        rvfi_rs2_rcap;
   logic [31:0] rvfi_rs2_rdata;
   logic [31:0] rvfi_rs3_rdata;
+  // verilator lint_off UNOPTFLAT
   logic [ 4:0] rvfi_rd_addr;
+  // verilator lint_on UNOPTFLAT
   logic [31:0] rvfi_rd_wdata;
+  cap_t        rvfi_rd_wcap;
   logic [31:0] rvfi_pc_rdata;
   logic [31:0] rvfi_pc_wdata;
   logic [31:0] rvfi_mem_addr;
@@ -126,6 +168,9 @@ module ibex_top_tracing import ibex_pkg::*; #(
   logic [ 3:0] rvfi_mem_wmask;
   logic [31:0] rvfi_mem_rdata;
   logic [31:0] rvfi_mem_wdata;
+  logic        rvfi_mem_is_cap;
+  cap_t        rvfi_mem_rcap;
+  cap_t        rvfi_mem_wcap;
   logic [31:0] rvfi_ext_pre_mip;
   logic [31:0] rvfi_ext_post_mip;
   logic        rvfi_ext_nmi;
@@ -139,6 +184,9 @@ module ibex_top_tracing import ibex_pkg::*; #(
   logic [31:0] rvfi_ext_mhpmcountersh [10];
   logic        rvfi_ext_ic_scr_key_valid;
   logic        rvfi_ext_irq_valid;
+  logic        rvfi_ext_expanded_insn_valid;
+  logic [15:0] rvfi_ext_expanded_insn;
+  logic        rvfi_ext_expanded_insn_last;
 
   logic [31:0] unused_perf_regs [10];
   logic [31:0] unused_perf_regsh [10];
@@ -154,6 +202,7 @@ module ibex_top_tracing import ibex_pkg::*; #(
   logic [63:0] unused_rvfi_ext_mcycle;
   logic        unused_rvfi_ext_ic_scr_key_valid;
   logic        unused_rvfi_ext_irq_valid;
+  logic        unused_rvfi_ext_expanded_insn_last;
 
   // Tracer doesn't use these signals, though other modules may probe down into tracer to observe
   // them.
@@ -169,32 +218,41 @@ module ibex_top_tracing import ibex_pkg::*; #(
   assign unused_perf_regsh = rvfi_ext_mhpmcountersh;
   assign unused_rvfi_ext_ic_scr_key_valid = rvfi_ext_ic_scr_key_valid;
   assign unused_rvfi_ext_irq_valid = rvfi_ext_irq_valid;
+  assign unused_rvfi_ext_expanded_insn_last = rvfi_ext_expanded_insn_last;
 
   ibex_top #(
-    .PMPEnable        ( PMPEnable        ),
-    .PMPGranularity   ( PMPGranularity   ),
-    .PMPNumRegions    ( PMPNumRegions    ),
-    .MHPMCounterNum   ( MHPMCounterNum   ),
-    .MHPMCounterWidth ( MHPMCounterWidth ),
-    .RV32E            ( RV32E            ),
-    .RV32M            ( RV32M            ),
-    .RV32B            ( RV32B            ),
-    .RegFile          ( RegFile          ),
-    .BranchTargetALU  ( BranchTargetALU  ),
-    .ICache           ( ICache           ),
-    .ICacheECC        ( ICacheECC        ),
-    .BranchPredictor  ( BranchPredictor  ),
-    .DbgTriggerEn     ( DbgTriggerEn     ),
-    .DbgHwBreakNum    ( DbgHwBreakNum    ),
-    .WritebackStage   ( WritebackStage   ),
-    .SecureIbex       ( SecureIbex       ),
-    .ICacheScramble   ( ICacheScramble   ),
-    .RndCnstLfsrSeed  ( RndCnstLfsrSeed  ),
-    .RndCnstLfsrPerm  ( RndCnstLfsrPerm  ),
-    .DmBaseAddr       ( DmBaseAddr       ),
-    .DmAddrMask       ( DmAddrMask       ),
-    .DmHaltAddr       ( DmHaltAddr       ),
-    .DmExceptionAddr  ( DmExceptionAddr  )
+    .BaseIsa              ( BaseIsa              ),
+    .PMPEnable            ( PMPEnable            ),
+    .PMPGranularity       ( PMPGranularity       ),
+    .PMPNumRegions        ( PMPNumRegions        ),
+    .MHPMCounterNum       ( MHPMCounterNum       ),
+    .MHPMCounterWidth     ( MHPMCounterWidth     ),
+    .RV32E                ( RV32E                ),
+    .RV32M                ( RV32M                ),
+    .RV32B                ( RV32B                ),
+    .RV32ZC               ( RV32ZC               ),
+    .RegFile              ( RegFile              ),
+    .BranchTargetALU      ( BranchTargetALU      ),
+    .ICache               ( ICache               ),
+    .ICacheECC            ( ICacheECC            ),
+    .ICacheTweakInfection ( ICacheTweakInfection ),
+    .BranchPredictor      ( BranchPredictor      ),
+    .DbgTriggerEn         ( DbgTriggerEn         ),
+    .DbgHwBreakNum        ( DbgHwBreakNum        ),
+    .WritebackStage       ( WritebackStage       ),
+    .SecureIbex           ( SecureIbex           ),
+    .LockstepOffset       ( LockstepOffset       ),
+    .MemECC               ( MemECC               ),
+    .MemDataWidth         ( MemDataWidth         ),
+    .ICacheScramble       ( ICacheScramble       ),
+    .RndCnstLfsrSeed      ( RndCnstLfsrSeed      ),
+    .RndCnstLfsrPerm      ( RndCnstLfsrPerm      ),
+    .DmBaseAddr                ( DmBaseAddr                ),
+    .DmAddrMask                ( DmAddrMask                ),
+    .DmHaltAddr                ( DmHaltAddr                ),
+    .DmExceptionAddr           ( DmExceptionAddr           ),
+    .CheriotRevBitmapAddrWidth ( CheriotRevBitmapAddrWidth ),
+    .CheriotRevBitmapBaseAddr  ( CheriotRevBitmapBaseAddr  )
   ) u_ibex_top (
     .clk_i,
     .rst_ni,
@@ -202,10 +260,11 @@ module ibex_top_tracing import ibex_pkg::*; #(
     .test_en_i,
     .scan_rst_ni,
     .ram_cfg_icache_tag_i,
-    .ram_cfg_rsp_icache_tag_o,
+    .ram_cfg_icache_tag_o,
     .ram_cfg_icache_data_i,
-    .ram_cfg_rsp_icache_data_o,
+    .ram_cfg_icache_data_o,
 
+    .cheriot_enable_i,
     .hart_id_i,
     .boot_addr_i,
 
@@ -225,9 +284,20 @@ module ibex_top_tracing import ibex_pkg::*; #(
     .data_addr_o,
     .data_wdata_o,
     .data_wdata_intg_o,
+    .data_tag_o,
     .data_rdata_i,
     .data_rdata_intg_i,
+    .data_tag_i,
     .data_err_i,
+
+    .trvk_heap_base_addr_i,
+    .trvk_revbm_req_o,
+    .trvk_revbm_gnt_i,
+    .trvk_revbm_rvalid_i,
+    .trvk_revbm_addr_o,
+    .trvk_revbm_rdata_i,
+    .trvk_revbm_rdata_intg_i,
+    .trvk_revbm_err_i,
 
     .irq_software_i,
     .irq_timer_i,
@@ -244,6 +314,7 @@ module ibex_top_tracing import ibex_pkg::*; #(
     .crash_dump_o,
     .double_fault_seen_o,
 
+`ifdef RVFI
     .rvfi_valid,
     .rvfi_order,
     .rvfi_insn,
@@ -256,10 +327,13 @@ module ibex_top_tracing import ibex_pkg::*; #(
     .rvfi_rs2_addr,
     .rvfi_rs3_addr,
     .rvfi_rs1_rdata,
+    .rvfi_rs1_rcap,
     .rvfi_rs2_rdata,
+    .rvfi_rs2_rcap,
     .rvfi_rs3_rdata,
     .rvfi_rd_addr,
     .rvfi_rd_wdata,
+    .rvfi_rd_wcap,
     .rvfi_pc_rdata,
     .rvfi_pc_wdata,
     .rvfi_mem_addr,
@@ -267,6 +341,9 @@ module ibex_top_tracing import ibex_pkg::*; #(
     .rvfi_mem_wmask,
     .rvfi_mem_rdata,
     .rvfi_mem_wdata,
+    .rvfi_mem_rcap,
+    .rvfi_mem_wcap,
+    .rvfi_mem_is_cap,
     .rvfi_ext_pre_mip,
     .rvfi_ext_post_mip,
     .rvfi_ext_nmi,
@@ -279,19 +356,38 @@ module ibex_top_tracing import ibex_pkg::*; #(
     .rvfi_ext_mhpmcountersh,
     .rvfi_ext_ic_scr_key_valid,
     .rvfi_ext_irq_valid,
+    .rvfi_ext_expanded_insn_valid,
+    .rvfi_ext_expanded_insn,
+    .rvfi_ext_expanded_insn_last,
+`endif
 
     .fetch_enable_i,
+    .mcounteren_writable_i,
     .alert_minor_o,
     .alert_major_internal_o,
     .alert_major_bus_o,
-    .core_sleep_o
+    .core_sleep_o,
+
+    .lockstep_cmp_en_o,
+
+    .data_req_shadow_o,
+    .data_we_shadow_o,
+    .data_be_shadow_o,
+    .data_addr_shadow_o,
+    .data_wdata_shadow_o,
+    .data_wdata_intg_shadow_o,
+
+    .instr_req_shadow_o,
+    .instr_addr_shadow_o
   );
 
+`ifdef RVFI
   ibex_tracer
   u_ibex_tracer (
     .clk_i,
     .rst_ni,
 
+    .cheriot_enable_i,
     .hart_id_i,
 
     .rvfi_valid,
@@ -308,6 +404,9 @@ module ibex_top_tracing import ibex_pkg::*; #(
     .rvfi_rs1_rdata,
     .rvfi_rs2_rdata,
     .rvfi_rs3_rdata,
+    .rvfi_rs1_rcap,
+    .rvfi_rs2_rcap,
+    .rvfi_rd_wcap,
     .rvfi_rd_addr,
     .rvfi_rd_wdata,
     .rvfi_pc_rdata,
@@ -316,7 +415,13 @@ module ibex_top_tracing import ibex_pkg::*; #(
     .rvfi_mem_rmask,
     .rvfi_mem_wmask,
     .rvfi_mem_rdata,
-    .rvfi_mem_wdata
+    .rvfi_mem_wdata,
+    .rvfi_mem_rcap,
+    .rvfi_mem_wcap,
+    .rvfi_mem_is_cap,
+    .rvfi_ext_expanded_insn_valid,
+    .rvfi_ext_expanded_insn
   );
+`endif
 
 endmodule

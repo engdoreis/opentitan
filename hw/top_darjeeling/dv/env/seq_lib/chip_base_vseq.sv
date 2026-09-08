@@ -28,6 +28,9 @@ class chip_base_vseq #(
   // You have to set this knob before or within dut_init task
   bit early_cpu_init = 0;
 
+  // Should the AST actually be programmed?
+  bit do_creator_sw_cfg_ast_cfg = 1;
+
   `uvm_object_new
 
   virtual function void set_handles();
@@ -97,29 +100,19 @@ class chip_base_vseq #(
     // that we also need to pick ECC values that match.
     for (int addr = 0; addr < Rom0MaxCheckAddr; addr += TL_DW/8) begin
       `DV_CHECK_STD_RANDOMIZE_FATAL(rnd_data)
-      rom0.rom_encrypt_write32_integ(addr,
-                                     rnd_data,
-                                     top_darjeeling_rnd_cnst_pkg::RndCnstRomCtrl0ScrKey,
-                                     top_darjeeling_rnd_cnst_pkg::RndCnstRomCtrl0ScrNonce,
-                                     1'b1); // Enable scrambling.
+      rom0.rom_encrypt_write32_integ(addr, rnd_data, 1'b1);
     end
 
     // Update the ROM digest.
-    rom0.update_rom_digest(top_darjeeling_rnd_cnst_pkg::RndCnstRomCtrl0ScrKey,
-                           top_darjeeling_rnd_cnst_pkg::RndCnstRomCtrl0ScrNonce);
+    rom0.update_rom_digest();
 
     for (int addr = 0; addr < Rom1MaxCheckAddr; addr += TL_DW/8) begin
       `DV_CHECK_STD_RANDOMIZE_FATAL(rnd_data)
-      rom1.rom_encrypt_write32_integ(addr,
-                                     rnd_data,
-                                     top_darjeeling_rnd_cnst_pkg::RndCnstRomCtrl1ScrKey,
-                                     top_darjeeling_rnd_cnst_pkg::RndCnstRomCtrl1ScrNonce,
-                                     1'b1); // Enable scrambling.
+      rom1.rom_encrypt_write32_integ(addr, rnd_data, 1'b1);
     end
 
     // Update the ROM digest.
-    rom1.update_rom_digest(top_darjeeling_rnd_cnst_pkg::RndCnstRomCtrl1ScrKey,
-                           top_darjeeling_rnd_cnst_pkg::RndCnstRomCtrl1ScrNonce);
+    rom1.update_rom_digest();
   endfunction
 
   // Iniitializes the DUT.
@@ -272,8 +265,7 @@ class chip_base_vseq #(
                                              bit enable_tx_monitor = 1'b1,
                                              bit enable_rx_monitor = 1'b0,
                                              bit en_parity = 1'b0,
-                                             bit odd_parity = 1'b0,
-                                             baud_rate_e baud_rate = cfg.uart_baud_rate);
+                                             bit odd_parity = 1'b0);
     if (enable) begin
       `uvm_info(`gfn, $sformatf("Configuring and connecting UART%0d", uart_idx), UVM_LOW)
       cfg.m_uart_agent_cfgs[uart_idx].set_parity(en_parity, odd_parity);
@@ -326,11 +318,9 @@ class chip_base_vseq #(
 
   // Initialize the OTP creator SW cfg region with AST configuration data.
   virtual function void initialize_otp_creator_sw_cfg_ast_cfg();
-    // The knob controls whether the AST is actually programmed.
-    if (cfg.do_creator_sw_cfg_ast_cfg) begin
-      cfg.mem_bkdr_util_h[Otp].write32(otp_ctrl_reg_pkg::CreatorSwCfgAstInitEnOffset,
-                                       prim_mubi_pkg::MuBi4True);
-    end
+    cfg.mem_bkdr_util_h[Otp].write32(otp_ctrl_reg_pkg::CreatorSwCfgAstInitEnOffset,
+                                     (do_creator_sw_cfg_ast_cfg ?
+                                      prim_mubi_pkg::MuBi4True : prim_mubi_pkg::MuBi4False));
 
     // Ensure that the allocated size of the AST cfg region in OTP is equal to the number of AST
     // registers to be programmed.
@@ -394,14 +384,10 @@ class chip_base_vseq #(
             byte_addr <  (top_darjeeling_pkg::TOP_DARJEELING_ROM_CTRL0_ROM_BASE_ADDR +
                           top_darjeeling_pkg::TOP_DARJEELING_ROM_CTRL0_ROM_SIZE_BYTES)) begin
           // deposit random data to rom
-          rom0.rom_encrypt_write32_integ(.addr(byte_addr), .data(wdata),
-                                         .key(RndCnstRomCtrl0ScrKey),
-                                         .nonce(RndCnstRomCtrl0ScrNonce), .scramble_data(1));
+          rom0.rom_encrypt_write32_integ(.addr(byte_addr), .data(wdata), .scramble_data(1));
         end else begin
           // deposit random data to rom
-          rom1.rom_encrypt_write32_integ(.addr(byte_addr), .data(wdata),
-                                         .key(RndCnstRomCtrl1ScrKey),
-                                         .nonce(RndCnstRomCtrl1ScrNonce), .scramble_data(1));
+          rom1.rom_encrypt_write32_integ(.addr(byte_addr), .data(wdata), .scramble_data(1));
         end
       end
     end

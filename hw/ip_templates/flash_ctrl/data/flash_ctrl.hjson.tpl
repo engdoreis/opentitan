@@ -104,7 +104,7 @@
 
   // Define flash_ctrl <-> flash_phy struct package
   inter_signal_list: [
-    { struct: "flash_otp_key",
+    { struct: "nvm_otp_key",
       type: "req_rsp",
       name: "otp",
       act:  "req",
@@ -207,14 +207,14 @@
       package: "lc_ctrl_pkg"
     },
 
-    { struct:  "lc_flash_rma_seed"
+    { struct:  "lc_nvm_rma_seed"
       type:    "uni"
       name:    "rma_seed"
       act:     "rcv"
       package: "lc_ctrl_pkg"
     },
 
-    { struct: "pwr_flash",
+    { struct: "pwr_nvm",
       type: "uni",
       name: "pwrmgr",
       act:  "req",
@@ -426,13 +426,13 @@
     { name:      "RndCnstLfsrSeed",
       desc:      "Compile-time random bits for initial LFSR seed",
       type:      "flash_ctrl_top_specific_pkg::lfsr_seed_t"
-      randcount: "32",
+      randcount: "64",
       randtype:  "data",
     },
     { name:      "RndCnstLfsrPerm",
       desc:      "Compile-time random permutation for LFSR output",
       type:      "flash_ctrl_top_specific_pkg::lfsr_perm_t"
-      randcount: "32",
+      randcount: "64",
       randtype:  "perm",
     },
 
@@ -619,7 +619,7 @@
     {
       name: "FLASH_CTRL.MEM_PROTECTION"
       desc: '''For data partitions, SW can designate a memory region of up to 8 regions.
-      Each of these regions can contain more than one page, up to a maximum limit (which is 512 in earlgrey).
+      Each of these regions can contain more than one page, up to a maximum limit of ${total_pages} pages.
       For each region, SW can establish the access policy by programming flash_ctrl.MP_REGION_CFG.
       In the case of information partitions, the access policy can be configured on a per page basis.
       To achieve this, SW must configure flash_ctrl.BANK*_INFO*_PAGE_CFG.

@@ -9,6 +9,7 @@ use ecdsa::elliptic_curve::pkcs8::{DecodePublicKey, EncodePublicKey};
 use ecdsa::signature::hazmat::PrehashVerifier;
 use p256::NistP256;
 use p256::ecdsa::{SigningKey, VerifyingKey};
+use pem_rfc7468::Decoder;
 use rand::rngs::OsRng;
 use serde::Deserialize;
 use serde_annotate::Annotate;
@@ -20,6 +21,7 @@ use std::str::FromStr;
 
 use super::Error;
 use crate::crypto::sha256::Sha256Digest;
+use util::clean_pem_bytes_for_parsing;
 
 pub struct EcdsaPrivateKey {
     pub key: SigningKey,
@@ -77,7 +79,7 @@ impl EcdsaPrivateKey {
     }
 }
 
-#[derive(Debug, Deserialize, Annotate)]
+#[derive(Debug, Clone, Deserialize, Annotate, PartialEq)]
 pub struct EcdsaRawSignature {
     #[serde(with = "serde_bytes")]
     #[annotate(format = hexstr)]
@@ -132,17 +134,20 @@ impl EcdsaRawSignature {
             // This must be a raw signature, just read it as is.
             EcdsaRawSignature::read(&mut file)
         } else {
-            // Let's try interpreting the file as ASN.1 DER.
             let mut data = Vec::<u8>::new();
 
             file.read_to_end(&mut data)
                 .with_context(|| format!("Failed to read {path:?}"))?;
 
-            EcdsaRawSignature::from_der(&data).with_context(|| format!("Failed parsing {path:?}"))
+            // Let's try interpreting the file as ASN.1 DER.
+            // If unsuccessful, attempt PEM decoding.
+            EcdsaRawSignature::from_der(&data)
+                .or_else(|_| EcdsaRawSignature::from_pem(&data))
+                .with_context(|| format!("Failed parsing {path:?}"))
         }
     }
 
-    pub fn write(&self, dest: &mut impl Write) -> Result<()> {
+    pub fn write(&self, dest: &mut impl Write) -> Result<usize> {
         ensure!(
             self.r.len() == 32,
             Error::InvalidSignature(anyhow!("bad r length: {}", self.r.len()))
@@ -153,7 +158,7 @@ impl EcdsaRawSignature {
         );
         dest.write_all(&self.r)?;
         dest.write_all(&self.s)?;
-        Ok(())
+        Ok(64)
     }
 
     pub fn to_vec(&self) -> Result<Vec<u8>> {
@@ -186,6 +191,22 @@ impl EcdsaRawSignature {
         s.resize(32, 0u8);
 
         Ok(EcdsaRawSignature { r, s })
+    }
+
+    fn from_pem(data: &[u8]) -> Result<EcdsaRawSignature> {
+        // Ensures valid PEM markers and a recognized label are present.
+        let _ = pem_rfc7468::decode_label(data)?;
+        let mut buf = Vec::new();
+        let result = Decoder::new(data);
+        match result {
+            Ok(mut decoder) => decoder.decode_to_end(&mut buf)?,
+            _ => {
+                let cleaned_data = clean_pem_bytes_for_parsing(data)?;
+                let mut decoder = Decoder::new(&cleaned_data)?;
+                decoder.decode_to_end(&mut buf)?
+            }
+        };
+        Self::from_der(buf.as_slice())
     }
 }
 
@@ -234,7 +255,7 @@ impl TryFrom<&EcdsaRawPublicKey> for EcdsaPublicKey {
     }
 }
 
-#[derive(Debug, Deserialize, Annotate)]
+#[derive(Debug, Deserialize, Annotate, PartialEq)]
 pub struct EcdsaRawPublicKey {
     #[serde(with = "serde_bytes")]
     #[annotate(format = hexstr)]

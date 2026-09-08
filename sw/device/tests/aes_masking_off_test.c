@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include "hw/ip/aes/model/aes_modes.h"
+#include "hw/top/dt/edn.h"
 #include "sw/device/lib/base/memory.h"
 #include "sw/device/lib/base/mmio.h"
 #include "sw/device/lib/base/multibits.h"
@@ -14,6 +15,7 @@
 #include "sw/device/lib/testing/aes_testutils.h"
 #include "sw/device/lib/testing/csrng_testutils.h"
 #include "sw/device/lib/testing/test_framework/check.h"
+#include "sw/device/lib/testing/test_framework/ottf_alerts.h"
 #include "sw/device/lib/testing/test_framework/ottf_main.h"
 
 enum {
@@ -38,6 +40,9 @@ static dt_aes_t kTestAes = (dt_aes_t)0;
 static dt_csrng_t kTestCsrng = (dt_csrng_t)0;
 static dt_edn_t kTestEdn = (dt_edn_t)0;
 
+dif_edn_t edn;
+dif_csrng_t csrng;
+
 OTTF_DEFINE_TEST_CONFIG();
 
 status_t execute_test(const dif_csrng_t *csrng, const dif_edn_t *edn0) {
@@ -58,7 +63,8 @@ status_t execute_test(const dif_csrng_t *csrng, const dif_edn_t *edn0) {
   LOG_INFO("Testing AES with masking switched off");
 
   // Initialize EDN and CSRNG to generate the required seed.
-  CHECK_STATUS_OK(aes_testutils_masking_prng_zero_output_seed(csrng, edn0));
+  CHECK_STATUS_OK(
+      aes_testutils_masking_prng_zero_output_seed(csrng, edn0, true));
 
   // Initialise AES.
   dif_aes_t aes;
@@ -91,13 +97,33 @@ status_t execute_test(const dif_csrng_t *csrng, const dif_edn_t *edn0) {
       .ctrl_aux_lock = false,
   };
   CHECK_DIF_OK(dif_aes_start(&aes, &transaction, &key, NULL));
+  AES_TESTUTILS_WAIT_FOR_STATUS(&aes, kDifAesStatusIdle, true, kTestTimeout);
+
+  // The second time we reseed, the internal entropy bus will have the same
+  // value as when `aes_testutils_csrng_kat` internally reseeds previously in
+  // the test. This triggers a recoverable alert in the EDN.
+  CHECK_STATUS_OK(ottf_alerts_expect_alert_start(
+      dt_edn_alert_to_alert_id(kTestEdn, kDtEdnAlertRecovAlert)));
 
   // Trigger a reseed of the internal PRNGs. This will load the seed generated
   // by CSRNG to be loaded into the AES masking PRNG. After this point, the AES
   // masking PRNG outputs an all-zero vector.
-  AES_TESTUTILS_WAIT_FOR_STATUS(&aes, kDifAesStatusIdle, true, kTestTimeout);
   CHECK_DIF_OK(dif_aes_trigger(&aes, kDifAesTriggerPrngReseed));
   AES_TESTUTILS_WAIT_FOR_STATUS(&aes, kDifAesStatusIdle, true, kTestTimeout);
+
+  // Now reconfigure the CSRNG and EDN0 to avoid triggering further recoverable
+  // alerts in EDN0. Depending on the execution environment, other entropy
+  // consumers than AES can request entropy which would trigger the alert, too.
+  CHECK_STATUS_OK(
+      aes_testutils_masking_prng_zero_output_seed(csrng, edn0, false));
+
+  // Check that the only recoverable alert that fired was for repeated genbits.
+  uint32_t alerts;
+  CHECK_DIF_OK(dif_edn_get_recoverable_alerts(&edn, &alerts));
+  CHECK(alerts == (1 << kDifEdnRecoverableAlertRepeatedGenBits));
+
+  CHECK_STATUS_OK(ottf_alerts_expect_alert_finish(
+      dt_edn_alert_to_alert_id(kTestEdn, kDtEdnAlertRecovAlert)));
 
   // Trigger the clearing of the output data registers. After this point, also
   // the PRNG buffer stage will output an all-zero vector.
@@ -137,8 +163,6 @@ bool test_main(void) {
   LOG_INFO("Testing CSRNG SW application interface");
 
   // Disable EDN connected to AES as well as CSRNG.
-  dif_csrng_t csrng;
-  dif_edn_t edn;
   CHECK_DIF_OK(dif_csrng_init_from_dt(kTestCsrng, &csrng));
   CHECK_DIF_OK(dif_edn_init_from_dt(kTestEdn, &edn));
   CHECK_DIF_OK(dif_edn_stop(&edn));

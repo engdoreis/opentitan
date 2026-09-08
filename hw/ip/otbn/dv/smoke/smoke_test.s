@@ -14,6 +14,13 @@ add x2, x2, 0x513
 lui x3, 0xa0be9
 add x3, x3, 0x11a
 
+# Test the INSN_CNT register read
+csrrs x4, INSN_CNT, x0
+addi x5, x0, 4
+beq x4, x5, _insn_cnt_ok
+unimp
+_insn_cnt_ok:
+
 # x4 = x2 + x3 = 0x717d462d
 add x4, x2, x3
 
@@ -347,9 +354,49 @@ call_stack_3:
   bn.add w2, w2, w1
 .endif
 
-# Set unused registers to zero. Without this, they would keep the random value assigned during
-# secure wipe, which cannot be compared against an expected value.
-xor x30, x30, x30
+# Write to MAI register
+# Clear output register to known state
+bn.wsrw MAI_RES_S0, w10
+bn.wsrw MAI_RES_S1, w11
+# Write inputs
+bn.wsrw MAI_IN0_S0, w12
+bn.wsrw MAI_IN0_S1, w13
+bn.wsrw MAI_IN1_S0, w14
+bn.wsrw MAI_IN1_S1, w15
+
+# Read registers from MAI
+bn.wsrr w10, MAI_RES_S0
+bn.wsrr w11, MAI_RES_S1
+bn.wsrr w12, MAI_IN0_S0
+bn.wsrr w13, MAI_IN0_S1
+bn.wsrr w14, MAI_IN1_S0
+bn.wsrr w15, MAI_IN1_S1
+
+# Execute SecAdd on MAI
+li x30, 0x2f
+csrrw x0, MAI_CTRL, x30
+
+# Poll for completion of MAI execution
+jal x1, mai_poll_busy
+
+# Read back results from MAI
+bn.wsrr w30, MAI_RES_S0
+bn.wsrr w31, MAI_RES_S1
+# SecAdd result: in0[k] = w12[k] ^ w13[k], in1[k] = w14[k] ^ w15[k],
+# w30[k] = in0[k] + in1[k] mod 2^32 for each 32-bit coefficient k.
+# in0 = 0x8d09995b_664e0f38_de9ee010_e8d217a0_98ef0d70_8f12b880_edbbce4e_b598fc3d
+# in1 = 0x829cd609_0d4d9cc5_679b8549_5bdaeab7_00000188_f54fd377_00000388_d5df575e
+# w30 = in0 + in1 mod 2^32 per lane = 0x0fa66f64_739babfd_463a6559_44ad0257_98ef0ef8_84628bf7_edbbd1d6_8b78539b
+bn.xor w30, w30, w31
+# w31 = 0x00000000_00000000_00000000_00000000_00000000_00000000_00000000_00000000
+bn.xor w31, w31, w31
+
+# Read from URND in the OTBN Verilator smoke test and 0x0 when running on the FPGA or chip-level test
+.ifnotdef deterministic
+  csrrs x30, urnd, x0
+.else
+  xor x30, x30, x30
+.endif
 
 jal x1, reg_dump
 ecall
@@ -363,6 +410,13 @@ test_fn_2:
   # x21 = x21 + 3 = 0xcafef010
   addi x22, x22, 3
   jalr x0, x1, 0
+
+# Helper function to poll the MAI status
+mai_poll_busy:
+  csrrs x30, MAI_STATUS, x0
+  andi x30, x30, 0x1
+  bne x30, x0, mai_poll_busy
+  ret
 
 
 # This function dumps both the register files

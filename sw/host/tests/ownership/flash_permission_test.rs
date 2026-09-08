@@ -12,10 +12,12 @@ use std::time::Duration;
 use opentitanlib::app::{TransportWrapper, UartRx};
 use opentitanlib::chip::boot_svc::{BootSlot, UnlockMode};
 use opentitanlib::chip::rom_error::RomError;
-use opentitanlib::rescue::Rescue;
+use opentitanlib::ownership::OwnershipKeyAlg;
 use opentitanlib::rescue::serial::RescueSerial;
+use opentitanlib::rescue::{EntryMode, Rescue};
 use opentitanlib::test_utils::init::InitializeTest;
 use opentitanlib::uart::console::UartConsole;
+use transfer_lib::HybridPair;
 
 #[derive(Debug, Parser)]
 struct Opts {
@@ -26,17 +28,17 @@ struct Opts {
     #[arg(long, value_parser = humantime::parse_duration, default_value = "10s")]
     timeout: Duration,
     #[arg(long, help = "Unlock private key (ECDSA P256)")]
-    unlock_key: PathBuf,
+    unlock_key: Option<PathBuf>,
     #[arg(long, help = "Activate private key (ECDSA P256)")]
     activate_key: Option<PathBuf>,
     #[arg(long, help = "Next Owner private key (ECDSA P256)")]
-    next_owner_key: PathBuf,
+    next_owner_key: Option<PathBuf>,
     #[arg(long, help = "Next Owner public key (ECDSA P256)")]
     next_owner_key_pub: Option<PathBuf>,
     #[arg(long, help = "Next Owner activate private key (ECDSA P256)")]
-    next_activate_key: PathBuf,
+    next_activate_key: Option<PathBuf>,
     #[arg(long, help = "Next Owner unlock private key (ECDSA P256)")]
-    next_unlock_key: PathBuf,
+    next_unlock_key: Option<PathBuf>,
     #[arg(long, help = "Next Owner's application public key (ECDSA P256)")]
     next_application_key: PathBuf,
 
@@ -128,12 +130,21 @@ fn flash_info_check(info: &[FlashRegion<'_>], unlocked: bool) -> Result<()> {
         FlashRegion("info", 1, 0, 1, "uu-uu-uu-uu-uu-uu", "LK"), // boot data 1
         FlashRegion("info", 1, 0, 2, "RD-xx-xx-SC-EC-xx", "LK"), // owner config 0
         if unlocked {
+            // Owner Config 1 is a creator-level INFO page and is left
+            // writeable when the device is in an unlocked state.
             FlashRegion("info", 1, 0, 3, "RD-WR-ER-SC-EC-xx", "LK") // owner config 1
         } else {
             FlashRegion("info", 1, 0, 3, "RD-xx-xx-SC-EC-xx", "LK") // owner config 1
         },
         FlashRegion("info", 1, 0, 4, "uu-uu-uu-uu-uu-uu", "LK"), // creator reserved
-        FlashRegion("info", 1, 0, 5, "RD-WR-ER-xx-xx-HE", "UN"), // owner reserved
+        // Like DATA pages, owner-level INFO pages are left unlocked
+        // when the device is in an unlocked state and, if so configured,
+        // are locked when in the LockedOwner state.
+        if unlocked {
+            FlashRegion("info", 1, 0, 5, "RD-WR-ER-xx-xx-HE", "UN") // owner reserved
+        } else {
+            FlashRegion("info", 1, 0, 5, "RD-WR-ER-xx-xx-HE", "LK") // owner reserved
+        },
         FlashRegion("info", 1, 0, 6, "xx-xx-xx-xx-xx-xx", "UN"), // owner reserved
         FlashRegion("info", 1, 0, 7, "xx-xx-xx-xx-xx-xx", "UN"), // owner reserved
         FlashRegion("info", 1, 0, 8, "xx-xx-xx-xx-xx-xx", "UN"), // owner reserved
@@ -167,21 +178,30 @@ fn flash_permission_test(opts: &Opts, transport: &TransportWrapper) -> Result<()
         opts.unlock_mode,
         data.rom_ext_nonce,
         devid.din,
-        &opts.unlock_key,
+        OwnershipKeyAlg::EcdsaP256,
+        opts.unlock_key.clone(),
+        None,
         if opts.unlock_mode == UnlockMode::Endorsed {
             opts.next_owner_key_pub.as_deref()
         } else {
             None
         },
+        None,
+        false,
     )?;
+
+    log::info!("###### Get Boot Log (2/2) ######");
+    let (data, _) = transfer_lib::get_device_info(transport, &rescue)?;
 
     log::info!("###### Upload Owner Block ######");
     transfer_lib::create_owner(
         transport,
         &rescue,
-        &opts.next_owner_key,
-        &opts.next_activate_key,
-        &opts.next_unlock_key,
+        data.rom_ext_nonce,
+        OwnershipKeyAlg::EcdsaP256,
+        HybridPair::load(opts.next_owner_key.as_deref(), None)?,
+        HybridPair::load(opts.next_activate_key.as_deref(), None)?,
+        HybridPair::load(opts.next_unlock_key.as_deref(), None)?,
         &opts.next_application_key,
         opts.config_kind,
         /*customize=*/ |_| {},
@@ -265,24 +285,23 @@ fn flash_permission_test(opts: &Opts, transport: &TransportWrapper) -> Result<()
         flash_info_check(&region[8..], /*unlocked=*/ true)?;
     }
 
-    log::info!("###### Get Boot Log (2/2) ######");
-    let (data, _) = transfer_lib::get_device_info(transport, &rescue)?;
-
     log::info!("###### Ownership Activate Block ######");
     transfer_lib::ownership_activate(
         transport,
         &rescue,
         data.rom_ext_nonce,
         devid.din,
+        OwnershipKeyAlg::EcdsaP256,
         opts.activate_key
-            .as_deref()
-            .unwrap_or(&opts.next_activate_key),
+            .clone()
+            .or_else(|| opts.next_activate_key.clone()),
+        None,
+        BootSlot::SlotA,
     )?;
 
     if let Some(fw) = &opts.rescue_after_activate {
         let data = std::fs::read(fw)?;
-        rescue.enter(transport, /*reset_target=*/ true)?;
-        rescue.wait()?;
+        rescue.enter(transport, EntryMode::Reset)?;
         rescue.update_firmware(opts.rescue_slot, &data)?;
         // Clear the opposite slot because we changed the scrambling/ecc settings
         // for the application area of flash.

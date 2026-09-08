@@ -304,10 +304,21 @@ class cip_base_vseq #(
   //  alert_name      The name of the alert to wait for.
   //
   //  max_wait_cycle  After any pending ping operation has completed, this gives the number of
-  //                  cycles to wait until the alert. By default it is 7, which gives one extra
-  //                  cycle longer than the gap we expect between continuously triggered alerts.
-  //                  That gap is 6 cycles: 2-3 cycles for a CDC, 2 for pauses and 1 for the idle
-  //                  state.
+  //                  cycles to wait until the alert. By default it is 7, which matches the minimum
+  //                  gap we expect between the ack signal dropping and the alert signal being
+  //                  asserted again if an alert is continuously triggered.
+  //
+  //                  The "ack drops" to "alert asserted" path is as follows:
+  //
+  //                    - ack_p in the interface drops
+  //
+  //                    - This is decoded in the sender (through prim_diff_decode), which takes up
+  //                      to three posedges in the sender's clock.
+  //
+  //                    - Four cycles in the sender: final cycle in the handshake state; two pause
+  //                      cycles; single cycle in the idle state.
+  //
+  //                    - The sender asserts alert_p as it moves into AlertHsPhase1.
   //
   //  wait_complete   If this is true, the task waits for the alert to be acked before exiting.
   extern protected task wait_alert_trigger(string alert_name,
@@ -349,9 +360,9 @@ class cip_base_vseq #(
   //   reset_delay_bound  Each time the sequence runs, this task will wait a random amount of time
   //                      before it starts waiting for an opportune time to inject the reset. This
   //                      is the upper bound on that wait.
-  extern protected task run_seq_with_rand_reset_vseq(uvm_sequence seq,
-                                                     int          num_times,
-                                                     uint         reset_delay_bound);
+  extern protected virtual task run_seq_with_rand_reset_vseq(uvm_sequence seq,
+                                                             int          num_times,
+                                                             uint         reset_delay_bound);
 
   // If cfg.can_reset_with_csr_accesses is false, wait_to_issue_reset() will try to wait for a time
   // with no CSR accesses before it injects the reset. The value returned by this function is an
@@ -626,8 +637,15 @@ task cip_base_vseq::tl_access_sub(
 
         // Now wait a bounded time to check that the bus hasn't locked up for some reason.
         #(tl_access_timeout_ns * 1ns);
+
+        `uvm_fatal(get_name(),
+                   $sformatf("Timeout (%0d ns) when trying to access address 0x%0h.",
+                              tl_access_timeout_ns, addr))
       end
     join_any
+    // This disable will only kill the timeout process. That process can never complete first
+    // (because it will die with a uvm_fatal instead). As a result, there is no danger of killing
+    // the sequence that is being run.
     disable fork;
   end join
   csr_utils_pkg::decrement_outstanding_access();
@@ -686,6 +704,11 @@ task cip_base_vseq::check_interrupts(bit [BUS_DW-1:0]  interrupts,
   bit [BUS_DW-1:0] act_pins;
   bit [BUS_DW-1:0] exp_pins;
   bit [BUS_DW-1:0] exp_intr_state;
+
+  if (cfg.intr_vif == null) begin
+    `uvm_error(get_full_name(), "Can't check interrupts: there is no intr_vif")
+    return;
+  end
 
   if (cfg.under_reset) return;
 
@@ -750,6 +773,11 @@ task cip_base_vseq::run_intr_test_vseq(int num_times = 1);
   import dv_utils_pkg::interrupt_t;
   dv_base_reg intr_csrs[$];
   dv_base_reg intr_test_csrs[$];
+
+  if (cfg.intr_vif == null) begin
+    `uvm_error(get_full_name(), "Can't run intr_test sequence: there is no intr_vif")
+    return;
+  end
 
   foreach (all_csrs[i]) begin
     string csr_name = all_csrs[i].get_name();
@@ -902,7 +930,7 @@ task cip_base_vseq::check_not_fatal_alert(string alert_name, alert_esc_agent_cfg
     // ignore it (but print a debug message). If ping_count is unchanged, the alert fired
     // when we didn't expect it to.
     if (alert_cfg.ping_count == ping_count)
-      `uvm_error("Alert %0s fired unexpectedly.", alert_name)
+      `uvm_error(`gfn, $sformatf("Alert %0s fired unexpectedly.", alert_name))
     else
       `uvm_info(`gfn,
                 $sformatf("Unexpected alert %0s, but this may have a ping response.",
@@ -1009,19 +1037,58 @@ endtask
 task cip_base_vseq::wait_alert_trigger(string alert_name,
                                        int    max_wait_cycle = 7,
                                        bit    wait_complete = 0);
-  // wait until ping finishes before the dv_spinwait in case
-  // m_alert_agent_cfgs[alert_name].vif.is_alert_handshaking() is true due to a ping
-  wait_until_ping_is_finished(cfg.m_alert_agent_cfgs[alert_name]);
-  `DV_SPINWAIT_EXIT(while (!cfg.m_alert_agent_cfgs[alert_name].vif.is_alert_handshaking()) begin
-                      cfg.clk_rst_vif.wait_clks(1);
-                      wait_until_ping_is_finished(cfg.m_alert_agent_cfgs[alert_name]);
-                    end,
-                    // another thread to wait for given cycles. If timeout, report an error.
-                    cfg.clk_rst_vif.wait_clks(max_wait_cycle);
-                    `uvm_error(`gfn, $sformatf("expect alert:%0s to fire", alert_name)))
+  alert_esc_agent_cfg agent_cfg = cfg.m_alert_agent_cfgs[alert_name];
+  virtual alert_esc_if alert_vif = agent_cfg.vif;
+
+  // In case there is a ping in flight when we arrive, wait for the ping to clear.
+  wait_until_ping_is_finished(agent_cfg);
+
+  fork : isolation_fork begin
+    fork
+      // Stop early on reset
+      cfg.clk_rst_vif.wait_for_reset(.wait_negedge(1), .wait_posedge(0));
+
+      // The timer thread (wait for max_wait_cycle cycles, then generate an error). To avoid a race
+      // if the alert is asserted on the positive edge of the clock after exactly that number of
+      // cycles, the timer waits for the following negative edge.
+      begin
+        repeat (max_wait_cycle) @(posedge alert_vif.clk);
+        @(negedge alert_vif.clk);
+        `uvm_error(get_name(),
+                   $sformatf("Expected alert (%0s) did not fire in %0d cycles.",
+                             alert_name, max_wait_cycle))
+      end
+
+      // Wait to see an alert come out. This happens if is_alert_handshaking becomes true
+      // when there is no active_ping.
+      forever begin
+        wait(alert_vif.is_alert_handshaking);
+        if (!alert_vif.in_ping_st()) break;
+        // If we get here, we were in the middle of a ping. Wait for it to complete and then wait
+        // for another handshake.
+        wait_until_ping_is_finished(agent_cfg);
+      end
+    join_any
+    disable fork;
+  end join
+
   if (wait_complete) begin
-    `DV_SPINWAIT(cfg.m_alert_agent_cfgs[alert_name].vif.wait_ack_complete();,
-                 $sformatf("timeout wait for alert handshake:%0s", alert_name))
+    // Wait for the ack to be asserted and then cleared again. The wait_ack_complete task ends as
+    // soon as the ack signal drops. Wait until the next clock edge so that we end on the first
+    // clock edge where the dropped ack signal is seen.
+    fork : ack_isolation_fork begin
+      fork
+        begin
+          alert_vif.wait_ack_complete();
+          @(posedge alert_vif.clk);
+        end
+        begin
+          #(default_spinwait_timeout_ns * 1ns);
+          `uvm_error(get_name(), {"Timeout waiting for end of ack for alert ", alert_name})
+        end
+      join_any
+      disable fork;
+    end join
   end
 endtask
 
@@ -1327,19 +1394,21 @@ endtask
 
 task cip_base_vseq::run_mem_partial_access_vseq(int num_times);
   `loop_ral_models_to_create_threads(
-      if (cfg.ral_models[ral_name].mem_ranges.size() > 0) begin
+      if (cfg.ral_models[ral_name].get_num_memories() > 0) begin
         run_mem_partial_access_vseq_sub(num_times, ral_name);
       end)
 endtask
 
 task cip_base_vseq::run_mem_partial_access_vseq_sub(int num_times, string ral_name);
-  addr_range_t loc_mem_range[$] = cfg.ral_models[ral_name].mem_ranges;
+  addr_range_t loc_mem_range[$];
   uint num_accesses;
   // limit to 100k accesses if mem is very big
   uint max_accesses = 100_000;
   // Set a minimal access to avoid memory is too small and very little chance to read memory
   uint min_accesses = 100;
   uvm_reg_block local_ral = cfg.ral_models[ral_name];
+
+  cfg.ral_models[ral_name].get_mem_ranges(loc_mem_range);
 
   void'($value$plusargs("max_accesses_for_partial_mem_access_vseq=%0d", max_accesses));
 

@@ -17,16 +17,16 @@ load(
     "convert_to_vmem",
     "extract_software_logs",
     "scramble_flash",
+    "scramble_rram",
 )
 load("//rules/opentitan:toolchain.bzl", "LOCALTOOLS_TOOLCHAIN")
 
 _TEST_SCRIPT = """#!/bin/bash
 set -e
 
-readonly DVSIM="util/dvsim/dvsim.py"
 TEST_CMD=({test_cmd})
-echo "At this time, dvsim.py must be run manually (after building SW) via:
-${{DVSIM}} {args} $@ ${{TEST_CMD[@]}}"
+echo "At this time, dvsim must be run manually (after building SW) via:
+dvsim {args} $@ ${{TEST_CMD[@]}}"
 """
 
 def _transform(ctx, exec_env, name, elf, binary, signed_bin, disassembly, mapfile):
@@ -80,8 +80,13 @@ def _transform(ctx, exec_env, name, elf, binary, signed_bin, disassembly, mapfil
             word_size = 32,
         )
         vmem32 = None
-    elif ctx.attr.kind == "flash":
-        # First convert to VMEM, then scramble according to flash
+    elif ctx.attr.kind in ("flash", "rram"):
+        is_rram = ctx.attr.kind == "rram"
+        word_size = 128 if is_rram else 64
+        scramble = scramble_rram if is_rram else scramble_flash
+        scramble_tool = exec_env.rram_scramble_tool if is_rram else exec_env.flash_scramble_tool
+
+        # First convert to VMEM, then scramble according to the technology's
         # scrambling settings.
         # When dvsim and bazel use different otp image which has different scramble option,
         # there is a corner case where dvsim can't find vmem file.
@@ -90,25 +95,32 @@ def _transform(ctx, exec_env, name, elf, binary, signed_bin, disassembly, mapfil
             ctx,
             name = name,
             src = signed_bin if signed_bin else binary,
-            word_size = 64,
+            word_size = word_size,
+            fill = "0x00" if is_rram else "0xff",
         )
-        vmem32 = convert_to_vmem(
-            ctx,
-            name = name,
-            src = signed_bin if signed_bin else binary,
-            word_size = 32,
-        )
-        vmem = scramble_flash(
-            ctx,
-            name = name,
-            suffix = "64.scr.vmem",
-            src = vmem_base,
-            otp = get_fallback(ctx, "file.otp", exec_env),
-            otp_mmap = exec_env.otp_mmap,
-            top_secret_cfg = exec_env.top_secret_cfg,
-            otp_data_perm = exec_env.otp_data_perm,
-            _tool = exec_env.flash_scramble_tool.files_to_run,
-        )
+        if not is_rram:
+            vmem32 = convert_to_vmem(
+                ctx,
+                name = name,
+                src = signed_bin if signed_bin else binary,
+                word_size = 32,
+            )
+        else:
+            vmem32 = None
+        if scramble_tool != None:
+            vmem = scramble(
+                ctx,
+                name = name,
+                suffix = "{}.scr.vmem".format(word_size),
+                src = vmem_base,
+                otp = get_fallback(ctx, "file.otp", exec_env),
+                otp_mmap = exec_env.otp_mmap,
+                top_secret_cfg = exec_env.top_secret_cfg,
+                otp_data_perm = exec_env.otp_data_perm,
+                _tool = scramble_tool.files_to_run,
+            )
+        else:
+            vmem = vmem_base
         rom = None
         rom32 = None
         default = vmem

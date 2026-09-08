@@ -20,6 +20,7 @@ load(
     "@bazel_skylib//lib:dicts.bzl",
     "dicts",
 )
+load("//hw/top:defs.bzl", "opentitan_require_ip")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -112,12 +113,9 @@ opentitan_test(
 opentitan_test(
     name = "mod_exp_ibex_functest_wycheproof",
     srcs = ["mod_exp_ibex_functest.c"],
-    exec_env = dicts.add(
-        EARLGREY_TEST_ENVS,
-        {
-            "//hw/top_earlgrey:fpga_cw310_test_rom": None,
-        },
-    ),
+    exec_env = {
+        "//hw/top_earlgrey:fpga_cw340_test_rom": None,
+    },
     fpga = fpga_params(
         timeout = "long",
     ),
@@ -150,7 +148,6 @@ opentitan_test(
     exec_env = dicts.add(
         EARLGREY_TEST_ENVS,
         {
-            "//hw/top_earlgrey:fpga_cw310_test_rom": None,
             "//hw/top_earlgrey:fpga_cw340_test_rom": None,
         },
     ),
@@ -182,7 +179,7 @@ opentitan_test(
     exec_env = dicts.add(
         EARLGREY_TEST_ENVS,
         {
-            "//hw/top_earlgrey:fpga_cw310_test_rom": None,
+            "//hw/top_earlgrey:fpga_cw340_test_rom": None,
         },
     ),
     verilator = verilator_params(
@@ -246,17 +243,16 @@ cc_library(
 cc_library(
     name = "flash_exec",
     hdrs = ["flash_exec.h"],
-    deps = [
-        ":rsa_verify",
-        ":spx_verify",
-    ],
 )
 
 cc_test(
     name = "flash_exec_unittest",
     srcs = ["flash_exec_unittest.cc"],
+    target_compatible_with = opentitan_require_ip("flash_ctrl"),
     deps = [
         ":flash_exec",
+        ":rsa_verify",
+        ":spx_verify",
         "//hw/top:flash_ctrl_c_regs",
         "//sw/device/silicon_creator/testing:rom_test",
         "@googletest//:gtest_main",
@@ -268,6 +264,7 @@ cc_library(
     hdrs = ["sigverify.h"],
     deps = [
         ":ecdsa_p256_verify",
+        ":flash_exec",
         ":rsa_verify",
         ":spx_verify",
         ":usage_constraints",
@@ -305,13 +302,10 @@ opentitan_test(
 opentitan_test(
     name = "sigverify_dynamic_functest_wycheproof",
     srcs = ["sigverify_dynamic_functest.c"],
-    exec_env = dicts.add(
-        EARLGREY_TEST_ENVS,
-        {
-            # Test set is too large as ROM_EXT
-            "//hw/top_earlgrey:fpga_cw310_test_rom": None,
-        },
-    ),
+    exec_env = {
+        # Test set is too large as ROM_EXT
+        "//hw/top_earlgrey:fpga_cw340_test_rom": None,
+    },
     fpga = fpga_params(
         timeout = "long",
     ),

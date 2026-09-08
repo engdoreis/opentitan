@@ -9,7 +9,7 @@ from sw.host.penetrationtests.python.util import targets
 from sw.host.penetrationtests.python.util import utils
 from sw.host.penetrationtests.python.util import common_library
 import json
-from Crypto.Hash import SHA256, SHA384, SHA512, HMAC
+from Crypto.Hash import SHA256, SHA384, SHA512, HMAC, SHA3_256, KMAC128
 from Crypto.Cipher import AES
 import unittest
 import argparse
@@ -24,11 +24,15 @@ target = None
 # Read in the extra arguments from the opentitan_test.
 parser = argparse.ArgumentParser()
 parser.add_argument("--bitstream", type=str)
+parser.add_argument("--rom", type=str)
+parser.add_argument("--otp", type=str)
 parser.add_argument("--bootstrap", type=str)
 
 args, config_args = parser.parse_known_args()
 
 BITSTREAM = args.bitstream
+ROM_VMEM = args.rom
+OTP_VMEM = args.otp
 BOOTSTRAP = args.bootstrap
 
 
@@ -164,22 +168,59 @@ class CryptoFiTest(unittest.TestCase):
 
     def test_char_kmac(self):
         trigger = 0
-        actual_result = fi_crypto_functions.char_kmac(target, iterations, trigger)
+        plaintext = [i for i in range(16)]
+        key = [i for i in range(16)]
+        actual_result = fi_crypto_functions.char_kmac(target, iterations, plaintext, key, trigger)
         actual_result_json = json.loads(actual_result)
-        expected_result_json = json.loads(
-            '{"digest":[184,34,91,108,231,47,251,27], \
-                "digest_2nd":[142,188,186,201,216,47,203,192], \
-                    "err_status":0,"alerts":[0,0,0],"loc_alerts":0,"ast_alerts":[0,0]}'
-        )
+
+        kmac = KMAC128.new(key=bytes(key), mac_len=16)
+        kmac.update(bytes(plaintext))
+        expected_result = bytearray(kmac.digest())
+        expected_result.reverse()
+        expected_result = utils.bytes_to_words(expected_result)
+        expected_result.reverse()
+
+        expected_result_json = {
+            "digest": expected_result,
+            "err_status": 0,
+            "alerts": [0, 0, 0],
+            "loc_alerts": 0,
+            "ast_alerts": [0, 0],
+        }
         utils.compare_json_data(actual_result_json, expected_result_json, ignored_keys_set)
 
     def test_char_kmac_state(self):
-        actual_result = fi_crypto_functions.char_kmac_state(target, iterations)
+        plaintext = [i for i in range(16)]
+        key = [i for i in range(16)]
+        actual_result = fi_crypto_functions.char_kmac_state(target, iterations, plaintext, key)
         actual_result_json = json.loads(actual_result)
         expected_result_json = json.loads(
-            '{"digest":[184,34,91,108,231,47,251,27],"err_status":0, \
-                "alerts":[0,0,0],"loc_alerts":0,"ast_alerts":[0,0]}'
+            '{"digest":[1249211222,2317242261,3038518889,366042454],\
+                "alerts":[0,0,0],"loc_alerts":0,"err_status":0,"ast_alerts":[0,0]}'
         )
+        utils.compare_json_data(actual_result_json, expected_result_json, ignored_keys_set)
+
+    def test_char_sha3(self):
+        trigger = 0
+        plaintext = [i for i in range(16)]
+        actual_result = fi_crypto_functions.char_sha3(target, iterations, plaintext, trigger)
+        actual_result_json = json.loads(actual_result)
+
+        sha3 = SHA3_256.new()
+        sha3.update(bytes(plaintext))
+        expected_result = bytearray(sha3.digest())
+        expected_result.reverse()
+        expected_result = utils.bytes_to_words(expected_result)
+        expected_result.reverse()
+        expected_result = expected_result[:4]
+
+        expected_result_json = {
+            "digest": expected_result,
+            "err_status": 0,
+            "alerts": [0, 0, 0],
+            "loc_alerts": 0,
+            "ast_alerts": [0, 0],
+        }
         utils.compare_json_data(actual_result_json, expected_result_json, ignored_keys_set)
 
     def test_char_hmac(self):
@@ -465,6 +506,13 @@ if __name__ == "__main__":
     bitstream_path = None
     if BITSTREAM:
         bitstream_path = r.Rlocation("lowrisc_opentitan/" + BITSTREAM)
+    # Load the ROM/OTP memories for FPGAs.
+    rom_path = None
+    if ROM_VMEM:
+        rom_path = r.Rlocation("lowrisc_opentitan/" + ROM_VMEM)
+    otp_path = None
+    if OTP_VMEM:
+        otp_path = r.Rlocation("lowrisc_opentitan/" + OTP_VMEM)
     # Get the firmware path.
     firmware_path = r.Rlocation("lowrisc_opentitan/" + BOOTSTRAP)
 
@@ -479,6 +527,8 @@ if __name__ == "__main__":
         fw_bin=firmware_path,
         opentitantool=opentitantool_path,
         bitstream=bitstream_path,
+        rom_vmem=rom_path,
+        otp_vmem=otp_path,
         tool_args=config_args,
     )
 

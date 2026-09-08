@@ -22,11 +22,15 @@ target = None
 # Read in the extra arguments from the opentitan_test.
 parser = argparse.ArgumentParser()
 parser.add_argument("--bitstream", type=str)
+parser.add_argument("--rom", type=str)
+parser.add_argument("--otp", type=str)
 parser.add_argument("--bootstrap", type=str)
 
 args, config_args = parser.parse_known_args()
 
 BITSTREAM = args.bitstream
+ROM_VMEM = args.rom
+OTP_VMEM = args.otp
 BOOTSTRAP = args.bootstrap
 
 
@@ -307,6 +311,27 @@ class IbexFiTest(unittest.TestCase):
                 utils.compare_json_data(actual_result_json, expected_result_json, ignored_keys_set)
 
     @unittest.skip
+    def test_char_flash_read_static(self):
+        test_succeeded = False
+        for flash_region in range(2, 10):
+            actual_result = fi_ibex_functions.char_flash_read_static(
+                target, init=True, flash_region=flash_region, iterations=iterations
+            )
+            actual_result_json = json.loads(actual_result)
+            expected_result_json = load_test_data("char_flash_read_static")
+            if "success" not in actual_result_json:
+                utils.compare_json_data(actual_result_json, expected_result_json, ignored_keys_set)
+
+                actual_result = fi_ibex_functions.char_flash_read_static(
+                    target, init=False, flash_region=flash_region, iterations=iterations
+                )
+                actual_result_json = json.loads(actual_result)
+                utils.compare_json_data(actual_result_json, expected_result_json, ignored_keys_set)
+
+                test_succeeded = True
+        assert test_succeeded, "No writable flash region found"
+
+    @unittest.skip
     def test_char_flash_write(self):
         for flash_region in range(2, 10):
             actual_result = fi_ibex_functions.char_flash_write(
@@ -528,6 +553,13 @@ if __name__ == "__main__":
     bitstream_path = None
     if BITSTREAM:
         bitstream_path = r.Rlocation("lowrisc_opentitan/" + BITSTREAM)
+    # Load the ROM/OTP memories for FPGAs.
+    rom_path = None
+    if ROM_VMEM:
+        rom_path = r.Rlocation("lowrisc_opentitan/" + ROM_VMEM)
+    otp_path = None
+    if OTP_VMEM:
+        otp_path = r.Rlocation("lowrisc_opentitan/" + OTP_VMEM)
     # Get the firmware path.
     firmware_path = r.Rlocation("lowrisc_opentitan/" + BOOTSTRAP)
 
@@ -542,6 +574,8 @@ if __name__ == "__main__":
         fw_bin=firmware_path,
         opentitantool=opentitantool_path,
         bitstream=bitstream_path,
+        rom_vmem=rom_path,
+        otp_vmem=otp_path,
         tool_args=config_args,
     )
 

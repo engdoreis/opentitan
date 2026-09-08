@@ -6,7 +6,7 @@
 // ---------------------------------------------
 // Configuration class for Alert agent
 // ---------------------------------------------
-class alert_esc_agent_cfg extends dv_base_agent_cfg;
+class alert_esc_agent_cfg extends dv_reactive_agent_cfg;
   virtual alert_esc_if vif;
   virtual alert_esc_probe_if probe_vif;
   bit is_alert        = 1;
@@ -53,9 +53,12 @@ class alert_esc_agent_cfg extends dv_base_agent_cfg;
   int unsigned ack_stable_min = 0;
   int unsigned ack_stable_max = 10;
 
-  bit use_seq_item_ping_delay = 1'b1;
-  int unsigned ping_delay_min = 0;
-  int unsigned ping_delay_max = 10;
+  // The minimum and maximum value that alert_receiver_ping_seq will use for ping_delay
+  //
+  // To enable a "stress test", which sends lots of back-to-back ping items, these can be made
+  // small.
+  int unsigned ping_delay_min = 10000;
+  int unsigned ping_delay_max = 20000;
 
   // When this bit is set, alert agent responds to alert without delay
   // This is set by plusarg "+fast_rcvr_{alert_name}"
@@ -64,8 +67,6 @@ class alert_esc_agent_cfg extends dv_base_agent_cfg;
   // design. In design, if protocol hangs, the period ping check will catch the issue
   int unsigned handshake_timeout_cycle = 100_000;
   int unsigned ping_timeout_cycle = 32;
-
-  bit under_reset;
 
   // Incremented by the monitor on each ping
   int unsigned ping_count = 0;
@@ -80,7 +81,6 @@ class alert_esc_agent_cfg extends dv_base_agent_cfg;
     `uvm_field_int(ack_delay_max,   UVM_DEFAULT)
     `uvm_field_int(ack_stable_min,  UVM_DEFAULT)
     `uvm_field_int(ack_stable_max,  UVM_DEFAULT)
-    `uvm_field_int(ping_delay_min,  UVM_DEFAULT)
     `uvm_field_int(ping_delay_max,  UVM_DEFAULT)
   `uvm_object_utils_end
 

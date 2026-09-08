@@ -5,11 +5,14 @@
 #include "sw/device/lib/base/memory.h"
 #include "sw/device/lib/crypto/drivers/otbn.h"
 #include "sw/device/lib/crypto/impl/rsa/rsa_datatypes.h"
+#include "sw/device/lib/crypto/include/config.h"
+#include "sw/device/lib/crypto/include/cryptolib_build_info.h"
 #include "sw/device/lib/crypto/include/datatypes.h"
+#include "sw/device/lib/crypto/include/entropy_src.h"
+#include "sw/device/lib/crypto/include/integrity.h"
 #include "sw/device/lib/crypto/include/rsa.h"
 #include "sw/device/lib/crypto/include/sha2.h"
 #include "sw/device/lib/runtime/log.h"
-#include "sw/device/lib/testing/entropy_testutils.h"
 #include "sw/device/lib/testing/test_framework/check.h"
 #include "sw/device/lib/testing/test_framework/ottf_main.h"
 
@@ -42,7 +45,7 @@ status_t keygen_then_sign_test(void) {
   otcrypto_blinded_key_t private_key = {
       .config =
           {
-              .version = kOtcryptoLibVersion1,
+              .version = otcrypto_lib_version(),
               .key_mode = kTestKeyMode,
               .key_length = kOtcryptoRsa4096PrivateKeyBytes,
               .hw_backed = kHardenedBoolFalse,
@@ -81,31 +84,25 @@ status_t keygen_then_sign_test(void) {
   TRY_CHECK(d_large_enough);
 
   // Hash the message.
-  otcrypto_const_byte_buf_t msg_buf = {
-      .len = kTestMessageLen,
-      .data = kTestMessage,
-  };
+  otcrypto_const_byte_buf_t msg_buf = OTCRYPTO_MAKE_BUF(
+      otcrypto_const_byte_buf_t, kTestMessage, kTestMessageLen);
   uint32_t msg_digest_data[512 / 32];
   otcrypto_hash_digest_t msg_digest = {
       .data = msg_digest_data,
       .len = ARRAYSIZE(msg_digest_data),
   };
-  TRY(otcrypto_sha2_512(msg_buf, &msg_digest));
+  TRY(otcrypto_sha2_512(&msg_buf, &msg_digest));
 
   uint32_t sig[kRsa4096NumWords];
-  otcrypto_word32_buf_t sig_buf = {
-      .data = sig,
-      .len = kRsa4096NumWords,
-  };
-  otcrypto_const_word32_buf_t const_sig_buf = {
-      .data = sig,
-      .len = kRsa4096NumWords,
-  };
+  otcrypto_word32_buf_t sig_buf =
+      OTCRYPTO_MAKE_BUF(otcrypto_word32_buf_t, sig, kRsa4096NumWords);
+  otcrypto_const_word32_buf_t const_sig_buf =
+      OTCRYPTO_MAKE_BUF(otcrypto_const_word32_buf_t, sig, kRsa4096NumWords);
 
   // Generate a signature.
   LOG_INFO("Starting signature generation...");
   TRY(otcrypto_rsa_sign(&private_key, msg_digest, kOtcryptoRsaPaddingPkcs,
-                        sig_buf));
+                        &sig_buf));
   LOG_INFO("Signature generation complete.");
   LOG_INFO("OTBN instruction count: %u", otbn_instruction_count_get());
 
@@ -114,7 +111,7 @@ status_t keygen_then_sign_test(void) {
   LOG_INFO("Starting signature verification...");
   hardened_bool_t verification_result;
   TRY(otcrypto_rsa_verify(&public_key, msg_digest, kOtcryptoRsaPaddingPkcs,
-                          const_sig_buf, &verification_result));
+                          &const_sig_buf, &verification_result));
   LOG_INFO("Signature verification complete.");
   LOG_INFO("OTBN instruction count: %u", otbn_instruction_count_get());
 
@@ -126,7 +123,7 @@ status_t keygen_then_sign_test(void) {
 OTTF_DEFINE_TEST_CONFIG();
 
 bool test_main(void) {
-  CHECK_STATUS_OK(entropy_testutils_auto_mode_init());
+  CHECK_STATUS_OK(otcrypto_init(kOtcryptoKeySecurityLevelLow));
 
   status_t test_result = OK_STATUS();
   EXECUTE_TEST(test_result, keygen_then_sign_test);

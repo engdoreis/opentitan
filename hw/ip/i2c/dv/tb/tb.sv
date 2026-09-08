@@ -54,12 +54,6 @@ module tb;
     .sda_io(sda)
   );
 
-  // TODO: Remove this unused interface.
-  i2c_dv_if i2c_dv_if(
-    .clk(clk),
-    .rst_n(rst_n)
-  );
-
   `ifndef I2C_HIER
     `define I2C_HIER tb.dut.i2c_core
   `endif
@@ -85,8 +79,8 @@ module tb;
   i2c dut (
     .clk_i                   (clk        ),
     .rst_ni                  (rst_n      ),
-    .ram_cfg_i               (prim_ram_1p_pkg::RAM_1P_CFG_DEFAULT),
-    .ram_cfg_rsp_o           (                                   ),
+    .ram_cfg_i               (prim_ram_1p_pkg::RAM_1P_CFG_REQ_DEFAULT),
+    .ram_cfg_o               (                                       ),
 
     .tl_i                    (tl_if.h2d  ),
     .tl_o                    (tl_if.d2h  ),
@@ -146,7 +140,6 @@ module tb;
     uvm_config_db#(intr_vif)::set(null, "*.env", "intr_vif", intr_if);
     uvm_config_db#(virtual tl_if)::set(null, "*.env.m_tl_agent*", "vif", tl_if);
     uvm_config_db#(virtual i2c_if)::set(null, "*.env.m_i2c_agent*", "vif", i2c_if);
-    uvm_config_db#(virtual i2c_dv_if)::set(null, "*.env", "i2c_dv_vif", i2c_dv_if);
     $timeformat(-12, 0, " ps", 12);
     run_test();
   end

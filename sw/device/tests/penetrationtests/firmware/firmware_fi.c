@@ -4,7 +4,7 @@
 #include <stdbool.h>
 
 #include "sw/device/lib/base/status.h"
-#include "sw/device/lib/crypto/drivers/entropy.h"
+#include "sw/device/lib/testing/entropy_testutils.h"
 #include "sw/device/lib/testing/test_framework/check.h"
 #include "sw/device/lib/testing/test_framework/ottf_main.h"
 #include "sw/device/lib/testing/test_framework/ujson_ottf.h"
@@ -12,6 +12,7 @@
 
 // Include commands
 #include "sw/device/tests/penetrationtests/json/alert_fi_commands.h"
+#include "sw/device/tests/penetrationtests/json/boot_fi_commands.h"
 #include "sw/device/tests/penetrationtests/json/commands.h"
 #include "sw/device/tests/penetrationtests/json/crypto_fi_commands.h"
 #include "sw/device/tests/penetrationtests/json/lc_ctrl_fi_commands.h"
@@ -22,6 +23,7 @@
 
 // Include handlers
 #include "sw/device/tests/penetrationtests/firmware/fi/alert_fi.h"
+#include "sw/device/tests/penetrationtests/firmware/fi/boot_fi.h"
 #include "sw/device/tests/penetrationtests/firmware/fi/crypto_fi.h"
 #include "sw/device/tests/penetrationtests/firmware/fi/lc_ctrl_fi.h"
 #include "sw/device/tests/penetrationtests/firmware/fi/otp_fi.h"
@@ -61,6 +63,9 @@ status_t process_cmd(ujson_t *uj) {
       case kPenetrationtestCommandAlertFi:
         RESP_ERR(uj, handle_alert_fi(uj));
         break;
+      case kPenetrationtestCommandBootFi:
+        RESP_ERR(uj, handle_boot_fi(uj));
+        break;
       default:
         LOG_ERROR("Unrecognized command: %d", cmd);
         RESP_ERR(uj, INVALID_ARGUMENT());
@@ -71,7 +76,7 @@ status_t process_cmd(ujson_t *uj) {
 }
 
 bool test_main(void) {
-  CHECK_STATUS_OK(entropy_complex_init());
+  CHECK_STATUS_OK(entropy_testutils_auto_mode_init());
   ujson_t uj = ujson_ottf_console();
   return status_ok(process_cmd(&uj));
 }

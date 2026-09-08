@@ -32,12 +32,14 @@ class rv_dm_env extends cip_base_env #(
     end
 
     // get vifs
-    if (!uvm_config_db#(virtual rv_dm_if)::get(this, "", "rv_dm_vif", cfg.rv_dm_vif)) begin
-      `uvm_fatal(get_full_name(), "failed to get rv_dm_vif from uvm_config_db")
+    if (cfg.rv_dm_vif == null &&
+        !uvm_config_db#(virtual rv_dm_if)::get(this, "", "rv_dm_vif", cfg.rv_dm_vif)) begin
+      `uvm_fatal(get_full_name(), "failed to get rv_dm_vif")
     end
-    if (!uvm_config_db#(virtual clk_rst_if)::get(this, "",
+    if (cfg.clk_lc_rst_vif == null &&
+        !uvm_config_db#(virtual clk_rst_if)::get(this, "",
                                                  "clk_lc_rst_vif", cfg.clk_lc_rst_vif)) begin
-      `uvm_fatal(`gfn, "failed to get clk_lc_rst_vif from uvm_config_db")
+      `uvm_fatal(`gfn, "failed to get clk_lc_rst_vif")
     end
 
     // create components
@@ -48,10 +50,12 @@ class rv_dm_env extends cip_base_env #(
 
     m_jtag_agent = jtag_agent::type_id::create("m_jtag_agent", this);
     uvm_config_db#(jtag_agent_cfg)::set(this, "m_jtag_agent*", "cfg", cfg.m_jtag_agent_cfg);
+
     cfg.m_jtag_agent_cfg.en_cov = cfg.en_cov;
 
     m_jtag_dmi_monitor = jtag_dmi_monitor#()::type_id::create("m_jtag_dmi_monitor", this);
     m_jtag_dmi_monitor.cfg = cfg.m_jtag_agent_cfg;
+    m_jtag_dmi_monitor.set_dmi_address(cfg.m_jtag_dtm_ral.dmi.get_address());
 
     m_sba_access_monitor = sba_access_monitor#()::type_id::create("m_sba_access_monitor", this);
     m_sba_access_monitor.cfg = cfg.m_jtag_agent_cfg;
@@ -60,6 +64,7 @@ class rv_dm_env extends cip_base_env #(
 
   function void connect_phase(uvm_phase phase);
     super.connect_phase(phase);
+
     if (cfg.en_scb) begin
       m_jtag_agent.monitor.analysis_port.connect(m_jtag_dmi_monitor.jtag_item_fifo.analysis_export);
       m_jtag_dmi_monitor.analysis_port.connect(m_sba_access_monitor.jtag_dmi_fifo.analysis_export);
@@ -71,12 +76,17 @@ class rv_dm_env extends cip_base_env #(
       m_tl_sba_agent.monitor.a_chan_port.connect(scoreboard.tl_sba_a_chan_fifo.analysis_export);
       m_tl_sba_agent.monitor.d_chan_port.connect(scoreboard.tl_sba_d_chan_fifo.analysis_export);
     end
-    if (cfg.is_active && cfg.m_jtag_agent_cfg.is_active) begin
-      virtual_sequencer.jtag_sequencer_h = m_jtag_agent.sequencer;
+
+    if (cfg.is_active) begin
+      if (cfg.m_jtag_agent_cfg.is_active) begin
+        virtual_sequencer.jtag_sequencer_h = m_jtag_agent.sequencer;
+      end
+      if (cfg.m_tl_sba_agent_cfg.is_active) begin
+        virtual_sequencer.tl_sba_sequencer_h = m_tl_sba_agent.sequencer;
+      end
     end
-    if (cfg.is_active && cfg.m_tl_sba_agent_cfg.is_active) begin
-      virtual_sequencer.tl_sba_sequencer_h = m_tl_sba_agent.sequencer;
-    end
+
+    m_jtag_agent.set_reg_map(cfg.m_jtag_dtm_ral.default_map);
   endfunction
 
 endclass

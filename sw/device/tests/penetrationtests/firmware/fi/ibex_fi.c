@@ -10,12 +10,16 @@
 #include "sw/device/lib/base/csr_registers.h"
 #include "sw/device/lib/base/memory.h"
 #include "sw/device/lib/base/status.h"
+#if defined(USE_FLASH)
 #include "sw/device/lib/dif/dif_flash_ctrl.h"
+#endif  // USE_FLASH
 #include "sw/device/lib/dif/dif_otp_ctrl.h"
 #include "sw/device/lib/dif/dif_rv_core_ibex.h"
 #include "sw/device/lib/dif/dif_sram_ctrl.h"
 #include "sw/device/lib/runtime/log.h"
+#if defined(USE_FLASH)
 #include "sw/device/lib/testing/flash_ctrl_testutils.h"
+#endif  // USE_FLASH
 #include "sw/device/lib/testing/otp_ctrl_testutils.h"
 #include "sw/device/lib/testing/sram_ctrl_testutils.h"
 #include "sw/device/lib/testing/test_framework/ottf_test_config.h"
@@ -33,7 +37,7 @@
 #include "hw/top/edn_regs.h"
 #include "hw/top/entropy_src_regs.h"
 #include "hw/top/hmac_regs.h"
-#include "hw/top/keymgr_regs.h"
+#include "hw/top/keymgr_dpe_regs.h"
 #include "hw/top/otp_ctrl_regs.h"
 #include "hw/top/rv_core_ibex_regs.h"
 #include "hw/top/sram_ctrl_regs.h"
@@ -101,8 +105,10 @@ uint32_t
                                    sizeof(uint32_t)];
 
 // CharFlash config parameters.
+#if defined(USE_FLASH)
 static uint32_t flash_region_index;
 static uint32_t flash_test_page_addr;
+#endif  // USE_FLASH
 
 // Cond. branch macros.
 #define CONDBRANCHBEQ "beq x5, x6, endfitestfaultybeq\n"
@@ -296,7 +302,13 @@ OT_ALWAYS_INLINE void save_all_regs(uint32_t buffer[]) {
  *
  * @param buffer: The buffer to store the register file content.
  */
-OT_ALWAYS_INLINE void save_tmp_regs(uint32_t buffer[]) {
+OT_ALWAYS_INLINE void save_tmp_regs(void) {
+  register uint32_t *buffer asm("x10");
+  asm volatile(
+      "1: auipc x10, %%pcrel_hi(registers_dumped)\n"
+      "   addi x10, x10, %%pcrel_lo(1b)\n"
+      : "=r"(buffer));
+
   asm volatile("mv %0, x5" : "=r"(buffer[kRegX5]));
   asm volatile("mv %0, x6" : "=r"(buffer[kRegX6]));
   asm volatile("mv %0, x7" : "=r"(buffer[kRegX7]));
@@ -374,11 +386,13 @@ OT_ALWAYS_INLINE void restore_all_regs(uint32_t buffer[]) {
   restore_all_regs(registers_saved);
 
 // Save the temporary registers.
-#define DUMP_TMP_REGISTER_FILE save_tmp_regs(registers_dumped);
+#define DUMP_TMP_REGISTER_FILE save_tmp_regs();
 
 // Flash information.
+#if defined(USE_FLASH)
 static dif_flash_ctrl_state_t flash;
 static dif_flash_ctrl_device_info_t flash_info;
+#endif  // USE_FLASH
 #define FLASH_PAGES_PER_BANK flash_info.data_pages
 #define FLASH_WORD_SZ flash_info.bytes_per_word
 #define FLASH_PAGE_SZ flash_info.bytes_per_page
@@ -2345,23 +2359,24 @@ status_t handle_ibex_fi_char_csr_combi(ujson_t *uj) {
       TOP_EARLGREY_HMAC_BASE_ADDR + HMAC_MSG_LENGTH_LOWER_REG_OFFSET,
       uj_data.ref_values[2]);
   abs_mmio_write32(
-      TOP_EARLGREY_KEYMGR_BASE_ADDR + KEYMGR_SEALING_SW_BINDING_7_REG_OFFSET,
+      TOP_EARLGREY_KEYMGR_DPE_BASE_ADDR + KEYMGR_DPE_SW_BINDING_7_REG_OFFSET,
       uj_data.ref_values[3]);
-  abs_mmio_write32(TOP_EARLGREY_KEYMGR_BASE_ADDR + KEYMGR_SALT_0_REG_OFFSET,
-                   uj_data.ref_values[4]);
+  abs_mmio_write32(
+      TOP_EARLGREY_KEYMGR_DPE_BASE_ADDR + KEYMGR_DPE_SALT_0_REG_OFFSET,
+      uj_data.ref_values[4]);
   abs_mmio_write32(
       TOP_EARLGREY_CSRNG_BASE_ADDR + CSRNG_RESEED_INTERVAL_REG_OFFSET,
       uj_data.ref_values[5]);
   abs_mmio_write32(TOP_EARLGREY_CSRNG_BASE_ADDR + CSRNG_CTRL_REG_OFFSET,
                    uj_data.ref_values[6]);
-  abs_mmio_write32(TOP_EARLGREY_SRAM_CTRL_RET_AON_REGS_BASE_ADDR +
-                       SRAM_CTRL_READBACK_REG_OFFSET,
-                   uj_data.ref_values[7]);
+  abs_mmio_write32(
+      TOP_EARLGREY_SRAM_CTRL_RET_REGS_BASE_ADDR + SRAM_CTRL_READBACK_REG_OFFSET,
+      uj_data.ref_values[7]);
   abs_mmio_write32_shadowed(
       TOP_EARLGREY_AES_BASE_ADDR + AES_CTRL_SHADOWED_REG_OFFSET,
       uj_data.ref_values[8]);
-  abs_mmio_write32_shadowed(TOP_EARLGREY_KEYMGR_BASE_ADDR +
-                                KEYMGR_RESEED_INTERVAL_SHADOWED_REG_OFFSET,
+  abs_mmio_write32_shadowed(TOP_EARLGREY_KEYMGR_DPE_BASE_ADDR +
+                                KEYMGR_DPE_RESEED_INTERVAL_SHADOWED_REG_OFFSET,
                             uj_data.ref_values[9]);
   abs_mmio_write32(TOP_EARLGREY_EDN0_BASE_ADDR + EDN_CTRL_REG_OFFSET,
                    uj_data.ref_values[10]);
@@ -2401,21 +2416,22 @@ status_t handle_ibex_fi_char_csr_combi(ujson_t *uj) {
       abs_mmio_read32(TOP_EARLGREY_HMAC_BASE_ADDR + HMAC_DIGEST_0_REG_OFFSET);
   read_csrs[2] = abs_mmio_read32(TOP_EARLGREY_HMAC_BASE_ADDR +
                                  HMAC_MSG_LENGTH_LOWER_REG_OFFSET);
-  read_csrs[3] = abs_mmio_read32(TOP_EARLGREY_KEYMGR_BASE_ADDR +
-                                 KEYMGR_SEALING_SW_BINDING_7_REG_OFFSET);
-  read_csrs[4] =
-      abs_mmio_read32(TOP_EARLGREY_KEYMGR_BASE_ADDR + KEYMGR_SALT_0_REG_OFFSET);
+  read_csrs[3] = abs_mmio_read32(TOP_EARLGREY_KEYMGR_DPE_BASE_ADDR +
+                                 KEYMGR_DPE_SW_BINDING_7_REG_OFFSET);
+  read_csrs[4] = abs_mmio_read32(TOP_EARLGREY_KEYMGR_DPE_BASE_ADDR +
+                                 KEYMGR_DPE_SALT_0_REG_OFFSET);
 
   read_csrs[5] = abs_mmio_read32(TOP_EARLGREY_CSRNG_BASE_ADDR +
                                  CSRNG_RESEED_INTERVAL_REG_OFFSET);
   read_csrs[6] =
       abs_mmio_read32(TOP_EARLGREY_CSRNG_BASE_ADDR + CSRNG_CTRL_REG_OFFSET);
-  read_csrs[7] = abs_mmio_read32(TOP_EARLGREY_SRAM_CTRL_RET_AON_REGS_BASE_ADDR +
+  read_csrs[7] = abs_mmio_read32(TOP_EARLGREY_SRAM_CTRL_RET_REGS_BASE_ADDR +
                                  SRAM_CTRL_READBACK_REG_OFFSET);
   read_csrs[8] = abs_mmio_read32(TOP_EARLGREY_AES_BASE_ADDR +
                                  AES_CTRL_SHADOWED_REG_OFFSET);
-  read_csrs[9] = abs_mmio_read32(TOP_EARLGREY_KEYMGR_BASE_ADDR +
-                                 KEYMGR_RESEED_INTERVAL_SHADOWED_REG_OFFSET);
+  read_csrs[9] =
+      abs_mmio_read32(TOP_EARLGREY_KEYMGR_DPE_BASE_ADDR +
+                      KEYMGR_DPE_RESEED_INTERVAL_SHADOWED_REG_OFFSET);
   read_csrs[10] =
       abs_mmio_read32(TOP_EARLGREY_EDN0_BASE_ADDR + EDN_CTRL_REG_OFFSET);
   read_csrs[11] =
@@ -2473,6 +2489,10 @@ status_t handle_ibex_fi_char_csr_combi(ujson_t *uj) {
   return OK_STATUS();
 }
 
+// handle_ibex_fi_char_flash_read/_read_static/_write are stubbed out on tops
+// without flash_ctrl -- RRAM_CTRL has no equivalent DIF-level page erase/write
+// API yet.
+#if defined(USE_FLASH)
 status_t handle_ibex_fi_char_flash_read(ujson_t *uj) __attribute__((optnone)) {
   // Set the flash region we want to test.
   ibex_fi_flash_region_t uj_data;
@@ -2611,7 +2631,131 @@ status_t handle_ibex_fi_char_flash_read(ujson_t *uj) __attribute__((optnone)) {
 
   return OK_STATUS();
 }
+#else
+status_t handle_ibex_fi_char_flash_read(ujson_t *uj) { return UNIMPLEMENTED(); }
+#endif  // USE_FLASH
 
+#if defined(USE_FLASH)
+status_t handle_ibex_fi_char_flash_read_static(ujson_t *uj)
+    __attribute__((optnone)) {
+  // Set the flash region we want to test.
+  ibex_fi_flash_set_region_t uj_data;
+  TRY(ujson_deserialize_ibex_fi_flash_set_region_t(uj, &uj_data));
+
+  // Clear registered alerts in alert handler.
+  pentest_registered_alerts_t reg_alerts = pentest_get_triggered_alerts();
+  // Clear registered local alerts in alert handler.
+  pentest_registered_loc_alerts_t reg_loc_alerts =
+      pentest_get_triggered_loc_alerts();
+  // Clear the AST recoverable alerts.
+  pentest_clear_sensor_recov_alerts();
+
+  // Configure the data flash.
+  // Flash configuration with ECC and scramble disabled
+  dif_flash_ctrl_region_properties_t region_properties = {
+      .rd_en = kMultiBitBool4True,
+      .prog_en = kMultiBitBool4True,
+      .erase_en = kMultiBitBool4True,
+      .scramble_en = kMultiBitBool4False,
+      .ecc_en = kMultiBitBool4False,
+      .high_endurance_en = kMultiBitBool4False};
+
+  dif_flash_ctrl_data_region_properties_t data_region = {
+      .base = FLASH_PAGES_PER_BANK,
+      .size = 0x1,
+      .properties = region_properties};
+
+  dif_result_t res_prop = dif_flash_ctrl_set_data_region_properties(
+      &flash, uj_data.flash_region, data_region);
+  if (res_prop == kDifLocked) {
+    LOG_INFO("Flash region locked, aborting!");
+    ibex_fi_empty_t uj_output;
+    uj_output.success = false;
+    RESP_OK(ujson_serialize_ibex_fi_empty_t, uj, &uj_output);
+    return OK_STATUS();
+  }
+
+  uint32_t flash_addr = data_region.base * FLASH_PAGE_SZ;
+  mmio_region_t flash_test_page = mmio_region_from_addr(
+      TOP_EARLGREY_FLASH_CTRL_MEM_BASE_ADDR + (uintptr_t)flash_addr);
+
+  if (uj_data.init) {
+    dif_result_t res_en = dif_flash_ctrl_set_data_region_enablement(
+        &flash, uj_data.flash_region, kDifToggleEnabled);
+    if (res_en == kDifLocked) {
+      LOG_INFO("Flash region locked, aborting!");
+      ibex_fi_empty_t uj_output;
+      uj_output.success = false;
+      RESP_OK(ujson_serialize_ibex_fi_empty_t, uj, &uj_output);
+      return OK_STATUS();
+    }
+
+    // Prepare page and write reference values into it.
+    uint32_t input_page[FLASH_UINT32_WORDS_PER_PAGE];
+    memset(input_page, 0x0, FLASH_UINT32_WORDS_PER_PAGE * sizeof(uint32_t));
+    for (int i = 0; i < kNumRefValues; i++) {
+      input_page[i] = ref_values[i];
+    }
+
+    // Erase flash and write page with reference values.
+    TRY(flash_ctrl_testutils_erase_and_write_page(
+        &flash, flash_addr, /*partition_id=*/0, input_page,
+        kDifFlashCtrlPartitionTypeData, FLASH_UINT32_WORDS_PER_PAGE));
+  }
+
+  PENTEST_ASM_TRIGGER_HIGH
+  asm volatile(NOP1000);
+  PENTEST_ASM_TRIGGER_LOW
+
+  uint32_t flash_reads[IBEXFI_MAX_FAULTY_ADDRESSES_DATA] = {0};
+
+  for (int idx = 0; idx < IBEXFI_MAX_FAULTY_ADDRESSES_DATA; idx++) {
+    flash_reads[idx] =
+        mmio_region_read32(flash_test_page, idx * (ptrdiff_t)sizeof(uint32_t));
+  }
+
+  // Get registered alerts from alert handler.
+  reg_alerts = pentest_get_triggered_alerts();
+  // Get registered local alerts from alert handler.
+  reg_loc_alerts = pentest_get_triggered_loc_alerts();
+  // Get fatal and recoverable AST alerts from sensor controller.
+  pentest_sensor_alerts_t sensor_alerts = pentest_get_sensor_alerts();
+
+  ibex_fi_faulty_pure_data_t uj_output;
+  // Preset buffers to 0.
+  memset(uj_output.data_faulty, false, sizeof(uj_output.data_faulty));
+  memset(uj_output.data, 0, sizeof(uj_output.data));
+
+  // Check if one or multiple values are faulty.
+  for (size_t it = 0; it < IBEXFI_MAX_FAULTY_ADDRESSES_DATA; it++) {
+    if (flash_reads[it] != ref_values[it]) {
+      // If there is a mismatch, set data_faulty to true and return the
+      // faulty value.
+      uj_output.data_faulty[it] = true;
+      uj_output.data[it] = flash_reads[it];
+    }
+  }
+
+  // Read ERR_STATUS register.
+  dif_rv_core_ibex_error_status_t codes;
+  TRY(dif_rv_core_ibex_get_error_status(&rv_core_ibex, &codes));
+
+  // Send result & ERR_STATUS to host.
+  uj_output.err_status = codes;
+  memcpy(uj_output.alerts, reg_alerts.alerts, sizeof(reg_alerts.alerts));
+  uj_output.loc_alerts = reg_loc_alerts.loc_alerts;
+  memcpy(uj_output.ast_alerts, sensor_alerts.alerts,
+         sizeof(sensor_alerts.alerts));
+  RESP_OK(ujson_serialize_ibex_fi_faulty_pure_data_t, uj, &uj_output);
+  return OK_STATUS();
+}
+#else
+status_t handle_ibex_fi_char_flash_read_static(ujson_t *uj) {
+  return UNIMPLEMENTED();
+}
+#endif  // USE_FLASH
+
+#if defined(USE_FLASH)
 status_t handle_ibex_fi_char_flash_write(ujson_t *uj) __attribute__((optnone)) {
   // Set the flash region we want to test.
   ibex_fi_flash_region_t uj_data;
@@ -2716,6 +2860,11 @@ status_t handle_ibex_fi_char_flash_write(ujson_t *uj) __attribute__((optnone)) {
 
   return OK_STATUS();
 }
+#else
+status_t handle_ibex_fi_char_flash_write(ujson_t *uj) {
+  return UNIMPLEMENTED();
+}
+#endif  // USE_FLASH
 
 status_t handle_ibex_fi_char_hardened_check_eq_complement_branch(ujson_t *uj)
     __attribute__((optnone)) {
@@ -3625,7 +3774,7 @@ status_t handle_ibex_fi_char_sram_read_ret(ujson_t *uj)
   if (!sram_ret_init) {
     // Init retention SRAM, wipe and scramble it.
     mmio_region_t addr =
-        mmio_region_from_addr(TOP_EARLGREY_SRAM_CTRL_RET_AON_REGS_BASE_ADDR);
+        mmio_region_from_addr(TOP_EARLGREY_SRAM_CTRL_RET_REGS_BASE_ADDR);
     TRY(dif_sram_ctrl_init(addr, &ret_sram));
     TRY(sram_ctrl_testutils_wipe(&ret_sram));
     TRY(sram_ctrl_testutils_scramble(&ret_sram));
@@ -3640,9 +3789,9 @@ status_t handle_ibex_fi_char_sram_read_ret(ujson_t *uj)
   // Clear the AST recoverable alerts.
   pentest_clear_sensor_recov_alerts();
 
-  uint32_t *ret_ram = (uint32_t *)TOP_EARLGREY_SRAM_CTRL_RET_AON_RAM_BASE_ADDR;
+  uint32_t *ret_ram = (uint32_t *)TOP_EARLGREY_SRAM_CTRL_RET_RAM_BASE_ADDR;
   size_t ret_ram_len =
-      TOP_EARLGREY_SRAM_CTRL_RET_AON_RAM_SIZE_BYTES / sizeof(ret_ram[0]);
+      TOP_EARLGREY_SRAM_CTRL_RET_RAM_SIZE_BYTES / sizeof(ret_ram[0]);
   size_t ret_ram_half_len = ret_ram_len / 2;
 
   // Write counter value into ret SRAM.
@@ -3732,7 +3881,7 @@ status_t handle_ibex_fi_char_sram_static(ujson_t *uj) __attribute__((optnone)) {
   if (!sram_ret_init) {
     // Init retention SRAM, wipe and scramble it.
     mmio_region_t addr =
-        mmio_region_from_addr(TOP_EARLGREY_SRAM_CTRL_RET_AON_REGS_BASE_ADDR);
+        mmio_region_from_addr(TOP_EARLGREY_SRAM_CTRL_RET_REGS_BASE_ADDR);
     TRY(dif_sram_ctrl_init(addr, &ret_sram));
     TRY(sram_ctrl_testutils_wipe(&ret_sram));
     TRY(sram_ctrl_testutils_scramble(&ret_sram));
@@ -3750,9 +3899,8 @@ status_t handle_ibex_fi_char_sram_static(ujson_t *uj) __attribute__((optnone)) {
   pentest_clear_sensor_recov_alerts();
 
   // Get address of the ret. SRAM at the beginning of the owner section.
-  uintptr_t sram_ret_buffer_addr =
-      TOP_EARLGREY_SRAM_CTRL_RET_AON_RAM_BASE_ADDR +
-      offsetof(retention_sram_t, owner);
+  uintptr_t sram_ret_buffer_addr = TOP_EARLGREY_SRAM_CTRL_RET_RAM_BASE_ADDR +
+                                   offsetof(retention_sram_t, owner);
   mmio_region_t sram_region_ret_addr =
       mmio_region_from_addr(sram_ret_buffer_addr);
 
@@ -4713,11 +4861,13 @@ status_t handle_ibex_fi_char_unrolled_reg_op_loop_chain(ujson_t *uj)
 }
 
 status_t handle_ibex_fi_init(ujson_t *uj) {
+#if defined(USE_FLASH)
   // Enable the flash.
   flash_info = dif_flash_ctrl_get_device_info();
   TRY(dif_flash_ctrl_init_state(
       &flash, mmio_region_from_addr(TOP_EARLGREY_FLASH_CTRL_CORE_BASE_ADDR)));
   TRY(flash_ctrl_testutils_wait_for_init(&flash));
+#endif  // USE_FLASH
 
   // Init OTP.
   TRY(dif_otp_ctrl_init(
@@ -4860,6 +5010,8 @@ status_t handle_ibex_fi(ujson_t *uj) {
       return handle_ibex_fi_char_csr_combi(uj);
     case kIbexFiSubcommandCharFlashRead:
       return handle_ibex_fi_char_flash_read(uj);
+    case kIbexFiSubcommandCharFlashReadStatic:
+      return handle_ibex_fi_char_flash_read_static(uj);
     case kIbexFiSubcommandCharFlashWrite:
       return handle_ibex_fi_char_flash_write(uj);
     case kIbexFiSubcommandCharHardenedCheckComplementBranch:

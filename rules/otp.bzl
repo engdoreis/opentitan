@@ -249,7 +249,35 @@ def _otp_image(ctx):
         arguments = [args],
         executable = ctx.executable._tool,
     )
-    return [DefaultInfo(files = depset([output]), runfiles = ctx.runfiles(files = [output]))]
+
+    # Also emit this image reformatted into the RRAM-native layout (128b data rows plus the
+    # Hamming(72,64) integrity page): backdoor-loading OTP into a top that stores it inside the
+    # RRAM data array (see rram_ctrl_pkg.sv) - DV's OtpTypeCustom sw_images mechanism (see
+    # build_sw_collateral_for_sim.py), FPGA, Verilator - needs that layout instead of this
+    # rule's native output above; other consumers (e.g. an exec_env's `otp` attr, used for
+    # firmware scrambling-key derivation) keep using the single native-format DefaultInfo file
+    # untouched. Kept out of DefaultInfo and in this output group instead so this action only
+    # runs for the specific images something actually requests it for (e.g. via
+    # rram_otp_image() in transform.bzl) - tops that don't use RRAM for OTP (e.g. darjeeling)
+    # never trigger it.
+    rram_output = ctx.actions.declare_file(ctx.attr.name + ".128.vmem")
+    rram_args = ctx.actions.args()
+    rram_args.add("--in-otp-vmem", output)
+    rram_args.add("--out-otp-vmem", rram_output)
+    rram_args.add("--top-secret-cfg", ctx.file.top_secret_cfg)
+    if ctx.attr.data_perm:
+        rram_args.add("--otp-data-perm", ctx.attr.data_perm[BuildSettingInfo].value)
+    ctx.actions.run(
+        outputs = [rram_output],
+        inputs = [output, ctx.file.top_secret_cfg],
+        arguments = [rram_args],
+        executable = ctx.executable._rram_tool,
+    )
+
+    return [
+        DefaultInfo(files = depset([output]), runfiles = ctx.runfiles(files = [output])),
+        OutputGroupInfo(rram_otp = depset([rram_output])),
+    ]
 
 otp_image = rule(
     implementation = _otp_image,
@@ -287,6 +315,11 @@ otp_image = rule(
         ),
         "_tool": attr.label(
             default = "//util/design:gen-otp-img",
+            executable = True,
+            cfg = "exec",
+        ),
+        "_rram_tool": attr.label(
+            default = "//util/design:gen-rram-img",
             executable = True,
             cfg = "exec",
         ),
@@ -398,7 +431,7 @@ def _parse_str_list(s):
     """
     return s.replace(" ", "").split(",")
 
-def otp_alert_classification(alert_list, default = None, **kwargs):
+def otp_alert_classification(alert_list, default = None, ordered_params = {}, **kwargs):
     """Create an array specifying the alert classifications.
 
     This function creates an array of bytestrings that specifies the alert
@@ -410,6 +443,14 @@ def otp_alert_classification(alert_list, default = None, **kwargs):
         default: default classification for all alerts that are not specified
             in kwargs. If kwargs does not include all alerts, a value must be
             specified for default.
+        ordered_params: a mapping of the format '{"alert_name": alert_class_string}'.
+            alert_name is an alert in the alert_list argument.
+            alert_class_string is a comma-delimited string that can contain
+            spaces and is intended to be parsed by the _parse_str_list macro.
+            This string must indicate exactly 4 alert classes for the prod,
+            prod_end, dev, and rma LC states in that order.
+            Use this argument instead of kwargs to ensure the order of the
+            alert classes is maintained in the bazel build file.
         kwargs: a mapping of the format 'alert_name = alert_class_string'.
             alert_name is an alert in the alert_list argument.
             alert_class_string is a comma-delimited string that can contain
@@ -440,6 +481,9 @@ def otp_alert_classification(alert_list, default = None, **kwargs):
 
     provided_alerts = dict()
     for alert, class_str in kwargs.items():
+        provided_alerts[alert] = _parse_alert_class_string(class_str)
+
+    for alert, class_str in ordered_params.items():
         provided_alerts[alert] = _parse_alert_class_string(class_str)
 
     alert_set = sets.make(alert_list)

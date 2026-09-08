@@ -40,7 +40,8 @@ class csrng_err_vseq extends csrng_base_vseq;
     fifo_err_value[1] = '{"write": 1'b0, "read": 1'b0, "state": 1'b0};
 
     // Create edn host sequences
-    for (int i = 0; i < NUM_HW_APPS; i++) begin
+    m_edn_push_seq = new[cfg.m_num_hw_apps];
+    for (int i = 0; i < cfg.m_num_hw_apps; i++) begin
       m_edn_push_seq[i] = push_pull_host_seq#(csrng_pkg::CmdBusWidth)::type_id::create
                                               ($sformatf("m_edn_push_seq[%0d]", i));
     end
@@ -57,10 +58,6 @@ class csrng_err_vseq extends csrng_base_vseq;
     // Turn off assertions
     $assertoff(0, "tb.entropy_src_if.ReqHighUntilAck_A");
     $assertoff(0, "tb.entropy_src_if.AckAssertedOnlyWhenReqAsserted_A");
-    $assertoff(0, "tb.dut.u_csrng_core.u_prim_arbiter_ppc_updblk_arb.LockArbDecision_A");
-    $assertoff(0, "tb.dut.u_csrng_core.u_prim_arbiter_ppc_benblk_arb.ReqStaysHighUntilGranted0_M");
-    $assertoff(0, "tb.dut.u_csrng_core.u_prim_arbiter_ppc_updblk_arb.ReqStaysHighUntilGranted0_M");
-    $assertoff(0, "tb.dut.u_csrng_core.CsrngNoConcurrentGenCmdRsp_A");
     $assertoff(0, `HIER_PATH(`CMD_STAGE_0, u_state_regs_A));
     $assertoff(0, `HIER_PATH(`CMD_STAGE_1, u_state_regs_A));
     $assertoff(0, `HIER_PATH(`CMD_STAGE_2, u_state_regs_A));
@@ -275,10 +272,6 @@ class csrng_err_vseq extends csrng_base_vseq;
     // Turn assertions back on
     $asserton(0, "tb.entropy_src_if.ReqHighUntilAck_A");
     $asserton(0, "tb.entropy_src_if.AckAssertedOnlyWhenReqAsserted_A");
-    $asserton(0, "tb.dut.u_csrng_core.u_prim_arbiter_ppc_updblk_arb.LockArbDecision_A");
-    $asserton(0, "tb.dut.u_csrng_core.u_prim_arbiter_ppc_benblk_arb.ReqStaysHighUntilGranted0_M");
-    $asserton(0, "tb.dut.u_csrng_core.u_prim_arbiter_ppc_updblk_arb.ReqStaysHighUntilGranted0_M");
-    $asserton(0, "tb.dut.u_csrng_core.CsrngNoConcurrentGenCmdRsp_A");
     $asserton(0, `HIER_PATH(`CMD_STAGE_0, u_state_regs_A));
     $asserton(0, `HIER_PATH(`CMD_STAGE_1, u_state_regs_A));
     $asserton(0, `HIER_PATH(`CMD_STAGE_2, u_state_regs_A));

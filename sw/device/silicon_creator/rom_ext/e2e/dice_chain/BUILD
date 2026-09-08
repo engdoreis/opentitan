@@ -31,7 +31,6 @@ package(default_visibility = ["//visibility:public"])
         name = "no_refresh_{}_test".format(variation),
         srcs = ["no_refresh_test.c"],
         exec_env = {
-            "//hw/top_earlgrey:fpga_cw310_rom_ext": None,
             "//hw/top_earlgrey:fpga_cw340_rom_ext": None,
         },
         fpga = fpga_params(
@@ -62,7 +61,6 @@ opentitan_binary(
     testonly = True,
     srcs = ["//sw/device/silicon_creator/rom_ext/e2e/attestation:print_certs.c"],
     exec_env = {
-        "//hw/top_earlgrey:fpga_cw310_rom_ext": None,
         "//hw/top_earlgrey:fpga_cw340_rom_ext": None,
     },
     linker_script = "//sw/device/lib/testing/test_framework:ottf_ld_silicon_owner_slot_a",
@@ -72,7 +70,7 @@ opentitan_binary(
         "//sw/device/lib/runtime:log",
         "//sw/device/lib/runtime:print",
         "//sw/device/lib/testing/test_framework:ottf_main",
-        "//sw/device/silicon_creator/lib/drivers:flash_ctrl",
+        "//sw/device/silicon_creator/lib:nvm_ctrl",
         "//sw/device/silicon_creator/manuf/base:perso_tlv_data",
     ],
 )
@@ -86,7 +84,6 @@ opentitan_binary(
             ":print_certs_for_assemble": OWNER_SLOTS["a"],
         },
         exec_env = [
-            "//hw/top_earlgrey:fpga_cw310_rom_with_fake_keys",
             "//hw/top_earlgrey:fpga_cw340_rom_with_fake_keys",
         ],
     )
@@ -108,7 +105,6 @@ _VARIATION_INTEROP_TEST_CASES = [
     opentitan_test(
         name = "variation_interop_{}_first_test".format(tc["first"]),
         exec_env = {
-            "//hw/top_earlgrey:fpga_cw310_rom_with_fake_keys": None,
             "//hw/top_earlgrey:fpga_cw340_rom_with_fake_keys": None,
         },
         fpga = fpga_params(
@@ -118,8 +114,6 @@ _VARIATION_INTEROP_TEST_CASES = [
             },
             otp = "//sw/device/silicon_creator/rom_ext/e2e:otp_img_secret2_locked_rma",
             test_cmd = """
-                --clear-bitstream
-                --bootstrap={firmware}
                 --second-bootstrap={second}
             """,
             test_harness = "//sw/host/tests/rom_ext/e2e_variation_interop",
@@ -138,3 +132,96 @@ test_suite(
         for tc in _VARIATION_INTEROP_TEST_CASES
     ],
 )
+
+opentitan_binary(
+    name = "modify_digest",
+    testonly = True,
+    srcs = ["modify_digest.c"],
+    exec_env = [
+        "//hw/top_earlgrey:fpga_cw340_rom_with_fake_keys",
+    ],
+    deps = [
+        "//hw/top/dt",
+        "//sw/device/lib/base:status",
+        "//sw/device/lib/runtime:log",
+        "//sw/device/lib/testing/test_framework:ottf_alerts",
+        "//sw/device/lib/testing/test_framework:ottf_main",
+        "//sw/device/silicon_creator/lib:nvm_ctrl",
+        "//sw/device/silicon_creator/lib/drivers:hmac",
+    ],
+)
+
+opentitan_test(
+    name = "corrupted_digest_test",
+    srcs = ["//sw/device/silicon_creator/rom_ext/e2e/verified_boot:boot_test"],
+    exec_env = {
+        "//hw/top_earlgrey:fpga_cw340_rom_ext": None,
+    },
+    fpga = fpga_params(
+        binaries = {
+            ":modify_digest": "modify_digest",
+        },
+        test_cmd = """
+            --exec="no-op --info='##### Prepare CDI cert page'"
+            --exec="bootstrap --clear-uart=true {firmware}"
+            --exec="console --non-interactive --exit-success='{exit_success}' --exit-failure='{exit_failure}' --timeout=10s"
+            --exec="no-op --info='##### Corrupt CDI cert page'"
+            --exec="bootstrap --clear-uart=true {modify_digest}"
+            --exec="console --non-interactive --exit-success='PASS!' --timeout=10s"
+            --exec="bootstrap --clear-uart=true {firmware}"
+            --exec="no-op --info='##### Corruption should be detected and reboot'"
+            --exec="console --non-interactive --exit-success='BFV:03444303' --exit-failure='{exit_success}' --timeout=10s"
+            --exec="no-op --info='##### Corruption fixed in the second boot'"
+            --exec="console --non-interactive --exit-success='{exit_success}' --exit-failure='{exit_failure}' --timeout=10s"
+            no-op
+        """,
+        testopt_bootstrap = "False",
+    ),
+    deps = [
+        "//sw/device/lib/base:status",
+        "//sw/device/lib/testing/test_framework:ottf_main",
+        "//sw/device/silicon_creator/lib:boot_log",
+        "//sw/device/silicon_creator/lib/drivers:retention_sram",
+    ],
+)
+
+DEBUG_MODE_TESTCASES = [
+    {
+        "name": "off",
+        "key": {"//sw/device/silicon_creator/lib/ownership/keys/fake:ecdsa_keyset": "app_prod_0"},
+        "defines": ["TEST_EXPECT_DEBUG_OFF=1"],
+    },
+    {
+        "name": "on",
+        "key": {"//sw/device/silicon_creator/lib/ownership/keys/fake:ecdsa_keyset": "app_test_0"},
+        "defines": ["TEST_EXPECT_DEBUG_ON=1"],
+    },
+]
+
+[
+    opentitan_test(
+        name = "debug_mode_{}_{}_test".format(
+            testcase["name"],
+            variation,
+        ),
+        srcs = ["debug_mode_test.c"],
+        defines = testcase["defines"],
+        ecdsa_key = testcase["key"],
+        exec_env = {
+            "//hw/top_earlgrey:fpga_cw340_rom_ext": None,
+        },
+        fpga = fpga_params(
+            rom_ext = "//sw/device/silicon_creator/rom_ext:rom_ext_{}_slot_a".format(variation),
+        ),
+        deps = [
+            "//sw/device/lib/base:status",
+            "//sw/device/lib/runtime:log",
+            "//sw/device/lib/testing/test_framework:check",
+            "//sw/device/lib/testing/test_framework:ottf_main",
+            "//sw/device/silicon_creator/lib:nvm_ctrl",
+            "//sw/device/silicon_creator/manuf/base:perso_tlv_data",
+        ],
+    )
+    for testcase in DEBUG_MODE_TESTCASES
+    for variation in ROM_EXT_VARIATIONS.keys()
+]

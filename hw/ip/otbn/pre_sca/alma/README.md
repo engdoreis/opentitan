@@ -1,7 +1,7 @@
-# OTBN Formal Masking Verification Using Alma
+# OTBN Formal Masking Verification Using CocoAlma
 
 This directory contains support files to formally verify the OTBN core using the
-tool [Alma:
+tool [CocoAlma:
 Execution-aware Masking Verification](https://github.com/IAIK/coco-alma).
 
 ## Prerequisites
@@ -11,7 +11,7 @@ Note that this flow is experimental. It has been developed using Yosys v0.15
 Verilator 4.106 (2020-12-02 rev v4.106). Other tool versions might not be
 compatible.
 
-1. Download the Alma tool from this specific repo and check out to the
+1. Download the CocoAlma tool from this specific repo and check out to the
    `coco-otbn-latest` branch of the tool
    ```sh
    git clone git@github.com:abdullahvarici/coco-alma.git -b coco-otbn-latest
@@ -47,10 +47,10 @@ compatible.
 
 ## Formally verifying the masking of the OTBN core
 
-After downloading the Alma tool, installing dependencies and synthesizing OTBN,
+After downloading the CocoAlma tool, installing dependencies and synthesizing OTBN,
 the masking can finally be formally verified.
 
-1. Enter the directory where you have downloaded Alma and load the virtual
+1. Enter the directory where you have downloaded CocoAlma and load the virtual
    Python environment.
    ```sh
    source dev/bin/activate
@@ -62,7 +62,7 @@ the masking can finally be formally verified.
    source ../opentitan/util/build_consts.sh
    ```
 
-1. Launch the Alma tool to parse, assemble, trace (simulate) and formally verify
+1. Launch the CocoAlma tool to parse, assemble, trace (simulate) and formally verify
    the netlist. For simplicity, a single script is provided to launch all the
    required steps with a single command. Simply run:
    ```sh
@@ -70,7 +70,7 @@ the masking can finally be formally verified.
    ```
    This should produce output similar to the one below:
    ```sh
-   Verifying OTBN using Alma
+   Verifying OTBN using CocoAlma
    Starting yosys synthesis...
    | CircuitGraph | Total: 234238 | Linear: 22351 | Non-linear: 107502 | Registers: 21338 | Mux: 41352 |
    parse.py successful (755.32s)
@@ -138,7 +138,7 @@ the masking can finally be formally verified.
 Below we outline the individual steps performed by the `verify_otbn.sh` script.
 This is useful if you, e.g., want to verify the masking of your own module.
 
-For more details, please refer to the [Alma
+For more details, please refer to the [CocoAlma
 tutorial](https://github.com/IAIK/coco-alma/tree/hw-verif#usage)
 
 1. Make sure to source the `build_consts.sh` script from the OpenTitan
@@ -177,7 +177,7 @@ tutorial](https://github.com/IAIK/coco-alma/tree/hw-verif#usage)
    and save some time.
 
 1. Next, the automatically generated labeling file `tmp/labels.txt` needs to be
-   adapted. This file tells Alma which inputs of the DUT correspond to the
+   adapted. This file tells CocoAlma which inputs of the DUT correspond to the
    secret shares and which ones are used to provide randomness for (re-)masking.
    It is pretty tedious to compute the actual indices for bignum register file
    labels. Generate it with the following command:
@@ -213,3 +213,98 @@ Run the following command to see the circuit diagramm if there is a leakage:
    ```sh
    xdot tmp/dbg-circuit-0.dot
    ```
+
+## Formally verifying the mask accelerator interface modules
+
+After completing the prerequisites above, source the build constants, activate the CocoAlma virtual
+environment and run `verify_mai.sh` with the desired target:
+
+```sh
+cd ${REPO_TOP}
+source util/build_consts.sh
+cd ~/alma
+source dev/bin/activate
+${REPO_TOP}/hw/ip/otbn/pre_sca/alma/verify_mai.sh <target>
+```
+
+where `<target>` is one of:
+
+| Target                    | Top module verified                 |
+|---------------------------|-------------------------------------|
+| `hpc2`                    | `prim_hpc2_sca_wrapper`             |
+| `hpc2o`                   | `prim_hpc2o_sca_wrapper`            |
+| `hpc3`                    | `prim_hpc3_sca_wrapper`             |
+| `hpc3o`                   | `prim_hpc3o_sca_wrapper`            |
+| `sec_add`                 | `otbn_mask_accelerator_sca_wrapper` |
+| `sec_add_mod` *(default)* | `otbn_mask_accelerator_sca_wrapper` |
+| `a2b`                     | `otbn_mask_accelerator_sca_wrapper` |
+| `b2a`                     | `otbn_mask_accelerator_sca_wrapper` |
+The script runs all steps (parse, label, trace, verify) automatically, using the synthesized
+netlist from `syn_out/latest/generated/`.
+
+A passing verification produces output similar to the following (shown for `hpc3`):
+
+```sh
+Verifying prim_hpc3_sca_wrapper using CocoAlma
+Starting yosys synthesis...
+| CircuitGraph | Total:   35 | Linear:    6 | Non-linear:    4 | Registers:    6 | Mux:    6 |
+parse.py successful (1.62s)
+1: Running verilator on given netlist
+2: Compiling verilated netlist library
+3: Compiling provided verilator testbench
+4: Simulating circuit and generating VCD
+| CircuitGraph | Total:   35 | Linear:    6 | Non-linear:    4 | Registers:    6 | Mux:    6 |
+Building formula for cycle 0: vars 0 clauses 0
+Checking cycle 0:
+Building formula for cycle 1: vars 0 clauses 0
+Checking cycle 1:
+Building formula for cycle 2: vars 114 clauses 178
+Checking cycle 2:
+Checking probe (cycle 2, xor sum_o[0]): 0.00
+Checking probe (cycle 2, xor sum_o[1]): 0.00
+...
+Finished in 0.01
+The execution is secure
+```
+
+For `hpc2`, CocoAlma reports a leak due to false positives.
+CocoAlma's verification approach based on approximated Fourier coefficients is sound but not complete,
+meaning it can report leaks that do not exist in practice (see [Gigerl et al.](https://tugraz.elsevierpure.com/ws/portalfiles/portal/50728519/camera_ready.pdf)).
+The output looks as follows:
+
+```sh
+Verifying prim_hpc2_sca_wrapper using CocoAlma
+Starting yosys synthesis...
+| CircuitGraph | Total:   51 | Linear:    6 | Non-linear:    6 | Registers:   14 | Mux:   11 |
+parse.py successful (1.40s)
+1: Running verilator on given netlist
+2: Compiling verilated netlist library
+3: Compiling provided verilator testbench
+4: Simulating circuit and generating VCD
+| CircuitGraph | Total:   51 | Linear:    6 | Non-linear:    6 | Registers:   14 | Mux:   11 |
+Building formula for cycle 0: vars 0 clauses 0
+Checking cycle 0:
+Building formula for cycle 1: vars 0 clauses 0
+Checking cycle 1:
+Building formula for cycle 2: vars 78 clauses 81
+Checking cycle 2:
+Building formula for cycle 3: vars 165 clauses 233
+Checking cycle 3:
+Checking probe (cycle 3, xor sum_o[0]): 0.00
+Finished in 0.01
+The execution is not secure, here are some leaks:
+leak 0: (cycle: 3, cell: xor sum_o[0], id: 10)
+3 stable xor sum_o[0] vars   : ['s1:0', 's1:1']
+3 stable xor sum_o[0] signals: share0_i[1] ^ share1_i[1]
+3 trans  xor sum_o[0] vars   : ['s1:0', 's1:1']
+3 trans  xor sum_o[0] signals: share0_i[1] ^ share1_i[1]
+```
+
+The design can still be verified using PROLEAD, where the leakage analysis passes successfully.
+For this, please follow the [PROLEAD README](../prolead/README.md).
+
+If a leak is found, generate a PNG of the leaking circuit with:
+
+```sh
+xdot ./tmp/dbg-circuit-0.dot
+```

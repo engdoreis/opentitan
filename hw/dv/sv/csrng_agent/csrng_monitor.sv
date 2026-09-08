@@ -2,7 +2,7 @@
 // Licensed under the Apache License, Version 2.0, see LICENSE for details.
 // SPDX-License-Identifier: Apache-2.0
 
-class csrng_monitor extends dv_base_monitor #(
+class csrng_monitor extends dv_reactive_monitor #(
     .ITEM_T (csrng_item),
     .CFG_T  (csrng_agent_cfg),
     .COV_T  (csrng_agent_cov)
@@ -32,8 +32,8 @@ class csrng_monitor extends dv_base_monitor #(
   task run_phase(uvm_phase phase);
     @(posedge cfg.vif.rst_n);
     fork
-      handle_reset();
       collect_valid_trans();
+      monitor_reset();
       // We only need to monitor incoming requests if the agent is configured
       // in device mode.
       if (cfg.if_mode == dv_utils_pkg::Device) begin
@@ -42,20 +42,19 @@ class csrng_monitor extends dv_base_monitor #(
     join_none
   endtask
 
-  virtual protected task handle_reset();
+  local task monitor_reset();
     forever begin
-      @(negedge cfg.vif.rst_n);
-      cfg.under_reset = 1;
+      wait(!cfg.vif.rst_n);
+      cfg.in_reset = 1;
       csrng_cmd_fifo.flush();
-      // TODO: sample any reset-related covergroups
-      @(posedge cfg.vif.rst_n);
-      cfg.under_reset = 0;
+      wait(cfg.vif.rst_n);
+      cfg.in_reset = 0;
     end
   endtask
 
   virtual task collect_valid_trans();
     forever begin
-      wait (cfg.under_reset == 0);
+      wait (cfg.in_reset == 0);
 
       `DV_SPINWAIT_EXIT(
           push_pull_item#(.HostDataWidth(csrng_pkg::CmdBusWidth)) item;
@@ -88,16 +87,20 @@ class csrng_monitor extends dv_base_monitor #(
             end
             cfg.vif.wait_cmd_ack_or_rst_n();
           join_any
-          cs_item.status = cfg.vif.mon_cb.cmd_rsp.csrng_rsp_sts;
-          `uvm_info(`gfn, $sformatf("Writing analysis_port: %s", cs_item.convert2string()),
-                    UVM_HIGH)
-          analysis_port.write(cs_item);
-          if (cfg.en_cov) cov.sample_csrng_cmds(cs_item, cfg.vif.cmd_rsp.csrng_rsp_sts);
 
+          cs_item.status = cfg.vif.mon_cb.cmd_rsp.csrng_rsp_sts;
+
+          // Don't write the analysis port and sample the covergroup if reset happens.
+          if (!cfg.in_reset) begin
+            `uvm_info(`gfn, $sformatf("Writing analysis_port: %s", cs_item.convert2string()),
+                      UVM_HIGH)
+            analysis_port.write(cs_item);
+            if (cfg.en_cov) cov.sample_csrng_cmds(cs_item, cfg.vif.cmd_rsp.csrng_rsp_sts);
+          end
           ,
 
           // Wait reset
-          wait (cfg.under_reset);)
+          wait (cfg.in_reset);)
      end
   endtask
 
@@ -111,7 +114,7 @@ class csrng_monitor extends dv_base_monitor #(
   virtual protected task collect_request();
     csrng_item   cs_item;
     forever begin
-      wait(cfg.under_reset == 0);
+      wait (cfg.in_reset == 0);
       @(cfg.vif.cmd_push_if.mon_cb);
       if ((cfg.vif.cmd_push_if.mon_cb.valid) && (cfg.vif.cmd_push_if.mon_cb.ready)) begin
         // TODO: sample any covergroups
@@ -137,7 +140,7 @@ class csrng_monitor extends dv_base_monitor #(
               while (!(cfg.vif.cmd_push_if.mon_cb.valid) || !(cfg.vif.cmd_push_if.mon_cb.ready));
               cs_item.cmd_data_q.push_back(cfg.vif.mon_cb.cmd_req.csrng_req_bus);
             end,
-            wait(cfg.under_reset))
+            wait (cfg.in_reset))
 
         `uvm_info(`gfn, $sformatf("Writing req_analysis_port: %s", cs_item.convert2string()),
              UVM_HIGH)
@@ -145,10 +148,10 @@ class csrng_monitor extends dv_base_monitor #(
         // After picking up a request, wait until a response is sent before
         // detecting another request, as this is not a pipelined protocol.
         `DV_SPINWAIT_EXIT(while (!cfg.vif.mon_cb.cmd_rsp.csrng_rsp_ack) @(cfg.vif.mon_cb);,
-                          wait(cfg.under_reset))
+                          wait (cfg.in_reset))
 
         // Increment the counters only if ack is sent.
-        if (!cfg.under_reset) begin
+        if (!cfg.in_reset) begin
           if (cs_item.acmd == csrng_pkg::RES) cfg.reseed_cnt += 1;
           if (cs_item.acmd == csrng_pkg::GEN) begin
             cfg.generate_cnt += 1;

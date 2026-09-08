@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # Copyright lowRISC contributors (OpenTitan project).
 # Licensed under the Apache License, Version 2.0, see LICENSE for details.
 # SPDX-License-Identifier: Apache-2.0
@@ -53,3 +53,10 @@ else
 fi
 echo "BUILD_SCM_STATUS ${tree_status}"
 echo "STABLE_BUILD_SCM_STATUS ${tree_status}"
+
+git_cl_rev=$(git log --pretty=tformat:"%H" -n 1 sw/device/lib/crypto/)
+if [[ $? != 0 ]];
+then
+  exit 1
+fi
+echo "BUILD_CRYPTOLIB_SCM_REVISION ${git_cl_rev}"

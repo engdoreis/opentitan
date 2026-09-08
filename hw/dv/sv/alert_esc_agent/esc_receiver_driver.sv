@@ -2,13 +2,11 @@
 // Licensed under the Apache License, Version 2.0, see LICENSE for details.
 // SPDX-License-Identifier: Apache-2.0
 
-// ---------------------------------------------
-// Alert_handler receiver driver
-// ---------------------------------------------
+// Escalation receiver driver
+
 class esc_receiver_driver extends alert_esc_base_driver;
 
   `uvm_component_utils(esc_receiver_driver)
-
 
   // Set by esc_ping_detector if it sees a single-cycle pulse on esc_p/esc_n. If set, the receiver
   // will drive a 1010 pattern on resp_p/resp_n for a while in drive_esc_resp (stopping if it
@@ -17,15 +15,11 @@ class esc_receiver_driver extends alert_esc_base_driver;
 
   extern function new (string name, uvm_component parent);
 
-  // This task runs forever and maintains dv_base_driver::under_reset.
+  // This task runs forever. It works by running rsp_escalator (which consumes and drives items from
+  // seq_item_port) and esc_ping_detector (which responds to ping requests).
   //
   // Overridden from dv_base_driver.
-  extern virtual task reset_signals();
-
-  // Run rsp_escalator and esc_ping_detector. Does not terminate.
-  //
-  // Overridden from alert_esc_base_driver.
-  extern virtual task drive_req();
+  extern virtual task get_and_drive();
 
   // Run forever, detect single-cycle escalation requests. These are ping requests. When one
   // happens, set is_ping, which tells drive_esc_resp to send the 1010... pattern.
@@ -42,7 +36,7 @@ class esc_receiver_driver extends alert_esc_base_driver;
   // if esc_p/n is esc signal, will toggle resp_p/n until esc_p is reset back to 0
   // if esc_p/n is ping, then will toggle resp_p/n for two clk cycles
   // if req is "sig_int_err", will random toggle, then reset back to resp_p/n = {0/1}
-  extern virtual task drive_esc_resp(alert_esc_seq_item req);
+  extern virtual task drive_esc_resp(esc_seq_item req);
   // If do not request int_err: Toggle resp_p/n for two cycles,
   // first cycle drives resp_p = 1, resp_n = 0; second cycle drives resp_p = 0, resp_n = 1
   // If request int_err: random drives resp_p/n for two cycles
@@ -57,7 +51,7 @@ class esc_receiver_driver extends alert_esc_base_driver;
   extern virtual task wait_esc_complete();
   extern virtual task wait_esc();
   // Set the values driven through resp_p / resp_n to 0/1 and clear the is_ping flag
-  extern virtual task do_reset();
+  extern task on_enter_reset();
 
 endclass : esc_receiver_driver
 
@@ -65,30 +59,19 @@ function esc_receiver_driver::new (string name, uvm_component parent);
   super.new(name, parent);
 endfunction : new
 
-task esc_receiver_driver::reset_signals();
-  do_reset();
-  forever begin
-    @(negedge cfg.vif.rst_n);
-    under_reset = 1;
-    do_reset();
-    @(posedge cfg.vif.rst_n);
-    under_reset = 0;
-  end
-endtask : reset_signals
-
-task esc_receiver_driver::drive_req();
+task esc_receiver_driver::get_and_drive();
   fork
     rsp_escalator();
     esc_ping_detector();
   join
-endtask : drive_req
+endtask : get_and_drive
 
 task esc_receiver_driver::esc_ping_detector();
   forever begin
-    wait(!under_reset);
+    wait (!cfg.in_reset);
     fork begin : isolation_fork
       fork
-        wait(under_reset);
+        wait (cfg.in_reset);
         begin
           int cnt;
 
@@ -115,29 +98,40 @@ endtask : esc_ping_detector
 
 task esc_receiver_driver::rsp_escalator();
   forever begin
-    alert_esc_seq_item req, rsp;
-    wait(r_esc_rsp_q.size() > 0 && !under_reset);
-    req = r_esc_rsp_q.pop_front();
-    `downcast(rsp, req.clone());
-    rsp.set_id_info(req);
-    `uvm_info(`gfn, $sformatf("starting to send receiver item, esc_rsp=%0b int_fail=%0b",
-                              req.r_esc_rsp, req.int_err), UVM_HIGH)
+    esc_seq_item esc_req, rsp;
+
+    seq_item_port.get(req);
+
+    // The item type for the FIFO in the sequencer (of type alert_esc_sequencer) is
+    // alert_esc_seq_item. This is the driver for the escalation interface, so we need to be able to
+    // cast the requested item to an esc_seq_item.
+    if (!$cast(esc_req, req)) begin
+      `uvm_fatal(get_full_name(), "Cannot handle alert_esc_seq_item that is not an esc_seq_item.")
+    end
+
+    `downcast(rsp, esc_req.clone());
+    rsp.set_id_info(esc_req);
+
+    `uvm_info(`gfn,
+              $sformatf("starting to send receiver item, int_fail=%0b", esc_req.int_err),
+              UVM_HIGH)
     fork
       begin : non_blocking_fork
         fork
-          drive_esc_resp(req);
-          wait(under_reset);
+          drive_esc_resp(esc_req);
+          wait (cfg.in_reset);
         join_any
         disable fork;
-        `uvm_info(`gfn, $sformatf("finished sending receiver item esc_rsp=%0b int_fail=%0b",
-                                  req.r_esc_rsp, req.int_err), UVM_HIGH)
+        `uvm_info(`gfn,
+                  $sformatf("finished sending receiver item int_fail=%0b", esc_req.int_err),
+                  UVM_HIGH)
         seq_item_port.put_response(rsp);
       end
     join_none
   end // end forever
 endtask : rsp_escalator
 
-task esc_receiver_driver::drive_esc_resp(alert_esc_seq_item req);
+task esc_receiver_driver::drive_esc_resp(esc_seq_item req);
   if (req.standalone_int_err) begin
     wait_esc_complete();
     @(cfg.vif.receiver_cb); // wait one clock cycle to ensure is_ping is set
@@ -231,8 +225,8 @@ task esc_receiver_driver::wait_esc();
   while (cfg.vif.esc_tx.esc_p === 1'b0 && cfg.vif.esc_tx.esc_n === 1'b1) @(cfg.vif.receiver_cb);
 endtask : wait_esc
 
-task esc_receiver_driver::do_reset();
+task esc_receiver_driver::on_enter_reset();
   cfg.vif.esc_rx_int.resp_p <= 1'b0;
   cfg.vif.esc_rx_int.resp_n <= 1'b1;
   is_ping = 0;
-endtask : do_reset
+endtask : on_enter_reset

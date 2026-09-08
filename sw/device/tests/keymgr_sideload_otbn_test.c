@@ -5,6 +5,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#include "hw/top/dt/otbn.h"
 #include "sw/device/lib/arch/device.h"
 #include "sw/device/lib/base/macros.h"
 #include "sw/device/lib/dif/dif_keymgr.h"
@@ -16,6 +17,7 @@
 #include "sw/device/lib/testing/keymgr_testutils.h"
 #include "sw/device/lib/testing/otbn_testutils.h"
 #include "sw/device/lib/testing/test_framework/check.h"
+#include "sw/device/lib/testing/test_framework/ottf_alerts.h"
 #include "sw/device/lib/testing/test_framework/ottf_main.h"
 
 #include "hw/top/otbn_regs.h"  // Generated.
@@ -25,15 +27,19 @@ static dif_keymgr_t keymgr;
 static dif_kmac_t kmac;
 static dif_otbn_t otbn;
 
+static const dt_otbn_t kOtbnDt = (dt_otbn_t)0;
+
 /* Set up pointers to symbols in the OTBN application. */
-OTBN_DECLARE_APP_SYMBOLS(x25519_sideload);
-OTBN_DECLARE_SYMBOL_ADDR(x25519_sideload, enc_u);
-OTBN_DECLARE_SYMBOL_ADDR(x25519_sideload, enc_result);
-static const otbn_app_t kOtbnAppX25519 = OTBN_APP_T_INIT(x25519_sideload);
-static const otbn_addr_t kOtbnVarEncU =
-    OTBN_ADDR_T_INIT(x25519_sideload, enc_u);
-static const otbn_addr_t kOtbnVarEncResult =
-    OTBN_ADDR_T_INIT(x25519_sideload, enc_result);
+OTBN_DECLARE_APP_SYMBOLS(run_curve25519);
+OTBN_DECLARE_SYMBOL_ADDR(run_curve25519, mode);
+OTBN_DECLARE_SYMBOL_ADDR(run_curve25519, MODE_X25519_KEYGEN_SIDELOAD);
+OTBN_DECLARE_SYMBOL_ADDR(run_curve25519, x25519_public_key);
+static const otbn_app_t kOtbnAppX25519 = OTBN_APP_T_INIT(run_curve25519);
+static const otbn_addr_t kOtbnVarMode = OTBN_ADDR_T_INIT(run_curve25519, mode);
+static const uint32_t kOtbnCurve25519ModeX25519KeygenSideload =
+    OTBN_ADDR_T_INIT(run_curve25519, MODE_X25519_KEYGEN_SIDELOAD);
+static const otbn_addr_t kOtbnVarX25519PublicKey =
+    OTBN_ADDR_T_INIT(run_curve25519, x25519_public_key);
 
 OTTF_DEFINE_TEST_CONFIG();
 
@@ -45,20 +51,9 @@ static void init_peripheral_handles(void) {
       dif_kmac_init(mmio_region_from_addr(TOP_EARLGREY_KMAC_BASE_ADDR), &kmac));
   CHECK_DIF_OK(dif_keymgr_init(
       mmio_region_from_addr(TOP_EARLGREY_KEYMGR_BASE_ADDR), &keymgr));
-  CHECK_DIF_OK(
-      dif_otbn_init(mmio_region_from_addr(TOP_EARLGREY_OTBN_BASE_ADDR), &otbn));
+  CHECK_DIF_OK(dif_otbn_init_from_dt(kOtbnDt, &otbn));
 }
 
-/**
- * Encoded Montgomery u-coordinate for testing.
- *
- * This value (9) is actually the u-coordinate of the Curve25519 base point, so
- * the X25519 function will effectively compute the public key. This is the
- * first step in key exchange (see RFC 7748, section 6.1).
- */
-static const uint32_t kEncodedU[8] = {
-    0x9, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,
-};
 static const dif_otbn_err_bits_t kOtbnInvalidKeyErr =
     0x1 << OTBN_ERR_BITS_KEY_INVALID_BIT;
 static const dif_otbn_err_bits_t kErrBitsOk = 0x0;
@@ -79,9 +74,9 @@ static void run_x25519_app(dif_otbn_t *otbn, uint32_t *result,
                            dif_otbn_err_bits_t expect_err_bits) {
   CHECK_DIF_OK(dif_otbn_set_ctrl_software_errs_fatal(otbn, /*enable=*/false));
 
-  // Copy the input argument (Montgomery u-coordinate).
-  CHECK_STATUS_OK(otbn_testutils_write_data(otbn, sizeof(kEncodedU), &kEncodedU,
-                                            kOtbnVarEncU));
+  uint32_t mode = kOtbnCurve25519ModeX25519KeygenSideload;
+  CHECK_STATUS_OK(
+      otbn_testutils_write_data(otbn, sizeof(mode), &mode, kOtbnVarMode));
 
   // Run the OTBN program and wait for it to complete. Clear software
   // error fatal flag as the test expects an intermediate error state.
@@ -90,9 +85,8 @@ static void run_x25519_app(dif_otbn_t *otbn, uint32_t *result,
   CHECK_STATUS_OK(otbn_testutils_execute(otbn));
   CHECK_STATUS_OK(otbn_testutils_wait_for_done(otbn, expect_err_bits));
 
-  // Copy the result (also a 256-bit Montgomery u-coordinate).
   CHECK_STATUS_OK(
-      otbn_testutils_read_data(otbn, 32, kOtbnVarEncResult, result));
+      otbn_testutils_read_data(otbn, 32, kOtbnVarX25519PublicKey, result));
 }
 
 /**
@@ -136,11 +130,15 @@ static void test_otbn_with_sideloaded_key(dif_keymgr_t *keymgr,
 
   // Clear the sideload key and check that OTBN errors with the correct error
   // code (`KEY_INVALID` bit 5 = 1).
+  CHECK_STATUS_OK(ottf_alerts_expect_alert_start(
+      dt_otbn_alert_to_alert_id(kOtbnDt, kDtOtbnAlertRecov)));
   CHECK_DIF_OK(
       dif_keymgr_sideload_clear_set_enabled(keymgr, kDifToggleEnabled));
   LOG_INFO("Clearing the Keymgr generated sideload keys.");
   uint32_t at_clear_salt_result[8];
   run_x25519_app(otbn, at_clear_salt_result, kOtbnInvalidKeyErr);
+  CHECK_STATUS_OK(ottf_alerts_expect_alert_finish(
+      dt_otbn_alert_to_alert_id(kOtbnDt, kDtOtbnAlertRecov)));
 
   // Disable sideload key clearing.
   CHECK_DIF_OK(

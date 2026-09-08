@@ -6,10 +6,10 @@
 #define OPENTITAN_SW_DEVICE_SILICON_CREATOR_MANUF_LIB_INDIVIDUALIZE_H_
 
 #include "sw/device/lib/base/status.h"
-#include "sw/device/lib/dif/dif_flash_ctrl.h"
 #include "sw/device/lib/dif/dif_lc_ctrl.h"
 #include "sw/device/lib/dif/dif_otp_ctrl.h"
 #include "sw/device/lib/testing/json/provisioning_data.h"
+#include "sw/device/lib/testing/nvm_testutils.h"
 
 /**
  * Provision the HW_CFG0/1 OTP partition.
@@ -22,9 +22,7 @@
  *
  * Preconditions:
  * - ManufState is pre-populated in the appropriate flash info page.
- * - If DeviceId is already written to flash, the device ID provided must match.
- *   If the DeviceId slot in flash is all 0s, then the provided DeviceId will be
- *   what is written to OTP.
+ * - CP portion of the Device ID must be written to flash.
  *
  * Note: The test will skip all programming steps and succeed if the HW_CFG0/1
  * paritions are already locked. This is to facilitate test re-runs.
@@ -33,19 +31,16 @@
  * `manuf_individualize_device_hw_cfg_check()` afterwards to confirm that the
  * OTP partition was successfully locked.
  *
- * @param flash_state Flash controller handle and state.
  * @param otp_ctrl OTP controller instance.
  * @param flash_info_page_0_permissions Access permissions to set on flash info
  *                                      page 0 (which temporarily holds
  *                                      device_id and manuf_state).
- * @param device_id DeviceId to check exists in flash, or inject in into OTP if
- *                  running in a test environment.
+ * @param ft_device_id FT portion of the Device ID to combine with the CP
+ *                     portion before writing it into OTP.
  * @return OK_STATUS on success.
  */
-status_t manuf_individualize_device_hw_cfg(
-    dif_flash_ctrl_state_t *flash_state, const dif_otp_ctrl_t *otp_ctrl,
-    dif_flash_ctrl_region_properties_t flash_info_page_0_permissions,
-    const uint32_t *device_id);
+status_t manuf_individualize_device_hw_cfg(const dif_otp_ctrl_t *otp_ctrl,
+                                           const uint32_t *ft_device_id);
 
 /**
  * Checks the HW_CFG0/1 OTP partition end state.

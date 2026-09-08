@@ -64,7 +64,8 @@ package ${ral_id}_ral_pkg;
     block = top.blocks[block_name]
     for inst_name in inst_names:
       for if_name in block.reg_blocks:
-        if addr_space not in top.if_addrs[(inst_name, if_name)]: continue
+        asid_to_addr = top.if_addrs.get((inst_name, if_name), {})
+        if addr_space not in asid_to_addr: continue
         if_suffix = '' if if_name is None else '_' + if_name
         if_packages.add('{}{}_ral_pkg'.format(block_name.lower(), if_suffix))
   if_packages = sorted(if_packages)
@@ -86,7 +87,8 @@ ${make_ral_pkg_window_class(block_dv_base_names.mem, ral_id, window)}
 %     for inst_name in inst_names:
 %       for if_name, rb in block.reg_blocks.items():
 <%
-          if addr_space not in top.if_addrs[(inst_name, if_name)]: continue
+          asid_to_addr = top.if_addrs.get((inst_name, if_name), {})
+          if addr_space not in asid_to_addr: continue
           if_suffix = '' if if_name is None else '_' + if_name
           esc_if_name = block_name.lower() + if_suffix
           if_inst = inst_name + if_suffix
@@ -111,7 +113,12 @@ ${make_ral_pkg_window_class(block_dv_base_names.mem, ral_id, window)}
     endfunction : new
 
     virtual function void build(uvm_reg_addr_t base_addr,
-                                csr_excl_item csr_excl = null);
+                                csr_excl_item  csr_excl,
+                                int unsigned   addr_width,
+                                int unsigned   data_width,
+                                int unsigned   be_width);
+      super.build(base_addr, csr_excl, addr_width, data_width, be_width);
+
       // create default map
       this.default_map = create_map(.name("default_map"),
                                     .base_addr(base_addr),
@@ -128,21 +135,24 @@ ${make_ral_pkg_window_class(block_dv_base_names.mem, ral_id, window)}
 %     for inst_name in inst_names:
 %       for if_name, rb in block.reg_blocks.items():
 <%
-          if addr_space not in top.if_addrs[(inst_name, if_name)]: continue
+          asid_to_addr = top.if_addrs.get((inst_name, if_name), {})
+          if addr_space not in asid_to_addr: continue
           if_suffix = '' if if_name is None else '_' + if_name
           esc_if_name = block_name.lower() + if_suffix
           if_inst = inst_name + if_suffix
+          inst_domain = top.inst_domains.get(inst_name).lower()
 
           if top.attrs.get(inst_name) == 'reggen_only':
-            hdl_path = 'tb.dut.u_' + inst_name
+            hdl_path = f"tb.dut.u_{inst_name}"
           else:
-            hdl_path = 'tb.dut.top_' + top.name + '.u_' + inst_name
+            hdl_path = f"tb.dut.top_{top.name}.{top.name}_pd_{inst_domain}.u_{inst_name}"
           qual_if_name = (inst_name, if_name)
           if addr_space not in top.if_addrs[qual_if_name]:
             continue
           base_addr = top.if_addrs[qual_if_name][addr_space]
           base_addr_txt = sv_base_addr(top, qual_if_name, addr_space)
 
+          build_indent = (len(if_inst) + len('.build(')) * ' '
           hpr_indent = (len(if_inst) + len('.set_hdl_path_root(')) * ' '
 %>\
       if (create_${if_inst}) begin
@@ -150,7 +160,12 @@ ${make_ral_pkg_window_class(block_dv_base_names.mem, ral_id, window)}
             ${bcname(esc_if_name)}::type_id::create("${if_inst}");
         ${if_inst}.set_ip_name("${inst_name}");
         ${if_inst}.configure(.parent(this));
-        ${if_inst}.build(.base_addr(base_addr + ${base_addr_txt}), .csr_excl(csr_excl));
+        ${if_inst}.build(.base_addr(base_addr + ${base_addr_txt}),
+        ${build_indent}.csr_excl(csr_excl),
+        ${build_indent}.addr_width(addr_width),
+        ${build_indent}.data_width(data_width),
+        ${build_indent}.be_width(be_width));
+
         ${if_inst}.set_hdl_path_root("${hdl_path}",
         ${hpr_indent}"BkdrRegPathRtl");
         ${if_inst}.set_hdl_path_root("${hdl_path}",

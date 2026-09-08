@@ -2,13 +2,13 @@
 // Licensed under the Apache License, Version 2.0, see LICENSE for details.
 // SPDX-License-Identifier: Apache-2.0
 
-class sram_ctrl_env #(parameter int AddrWidth = 10) extends cip_base_env #(
-    .CFG_T              (sram_ctrl_env_cfg#(AddrWidth)),
-    .COV_T              (sram_ctrl_env_cov#(AddrWidth)),
-    .VIRTUAL_SEQUENCER_T(sram_ctrl_virtual_sequencer#(AddrWidth)),
-    .SCOREBOARD_T       (sram_ctrl_scoreboard#(AddrWidth))
+class sram_ctrl_env #(parameter int MemDepth = 10) extends cip_base_env #(
+    .CFG_T              (sram_ctrl_env_cfg#(MemDepth)),
+    .COV_T              (sram_ctrl_env_cov#(MemDepth)),
+    .VIRTUAL_SEQUENCER_T(sram_ctrl_virtual_sequencer#(MemDepth)),
+    .SCOREBOARD_T       (sram_ctrl_scoreboard#(MemDepth))
 );
-  `uvm_component_param_utils(sram_ctrl_env#(AddrWidth))
+  `uvm_component_param_utils(sram_ctrl_env#(MemDepth))
 
   `uvm_component_new
 
@@ -39,6 +39,12 @@ class sram_ctrl_env #(parameter int AddrWidth = 10) extends cip_base_env #(
     if (!uvm_config_db#(sram_ctrl_bkdr_util)::get(this, "", "sram_ctrl_bkdr_util",
                                                   cfg.sram_ctrl_bkdr_util_h)) begin
       `uvm_fatal(`gfn, "failed to get sram_ctrl_bkdr_util from uvm_config_db")
+    end
+
+    // Get the fault injection interface
+    if (!uvm_config_db#(virtual sram_ctrl_fault_if)::get(this, "",
+                                                         "fault_vif", cfg.fault_vif)) begin
+      `uvm_fatal(get_full_name(), "Failed to get fault_vif from uvm_config_db")
     end
 
     // Build the KDI agent

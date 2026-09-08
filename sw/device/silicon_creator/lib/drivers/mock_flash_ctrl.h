@@ -18,10 +18,13 @@ namespace internal {
 class MockFlashCtrl : public global_mock::GlobalMock<MockFlashCtrl> {
  public:
   MOCK_METHOD(void, Init, ());
+  MOCK_METHOD(void, Disable, ());
   MOCK_METHOD(void, StatusGet, (flash_ctrl_status_t *));
   MOCK_METHOD(void, ErrorCodeGet, (flash_ctrl_error_code_t *));
   MOCK_METHOD(rom_error_t, DataRead, (uint32_t, uint32_t, void *));
   MOCK_METHOD(rom_error_t, InfoRead,
+              (const flash_ctrl_info_page_t *, uint32_t, uint32_t, void *));
+  MOCK_METHOD(rom_error_t, InfoReadZerosOnReadError,
               (const flash_ctrl_info_page_t *, uint32_t, uint32_t, void *));
   MOCK_METHOD(rom_error_t, DataWrite, (uint32_t, uint32_t, const void *));
   MOCK_METHOD(rom_error_t, InfoWrite,
@@ -37,15 +40,17 @@ class MockFlashCtrl : public global_mock::GlobalMock<MockFlashCtrl> {
               (const flash_ctrl_info_page_t *, flash_ctrl_perms_t));
   MOCK_METHOD(flash_ctrl_cfg_t, DataDefaultCfgGet, ());
   MOCK_METHOD(void, DataDefaultCfgSet, (flash_ctrl_cfg_t));
+  MOCK_METHOD(flash_ctrl_cfg_t, BootDataCfgGet, ());
   MOCK_METHOD(void, DataRegionProtect,
               (flash_ctrl_region_index_t region, uint32_t page_offset,
                uint32_t num_pages, flash_ctrl_perms_t perms,
                flash_ctrl_cfg_t cfg, hardened_bool_t));
   MOCK_METHOD(void, InfoCfgSet,
               (const flash_ctrl_info_page_t *, flash_ctrl_cfg_t));
+  MOCK_METHOD(void, InfoCfgLock, (const flash_ctrl_info_page_t *));
   MOCK_METHOD(void, BankErasePermsSet, (hardened_bool_t));
   MOCK_METHOD(void, ExecSet, (uint32_t));
-  MOCK_METHOD(void, CreatorInfoPagesLockdown, ());
+  MOCK_METHOD(void, InfoPageLockdown, (const flash_ctrl_info_page_t *));
 };
 
 }  // namespace internal
@@ -67,6 +72,17 @@ MATCHER_P3(FlashCfg, scrambling, ecc, he, "") {
   return arg.scrambling == static_cast<uint8_t>(scrambling) &&
          arg.ecc == static_cast<uint8_t>(ecc) &&
          arg.he == static_cast<uint8_t>(he);
+}
+
+MATCHER_P(FlashInfoPage, page, "") {
+  return ::testing::Value(
+      arg,
+      ::testing::AllOf(
+          ::testing::Field(&flash_ctrl_info_page_t::base_addr, page.base_addr),
+          ::testing::Field(&flash_ctrl_info_page_t::cfg_wen_offset,
+                           page.cfg_wen_offset),
+          ::testing::Field(&flash_ctrl_info_page_t::cfg_offset,
+                           page.cfg_offset)));
 }
 
 }  // namespace rom_test

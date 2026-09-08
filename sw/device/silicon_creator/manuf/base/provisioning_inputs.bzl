@@ -16,8 +16,6 @@ EARLGREY_OTP_CFGS = {
     "em00": "//hw/top_earlgrey/data/otp/emulation:otp_consts",
 } | EXT_EARLGREY_OTP_CFGS
 
-EXT_SIGNED_PERSO_BINS = []
-
 # A dictionary of SKU configurations that will be used to generate FT
 # personalization binaries that configure OTP and flash info pages as defined
 # in these bazel targets.
@@ -25,39 +23,39 @@ EARLGREY_SKUS = {
     # OTP Config: Emulation; DICE Certs: X.509; Additional Certs: None
     "emulation": {
         "otp": "em00",
-        "ca_data": "@//sw/device/silicon_creator/manuf/keys/fake:ca_data",
+        "ca_data": "@lowrisc_opentitan//sw/device/silicon_creator/manuf/keys/fake:ca_data",
         "dice_libs": ["//sw/device/silicon_creator/lib/cert:dice"],
         "host_ext_libs": ["@provisioning_exts//:default_ft_ext_lib"],
         "device_ext_libs": ["@provisioning_exts//:default_perso_fw_ext"],
         "ownership_libs": ["//sw/device/silicon_creator/lib/ownership:test_owner"],
         "rom_ext": "//sw/device/silicon_creator/rom_ext:rom_ext_dice_x509_slot_b",
         "owner_fw": "//sw/device/silicon_owner/bare_metal:bare_metal_slot_b",
-        "owner_fw_boot_str": "Bare metal PASS!",
         "ecdsa_key": {},
         "spx_key": {},
         "signature_prefix": None,
-        "orchestrator_cfg": "@//sw/host/provisioning/orchestrator/configs/skus:emulation.hjson",
+        "orchestrator_cfg": "@lowrisc_opentitan//sw/host/provisioning/orchestrator/configs/skus:emulation.hjson",
+        "tags": ["skip_in_ci"],
     },
     # OTP Config: Emulation; DICE Certs: CWT; Additional Certs: None
     "emulation_dice_cwt": {
         "otp": "em00",
-        "ca_data": "@//sw/device/silicon_creator/manuf/keys/fake:ca_data",
+        "ca_data": "@lowrisc_opentitan//sw/device/silicon_creator/manuf/keys/fake:ca_data",
         "dice_libs": ["//sw/device/silicon_creator/lib/cert:dice_cwt"],
         "host_ext_libs": ["@provisioning_exts//:default_ft_ext_lib"],
         "device_ext_libs": ["@provisioning_exts//:default_perso_fw_ext"],
         "ownership_libs": ["//sw/device/silicon_creator/lib/ownership:test_owner"],
         "rom_ext": "//sw/device/silicon_creator/rom_ext:rom_ext_dice_cwt_slot_b",
         "owner_fw": "//sw/device/silicon_owner/bare_metal:bare_metal_slot_b",
-        "owner_fw_boot_str": "Bare metal PASS!",
         "ecdsa_key": {},
         "spx_key": {},
         "signature_prefix": None,
-        "orchestrator_cfg": "@//sw/host/provisioning/orchestrator/configs/skus:emulation_dice_cwt.hjson",
+        "orchestrator_cfg": "@lowrisc_opentitan//sw/host/provisioning/orchestrator/configs/skus:emulation_dice_cwt.hjson",
+        "tags": ["skip_in_ci"],
     },
     # OTP Config: Emulation; DICE Certs: X.509; Additional Certs: TPM EK
     "emulation_tpm": {
         "otp": "em00",
-        "ca_data": "@//sw/device/silicon_creator/manuf/keys/fake:ca_data",
+        "ca_data": "@lowrisc_opentitan//sw/device/silicon_creator/manuf/keys/fake:ca_data",
         "dice_libs": ["//sw/device/silicon_creator/lib/cert:dice"],
         "host_ext_libs": ["@provisioning_exts//:default_ft_ext_lib"],
         "device_ext_libs": [
@@ -67,17 +65,17 @@ EARLGREY_SKUS = {
         "ownership_libs": ["//sw/device/silicon_creator/lib/ownership:test_owner"],
         "rom_ext": "//sw/device/silicon_creator/rom_ext:rom_ext_dice_x509_slot_b",
         "owner_fw": "//sw/device/silicon_owner/bare_metal:bare_metal_slot_b",
-        "owner_fw_boot_str": "Bare metal PASS!",
         "ecdsa_key": {},
         "spx_key": {},
         "signature_prefix": None,
-        "orchestrator_cfg": "@//sw/host/provisioning/orchestrator/configs/skus:emulation_tpm.hjson",
+        "orchestrator_cfg": "@lowrisc_opentitan//sw/host/provisioning/orchestrator/configs/skus:emulation_tpm.hjson",
+        "tags": ["skip_in_ci"],
     },
     # This configuration is not really usable in master but left here as an example until
     # a more appropriate solution is found.
     # "sival": {
     #     "otp": "sv00",
-    #     "ca_data": "@//sw/device/silicon_creator/manuf/keys/sival:ca_data",
+    #     "ca_data": "@lowrisc_opentitan//sw/device/silicon_creator/manuf/keys/sival:ca_data",
     #     "dice_libs": ["//sw/device/silicon_creator/lib/cert:dice"],
     #     "host_ext_libs": ["@provisioning_exts//:default_ft_ext_lib"],
     #     "device_ext_libs": ["@provisioning_exts//:default_perso_fw_ext"],
@@ -90,7 +88,19 @@ EARLGREY_SKUS = {
     #     "spx_key": {},
     #     "signature_prefix": None,
     #     "perso_bin": "//sw/device/silicon_creator/manuf/base/binaries:ft_personalize_sival",
-    #     "orchestrator_cfg": "@//sw/host/provisioning/orchestrator/configs/skus:sival.hjson",
+    #     "orchestrator_cfg": "@lowrisc_opentitan//sw/host/provisioning/orchestrator/configs/skus:sival.hjson",
     #     "offline": True,
     # },
 } | EXT_EARLGREY_SKUS
+
+# TODO(lowRISC#27275): Refactor build/signing rules for perso binaries.
+def disqualified_for_signing(name, data):
+    if "staging" in name:
+        return True
+    if "emulation" in name:
+        return True
+    if not data["ecdsa_key"] and not data["spx_key"]:
+        return True
+    if "em00" in data["otp"]:
+        return True
+    return False

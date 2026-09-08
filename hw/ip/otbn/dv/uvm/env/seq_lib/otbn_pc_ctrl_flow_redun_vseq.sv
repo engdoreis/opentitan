@@ -27,7 +27,7 @@ class otbn_pc_ctrl_flow_redun_vseq extends otbn_single_vseq;
     bit [11:0] good_addr;
     bit [11:0] bad_addr;
     bit [11:0] mask;
-    bit [31:0] err_val = 32'd1 << 20;
+    err_bits_reg_t err_bits = '{bad_internal_state: 1'b1, default: 1'b0};
     string addr_path = "tb.dut.u_otbn_core.u_otbn_instruction_fetch.insn_prefetch_addr";
 
     do begin
@@ -41,13 +41,26 @@ class otbn_pc_ctrl_flow_redun_vseq extends otbn_single_vseq;
                         prefetch_ignore_err))
         `uvm_fatal(`gfn, "failed to read prefetch_ignore_errs_i");
     end while(!(imem_rvalid & insn_fetch_req_valid & !prefetch_ignore_err));
+
     `DV_CHECK_FATAL(uvm_hdl_read(addr_path, good_addr));
     // Mask to corrupt 1 to 2 bits of the prefetch addr
     `DV_CHECK_STD_RANDOMIZE_WITH_FATAL(mask, $countones(mask) inside {[1:2]};)
     bad_addr = good_addr ^ mask;
     `DV_CHECK_FATAL(uvm_hdl_force(addr_path, bad_addr) == 1);
+
+    // The core will never execute an instruction but the model will and then wait for a RTL trace.
+    // However, due to the error the RTL will never produce traces and therefore the checker fails
+    // because the model has two consecutive traces without a RTL trace.
+    // We can tell the model that it should wait by requesting a stall for one cycle. The model
+    // should always stall, even if there is a SW error.
+    cfg.model_agent_cfg.vif.send_stall_request(1);
+
+    // Send the HW escalation signal in the next cycle
+    @(cfg.clk_rst_vif.cb);
     `uvm_info(`gfn, "injecting bad internal state error into ISS", UVM_HIGH)
-    cfg.model_agent_cfg.vif.send_err_escalation(err_val);
+    cfg.model_agent_cfg.vif.send_err_escalation(err_bits);
+
+    // OTBN should perform a secure wipe and lock up
     wait(cfg.model_agent_cfg.vif.status == otbn_pkg::StatusLocked);
     `DV_CHECK_FATAL(uvm_hdl_release(addr_path) == 1);
     reset_if_locked();

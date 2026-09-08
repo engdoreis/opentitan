@@ -83,12 +83,19 @@ class DeviceIdentificationNumber:
 
     @staticmethod
     def from_int(din: int) -> "DeviceIdentificationNumber":
-        year = util.bcd_decode(din & 0xF)
-        week = util.bcd_decode((din >> 4) & 0xFF)
-        lot = util.bcd_decode((din >> 12) & 0xFFF)
-        wafer = util.bcd_decode((din >> 24) & 0xFF)
-        wafer_x_coord = util.bcd_decode((din >> 32) & 0xFFF)
-        wafer_y_coord = util.bcd_decode((din >> 44) & 0xFFF)
+        year = -1
+        week = -1
+        lot = -1
+        wafer = -1
+        wafer_x_coord = -1
+        wafer_y_coord = -1
+        if din != 0xFFFFFFFFFFFFFFFF:
+            year = util.bcd_decode(din & 0xF)
+            week = util.bcd_decode((din >> 4) & 0xFF)
+            lot = util.bcd_decode((din >> 12) & 0xFFF)
+            wafer = util.bcd_decode((din >> 24) & 0xFF)
+            wafer_x_coord = util.bcd_decode((din >> 32) & 0xFFF)
+            wafer_y_coord = util.bcd_decode((din >> 44) & 0xFFF)
         return DeviceIdentificationNumber(year=year,
                                           week=week,
                                           lot=lot,
@@ -147,7 +154,7 @@ class DeviceId():
         din_as_int = self.din.to_int()
 
         # Build base unique ID (i.e., CP device ID).
-        self._base_uid = util.bytes_to_int(
+        self.base_uid = util.bytes_to_int(
             struct.pack("<IQI", self._hw_origin, din_as_int, 0))
 
         # Build SKU specific field (i.e., FT device ID).
@@ -175,7 +182,34 @@ class DeviceId():
             ))
 
         # Build full device ID.
-        self.device_id = (self.sku_specific << 128) | self._base_uid
+        self.device_id = (self.sku_specific << 128) | self.base_uid
+
+    def update_ast_cfg_version(self, other: int) -> None:
+        """Updates the AST Config Version component of the device ID.
+
+        Args:
+            other: The other AST configuration version to update with.
+        """
+        if other < 0 or other > 255:
+            raise ValueError("AST config version should be in range [0, 256).")
+        self.ast_cfg_version = other
+
+        # Rebuild SKU-specific portion of the device ID.
+        self.sku_specific = util.bytes_to_int(
+            struct.pack(
+                "<BBHBBHIHBB",
+                self.package_id,
+                self.ast_cfg_version,
+                self.otp_id,
+                self.otp_version,
+                _RESERVED_VALUE,
+                _RESERVED_VALUE,
+                self.sku_id,
+                _RESERVED_VALUE,
+                _RESERVED_VALUE,
+                self.sku_specific_version,
+            ))
+        self.device_id = (self.sku_specific << 128) | self.base_uid
 
     def update_din(self, other: "DeviceIdentificationNumber") -> None:
         """Updates the DIN component of the device ID with another DIN object.
@@ -188,9 +222,9 @@ class DeviceId():
         self.din = other
 
         # Build base unique ID.
-        self._base_uid = util.bytes_to_int(
+        self.base_uid = util.bytes_to_int(
             struct.pack("<IQI", self._hw_origin, self.din.to_int(), 0))
-        self.device_id = (self.sku_specific << 128) | self._base_uid
+        self.device_id = (self.sku_specific << 128) | self.base_uid
 
     @staticmethod
     def from_hexstr(hexstr: str) -> "DeviceId":
@@ -241,6 +275,10 @@ class DeviceId():
 
         return DeviceId(sku_config, din)
 
+    def base_uid_hexstr(self) -> str:
+        """Returns the Base UID portion of the device ID as a hex string."""
+        return util.format_hex(self.base_uid, width=32)
+
     def sku_specific_hexstr(self) -> str:
         """Returns the SKU specific portion of the device ID as a hex string."""
         return util.format_hex(self.sku_specific, width=32)
@@ -274,7 +312,7 @@ class DeviceId():
         print("AST Config Version:   {}".format(self.ast_cfg_version))
         print("OTP ID:               {} ({})".format(
             hex(self.otp_id),
-            self.otp_id.to_bytes(length=4, byteorder="big").decode("utf-8")))
+            self.otp_id.to_bytes(length=2, byteorder="big").decode("utf-8")))
         print("OTP Version:          {}".format(self.otp_version))
         print("Reserved (24 bits):   {}".format(hex(_RESERVED_VALUE)))
         print("SKU ID:               {} ({})".format(

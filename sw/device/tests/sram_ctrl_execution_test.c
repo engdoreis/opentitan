@@ -73,7 +73,7 @@ bool test_main(void) {
   kSramEnd = kSramStart +
              dt_sram_ctrl_memory_size(kDtSramCtrlMain, kDtSramCtrlMemoryRam);
   kSramRetStart =
-      dt_sram_ctrl_memory_base(kDtSramCtrlRetAon, kDtSramCtrlMemoryRam);
+      dt_sram_ctrl_memory_base(kDtSramCtrlRet, kDtSramCtrlMemoryRam);
 
   // Unlock the entire address space for RWX so that we can run this test with
   // both rom and test_rom.
@@ -85,7 +85,7 @@ bool test_main(void) {
         "expected PMPCFG1 to be unconfigured before changing it");
 
   CSR_SET_BITS(CSR_REG_PMPCFG1,
-               ((uint32_t)(kEpmpModeNapot | kEpmpPermLockedReadWriteExecute))
+               (((uint32_t)kEpmpModeNapot | kEpmpPermLockedReadWriteExecute))
                    << 24);
 
   // Note: We can test the negative case only using the retention SRAM since

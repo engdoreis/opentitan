@@ -26,24 +26,33 @@ extern "C" {
  * minimized.
  */
 #define OTCRYPTO_OK ((status_t){.value = kHardenedBoolTrue})
+
+#define LAUNDERED_OTCRYPTO_OK \
+  ((status_t){.value = (int)launder32(kHardenedBoolTrue)})
+
 #ifdef OTCRYPTO_STATUS_DEBUG
 
-#define OTCRYPTO_RECOV_ERR                                \
-  ((status_t){.value = (int32_t)(0x80000000 | MODULE_ID | \
+#define OTCRYPTO_RECOV_ERR                                                  \
+  ((status_t){.value = (int32_t)(0x80000000 |                               \
+                                 status_encode_module_id(MODULE_ID) << 16 | \
                                  ((__LINE__ & 0x7ff) << 5) | kAborted)})
-#define OTCRYPTO_FATAL_ERR                           \
-  ((status_t){.value =                               \
-                  (int32_t)(0x80000000 | MODULE_ID | \
+#define OTCRYPTO_FATAL_ERR                                             \
+  ((status_t){.value =                                                 \
+                  (int32_t)(0x80000000 |                               \
+                            status_encode_module_id(MODULE_ID) << 16 | \
                             ((__LINE__ & 0x7ff) << 5) | kFailedPrecondition)})
-#define OTCRYPTO_BAD_ARGS                            \
-  ((status_t){.value =                               \
-                  (int32_t)(0x80000000 | MODULE_ID | \
+#define OTCRYPTO_BAD_ARGS                                              \
+  ((status_t){.value =                                                 \
+                  (int32_t)(0x80000000 |                               \
+                            status_encode_module_id(MODULE_ID) << 16 | \
                             ((__LINE__ & 0x7ff) << 5) | kInvalidArgument)})
-#define OTCRYPTO_ASYNC_INCOMPLETE                         \
-  ((status_t){.value = (int32_t)(0x80000000 | MODULE_ID | \
+#define OTCRYPTO_ASYNC_INCOMPLETE                                           \
+  ((status_t){.value = (int32_t)(0x80000000 |                               \
+                                 status_encode_module_id(MODULE_ID) << 16 | \
                                  ((__LINE__ & 0x7ff) << 5) | kUnavailable)})
-#define OTCRYPTO_NOT_IMPLEMENTED                          \
-  ((status_t){.value = (int32_t)(0x80000000 | MODULE_ID | \
+#define OTCRYPTO_NOT_IMPLEMENTED                                            \
+  ((status_t){.value = (int32_t)(0x80000000 |                               \
+                                 status_encode_module_id(MODULE_ID) << 16 | \
                                  ((__LINE__ & 0x7ff) << 5) | kUnimplemented)})
 #else
 
@@ -99,6 +108,8 @@ extern "C" {
       asm volatile("unimp");                                           \
     }                                                                  \
   } while (false)
+// COVERAGE (FI CM) We do not cover the redundant checks of the HARDENED_TRY as
+// they serve as redundant encoding against fault attacks.
 #else  // !OT_PLATFORM_RV32 || OT_DISABLE_HARDENING
 /**
  * Alternate version of HARDENED_TRY that is logically equivalent.

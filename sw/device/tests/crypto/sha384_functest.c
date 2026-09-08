@@ -2,8 +2,10 @@
 // Licensed under the Apache License, Version 2.0, see LICENSE for details.
 // SPDX-License-Identifier: Apache-2.0
 
-#include "sw/device/lib/crypto/drivers/entropy.h"
 #include "sw/device/lib/crypto/impl/status.h"
+#include "sw/device/lib/crypto/include/config.h"
+#include "sw/device/lib/crypto/include/entropy_src.h"
+#include "sw/device/lib/crypto/include/integrity.h"
 #include "sw/device/lib/crypto/include/sha2.h"
 #include "sw/device/lib/runtime/log.h"
 #include "sw/device/lib/testing/test_framework/check.h"
@@ -53,10 +55,8 @@ static const uint8_t kEmptyExpDigest[] = {
 status_t sha384_test(const unsigned char *msg, const size_t msg_len,
                      const uint8_t *expected_digest) {
   // Construct a buffer for the message.
-  otcrypto_const_byte_buf_t input_message = {
-      .data = msg,
-      .len = msg_len,
-  };
+  otcrypto_const_byte_buf_t input_message =
+      OTCRYPTO_MAKE_BUF(otcrypto_const_byte_buf_t, msg, msg_len);
 
   // Allocate space for the computed digest.
   uint32_t actual_digest_data[384 / 32];
@@ -64,7 +64,7 @@ status_t sha384_test(const unsigned char *msg, const size_t msg_len,
       .data = actual_digest_data,
       .len = ARRAYSIZE(actual_digest_data),
   };
-  TRY(otcrypto_sha2_384(input_message, &actual_digest));
+  TRY(otcrypto_sha2_384(&input_message, &actual_digest));
 
   // Check that the expected and actual digests match.
   TRY_CHECK_ARRAYS_EQ((unsigned char *)actual_digest_data, expected_digest,
@@ -86,13 +86,11 @@ status_t sha384_streaming_test(const unsigned char *msg, size_t msg_len,
   while (msg_len > 0) {
     // Construct a buffer for the next update.
     size_t len = (msg_len <= 5) ? msg_len : 5;
-    otcrypto_const_byte_buf_t input_message = {
-        .data = msg,
-        .len = len,
-    };
+    otcrypto_const_byte_buf_t input_message =
+        OTCRYPTO_MAKE_BUF(otcrypto_const_byte_buf_t, msg, len);
     msg += len;
     msg_len -= len;
-    TRY(otcrypto_sha2_update(&ctx, input_message));
+    TRY(otcrypto_sha2_update(&ctx, &input_message));
   }
 
   // Allocate space for the computed digest.
@@ -128,6 +126,35 @@ static status_t streaming_test(void) {
                                kTwoBlockExpDigest);
 }
 
+/**
+ * Negative tests
+ */
+static status_t run_negative_tests(void) {
+  LOG_INFO("Running SHA2 negative tests");
+
+  uint8_t msg_data[] = "test";
+  otcrypto_const_byte_buf_t valid_msg =
+      OTCRYPTO_MAKE_BUF(otcrypto_const_byte_buf_t, msg_data, 4);
+  otcrypto_const_byte_buf_t bad_msg_null =
+      OTCRYPTO_MAKE_BUF(otcrypto_const_byte_buf_t, NULL, 4);
+
+  uint32_t digest_data[16] = {0};
+  otcrypto_hash_digest_t valid_digest_256 = {.data = digest_data, .len = 8};
+  otcrypto_hash_digest_t valid_digest_384 = {.data = digest_data, .len = 12};
+
+  otcrypto_hash_digest_t bad_digest_null = {.data = NULL, .len = 8};
+
+  // otcrypto_sha2_384 negative tests
+  CHECK(otcrypto_sha2_384(&bad_msg_null, &valid_digest_384).value ==
+        OTCRYPTO_BAD_ARGS.value);
+  CHECK(otcrypto_sha2_384(&valid_msg, &bad_digest_null).value ==
+        OTCRYPTO_BAD_ARGS.value);
+  CHECK(otcrypto_sha2_384(&valid_msg, &valid_digest_256).value ==
+        OTCRYPTO_BAD_ARGS.value);
+
+  return OTCRYPTO_OK;
+}
+
 OTTF_DEFINE_TEST_CONFIG();
 
 // Holds the test result.
@@ -135,12 +162,11 @@ static volatile status_t test_result;
 
 bool test_main(void) {
   test_result = OK_STATUS();
-  // Even though the HMAC IP itself does not need entropy, we need to initialize
-  // the entropy complex to be able to clear HMAC with randomness.
-  CHECK_STATUS_OK(entropy_complex_init());
+  CHECK_STATUS_OK(otcrypto_init(kOtcryptoKeySecurityLevelLow));
   EXECUTE_TEST(test_result, empty_test);
   EXECUTE_TEST(test_result, one_block_test);
   EXECUTE_TEST(test_result, two_block_test);
   EXECUTE_TEST(test_result, streaming_test);
+  EXECUTE_TEST(test_result, run_negative_tests);
   return status_ok(test_result);
 }

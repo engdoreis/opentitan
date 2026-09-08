@@ -3,10 +3,13 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include "sw/device/lib/base/macros.h"
-#include "sw/device/lib/crypto/drivers/entropy.h"
+#include "sw/device/lib/crypto/include/config.h"
+#include "sw/device/lib/crypto/include/cryptolib_build_info.h"
+#include "sw/device/lib/crypto/include/entropy_src.h"
+#include "sw/device/lib/crypto/include/integrity.h"
 #include "sw/device/lib/crypto/include/key_transport.h"
 #include "sw/device/lib/runtime/log.h"
-#include "sw/device/lib/testing/keymgr_testutils.h"
+#include "sw/device/lib/testing/keymgr_dpe_testutils.h"
 #include "sw/device/lib/testing/test_framework/check.h"
 #include "sw/device/lib/testing/test_framework/ottf_main.h"
 
@@ -16,6 +19,10 @@
 // Key version data for testing.
 static const uint32_t kKeyVersion = 0x0;
 
+// DPE context slot for testing, must match the slot defined in the
+// keymgr_dpe_testutils.
+static const uint32_t kKeymgrDpeSrcSlot = kCreatorRootKeyParams.slot_dst_sel;
+
 // Key salt for testing.
 static const uint32_t kKeySalt[7] = {
     0x00112233, 0x44556677, 0x8899aabb, 0xccddeeff,
@@ -23,13 +30,15 @@ static const uint32_t kKeySalt[7] = {
 };
 
 // Key configuration for wrapping key (AES-256).
-static const otcrypto_key_config_t kWrappingKeyConfig = {
-    .version = kOtcryptoLibVersion1,
-    .key_mode = kOtcryptoKeyModeAesKwp,
-    .key_length = 256 / 8,
-    .hw_backed = kHardenedBoolTrue,
-    .security_level = kOtcryptoKeySecurityLevelLow,
-};
+#define kWrappingKeyConfig                            \
+  ((otcrypto_key_config_t){                           \
+      .version = otcrypto_lib_version(),              \
+      .key_mode = kOtcryptoKeyModeAesKwp,             \
+      .key_length = 256 / 8,                          \
+      .hw_backed = kHardenedBoolTrue,                 \
+      .keymgr_dpe_slot_idx = kKeymgrDpeSrcSlot,       \
+      .security_level = kOtcryptoKeySecurityLevelLow, \
+  })
 
 /**
  * Check that wrapping and unwrapping returns the original key.
@@ -44,11 +53,9 @@ static status_t run_wrap_unwrap(const otcrypto_blinded_key_t *key_to_wrap,
 
   // Wrap the key.
   uint32_t wrapped_key_data[wrapped_num_words];
-  otcrypto_word32_buf_t wrapped_key = {
-      .data = wrapped_key_data,
-      .len = ARRAYSIZE(wrapped_key_data),
-  };
-  TRY(otcrypto_key_wrap(key_to_wrap, key_kek, wrapped_key));
+  otcrypto_word32_buf_t wrapped_key = OTCRYPTO_MAKE_BUF(
+      otcrypto_word32_buf_t, wrapped_key_data, ARRAYSIZE(wrapped_key_data));
+  TRY(otcrypto_key_wrap(key_to_wrap, key_kek, &wrapped_key));
 
   // Unwrap the key.
   hardened_bool_t success;
@@ -59,12 +66,11 @@ static status_t run_wrap_unwrap(const otcrypto_blinded_key_t *key_to_wrap,
       .keyblob_length = keyblob_words * sizeof(uint32_t),
       .keyblob = unwrapped_key_keyblob,
   };
-  TRY(otcrypto_key_unwrap(
-      (otcrypto_const_word32_buf_t){
-          .data = wrapped_key_data,
-          .len = ARRAYSIZE(wrapped_key_data),
-      },
-      key_kek, &success, &unwrapped_key));
+  otcrypto_const_word32_buf_t wrapped_key_data_buf =
+      OTCRYPTO_MAKE_BUF(otcrypto_const_word32_buf_t, wrapped_key_data,
+                        ARRAYSIZE(wrapped_key_data));
+  TRY(otcrypto_key_unwrap(&wrapped_key_data_buf, key_kek, &success,
+                          &unwrapped_key));
 
   // Check the result.
   TRY_CHECK(success == kHardenedBoolTrue);
@@ -83,7 +89,7 @@ static status_t run_wrap_unwrap(const otcrypto_blinded_key_t *key_to_wrap,
  */
 static status_t wrap_unwrap_random_test(void) {
   const otcrypto_key_config_t kKmacKeyConfig = {
-      .version = kOtcryptoLibVersion1,
+      .version = otcrypto_lib_version(),
       .key_mode = kOtcryptoKeyModeKmac128,
       .key_length = 128 / 8,
       .hw_backed = kHardenedBoolFalse,
@@ -97,8 +103,9 @@ static status_t wrap_unwrap_random_test(void) {
       .keyblob_length = sizeof(keyblob),
       .keyblob = keyblob,
   };
-  otcrypto_const_byte_buf_t personalization = {.data = NULL, .len = 0};
-  TRY(otcrypto_symmetric_keygen(personalization, &kmac_key));
+  otcrypto_const_byte_buf_t personalization =
+      OTCRYPTO_MAKE_BUF(otcrypto_const_byte_buf_t, NULL, 0);
+  TRY(otcrypto_symmetric_keygen(&personalization, &kmac_key));
 
   // Construct the sideloaded wrapping key.
   uint32_t keyblob_kek[8];
@@ -113,33 +120,28 @@ static status_t wrap_unwrap_random_test(void) {
 }
 
 /**
- * Setup keymgr and entropy complex.
+ * Setup keymgr_dpe and entropy complex.
  *
  * Run this before any tests.
  */
 status_t test_setup(void) {
-  // Initialize the key manager and advance to OwnerRootKey state.  Note: the
-  // keymgr testutils set this up using software entropy, so there is no need
-  // to initialize the entropy complex first. However, this is of course not
-  // the expected setup in production.
-  dif_keymgr_t keymgr;
+  // Initialize the key manager dpe, which derives the CreatorRootKey.
+  // Note: the keymgr_dpe testutils set this up using software entropy, so there
+  // is no need to initialize the entropy complex first. However, this is of
+  // course not the expected setup in production.
+  dif_keymgr_dpe_t keymgr_dpe;
   dif_kmac_t kmac;
-  dif_keymgr_state_t keymgr_state;
-  TRY(keymgr_testutils_try_startup(&keymgr, &kmac, &keymgr_state));
+  TRY(keymgr_dpe_testutils_startup(&keymgr_dpe, &kmac));
+  TRY(keymgr_dpe_testutils_check_state(&keymgr_dpe,
+                                       kDifKeymgrDpeStateAvailable));
 
-  if (keymgr_state == kDifKeymgrStateCreatorRootKey) {
-    TRY(keymgr_testutils_advance_state(&keymgr, &kOwnerIntParams));
-    TRY(keymgr_testutils_advance_state(&keymgr, &kOwnerRootKeyParams));
-  } else if (keymgr_state == kDifKeymgrStateOwnerIntermediateKey) {
-    TRY(keymgr_testutils_advance_state(&keymgr, &kOwnerRootKeyParams));
-  }
-
-  TRY(keymgr_testutils_check_state(&keymgr, kDifKeymgrStateOwnerRootKey));
+  // TODO(#30759): Verify the kKeymgrDpeSrcSlot contains a key with boot_stage
+  // set to CreatorRootKey!
 
   // Initialize entropy complex for cryptolib, which the key manager uses to
-  // clear sideloaded keys. The `keymgr_testutils_startup` function restarts
+  // clear sideloaded keys. The `keymgr_dpe_testutils_startup` function restarts
   // the device, so this should happen afterwards.
-  return entropy_complex_init();
+  return otcrypto_init(kOtcryptoKeySecurityLevelLow);
 }
 
 OTTF_DEFINE_TEST_CONFIG();

@@ -5,11 +5,11 @@
 #include "sw/device/lib/crypto/include/aes_gcm.h"
 
 #include "sw/device/lib/base/memory.h"
-#include "sw/device/lib/base/status.h"
-#include "sw/device/lib/crypto/impl/integrity.h"
-#include "sw/device/lib/crypto/impl/keyblob.h"
 #include "sw/device/lib/crypto/include/aes_gcm.h"
+#include "sw/device/lib/crypto/include/cryptolib_build_info.h"
 #include "sw/device/lib/crypto/include/datatypes.h"
+#include "sw/device/lib/crypto/include/integrity.h"
+#include "sw/device/lib/crypto/include/key_transport.h"
 #include "sw/device/lib/runtime/log.h"
 #include "sw/device/lib/testing/rand_testutils.h"
 #include "sw/device/lib/testing/test_framework/ujson_ottf.h"
@@ -101,20 +101,14 @@ status_t handle_aes_gcm_op(ujson_t *uj) {
   // Convert the data struct into cryptolib types
   uint32_t iv_buf[iv_num_words];
   memcpy(iv_buf, uj_data.iv, uj_data.iv_length);
-  otcrypto_const_word32_buf_t iv = {
-      .data = iv_buf,
-      .len = iv_num_words,
-  };
+  otcrypto_const_word32_buf_t iv =
+      OTCRYPTO_MAKE_BUF(otcrypto_const_word32_buf_t, iv_buf, iv_num_words);
 
-  otcrypto_const_byte_buf_t input = {
-      .data = uj_data.input,
-      .len = (size_t)uj_data.input_length,
-  };
+  otcrypto_const_byte_buf_t input = OTCRYPTO_MAKE_BUF(
+      otcrypto_const_byte_buf_t, uj_data.input, (size_t)uj_data.input_length);
 
-  otcrypto_const_byte_buf_t aad = {
-      .data = uj_data.aad,
-      .len = uj_data.aad_length,
-  };
+  otcrypto_const_byte_buf_t aad = OTCRYPTO_MAKE_BUF(
+      otcrypto_const_byte_buf_t, uj_data.aad, uj_data.aad_length);
 
   // Select a random security level.
   size_t sec_lvl_idx = rand_testutils_gen32_range(
@@ -122,51 +116,58 @@ status_t handle_aes_gcm_op(ujson_t *uj) {
 
   // Build the key configuration
   otcrypto_key_config_t config = {
-      .version = kOtcryptoLibVersion1,
+      .version = otcrypto_lib_version(),
       .key_mode = kOtcryptoKeyModeAesGcm,
       .key_length = uj_data.key_length,
       .hw_backed = kHardenedBoolFalse,
       .security_level = security_level[sec_lvl_idx],
   };
 
-  // Create buffer to store key
+  size_t key_words = uj_data.key_length / sizeof(uint32_t);
+
   uint32_t key_buf[kAesMaxKeyWords];
-  memcpy(key_buf, uj_data.key, kAesMaxKeyBytes);
-  // Create keyblob
-  uint32_t keyblob[keyblob_num_words(config)];
-  // Create blinded key
-  TRY(keyblob_from_key_and_mask(key_buf, kKeyMask, config, keyblob));
+  memcpy(key_buf, uj_data.key, uj_data.key_length);
+
+  uint32_t share0_data[kAesMaxKeyWords];
+  uint32_t share1_data[kAesMaxKeyWords];
+
+  for (size_t i = 0; i < key_words; ++i) {
+    share0_data[i] = key_buf[i] ^ kKeyMask[i];
+    share1_data[i] = kKeyMask[i];
+  }
+
+  otcrypto_const_word32_buf_t key_share0 =
+      OTCRYPTO_MAKE_BUF(otcrypto_const_word32_buf_t, share0_data, key_words);
+  otcrypto_const_word32_buf_t key_share1 =
+      OTCRYPTO_MAKE_BUF(otcrypto_const_word32_buf_t, share1_data, key_words);
+  uint32_t keyblob[2 * kAesMaxKeyWords];
   otcrypto_blinded_key_t key = {
       .config = config,
-      .keyblob_length = sizeof(keyblob),
+      .keyblob_length = key_words * 2 * sizeof(uint32_t),
       .keyblob = keyblob,
   };
-  key.checksum = integrity_blinded_checksum(&key);
+
+  TRY(otcrypto_import_blinded_key(&key_share0, &key_share1, &key));
 
   uint8_t output_data[AES_GCM_CMD_MAX_MSG_BYTES];
-  otcrypto_byte_buf_t output = {
-      .data = output_data,
-      .len = uj_data.input_length,
-  };
+  otcrypto_byte_buf_t output =
+      OTCRYPTO_MAKE_BUF(otcrypto_byte_buf_t, output_data, uj_data.input_length);
 
   uint32_t tag_data[tag_num_words];
 
   hardened_bool_t tag_valid = kHardenedBoolTrue;
 
   if (op_enc) {
-    otcrypto_word32_buf_t tag = {
-        .data = tag_data,
-        .len = tag_num_words,
-    };
-    TRY(otcrypto_aes_gcm_encrypt(&key, input, iv, aad, tag_len, output, tag));
+    otcrypto_word32_buf_t tag =
+        OTCRYPTO_MAKE_BUF(otcrypto_word32_buf_t, tag_data, tag_num_words);
+    TRY(otcrypto_aes_gcm_encrypt(&key, &input, &iv, &aad, tag_len, &output,
+                                 &tag));
   } else {
     memcpy(tag_data, uj_data.tag, uj_data.tag_length);
-    otcrypto_const_word32_buf_t tag = {
-        .data = tag_data,
-        .len = tag_num_words,
-    };
-    TRY(otcrypto_aes_gcm_decrypt(&key, input, iv, aad, tag_len, tag, output,
-                                 &tag_valid));
+    otcrypto_const_word32_buf_t tag =
+        OTCRYPTO_MAKE_BUF(otcrypto_const_word32_buf_t, tag_data, tag_num_words);
+    TRY(otcrypto_aes_gcm_decrypt(&key, &input, &iv, &aad, tag_len, &tag,
+                                 &output, &tag_valid));
   }
 
   cryptotest_aes_gcm_output_t uj_output;

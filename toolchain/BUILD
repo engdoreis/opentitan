@@ -2,24 +2,61 @@
 # Licensed under the Apache License, Version 2.0, see LICENSE for details.
 # SPDX-License-Identifier: Apache-2.0
 
+load("@opentitan_signing_infra//toolchains/opentitantool:opentitantool.bzl", "opentitantool")
 load("@rules_cc//cc/toolchains:actions.bzl", "cc_action_type")
 load("@rules_cc//cc/toolchains:args.bzl", "cc_args")
 load("@rules_cc//cc/toolchains:args_list.bzl", "cc_args_list")
 load("@rules_cc//cc/toolchains:feature.bzl", "cc_feature")
-load("@rules_cc//cc/toolchains:feature_set.bzl", "cc_feature_set")
 load("@rules_cc//cc/toolchains:feature_constraint.bzl", "cc_feature_constraint")
+load("@rules_cc//cc/toolchains:feature_set.bzl", "cc_feature_set")
 load("@rules_cc//cc/toolchains:toolchain.bzl", "cc_toolchain")
 load("@rules_cc//cc/toolchains:tool_map.bzl", "cc_tool_map")
-load("//rules:actions.bzl", "OT_ACTION_LLVM_PROFDATA", "OT_ACTION_OBJDUMP")
+load(
+    "//rules:actions.bzl",
+    "OT_ACTION_LLVM_PROFDATA",
+    "OT_ACTION_NM",
+    "OT_ACTION_OBJDUMP",
+)
 
 package(default_visibility = ["//visibility:public"])
+
+# OpenTitanTool toolchain for usage in upstream signing rules
+opentitantool(
+    name = "latest_opentitantool",
+    tool = "//sw/host/opentitantool",
+)
+
+toolchain(
+    name = "latest_opentitantool_toolchain",
+    exec_compatible_with = ["@platforms//cpu:x86_64"],
+    toolchain = ":latest_opentitantool",
+    toolchain_type = "@opentitan_signing_infra//toolchains/opentitantool:toolchain_type",
+)
 
 platform(
     name = "opentitan_platform",
     constraint_values = [
         "@platforms//cpu:riscv32",
         "@platforms//os:none",
+        ":device",
     ],
+)
+
+constraint_setting(name = "target")
+
+constraint_value(
+    name = "host",
+    constraint_setting = "target",
+)
+
+constraint_value(
+    name = "device",
+    constraint_setting = "target",
+)
+
+config_setting(
+    name = "on_device_config",
+    constraint_values = [":device"],
 )
 
 toolchain(
@@ -52,7 +89,6 @@ cc_toolchain(
         "@rules_cc//cc/toolchains/args:experimental_replace_legacy_action_config_features",
         ":feat_rv32_bitmanip",
         ":feat_warnings_as_errors",
-        ":feat_guards",
         ":feat_use_lld",
         ":feat_lto",
         ":feat_minsize",
@@ -69,6 +105,7 @@ cc_toolchain(
         ":feat_fastbuild",
         ":feat_opt",
         ":feat_rv32_bitmanip",
+        ":feat_no_jump_tables",
     ],
     tool_map = ":tool_map",
 )
@@ -87,12 +124,18 @@ cc_tool_map(
         "@rules_cc//cc/toolchains/actions:strip": "@lowrisc_rv32imcb_toolchain//:strip",
         ":action_llvm_profdata": "@lowrisc_rv32imcb_toolchain//:llvm_profdata",
         ":action_objdump": "@lowrisc_rv32imcb_toolchain//:objdump",
+        ":action_nm": "@lowrisc_rv32imcb_toolchain//:nm",
     },
 )
 
 cc_action_type(
     name = "action_llvm_profdata",
     action_name = OT_ACTION_LLVM_PROFDATA,
+)
+
+cc_action_type(
+    name = "action_nm",
+    action_name = OT_ACTION_NM,
 )
 
 cc_action_type(
@@ -313,6 +356,9 @@ cc_args(
         "-Wstrict-prototypes",
         "-Wswitch-default",
         "-Wtype-limits",
+        "-Wno-gnu-auto-type",
+        "-Wsign-conversion",
+        "-menable-experimental-extensions",
     ],
 )
 
@@ -469,4 +515,16 @@ cc_args(
 filegroup(
     name = "doc_files",
     srcs = ["README.md"],
+)
+
+cc_feature(
+    name = "feat_no_jump_tables",
+    args = [":no_jump_tables_args"],
+    feature_name = "no_jump_tables",
+)
+
+cc_args(
+    name = "no_jump_tables_args",
+    actions = ["@rules_cc//cc/toolchains/actions:compile_actions"],
+    args = ["-fno-jump-tables"],
 )

@@ -20,16 +20,16 @@ otbn_binary(
 )
 
 otbn_library(
-    name = "ed25519",
+    name = "25519",
     srcs = [
-        "ed25519.s",
+        "25519.s",
     ],
 )
 
 otbn_library(
-    name = "ed25519_scalar",
+    name = "25519_scalar",
     srcs = [
-        "ed25519_scalar.s",
+        "25519_scalar.s",
     ],
 )
 
@@ -53,9 +53,11 @@ otbn_binary(
         "run_curve25519.s",
     ],
     deps = [
-        ":ed25519",
-        ":ed25519_scalar",
+        ":25519",
+        ":25519_scalar",
         ":field25519",
+        ":p256_a2b",
+        ":p256_b2a",
     ],
 )
 
@@ -97,6 +99,7 @@ otbn_library(
 otbn_library(
     name = "p256_shared_key",
     srcs = [
+        "p256_a2b.s",
         "p256_shared_key.s",
     ],
 )
@@ -104,6 +107,7 @@ otbn_library(
 otbn_library(
     name = "p256_base",
     srcs = [
+        "p256_b2a.s",
         "p256_base.s",
     ],
 )
@@ -112,6 +116,13 @@ otbn_library(
     name = "p256_isoncurve",
     srcs = [
         "p256_isoncurve.s",
+    ],
+)
+
+otbn_library(
+    name = "p256_isoncurve_check",
+    srcs = [
+        "p256_isoncurve_check.s",
     ],
 )
 
@@ -144,6 +155,7 @@ otbn_binary(
     deps = [
         ":p256_base",
         ":p256_isoncurve",
+        ":p256_isoncurve_check",
         ":p256_isoncurve_proj",
         ":p256_shared_key",
         ":p256_sign",
@@ -280,6 +292,7 @@ otbn_library(
 otbn_binary(
     name = "run_rsa",
     srcs = [
+        "div.s",
         "gcd.s",
         "modexp.s",
         "montmul.s",
@@ -306,6 +319,20 @@ otbn_library(
     ],
 )
 
+otbn_library(
+    name = "p256_a2b",
+    srcs = [
+        "p256_a2b.s",
+    ],
+)
+
+otbn_library(
+    name = "p256_b2a",
+    srcs = [
+        "p256_b2a.s",
+    ],
+)
+
 otbn_binary(
     name = "run_rsa_key_from_cofactor",
     srcs = [
@@ -315,7 +342,6 @@ otbn_binary(
         ":div",
         ":gcd",
         ":lcm",
-        ":montmul",
         ":mul",
         ":rsa_key_from_cofactor",
         ":rsa_modinv_f4",
@@ -444,6 +470,8 @@ otbn_library(
     ],
 )
 
+# Currently unused but implements x25519 accepted twisted curve points.
+# Implements https://datatracker.ietf.org/doc/html/rfc7748#section-5
 otbn_library(
     name = "x25519",
     srcs = [
@@ -459,5 +487,19 @@ otbn_binary(
     deps = [
         ":field25519",
         ":x25519",
+    ],
+)
+
+otbn_library(
+    name = "mai_gadgets",
+    srcs = [
+        "mai_gadgets.s",
+    ],
+)
+
+otbn_library(
+    name = "xof",
+    srcs = [
+        "xof.s",
     ],
 )

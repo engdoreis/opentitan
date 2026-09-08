@@ -17,14 +17,34 @@ extern "C" {
 // Accomodate for these additional bytes.
 #define RSA_CMD_MAX_MESSAGE_BYTES 514
 #define RSA_CMD_MAX_SIGNATURE_BYTES 514
+// Prime factors p and q are half the size of the modulus n.
+// RSA-4096 has 256-byte primes, so this covers all supported key sizes.
+#define RSA_CMD_MAX_PRIME_BYTES 256
 
 // clang-format off
 
 #define RSA_SUBCOMMAND(_, value) \
     value(_, RsaEncrypt) \
     value(_, RsaDecrypt) \
-    value(_, RsaVerify)
+    value(_, RsaSign) \
+    value(_, RsaVerify) \
+    value(_, RsaKeygenCheck) \
+    value(_, RsaKeygen) \
+    value(_, RsaKeygenAcvp)
 UJSON_SERDE_ENUM(RsaSubcommand, rsa_subcommand_t, RSA_SUBCOMMAND);
+
+#define RSA_SIGN(field, string) \
+    field(msg, uint8_t, RSA_CMD_MAX_MESSAGE_BYTES) \
+    field(msg_len, size_t) \
+    field(e, uint32_t) \
+    field(d, uint8_t, RSA_CMD_MAX_N_BYTES) \
+    field(n, uint8_t, RSA_CMD_MAX_N_BYTES) \
+    field(security_level, size_t) \
+    field(label, uint8_t, RSA_CMD_MAX_MESSAGE_BYTES) \
+    field(label_len, size_t) \
+    field(hashing, size_t) \
+    field(padding, size_t)
+UJSON_SERDE_STRUCT(CryptotestRsaSign, cryptotest_rsa_sign_t, RSA_SIGN);
 
 #define RSA_VERIFY(field, string) \
     field(msg, uint8_t, RSA_CMD_MAX_MESSAGE_BYTES) \
@@ -78,6 +98,52 @@ UJSON_SERDE_STRUCT(CryptotestRsaDecryptResp, cryptotest_rsa_decrypt_resp_t, RSA_
     field(ciphertext_len, size_t) \
     field(result, bool)
 UJSON_SERDE_STRUCT(CryptotestRsaEncryptResp, cryptotest_rsa_encrypt_resp_t, RSA_ENCRYPT_RESP);
+
+#define RSA_SIGN_RESP(field, string) \
+    field(signature, uint8_t, RSA_CMD_MAX_MESSAGE_BYTES) \
+    field(signature_len, size_t)
+UJSON_SERDE_STRUCT(CryptotestRsaSignResp, cryptotest_rsa_sign_resp_t, RSA_SIGN_RESP);
+
+#define RSA_KEYGEN_CHECK(field, string) \
+    field(security_level, size_t) \
+    field(hashing, size_t) \
+    field(padding, size_t) \
+    field(msg, uint8_t, RSA_CMD_MAX_MESSAGE_BYTES) \
+    field(msg_len, size_t)
+UJSON_SERDE_STRUCT(CryptotestRsaKeygenCheck, cryptotest_rsa_keygen_check_t, RSA_KEYGEN_CHECK);
+
+#define RSA_KEYGEN_CHECK_RESP(field, string) \
+    field(result, bool)
+UJSON_SERDE_STRUCT(CryptotestRsaKeygenCheckResp, cryptotest_rsa_keygen_check_resp_t, RSA_KEYGEN_CHECK_RESP);
+
+#define RSA_KEYGEN(field, string) \
+    field(security_level, size_t) \
+    field(padding, size_t)
+UJSON_SERDE_STRUCT(CryptotestRsaKeygen, cryptotest_rsa_keygen_t, RSA_KEYGEN);
+
+#define RSA_KEYGEN_RESP(field, string) \
+    field(n, uint8_t, RSA_CMD_MAX_N_BYTES) \
+    field(n_len, size_t) \
+    field(d, uint8_t, RSA_CMD_MAX_N_BYTES) \
+    field(d_len, size_t) \
+    field(e, uint32_t)
+UJSON_SERDE_STRUCT(CryptotestRsaKeygenResp, cryptotest_rsa_keygen_resp_t, RSA_KEYGEN_RESP);
+
+#define RSA_KEYGEN_ACVP(field, string) \
+    field(security_level, size_t)
+UJSON_SERDE_STRUCT(CryptotestRsaKeygenAcvp, cryptotest_rsa_keygen_acvp_t, RSA_KEYGEN_ACVP);
+
+#define RSA_KEYGEN_ACVP_RESP(field, string) \
+    field(n, uint8_t, RSA_CMD_MAX_N_BYTES) \
+    field(n_len, size_t) \
+    field(d, uint8_t, RSA_CMD_MAX_N_BYTES) \
+    field(d_len, size_t) \
+    field(p, uint8_t, RSA_CMD_MAX_PRIME_BYTES) \
+    field(p_len, size_t) \
+    field(q, uint8_t, RSA_CMD_MAX_PRIME_BYTES) \
+    field(q_len, size_t) \
+    field(e, uint32_t)
+UJSON_SERDE_STRUCT(CryptotestRsaKeygenAcvpResp, cryptotest_rsa_keygen_acvp_resp_t, RSA_KEYGEN_ACVP_RESP);
 
 #undef MODULE_ID
 

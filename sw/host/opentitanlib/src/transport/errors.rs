@@ -13,12 +13,10 @@ use crate::impl_serializable_error;
 /// part of the session proxy functionality.
 #[derive(Error, Debug, Serialize, Deserialize)]
 pub enum TransportError {
-    #[error("USB device did not match")]
-    NoMatch,
-    #[error("Found no USB device")]
-    NoDevice,
-    #[error("Found multiple USB devices, use --usb-serial")]
-    MultipleDevices,
+    #[error("Found no USB device. Search criteria was: {0}")]
+    NoDevice(String),
+    #[error("Found multiple USB devices ({0}), use --usb-serial. Search criteria was: {1}")]
+    MultipleDevices(String, String),
     #[error("USB error: {0}")]
     UsbGenericError(String),
     #[error("Error opening USB device: {0}")]
@@ -89,4 +87,5 @@ pub enum TransportInterfaceType {
     GpioBitbanging,
     IoExpander,
     Provides,
+    Usb,
 }

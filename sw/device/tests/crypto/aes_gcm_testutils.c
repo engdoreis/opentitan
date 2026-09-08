@@ -7,9 +7,10 @@
 #include "sw/device/lib/base/macros.h"
 #include "sw/device/lib/base/math.h"
 #include "sw/device/lib/base/status.h"
-#include "sw/device/lib/crypto/impl/integrity.h"
 #include "sw/device/lib/crypto/impl/keyblob.h"
 #include "sw/device/lib/crypto/include/aes_gcm.h"
+#include "sw/device/lib/crypto/include/cryptolib_build_info.h"
+#include "sw/device/lib/crypto/include/integrity.h"
 #include "sw/device/lib/runtime/hart.h"
 #include "sw/device/lib/runtime/log.h"
 #include "sw/device/lib/testing/profile.h"
@@ -86,11 +87,9 @@ static status_t stream_gcm(otcrypto_aes_gcm_context_t *ctx,
       if (offset + chunk_len > aad.len) {
         chunk_len = aad.len - offset;
       }
-      otcrypto_const_byte_buf_t aad_chunk = {
-          .data = aad.data + offset,
-          .len = chunk_len,
-      };
-      TRY(otcrypto_aes_gcm_update_aad(ctx, aad_chunk));
+      otcrypto_const_byte_buf_t aad_chunk = OTCRYPTO_MAKE_BUF(
+          otcrypto_const_byte_buf_t, aad.data + offset, chunk_len);
+      TRY(otcrypto_aes_gcm_update_aad(ctx, &aad_chunk));
     }
   }
 
@@ -105,17 +104,14 @@ static status_t stream_gcm(otcrypto_aes_gcm_context_t *ctx,
       if (offset + chunk_len > input.len) {
         chunk_len = input.len - offset;
       }
-      otcrypto_const_byte_buf_t input_chunk = {
-          .data = input.data + offset,
-          .len = chunk_len,
-      };
-      otcrypto_byte_buf_t output_with_offset = {
-          .data = output.data + *output_bytes_written,
-          .len = output.len - *output_bytes_written,
-      };
+      otcrypto_const_byte_buf_t input_chunk = OTCRYPTO_MAKE_BUF(
+          otcrypto_const_byte_buf_t, input.data + offset, chunk_len);
+      otcrypto_byte_buf_t output_with_offset = OTCRYPTO_MAKE_BUF(
+          otcrypto_byte_buf_t, output.data + *output_bytes_written,
+          output.len - *output_bytes_written);
       size_t bytes_written_for_chunk = 0;
       TRY(otcrypto_aes_gcm_update_encrypted_data(
-          ctx, input_chunk, output_with_offset, &bytes_written_for_chunk));
+          ctx, &input_chunk, &output_with_offset, &bytes_written_for_chunk));
       *output_bytes_written += bytes_written_for_chunk;
     }
   }
@@ -130,7 +126,7 @@ status_t aes_gcm_testutils_encrypt(const aes_gcm_test_t *test, bool streaming,
 
   // Construct the blinded key configuration.
   otcrypto_key_config_t config = {
-      .version = kOtcryptoLibVersion1,
+      .version = otcrypto_lib_version(),
       .key_mode = kOtcryptoKeyModeAesGcm,
       .key_length = test->key_len * sizeof(uint32_t),
       .hw_backed = kHardenedBoolFalse,
@@ -150,61 +146,50 @@ status_t aes_gcm_testutils_encrypt(const aes_gcm_test_t *test, bool streaming,
   };
 
   // Set the checksum.
-  key.checksum = integrity_blinded_checksum(&key);
+  key.checksum = otcrypto_integrity_blinded_checksum(&key);
 
   size_t iv_num_words =
       (test->iv_len + sizeof(uint32_t) - 1) / sizeof(uint32_t);
   uint32_t iv_data[iv_num_words];
   memcpy(iv_data, test->iv, test->iv_len);
-  otcrypto_const_word32_buf_t iv = {
-      .data = iv_data,
-      .len = iv_num_words,
-  };
-  otcrypto_const_byte_buf_t plaintext = {
-      .data = test->plaintext,
-      .len = test->plaintext_len,
-  };
-  otcrypto_const_byte_buf_t aad = {
-      .data = test->aad,
-      .len = test->aad_len,
-  };
+  otcrypto_const_word32_buf_t iv =
+      OTCRYPTO_MAKE_BUF(otcrypto_const_word32_buf_t, iv_data, iv_num_words);
+  otcrypto_const_byte_buf_t plaintext = OTCRYPTO_MAKE_BUF(
+      otcrypto_const_byte_buf_t, test->plaintext, test->plaintext_len);
+  otcrypto_const_byte_buf_t aad =
+      OTCRYPTO_MAKE_BUF(otcrypto_const_byte_buf_t, test->aad, test->aad_len);
 
   size_t tag_num_words =
       (test->tag_len + sizeof(uint32_t) - 1) / sizeof(uint32_t);
   uint32_t actual_tag_data[tag_num_words];
-  otcrypto_word32_buf_t actual_tag = {
-      .data = actual_tag_data,
-      .len = tag_num_words,
-  };
+  otcrypto_word32_buf_t actual_tag =
+      OTCRYPTO_MAKE_BUF(otcrypto_word32_buf_t, actual_tag_data, tag_num_words);
 
   size_t ciphertext_blocks = ceil_div(test->plaintext_len, kAesBlockNumBytes);
   uint8_t actual_ciphertext_data[ciphertext_blocks * kAesBlockNumBytes];
-  otcrypto_byte_buf_t actual_ciphertext = {
-      .data = actual_ciphertext_data,
-      .len = test->plaintext_len,
-  };
+  otcrypto_byte_buf_t actual_ciphertext = OTCRYPTO_MAKE_BUF(
+      otcrypto_byte_buf_t, actual_ciphertext_data, test->plaintext_len);
 
   otcrypto_aes_gcm_tag_len_t tag_len = get_tag_length(test->tag_len);
 
   if (streaming) {
     uint64_t t_start = profile_start();
     otcrypto_aes_gcm_context_t ctx;
-    TRY(otcrypto_aes_gcm_encrypt_init(&key, iv, &ctx));
+    TRY(otcrypto_aes_gcm_encrypt_init(&key, &iv, &ctx));
     size_t ciphertext_bytes_written;
     TRY(stream_gcm(&ctx, aad, plaintext, actual_ciphertext,
                    &ciphertext_bytes_written));
-    otcrypto_byte_buf_t final_ciphertext = {
-        .data = actual_ciphertext.data + ciphertext_bytes_written,
-        .len = test->plaintext_len - ciphertext_bytes_written,
-    };
-    TRY(otcrypto_aes_gcm_encrypt_final(&ctx, tag_len, final_ciphertext,
-                                       &ciphertext_bytes_written, actual_tag));
+    otcrypto_byte_buf_t final_ciphertext = OTCRYPTO_MAKE_BUF(
+        otcrypto_byte_buf_t, actual_ciphertext.data + ciphertext_bytes_written,
+        test->plaintext_len - ciphertext_bytes_written);
+    TRY(otcrypto_aes_gcm_encrypt_final(&ctx, tag_len, &final_ciphertext,
+                                       &ciphertext_bytes_written, &actual_tag));
     *cycles = profile_end(t_start);
   } else {
     // Call encrypt() with a cycle count timing profile.
     uint64_t t_start = profile_start();
     otcrypto_status_t err = otcrypto_aes_gcm_encrypt(
-        &key, plaintext, iv, aad, tag_len, actual_ciphertext, actual_tag);
+        &key, &plaintext, &iv, &aad, tag_len, &actual_ciphertext, &actual_tag);
     *cycles = profile_end(t_start);
 
     // Check for errors.
@@ -231,7 +216,7 @@ status_t aes_gcm_testutils_decrypt(const aes_gcm_test_t *test,
 
   // Construct the blinded key configuration.
   otcrypto_key_config_t config = {
-      .version = kOtcryptoLibVersion1,
+      .version = otcrypto_lib_version(),
       .key_mode = kOtcryptoKeyModeAesGcm,
       .key_length = test->key_len * sizeof(uint32_t),
       .hw_backed = kHardenedBoolFalse,
@@ -251,66 +236,54 @@ status_t aes_gcm_testutils_decrypt(const aes_gcm_test_t *test,
   };
 
   // Set the checksum.
-  key.checksum = integrity_blinded_checksum(&key);
+  key.checksum = otcrypto_integrity_blinded_checksum(&key);
 
   size_t iv_num_words =
       (test->iv_len + sizeof(uint32_t) - 1) / sizeof(uint32_t);
   uint32_t iv_data[iv_num_words];
   memcpy(iv_data, test->iv, test->iv_len);
-  otcrypto_const_word32_buf_t iv = {
-      .data = iv_data,
-      .len = iv_num_words,
-  };
-  otcrypto_const_byte_buf_t ciphertext = {
-      .data = test->ciphertext,
-      .len = test->plaintext_len,
-  };
-  otcrypto_const_byte_buf_t aad = {
-      .data = test->aad,
-      .len = test->aad_len,
-  };
+  otcrypto_const_word32_buf_t iv =
+      OTCRYPTO_MAKE_BUF(otcrypto_const_word32_buf_t, iv_data, iv_num_words);
+  otcrypto_const_byte_buf_t ciphertext = OTCRYPTO_MAKE_BUF(
+      otcrypto_const_byte_buf_t, test->ciphertext, test->plaintext_len);
+  otcrypto_const_byte_buf_t aad =
+      OTCRYPTO_MAKE_BUF(otcrypto_const_byte_buf_t, test->aad, test->aad_len);
   size_t tag_num_words =
       (test->tag_len + sizeof(uint32_t) - 1) / sizeof(uint32_t);
   uint32_t tag_data[tag_num_words];
   memcpy(tag_data, test->tag, test->tag_len);
-  otcrypto_const_word32_buf_t tag = {
-      .data = tag_data,
-      .len = tag_num_words,
-  };
+  otcrypto_const_word32_buf_t tag =
+      OTCRYPTO_MAKE_BUF(otcrypto_const_word32_buf_t, tag_data, tag_num_words);
 
   size_t ciphertext_blocks = ceil_div(test->plaintext_len, kAesBlockNumBytes);
   uint8_t actual_plaintext_data[ciphertext_blocks * kAesBlockNumBytes];
-  otcrypto_byte_buf_t actual_plaintext = {
-      .data = actual_plaintext_data,
-      .len = test->plaintext_len,
-  };
+  otcrypto_byte_buf_t actual_plaintext = OTCRYPTO_MAKE_BUF(
+      otcrypto_byte_buf_t, actual_plaintext_data, test->plaintext_len);
 
   otcrypto_aes_gcm_tag_len_t tag_len = get_tag_length(test->tag_len);
 
   if (streaming) {
     otcrypto_aes_gcm_context_t ctx;
     uint64_t t_start = profile_start();
-    TRY(otcrypto_aes_gcm_decrypt_init(&key, iv, &ctx));
+    TRY(otcrypto_aes_gcm_decrypt_init(&key, &iv, &ctx));
     size_t plaintext_bytes_written;
     TRY(stream_gcm(&ctx, aad, ciphertext, actual_plaintext,
                    &plaintext_bytes_written));
-    otcrypto_byte_buf_t final_plaintext = {
-        .data = actual_plaintext.data + plaintext_bytes_written,
-        .len = actual_plaintext.len - plaintext_bytes_written,
-    };
+    otcrypto_byte_buf_t final_plaintext = OTCRYPTO_MAKE_BUF(
+        otcrypto_byte_buf_t, actual_plaintext.data + plaintext_bytes_written,
+        actual_plaintext.len - plaintext_bytes_written);
     size_t final_plaintext_bytes_written;
-    TRY(otcrypto_aes_gcm_decrypt_final(&ctx, tag, tag_len, final_plaintext,
+    TRY(otcrypto_aes_gcm_decrypt_final(&ctx, &tag, tag_len, &final_plaintext,
                                        &final_plaintext_bytes_written,
                                        tag_valid));
     *cycles = profile_end(t_start);
   } else {
     // Call decrypt() with a cycle count timing profile.
-    icache_invalidate();
     uint64_t t_start = profile_start();
-    otcrypto_status_t err = otcrypto_aes_gcm_decrypt(
-        &key, ciphertext, iv, aad, tag_len, tag, actual_plaintext, tag_valid);
+    otcrypto_status_t err =
+        otcrypto_aes_gcm_decrypt(&key, &ciphertext, &iv, &aad, tag_len, &tag,
+                                 &actual_plaintext, tag_valid);
     *cycles = profile_end(t_start);
-    icache_invalidate();
 
     // Check for errors.
     TRY(err);

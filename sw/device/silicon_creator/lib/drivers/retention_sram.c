@@ -12,7 +12,12 @@
 
 #include "hw/top/sram_ctrl_regs.h"  // Generated.
 
-static const dt_sram_ctrl_t kSramCtrlDt = kDtSramCtrlRetAon;
+static const dt_sram_ctrl_t kSramCtrlDt = kDtSramCtrlRet;
+
+retention_sram_t *retention_sram_get(void) {
+  return (retention_sram_t *)dt_sram_ctrl_memory_base(kSramCtrlDt,
+                                                      kDtSramCtrlMemoryRam);
+}
 
 void retention_sram_clear(void) {
   memset(retention_sram_get(), 0, sizeof(retention_sram_t));

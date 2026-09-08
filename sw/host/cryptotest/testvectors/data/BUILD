@@ -137,6 +137,42 @@ run_binary(
     tool = "//sw/host/cryptotest/testvectors/parsers:wycheproof_ed25519_parser",
 )
 
+run_binary(
+    name = "wycheproof_ed25519_sign_json",
+    srcs = [
+        "//sw/host/cryptotest/testvectors/data/schemas:ed25519_schema.json",
+        "@wycheproof//testvectors_v1:ed25519_test.json",
+    ],
+    outs = [":wycheproof_ed25519_sign.json"],
+    args = [
+        "--src",
+        "$(location @wycheproof//testvectors_v1:ed25519_test.json)",
+        "--dst",
+        "$(location :wycheproof_ed25519_sign.json)",
+        "--schema",
+        "$(location //sw/host/cryptotest/testvectors/data/schemas:ed25519_schema.json)",
+    ],
+    tool = "//sw/host/cryptotest/testvectors/parsers:wycheproof_ed25519_parser",
+)
+
+run_binary(
+    name = "wycheproof_x25519_json",
+    srcs = [
+        "//sw/host/cryptotest/testvectors/data/schemas:x25519_schema.json",
+        "@wycheproof//testvectors_v1:x25519_test.json",
+    ],
+    outs = [":wycheproof_x25519.json"],
+    args = [
+        "--src",
+        "$(location @wycheproof//testvectors_v1:x25519_test.json)",
+        "--dst",
+        "$(location :wycheproof_x25519.json)",
+        "--schema",
+        "$(location //sw/host/cryptotest/testvectors/data/schemas:x25519_schema.json)",
+    ],
+    tool = "//sw/host/cryptotest/testvectors/parsers:wycheproof_x25519_parser",
+)
+
 # Number of tests per configuration (e.g. Verify P-256 SHA-256)
 ECDSA_RANDOM_COUNT = 128
 
@@ -729,6 +765,91 @@ WYCHEPROOF_RSA_PSS_SUFFIXES = {
     for wy_suffix in suffixes
 ]
 
+# OAEP source files that carry private keys (e = 65537) reused as sign
+# test vectors.  Each entry maps an OAEP suffix to the hash name used in
+# the output file name; the parser reads group["sha"] for the actual alg.
+WYCHEPROOF_RSA_OAEP_SIGN_SOURCES = {
+    2048: [
+        ("sha256_mgf1sha256", "sha256", None),
+        ("sha384_mgf1sha384", "sha384", None),
+        ("sha512_mgf1sha512", "sha512", None),
+        ("sha256_mgf1sha256", "sha3_256", "sha3-256"),
+        ("sha256_mgf1sha256", "sha3_384", "sha3-384"),
+        ("sha256_mgf1sha256", "sha3_512", "sha3-512"),
+    ],
+    3072: [
+        ("sha256_mgf1sha256", "sha256", None),
+        ("sha512_mgf1sha512", "sha512", None),
+        ("sha256_mgf1sha256", "sha3_256", "sha3-256"),
+        ("sha256_mgf1sha256", "sha3_384", "sha3-384"),
+        ("sha256_mgf1sha256", "sha3_512", "sha3-512"),
+    ],
+    4096: [
+        ("sha256_mgf1sha256", "sha256", None),
+        ("sha512_mgf1sha512", "sha512", None),
+        ("sha256_mgf1sha256", "sha3_256", "sha3-256"),
+        ("sha256_mgf1sha256", "sha3_384", "sha3-384"),
+        ("sha256_mgf1sha256", "sha3_512", "sha3-512"),
+    ],
+}
+
+[
+    run_binary(
+        name = "wycheproof_rsa_{}_{}_{}_sign_json".format(
+            padding_mode,
+            security_level,
+            hash_suffix,
+        ),
+        srcs = [
+            "@wycheproof//testvectors_v1:rsa_oaep_{}_{}_test.json".format(
+                security_level,
+                oaep_suffix,
+            ),
+            "//sw/host/cryptotest/testvectors/data/schemas:rsa_schema.json",
+        ],
+        outs = [":wycheproof_rsa_{}_{}_{}_sign.json".format(
+            padding_mode,
+            security_level,
+            hash_suffix,
+        )],
+        args = [
+            "--src",
+            "$(location @wycheproof//testvectors_v1:rsa_oaep_{}_{}_test.json)".format(
+                security_level,
+                oaep_suffix,
+            ),
+            "--dst",
+            "$(location :wycheproof_rsa_{}_{}_{}_sign.json)".format(
+                padding_mode,
+                security_level,
+                hash_suffix,
+            ),
+            "--schema",
+            "$(location //sw/host/cryptotest/testvectors/data/schemas:rsa_schema.json)",
+            "--operation",
+            "sign",
+            "--padding",
+            padding_mode,
+            "--security_level",
+            str(security_level),
+        ] + ([
+            "--hash",
+            hash_override,
+        ] if hash_override else []),
+        tool = "//sw/host/cryptotest/testvectors/parsers:wycheproof_rsa_parser",
+    )
+    for security_level in [
+        2048,
+        3072,
+        4096,
+    ]
+    for oaep_suffix, hash_suffix, hash_override in WYCHEPROOF_RSA_OAEP_SIGN_SOURCES[security_level]
+    for padding_mode in [
+        "pkcs1_1.5",
+        "pss",
+    ]
+]
+
 [
     run_binary(
         name = cryptotest_name,
@@ -842,3 +963,75 @@ NIST_CAVP_AES_KAT_TESTVECTORS = [
     )
     for testname, rsp_filename, mode, size in NIST_CAVP_AES_KAT_TESTVECTORS
 ]
+
+run_binary(
+    name = "wycheproof_mldsa_87_sign_json",
+    srcs = [
+        "//sw/host/cryptotest/testvectors/data/schemas:mldsa_schema.json",
+        "@wycheproof//testvectors_v1:mldsa_87_sign_seed_test.json",
+    ],
+    outs = [":wycheproof_mldsa_87_sign.json"],
+    args = [
+        "--src",
+        "$(location @wycheproof//testvectors_v1:mldsa_87_sign_seed_test.json)",
+        "--dst",
+        "$(location :wycheproof_mldsa_87_sign.json)",
+        "--schema",
+        "$(location //sw/host/cryptotest/testvectors/data/schemas:mldsa_schema.json)",
+    ],
+    tool = "//sw/host/cryptotest/testvectors/parsers:wycheproof_mldsa_parser",
+)
+
+run_binary(
+    name = "wycheproof_mldsa_87_verify_json",
+    srcs = [
+        "//sw/host/cryptotest/testvectors/data/schemas:mldsa_schema.json",
+        "@wycheproof//testvectors_v1:mldsa_87_verify_test.json",
+    ],
+    outs = [":wycheproof_mldsa_87_verify.json"],
+    args = [
+        "--src",
+        "$(location @wycheproof//testvectors_v1:mldsa_87_verify_test.json)",
+        "--dst",
+        "$(location :wycheproof_mldsa_87_verify.json)",
+        "--schema",
+        "$(location //sw/host/cryptotest/testvectors/data/schemas:mldsa_schema.json)",
+    ],
+    tool = "//sw/host/cryptotest/testvectors/parsers:wycheproof_mldsa_parser",
+)
+
+run_binary(
+    name = "wycheproof_mlkem_1024_encaps_json",
+    srcs = [
+        "//sw/host/cryptotest/testvectors/data/schemas:mlkem_schema.json",
+        "@wycheproof//testvectors_v1:mlkem_1024_encaps_test.json",
+    ],
+    outs = [":wycheproof_mlkem_1024_encaps.json"],
+    args = [
+        "--src",
+        "$(location @wycheproof//testvectors_v1:mlkem_1024_encaps_test.json)",
+        "--dst",
+        "$(location :wycheproof_mlkem_1024_encaps.json)",
+        "--schema",
+        "$(location //sw/host/cryptotest/testvectors/data/schemas:mlkem_schema.json)",
+    ],
+    tool = "//sw/host/cryptotest/testvectors/parsers:wycheproof_mlkem_parser",
+)
+
+run_binary(
+    name = "wycheproof_mlkem_1024_decaps_json",
+    srcs = [
+        "//sw/host/cryptotest/testvectors/data/schemas:mlkem_schema.json",
+        "@wycheproof//testvectors_v1:mlkem_1024_semi_expanded_decaps_test.json",
+    ],
+    outs = [":wycheproof_mlkem_1024_decaps.json"],
+    args = [
+        "--src",
+        "$(location @wycheproof//testvectors_v1:mlkem_1024_semi_expanded_decaps_test.json)",
+        "--dst",
+        "$(location :wycheproof_mlkem_1024_decaps.json)",
+        "--schema",
+        "$(location //sw/host/cryptotest/testvectors/data/schemas:mlkem_schema.json)",
+    ],
+    tool = "//sw/host/cryptotest/testvectors/parsers:wycheproof_mlkem_parser",
+)

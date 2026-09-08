@@ -3,7 +3,12 @@
 # SPDX-License-Identifier: Apache-2.0
 
 load("//rules:const.bzl", "CONST", "hex")
-load("//rules:manifest.bzl", "manifest")
+load(
+    "//rules:manifest.bzl",
+    "integrator_specific_firmware_binding",
+    "manifest",
+    "product_expr",
+)
 load(
     "//rules:otp.bzl",
     "STD_OTP_OVERLAYS",
@@ -149,7 +154,6 @@ _POSITIONS = {
         srcs = [":boot_test"],
         exec_env = {
             "//hw/top_earlgrey:fpga_cw340_rom_ext": None,
-            "//hw/top_earlgrey:fpga_cw310_rom_ext": None,
         },
         fpga = fpga_params(
             assemble = "{romext}@{romext_offset} {firmware}@{owner_offset}",
@@ -192,7 +196,6 @@ opentitan_test(
     srcs = [":boot_test"],
     exec_env = {
         "//hw/top_earlgrey:fpga_cw340_rom_ext": None,
-        "//hw/top_earlgrey:fpga_cw310_rom_ext": None,
     },
     fpga = fpga_params(
         exit_failure = "PASS|FAIL|FAULT|BFV:.{8}",
@@ -209,39 +212,86 @@ opentitan_test(
     ],
 )
 
+manifest(d = {
+    "name": "bad_spx_manifest",
+    "address_translation": hex(CONST.HARDENED_FALSE),
+    "identifier": hex(CONST.OWNER),
+    "visibility": ["//visibility:public"],
+    "extensions": [
+        "spx_key",
+        "",
+        "secver_write",
+        "isfb",
+        "isfb_erase",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "spx_signature",
+    ],
+})
+
+opentitan_test(
+    name = "bad_spx_manifest_test",
+    srcs = [":boot_test"],
+    ecdsa_key = {"//sw/device/silicon_creator/lib/ownership/keys/fake:ecdsa_keyset": "app_prod_0"},
+    exec_env = {
+        "//hw/top_earlgrey:fpga_cw340_rom_ext": None,
+    },
+    fpga = fpga_params(
+        exit_failure = "PASS|FAIL|FAULT|BFV:.{8}",
+        # Because our bad manifest placed spx_signature in a wrong slot, we
+        # should expect kErrorManifestBadExtension from the ROM_EXT.
+        exit_success = "BFV:044d410d",
+    ),
+    manifest = ":bad_spx_manifest",
+    spx_key = {"//sw/device/silicon_creator/lib/ownership/keys/fake:spx_keyset": "app_prod_0"},
+    deps = [
+        "//sw/device/lib/base:status",
+        "//sw/device/lib/testing/test_framework:ottf_main",
+        "//sw/device/silicon_creator/lib:boot_log",
+        "//sw/device/silicon_creator/lib/drivers:retention_sram",
+    ],
+)
+
 _KEYS = {
     "dev": {
-        "ecdsa": {"//sw/device/silicon_creator/lib/ownership/keys/fake:app_dev_ecdsa": "dev_key_0"},
+        "ecdsa": {"//sw/device/silicon_creator/lib/ownership/keys/fake:ecdsa_keyset": "app_dev_0"},
         "spx": {},
         "exit_success": DEFAULT_TEST_SUCCESS_MSG,
         "exit_failure": DEFAULT_TEST_FAILURE_MSG,
     },
     "dev_hybrid_spx_prehashed": {
-        "ecdsa": {"//sw/device/silicon_creator/lib/ownership/keys/fake:app_dev_ecdsa": "dev_key_0"},
-        "spx": {"//sw/device/silicon_creator/lib/ownership/keys/fake:app_dev_spx": "dev_key_0"},
+        "ecdsa": {"//sw/device/silicon_creator/lib/ownership/keys/fake:ecdsa_keyset": "app_dev_0"},
+        "spx": {"//sw/device/silicon_creator/lib/ownership/keys/fake:spx_keyset": "app_dev_0"},
         "exit_success": DEFAULT_TEST_SUCCESS_MSG,
         "exit_failure": DEFAULT_TEST_FAILURE_MSG,
     },
     "prod": {
-        "ecdsa": {"//sw/device/silicon_creator/lib/ownership/keys/fake:app_prod_ecdsa": "prod_key_0"},
+        "ecdsa": {"//sw/device/silicon_creator/lib/ownership/keys/fake:ecdsa_keyset": "app_prod_0"},
         "spx": {},
         "exit_success": DEFAULT_TEST_SUCCESS_MSG,
         "exit_failure": DEFAULT_TEST_FAILURE_MSG,
     },
     "prod_hybrid_spx_pure": {
-        "ecdsa": {"//sw/device/silicon_creator/lib/ownership/keys/fake:app_prod_ecdsa": "prod_key_0"},
-        "spx": {"//sw/device/silicon_creator/lib/ownership/keys/fake:app_prod_spx": "prod_key_0"},
+        "ecdsa": {"//sw/device/silicon_creator/lib/ownership/keys/fake:ecdsa_keyset": "app_prod_0"},
+        "spx": {"//sw/device/silicon_creator/lib/ownership/keys/fake:spx_keyset": "app_prod_0"},
         "exit_success": DEFAULT_TEST_SUCCESS_MSG,
         "exit_failure": DEFAULT_TEST_FAILURE_MSG,
     },
     "test": {
-        "ecdsa": {"//sw/device/silicon_creator/lib/ownership/keys/fake:app_test_ecdsa": "test_key_0"},
+        "ecdsa": {"//sw/device/silicon_creator/lib/ownership/keys/fake:ecdsa_keyset": "app_test_0"},
         "spx": {},
         "exit_success": DEFAULT_TEST_SUCCESS_MSG,
         "exit_failure": DEFAULT_TEST_FAILURE_MSG,
     },
     "unauthorized": {
-        "ecdsa": {"//sw/device/silicon_creator/lib/ownership/keys/fake:app_unauthorized_ecdsa": "unauthorized_key_0"},
+        "ecdsa": {"//sw/device/silicon_creator/lib/ownership/keys/fake:ecdsa_keyset": "app_unauthorized_0"},
         "spx": {},
         "exit_success": DEFAULT_TEST_FAILURE_MSG,
         "exit_failure": DEFAULT_TEST_SUCCESS_MSG,
@@ -255,7 +305,6 @@ _KEYS = {
         ecdsa_key = keyinfo["ecdsa"],
         exec_env = {
             "//hw/top_earlgrey:fpga_cw340_rom_ext": None,
-            "//hw/top_earlgrey:fpga_cw310_rom_ext": None,
         },
         fpga = fpga_params(
             exit_failure = keyinfo["exit_failure"],
@@ -275,4 +324,40 @@ _KEYS = {
 test_suite(
     name = "keys",
     tests = ["key_{}".format(name) for name in _KEYS],
+)
+
+manifest(d = {
+    "name": "isfb_manifest",
+    "address_translation": hex(CONST.HARDENED_FALSE),
+    "identifier": hex(CONST.OWNER),
+    "visibility": ["//visibility:public"],
+    "integrator_specific_firmware_binding": integrator_specific_firmware_binding(
+        name = "isfb",
+        product_exprs = [
+            product_expr(
+                name = "none",
+                mask = "0xFFFFFFFF",
+                value = "0xFFFFFFFF",
+            ),
+        ],
+        strike_mask = "0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF",
+    ),
+})
+
+opentitan_test(
+    name = "isfb_boot_test",
+    srcs = [":boot_test"],
+    ecdsa_key = {"//sw/device/silicon_creator/lib/ownership/keys/fake:ecdsa_keyset": "app_prod_0"},
+    exec_env = {
+        "//hw/top_earlgrey:fpga_cw340_rom_ext": None,
+    },
+    fpga = fpga_params(),
+    manifest = ":isfb_manifest",
+    spx_key = {"//sw/device/silicon_creator/lib/ownership/keys/fake:spx_keyset": "app_prod_0"},
+    deps = [
+        "//sw/device/lib/base:status",
+        "//sw/device/lib/testing/test_framework:ottf_main",
+        "//sw/device/silicon_creator/lib:boot_log",
+        "//sw/device/silicon_creator/lib/drivers:retention_sram",
+    ],
 )

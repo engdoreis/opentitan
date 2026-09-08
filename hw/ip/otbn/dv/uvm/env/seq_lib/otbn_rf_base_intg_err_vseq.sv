@@ -99,11 +99,10 @@ class otbn_rf_base_intg_err_vseq extends otbn_base_vseq;
   endtask
 
   task body();
-    uvm_reg_data_t             act_val;
     string                     elf_path;
     bit [BaseWordsPerWLEN-1:0] corrupted_words;
     bit [ExtWLEN-1:0]          new_data;
-    otbn_pkg::err_bits_t err_bits;
+    err_bits_reg_t             err_bits;
 
     elf_path = pick_elf_path();
     `uvm_info(`gfn, $sformatf("Loading OTBN binary from `%0s'", elf_path), UVM_LOW)
@@ -115,7 +114,16 @@ class otbn_rf_base_intg_err_vseq extends otbn_base_vseq;
 
     inject_errors();
 
+    // Due to the delayed escalation, the faulted instruction still commits but with wrong values.
+    // We must signal to the ISS that the result can be off.
+    cfg.model_agent_cfg.vif.tolerate_result_mismatch(1);
+
+    // Injecting the error can lead to SW errors which escalate immediately.
+    handle_sw_error_during_delayed_hw_escalation(); // This resumes on the next clk posedge
+
     // Notify the model about the integrity violation error.
+    // The HW escalation must happen on the rising edge. Otherwise the model is informed too late.
+    `uvm_info(`gfn, $sformatf("Send HW escalation to model"), UVM_LOW)
     err_bits = '{reg_intg_violation: 1'b1, default: 1'b0};
     cfg.model_agent_cfg.vif.send_err_escalation(err_bits);
 
@@ -127,24 +135,7 @@ class otbn_rf_base_intg_err_vseq extends otbn_base_vseq;
 
     // We should now be in a locked state after the secure wipe.
     `DV_CHECK_FATAL(cfg.model_agent_cfg.vif.status == otbn_pkg::StatusLocked);
-    // The scoreboard will have seen the transition to locked state and inferred that it should
-    // see a fatal alert. However, it doesn't really have a way to ensure that we keep generating
-    // them.  Wait for 3 fatal alerts and also read STATUS, ERR_BITS and FATAL_ALERT_CAUSE in
-    // parallel.
-    fork
-      begin
-        csr_utils_pkg::csr_rd(.ptr(ral.status), .value(act_val));
-        csr_utils_pkg::csr_rd(.ptr(ral.err_bits), .value(act_val));
-        csr_utils_pkg::csr_rd(.ptr(ral.fatal_alert_cause), .value(act_val));
-      end
-      begin
-        repeat (3) wait_alert_trigger("fatal", .wait_complete(1));
-      end
-    join
-
-    // Reset and finish sequence.
-    do_apply_reset = 1'b1;
-    dut_init("HARD");
+    reset_if_locked();
   endtask
 
 endclass

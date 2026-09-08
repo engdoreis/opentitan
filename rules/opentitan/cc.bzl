@@ -9,18 +9,20 @@ load(
     _OPENTITAN_PLATFORM = "OPENTITAN_PLATFORM",
     _opentitan_transition = "opentitan_transition",
 )
-load("@lowrisc_opentitan//rules:signing.bzl", "sign_binary")
-load("@lowrisc_opentitan//rules/opentitan:exec_env.bzl", "ExecEnvInfo")
 load(
     "@lowrisc_opentitan//rules/opentitan:transform.bzl",
+    "convert_to_vmem",
     "obj_disassemble",
     "obj_transform",
 )
+load("@rules_cc//cc:action_names.bzl", "CPP_LINK_STATIC_LIBRARY_ACTION_NAME", "OBJ_COPY_ACTION_NAME")
+load("@opentitan_signing_infra//signing:defs.bzl", "sign_binary")
+load("@lowrisc_opentitan//rules/opentitan:exec_env.bzl", "ExecEnvInfo")
 load("@lowrisc_opentitan//rules/opentitan:util.bzl", "get_fallback", "get_override")
 load("@rules_cc//cc:find_cc_toolchain.bzl", "find_cc_toolchain")
 load("//rules/opentitan:toolchain.bzl", "LOCALTOOLS_TOOLCHAIN")
 load("//rules/opentitan:util.bzl", "assemble_for_test", "recursive_format")
-load("//rules/opentitan:providers.bzl", "OpenTitanBinaryInfo")
+load("//rules/opentitan:providers.bzl", "OpenTitanBinaryInfo", "OpenTitanTestInfo")
 
 def _expand(ctx, name, items):
     """Perform location and make_variable expansion on a list of items.
@@ -197,6 +199,7 @@ def _build_binary(ctx, exec_env, name, deps, kind):
     binary = obj_transform(
         ctx,
         name = name,
+        strip_llvm_prf_cnts = True,
         suffix = "bin",
         format = "binary",
         src = elf,
@@ -220,7 +223,6 @@ def _build_binary(ctx, exec_env, name, deps, kind):
             rsa_key = rsa_key,
             spx_key = spx_key,
             manifest = manifest,
-            # FIXME: will need to supply hsmtool when we add NitroKey signing.
         )
     else:
         signed = {}
@@ -243,6 +245,270 @@ def _build_binary(ctx, exec_env, name, deps, kind):
     )
     return provides, signed
 
+def _opentitan_binary_blob(ctx):
+    """
+    Creates a position-independent relocatable static library.
+
+    1. Generate a partial linker script locking code, strings (.srodata), and
+       reserving a 48-byte gap at the end of the block for the hash.
+    2. Generate a GCC Response File (@file) with '-Wl,-u,func' to act as GC roots.
+    3. Partial link (-r) all dependencies into a single relocatable.o, enforcing
+       --no-relax to prevent asymmetric instruction compression.
+    4. Perform a dry-run link into an .elf using the static linker script to
+       calculate exact PC-relative math (auipc offsets).
+    5. Extract the .bin from the .elf, strip the 48-byte trailing gap, compute
+       the SHA-384 hash on the pure code, and fuse the hash back onto the end.
+    6. Inject the fused section back into the relocatable.o, strip its relocation
+       tables (preventing double-patching corruption), rename it to .text for
+       proper flash placement, and localize internal dependencies (e.g., memcpy).
+    7. Archive the final, hashed relocatable.o into a static library (.a).
+    """
+    name_relocatable_o = ctx.attr.name + "_relocatable.o"
+    name_elf = ctx.attr.name + ".elf"
+    name_bin = ctx.attr.name + ".bin"
+    name_sha = ctx.attr.name + ".sha384"
+    name_final_o = ctx.attr.name + "_final.o"
+    name_library = ctx.attr.name + ".a"
+
+    deps_blob = ctx.attr.deps_blob
+    cc_toolchain = find_cc_toolchain(ctx)
+    template_file = ctx.file._linker_script_template
+
+    features = cc_common.configure_features(
+        ctx = ctx,
+        cc_toolchain = cc_toolchain,
+        requested_features = ctx.features,
+        unsupported_features = ctx.disabled_features,
+    )
+
+    ar_tool = cc_common.get_tool_for_action(
+        feature_configuration = features,
+        action_name = CPP_LINK_STATIC_LIBRARY_ACTION_NAME,
+    )
+    objcopy_tool = cc_common.get_tool_for_action(
+        feature_configuration = features,
+        action_name = OBJ_COPY_ACTION_NAME,
+    )
+
+    # Generate partial linker script
+    #
+    # If `.text.libotcrypto` and `.srodata` are left as separate, floating sections,
+    # the application linker has the freedom to insert external data between them.
+    # If the physical distance between the code and the data increases, the linker will silently
+    # rewrite the `auipc` instruction bytes to point to the new, longer distance which corrupts the FIPS hash.
+    #
+    # We deal with this by forcing `*(.text*)`, `*(.rodata*)`, and `*(.srodata*)` into a single,
+    # contiguous section.
+    partial_script = ctx.file._partial_linker_script
+
+    # Generate garbage collection roots
+    gc_roots_rsp = None
+    if len(ctx.files.config) == 1:
+        gc_roots_rsp = ctx.actions.declare_file(ctx.attr.name + "_gc_roots.rsp")
+        ctx.actions.run_shell(
+            inputs = [ctx.files.config[0]],
+            outputs = [gc_roots_rsp],
+            # Tell the linker not to remove the functions present in the config file by claiming each function as undefined (-u).
+            command = "awk 'NF {{print \"-Wl,-u,\" $$1}}' < {} > {}".format(
+                ctx.files.config[0].path,
+                gc_roots_rsp.path,
+            ),
+        )
+
+    # Partial link (ld -r)
+    linking_contexts = [dep[CcInfo].linking_context for dep in deps_blob]
+    partial_linkopts = [
+        "-nostdlib",
+        "-Wl,-r",
+        "-Wl,-T,{}".format(partial_script.path),
+        "-Wl,--no-relax",
+    ] + _expand(ctx, "linkopts", ctx.attr.linkopts or [])
+
+    partial_inputs = [partial_script]
+
+    if gc_roots_rsp != None:
+        partial_linkopts.append("-Wl,--gc-sections")
+        partial_linkopts.append("@{}".format(gc_roots_rsp.path))
+        partial_inputs.append(gc_roots_rsp)
+    else:
+        partial_linkopts.append("-Wl,--whole-archive")
+        partial_linkopts.append("-Wl,--no-gc-sections")
+
+    partial_linker_input = cc_common.create_linker_input(
+        owner = ctx.label,
+        additional_inputs = depset(partial_inputs),
+    )
+    linking_contexts.append(cc_common.create_linking_context(
+        linker_inputs = depset([partial_linker_input]),
+    ))
+
+    # Partial link (*.o -> relocatable .o)
+    partial_linking_outputs = cc_common.link(
+        name = name_relocatable_o,
+        actions = ctx.actions,
+        output_type = "executable",
+        feature_configuration = features,
+        cc_toolchain = cc_toolchain,
+        linking_contexts = linking_contexts,
+        user_link_flags = partial_linkopts,
+    )
+    relocatable_o = partial_linking_outputs.executable
+
+    validation_file = ctx.actions.declare_file(ctx.attr.name + "_sym_check.passed")
+    if len(ctx.files.config) == 1:
+        ctx.actions.run_shell(
+            inputs = [relocatable_o, ctx.files.config[0]],
+            outputs = [validation_file],
+            # Use nm to list undefined symbols (' U '), then check if any exist in the config
+            command = """
+            UND_SYMBOLS=$(nm -u {obj} | awk '{{print $2}}')
+            for sym in $(cat {config}); do
+                if echo "$UND_SYMBOLS" | grep -q "^${{sym}}$"; then
+                    echo "ERROR: Symbol '${{sym}}' from the config file is UNDEFINED in the compiled library!"
+                    exit 1
+                fi
+            done
+            touch {out}
+            """.format(
+                obj = relocatable_o.path,
+                config = ctx.files.config[0].path,
+                out = validation_file.path,
+            ),
+        )
+    else:
+        ctx.actions.write(validation_file, "No config, skipped.")
+
+    # Dry run link (.o -> .elf) using the static script for exact memory layout
+    elf_file = ctx.actions.declare_file(name_elf)
+    elf_inputs = [relocatable_o, template_file]
+    if gc_roots_rsp != None:
+        elf_inputs.append(gc_roots_rsp)
+
+    linker_input_relocatable = cc_common.create_linker_input(
+        owner = ctx.label,
+        additional_inputs = depset(elf_inputs),
+    )
+
+    elf_linkopts = [
+        "-static",
+        "-nostdlib",
+        relocatable_o.path,
+        "-Wl,--defsym=_rom_origin={}".format(ctx.attr.rom_origin),
+        "-Wl,-T,{}".format(template_file.path),
+        "-Wl,--no-relax",
+    ]
+    elf_linkopts.append("-Wl,--no-gc-sections")
+
+    elf_linking_outputs = cc_common.link(
+        name = name_elf,
+        actions = ctx.actions,
+        output_type = "executable",
+        feature_configuration = features,
+        cc_toolchain = cc_toolchain,
+        linking_contexts = [cc_common.create_linking_context(linker_inputs = depset([linker_input_relocatable]))],
+        user_link_flags = elf_linkopts,
+    )
+    elf_file = elf_linking_outputs.executable
+
+    # Extract binary (.elf -> .bin), hash it, and fuse them together
+    binary_file = ctx.actions.declare_file(name_bin)
+    ctx.actions.run(
+        outputs = [binary_file],
+        inputs = [elf_file],
+        executable = objcopy_tool,
+        arguments = ["-O", "binary", "--only-section=.text.libotcrypto", elf_file.path, binary_file.path],
+        use_default_shell_env = True,
+        tools = cc_toolchain.all_files,
+    )
+
+    # Compute Hash (.bin -> .sha384)
+    code_bin = ctx.actions.declare_file(ctx.attr.name + "_code.bin")
+    hash_file = ctx.actions.declare_file(name_sha)
+    fused_bin = ctx.actions.declare_file(ctx.attr.name + "_fused.bin")
+    ctx.actions.run_shell(
+        inputs = [binary_file],
+        outputs = [code_bin, hash_file, fused_bin],
+        command = """
+        head -c -48 {bin} > {code}
+        sha384sum {code} | awk '{{print $1}}' | xxd -r -p > {hash}
+        cat {code} {hash} > {fused}
+        """.format(
+            bin = binary_file.path,
+            code = code_bin.path,
+            hash = hash_file.path,
+            fused = fused_bin.path,
+        ),
+    )
+
+    # Inject the fused section
+    final_relocatable_o = ctx.actions.declare_file(name_final_o)
+
+    objcopy_args = [
+        # The injected binary already has its PC-relative math resolved.
+        # If we do not delete this to-do list, the final linker  will apply
+        # the math a second time, corrupting the bytes and the hash.
+        "--remove-section=.rela.text.libotcrypto",
+        "--remove-section=.rela.text",
+
+        # Overwrite the hollowed section with the fused binary.
+        "--update-section",
+        ".text.libotcrypto=" + fused_bin.path,
+    ]
+
+    inputs = [relocatable_o, fused_bin]
+    if len(ctx.files.config) == 1:
+        objcopy_args.append("--keep-global-symbols={}".format(ctx.files.config[0].path))
+        inputs.append(ctx.files.config[0])
+
+    objcopy_args.extend([
+        relocatable_o.path,
+        final_relocatable_o.path,
+    ])
+
+    ctx.actions.run(
+        outputs = [final_relocatable_o],
+        inputs = inputs,
+        executable = objcopy_tool,
+        arguments = objcopy_args,
+        use_default_shell_env = True,
+        tools = cc_toolchain.all_files,
+    )
+
+    # Create a library from it
+    library_file = ctx.actions.declare_file(name_library)
+    ctx.actions.run(
+        inputs = [final_relocatable_o, validation_file],
+        outputs = [library_file],
+        executable = ar_tool,
+        arguments = ["rcs", library_file.path, final_relocatable_o.path],
+        tools = cc_toolchain.all_files,
+    )
+
+    dis_file = obj_disassemble(ctx, name = ctx.attr.name, src = elf_file)
+
+    return [
+        DefaultInfo(files = depset([library_file, dis_file, elf_file])),
+        OutputGroupInfo(
+            elf_file = depset([elf_file]),
+            dis_file = depset([dis_file]),
+            linker_script = depset([template_file, partial_script]),
+        ),
+        CcInfo(
+            linking_context = cc_common.create_linking_context(
+                linker_inputs = depset([cc_common.create_linker_input(
+                    owner = ctx.label,
+                    libraries = depset([cc_common.create_library_to_link(
+                        actions = ctx.actions,
+                        feature_configuration = features,
+                        cc_toolchain = cc_toolchain,
+                        static_library = library_file,
+                        alwayslink = True,
+                    )]),
+                )]),
+            ),
+        ),
+    ]
+
 def _opentitan_binary(ctx):
     tc = ctx.toolchains[LOCALTOOLS_TOOLCHAIN]
 
@@ -251,10 +517,13 @@ def _opentitan_binary(ctx):
     groups = {}
     ot_bin_env_info = {}
     validations = []
+    runfiles = ctx.runfiles()
     for exec_env_target in ctx.attr.exec_env:
         exec_env = exec_env_target[ExecEnvInfo]
         name = _binary_name(ctx, exec_env)
         deps = ctx.attr.deps + exec_env.libs
+        for dep in deps:
+            runfiles = runfiles.merge(dep[DefaultInfo].default_runfiles)
 
         kind = ctx.attr.kind
         provides, signed = _build_binary(ctx, exec_env, name, deps, kind)
@@ -315,7 +584,7 @@ def _opentitan_binary(ctx):
     # Validation group.
     groups["_validation"] = depset(validations)
 
-    providers.append(DefaultInfo(files = depset(default_info)))
+    providers.append(DefaultInfo(files = depset(default_info), runfiles = runfiles))
     providers.append(OutputGroupInfo(**groups))
     providers.append(OpenTitanBinaryInfo(exec_env = ot_bin_env_info))
     return providers
@@ -386,9 +655,21 @@ common_binary_attrs = {
         default = "{name}_{exec_env}",
     ),
     "kind": attr.string(
-        doc = "Binary kind: flash, ram or rom",
+        doc = "Binary kind: flash, rram, ram or rom",
         default = "flash",
-        values = ["flash", "ram", "rom"],
+        values = ["flash", "rram", "ram", "rom"],
+    ),
+    "slot": attr.string(
+        doc = "Which firmware slot this binary occupies. Only relevant when kind == \"rram\": " +
+              "RRAM's scrambling tweak (and address infection) depend on the word's true " +
+              "absolute address in the (unified, slot-agnostic) RRAM data partition, but a " +
+              "slot's compiled image is always addressed starting at 0 (see " +
+              "gen-rram-img.py's --slot). Slot A starts at word address 0; slot B starts " +
+              "halfway through the data partition. \"virtual\" images are loaded via address " +
+              "translation rather than a fixed physical offset, so scrambling them is a build " +
+              "error - see scramble_rram().",
+        default = "a",
+        values = ["a", "b", "virtual"],
     ),
     # FIXME(cfrantz): This should come from the ExecEnvInfo provider, but
     # I was unable to make that work.  See the comment in `exec_env.bzl`.
@@ -416,7 +697,49 @@ common_binary_attrs = {
         default = {},
         doc = "Firmware slot spec to use in this environment",
     ),
+    "_check_initial_coverage": attr.label(
+        doc = "Tool to check the coverage counter initialization.",
+        default = "//util/coverage:check_initial_coverage",
+        executable = True,
+        cfg = "exec",
+    ),
 }
+
+opentitan_binary_blob = rv_rule(
+    implementation = _opentitan_binary_blob,
+    attrs = dict(common_binary_attrs.items() + {
+        "rom_origin": attr.string(
+            default = "0",
+            doc = "Base address for the dry-run link.",
+        ),
+        "config": attr.label(
+            default = None,
+            allow_single_file = True,
+            doc = "File containing the functions to be included into the blob",
+        ),
+        "deps_blob": attr.label_list(
+            providers = [CcInfo],
+            cfg = _transitive_feature_transition,
+            doc = "The list of other libraries to be for the creation of the binary blob.",
+        ),
+        "transitive_features": attr.string_list(
+            default = [],
+            doc = "Features to apply transitively to all dependencies.",
+        ),
+        "_linker_script_template": attr.label(
+            default = Label("//sw/device/lib/crypto/configs:otcrypto_blob.ld"),
+            allow_single_file = True,
+            doc = "Base linker script template used for appending EXTERN anchors.",
+        ),
+        "_partial_linker_script": attr.label(
+            default = "//sw/device/lib/crypto/configs:otcrypto_partial.ld",
+            allow_single_file = True,
+        ),
+        "_cc_toolchain": attr.label(default = Label("@bazel_tools//tools/cpp:current_cc_toolchain")),
+    }.items()),
+    fragments = ["cpp"],
+    toolchains = ["@rules_cc//cc:toolchain_type"],
+)
 
 opentitan_binary = rv_rule(
     implementation = _opentitan_binary,
@@ -436,25 +759,6 @@ opentitan_binary = rv_rule(
     toolchains = ["@rules_cc//cc:toolchain_type", LOCALTOOLS_TOOLCHAIN],
 )
 
-def _testing_bitstream_impl(settings, attr):
-    rom = attr.rom if attr.rom else "//hw/bitstream/universal:none"
-    otp = attr.otp if attr.otp else "//hw/bitstream/universal:none"
-    return {
-        "//hw/bitstream/universal:rom": rom,
-        "//hw/bitstream/universal:otp": otp,
-        "//hw/bitstream/universal:env": attr.exec_env,
-    }
-
-_testing_bitstream = transition(
-    implementation = _testing_bitstream_impl,
-    inputs = [],
-    outputs = [
-        "//hw/bitstream/universal:rom",
-        "//hw/bitstream/universal:otp",
-        "//hw/bitstream/universal:env",
-    ],
-)
-
 def _opentitan_test(ctx):
     exec_env = ctx.attr.exec_env[ExecEnvInfo]
 
@@ -472,10 +776,24 @@ def _opentitan_test(ctx):
         harness_runfiles = ctx.attr.test_harness[DefaultInfo].default_runfiles
     else:
         harness_runfiles = ctx.runfiles()
-    return DefaultInfo(
-        executable = executable,
-        runfiles = ctx.runfiles(files = runfiles).merge_all([harness_runfiles]),
-    )
+
+    if ctx.var.get("ot_coverage_enabled", "false") == "true":
+        coverage_runfiles = ctx.attr._collect_cc_coverage[DefaultInfo].default_runfiles
+    else:
+        coverage_runfiles = ctx.runfiles()
+
+    return [
+        DefaultInfo(
+            executable = executable,
+            runfiles = ctx.runfiles(files = runfiles).merge_all([harness_runfiles, coverage_runfiles]),
+        ),
+        OpenTitanTestInfo(
+            exec_env = exec_env,
+            # If no test suite is provided, use the test's own label as a test suite.
+            test_suite = ctx.attr.test_suite or str(ctx.label),
+            tags = ctx.attr.tags,
+        ),
+    ]
 
 opentitan_test = rv_rule(
     implementation = _opentitan_test,
@@ -507,7 +825,6 @@ opentitan_test = rv_rule(
         ),
         "bitstream": attr.label(
             allow_single_file = True,
-            cfg = _testing_bitstream,
             doc = "Bitstream override for this test",
         ),
         "post_test_harness": attr.label(
@@ -547,6 +864,17 @@ opentitan_test = rv_rule(
             executable = True,
             cfg = "exec",
         ),
+        "_lcov_merger": attr.label(
+            default = configuration_field(fragment = "coverage", name = "output_generator"),
+            executable = True,
+            cfg = "exec",
+        ),
+        "_collect_cc_coverage": attr.label(
+            default = "//util/coverage/collect_cc_coverage",
+            executable = True,
+            cfg = "exec",
+        ),
+        "test_suite": attr.string(doc = "Test suite to which this test belongs"),
     }.items()),
     fragments = ["cpp"],
     toolchains = ["@rules_cc//cc:toolchain_type", LOCALTOOLS_TOOLCHAIN],
@@ -565,9 +893,14 @@ def _opentitan_binary_assemble_impl(ctx):
         name = "{}_{}".format(ctx.attr.name, exec_env_name)
         spec = []
         input_bins = []
+        last_kind = None
         for binary, offset in ctx.attr.bins.items():
-            if binary[exec_env_provider].kind != "flash":
-                fail("Only flash binaries can be assembled.")
+            kind = binary[exec_env_provider].kind
+            if kind not in ("flash", "rram"):
+                fail("Only flash or rram binaries can be assembled, got {}".format(kind))
+            if last_kind != None and kind != last_kind:
+                fail("Cannot assemble binaries of mixed kinds: {} and {}".format(last_kind, kind))
+            last_kind = kind
             input_bins.append(binary[exec_env_provider].default)
             spec.append("{}@{}".format(binary[exec_env_provider].default.path, offset))
         action_param = {}
@@ -576,9 +909,26 @@ def _opentitan_binary_assemble_impl(ctx):
         spec = " ".join(spec)
         spec = recursive_format(spec, action_param)
         spec = spec.split(" ")
-        img = assemble_for_test(ctx, name, spec, input_bins, tc.tools.opentitantool)
-        result.append(exec_env_provider(default = img, kind = "flash"))
-        assembled_bins.append(img)
+
+        # Generate the multislot bin.
+        bin = assemble_for_test(ctx, name, spec, input_bins, tc.tools.opentitantool)
+
+        # Generate unscrambled VMEM files.
+        #
+        # Multi-slot binaries are currently only used for bootstrap operations,
+        # i.e., non-backdoor loaded sim environments and FPGA/silicon
+        # environments. Therefore we only need unscrambled VMEM files.
+        vmem_word_size = 128 if last_kind == "rram" else 64
+        vmem = convert_to_vmem(
+            ctx,
+            name = name,
+            src = bin,
+            word_size = vmem_word_size,
+        )
+
+        result.append(exec_env_provider(default = bin, kind = last_kind, vmem = vmem))
+        assembled_bins.append(bin)
+        assembled_bins.append(vmem)
         ot_bin_env_info[exec_env_provider] = env
     result.append(OpenTitanBinaryInfo(exec_env = ot_bin_env_info))
     return result + [DefaultInfo(files = depset(assembled_bins))]
@@ -611,6 +961,7 @@ def _exec_env_filegroup(ctx):
 
     result = []
     default_files = []
+    ot_bin_env_info = {}
     for k in files.keys():
         provider = exec_env[k][ExecEnvInfo].provider
         f = files[k].files.to_list()
@@ -620,7 +971,10 @@ def _exec_env_filegroup(ctx):
         # Return the exec_env's provider so this rule can be consumed by
         # opentitan_test rules.
         result.append(provider(default = f[0], kind = ctx.attr.kind))
+        ot_bin_env_info[provider] = exec_env[k][ExecEnvInfo]
         default_files.append(f[0])
+
+    result.append(OpenTitanBinaryInfo(exec_env = ot_bin_env_info))
 
     # Also return a DefaultInfo provider so this rule can be consumed by other
     # filegroup or packaging rules.

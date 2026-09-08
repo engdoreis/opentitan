@@ -949,7 +949,7 @@
       tests: ["chip_sw_pwrmgr_wdog_reset"]
     }
     {
-      name: chip_sw_pwrmgr_aon_power_glitch_reset
+      name: chip_sw_pwrmgr_power_glitch_reset
       desc: '''Verify the cold boot sequence through an AON power glitch.
 
 
@@ -1195,22 +1195,35 @@
     }
     {
       name: chip_sw_all_escalation_resets
-      desc: '''Verify escalation from all unit integrity errors.
+      desc: '''See escalations after alerts from arbitrary IPs.
 
-            Inject integrity errors in any unit that has a one-hot checker for CSR register
-            writes, and verify escalation is triggered. Allow escalation to go through reset.
-            Use the rstmgr alert info and the unit's fault CSRs to check the alert cause is right.
-            Each run of the test randomly chooses some one-hot checker for the error to be injected.
-            Keep state across resets in flash to check the expected interrupts and the right number
-            of resets occur.
-            - Verify the integrity error results in a regular interrupt.
-            - Verify the first escalation results in NMI serviced by the CPU.
-            - Verify the alert id in both these interrupts.
-            - Verify the unit's fault CSR correctly captured the fault kind.
-            - Verify any timer interrupts are disabled by escalation.
-            - Verify after the escalation reset all faults are cleared, and that the alert
-              info captured the correct alert.
-            - Check that no additional resets occur.
+            - Randomly choose an IP with a security countermeasure that can be triggered (probably
+              through a sec_cm interface) and will cause a fatal alert.
+
+            - When SW on the device is ready, trigger the countermeasure (unless it is triggered by
+              a fatal SW alert, in which case the SW does it).
+
+            - This should generate an interrupt (which the SW waits for). The SW then checks that
+              the expected interrupt was raised, then waits for another conventional interrupt
+              (which shouldn't appear).
+
+            - Instead of another conventional interrupt, we expect an NMI to be generated as part of
+              alert escalation. When that NMI arrives, SW checks that it was the expected NMI (not a
+              watchdog bark, because escalation should have disabled timer interrupts).
+
+            - We now expect there to be a reset, after which the SW can check that the expected
+              number of interrupts and NMI had been asserted and that the alert handler no longer
+              reports an alert cause (which should have been cleared by the reset).
+
+            The main check aim of this testpoint is to check that:
+
+            - A fatal alert will be reported correctly to Ibex.
+            - It is then escalated to an NMI, then a HW reset.
+            - After the reset, the alert is no longer being reported.
+
+            The test SW has several extra checks. For example, corrupting the retention SRAM should
+            cause it to block further access. If the sequence did this, the SW checks that access is
+            indeed blocked.
             '''
       stage: V2
       tests: ["chip_sw_all_escalation_resets"]
@@ -1543,6 +1556,38 @@
               "chip_sw_aes_enc_jitter_en"]
     }
     {
+      name: chip_sw_aes_gcm
+      desc: '''Verify the AES-GCM operation.
+
+            - Put the AES hardware IP block into the initialization phase of GCM.
+            - Write the initial key shares and the IV into CSRs (known combinations).
+            - Put the AES hardware IP block into the additional authenticated data (AAD) phase of
+              GCM.
+            - Write the first known AAD block into the input data CSRs.
+            - Write the second known AAD block into the input data CSRs.
+            - Put the AES hardware IP block into the encryption/decryption phase of GCM.
+            - Write the first known plaintext block into the input data CSRs.
+            - Retrieve the first ciphertext block from the output data CSRs.
+              - Repeat this procedure for three additional blocks.
+            - Check the retrieved ciphertext blocks against the expected ciphertext values.
+            - Put the AES hardware IP block into the tag phase of GCM.
+            - Write the AAD and plaintext lengths into the input data CSRs.
+            - Retrieve the generated authentication tag from the output data CSRs and compare it
+              against the expected tag.
+            - Repeat this whole procedure 3 more times but interrupt the processing at different
+              points in time by saving GHASH state, clearing state of the AES hardware IP block,
+              restoring the GHASH state and then resuming the processing.
+              - During the first repetition, the GHASH state is saved after the first AAD block.
+              - During the second repetition, the GASH state is saved after the first plaintext
+                block.
+              - During the last repetition, the GHASH state is saved after the first AAD block
+                and then again after the first plaintext block.
+            '''
+      stage: V2
+      tests: ["chip_sw_aes_enc",
+              "chip_sw_aes_enc_jitter_en"]
+    }
+    {
       name: chip_sw_aes_entropy
       desc: '''Verify the AES entropy input used by the internal PRNGs.
 
@@ -1668,7 +1713,7 @@
               "chip_sw_kmac_mode_kmac_jitter_en"]
     }
     {
-      name: chip_sw_kmac_app_keymgr
+      name: chip_sw_kmac_app_keymgr_dpe
       desc: '''Verify the keymgr interface to KMAC.
 
             - Configure the keymgr to start sending known message data to the KMAC.
@@ -2687,7 +2732,7 @@
             as well.
             '''
       stage: V2
-      tests: ["rom_keymgr_functest"]
+      tests: ["rom_keymgr_dpe_functest"]
     }
     {
       name: chip_sw_signed

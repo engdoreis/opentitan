@@ -139,15 +139,15 @@
                     size: "8"
                 }
                 {
-                    name: "CREATOR_SW_CFG_FLASH_DATA_DEFAULT_CFG",
+                    name: "CREATOR_SW_CFG_NVM_DATA_DEFAULT_CFG",
                     size: "4"
                 }
                 {
-                    name: "CREATOR_SW_CFG_FLASH_INFO_BOOT_DATA_CFG",
+                    name: "CREATOR_SW_CFG_NVM_INFO_BOOT_DATA_CFG",
                     size: "4"
                 }
                 {
-                    name: "CREATOR_SW_CFG_FLASH_HW_INFO_CFG_OVERRIDE",
+                    name: "CREATOR_SW_CFG_NVM_HW_INFO_CFG_OVERRIDE",
                     size: "4"
                 }
                 {
@@ -231,15 +231,23 @@
                     size: "4"
                 }
                 {
-                    name: "CREATOR_SW_CFG_RNG_ALERT_THRESHOLD",
+                    name: "CREATOR_SW_CFG_RNG_BOOT_ALERT_THRESHOLD",
                     size: "4"
                 }
                 {
-                    name: "CREATOR_SW_CFG_RNG_HEALTH_CONFIG_DIGEST",
+                    name: "CREATOR_SW_CFG_RNG_FIPS_ALERT_THRESHOLD",
                     size: "4"
                 }
                 {
-                    name: "CREATOR_SW_CFG_SRAM_KEY_RENEW_EN",
+                    name: "CREATOR_SW_CFG_RNG_BOOT_CONFIG_DIGEST",
+                    size: "4"
+                }
+                {
+                    name: "CREATOR_SW_CFG_RNG_FIPS_CONFIG_DIGEST",
+                    size: "4"
+                }
+                {
+                    name: "CREATOR_SW_CFG_SRAM_KEY_RENEW_AND_INIT_EN",
                     size: "4"
                 }
             ],

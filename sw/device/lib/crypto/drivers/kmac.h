@@ -16,7 +16,7 @@ extern "C" {
 #endif
 
 /**
- * The exposed costants to caller functions.
+ * The exposed constants to caller functions.
  */
 enum {
   // The total size of prefix registers (in bytes), after removing len encodings
@@ -55,7 +55,27 @@ typedef struct kmac_blinded_key {
   // Whether the key should be provided by keymgr through sideload port.
   // If `hw_backed` is true, `share0/1` pointers and `len` are ignored.
   hardened_bool_t hw_backed;
+  /**
+   * Checksum of this KMAC key structure.
+   */
+  uint32_t checksum;
 } kmac_blinded_key_t;
+
+/**
+ * A context struct maintained for streaming operations.
+ *
+ * TODO: Refine this once the save-and-restore feature has landed.
+ */
+typedef struct kmac_ctx {
+  // The KMAC operation (internal `kmac_operation_t` value).
+  uint32_t operation;
+  // The security strength (internal `kmac_security_str_t` value).
+  uint32_t security_str;
+  // Whether the squeezing phase has started (`hardened_bool_t` value).
+  uint32_t squeeze_started;
+  // Number of words already read from the current Keccak state block.
+  uint32_t squeeze_offset;
+} kmac_ctx_t;
 
 /**
  * Check whether given key length is valid for KMAC.
@@ -92,18 +112,28 @@ OT_WARN_UNUSED_RESULT
 status_t kmac_hwip_default_configure(void);
 
 /**
+ * Hardware wipe guard.
+ *
+ * Cleanup handler that wipes the internal state of the KMAC HWIP and returns
+ * it to the idle state so that it can be claimed for a new operation.
+ *
+ * @param guard Guard variable armed with `kHardenedBoolTrue` and disarmed with
+                `kHardenedBoolFalse.
+ */
+void kmac_wipe_guard(uint32_t *guard);
+
+/**
  * Compute SHA-3-224 in one-shot.
  *
  * The caller must ensure that there is at least 224 bits = 28 bytes of space
  * available at the location pointed to by `digest`.
  *
- * @param message The input message.
- * @param message_len The input message length in bytes.
+ * @param message The input message buffer.
  * @param[out] digest Output buffer for the result.
  * @return Error status.
  */
 OT_WARN_UNUSED_RESULT
-status_t kmac_sha3_224(const uint8_t *message, size_t message_len,
+status_t kmac_sha3_224(const otcrypto_const_byte_buf_t *message,
                        uint32_t *digest);
 
 /**
@@ -112,13 +142,12 @@ status_t kmac_sha3_224(const uint8_t *message, size_t message_len,
  * The caller must ensure that there is at least 256 bits = 32 bytes of space
  * available at the location pointed to by `digest`.
  *
- * @param message The input message.
- * @param message_len The input message length in bytes.
+ * @param message The input message buffer.
  * @param[out] digest Output buffer for the result.
  * @return Error status.
  */
 OT_WARN_UNUSED_RESULT
-status_t kmac_sha3_256(const uint8_t *message, size_t message_len,
+status_t kmac_sha3_256(const otcrypto_const_byte_buf_t *message,
                        uint32_t *digest);
 
 /**
@@ -127,13 +156,12 @@ status_t kmac_sha3_256(const uint8_t *message, size_t message_len,
  * The caller must ensure that there is at least 384 bits = 48 bytes of space
  * available at the location pointed to by `digest`.
  *
- * @param message The input message.
- * @param message_len The input message length in bytes.
+ * @param message The input message buffer.
  * @param[out] digest Output buffer for the result.
  * @return Error status.
  */
 OT_WARN_UNUSED_RESULT
-status_t kmac_sha3_384(const uint8_t *message, size_t message_len,
+status_t kmac_sha3_384(const otcrypto_const_byte_buf_t *message,
                        uint32_t *digest);
 
 /**
@@ -142,13 +170,12 @@ status_t kmac_sha3_384(const uint8_t *message, size_t message_len,
  * The caller must ensure that there is at least 512 bits = 64 bytes of space
  * available at the location pointed to by `digest`.
  *
- * @param message The input message.
- * @param message_len The input message length in bytes.
+ * @param message The input message buffer.
  * @param[out] digest Output buffer for the result.
  * @return Error status.
  */
 OT_WARN_UNUSED_RESULT
-status_t kmac_sha3_512(const uint8_t *message, size_t message_len,
+status_t kmac_sha3_512(const otcrypto_const_byte_buf_t *message,
                        uint32_t *digest);
 
 /**
@@ -157,14 +184,13 @@ status_t kmac_sha3_512(const uint8_t *message, size_t message_len,
  * The caller must ensure that `digest_len` words are allocated at the location
  * pointed to by `digest`.
  *
- * @param message The input message.
- * @param message_len The input message length in bytes.
+ * @param message The input message buffer.
  * @param[out] digest Output buffer for the result.
  * @param digest_len Requested digest length in 32-bit words.
  * @return Error status.
  */
 OT_WARN_UNUSED_RESULT
-status_t kmac_shake_128(const uint8_t *message, size_t message_len,
+status_t kmac_shake_128(const otcrypto_const_byte_buf_t *message,
                         uint32_t *digest, size_t digest_len);
 
 /**
@@ -173,14 +199,13 @@ status_t kmac_shake_128(const uint8_t *message, size_t message_len,
  * The caller must ensure that `digest_len` words are allocated at the location
  * pointed to by `digest`.
  *
- * @param message The input message.
- * @param message_len The input message length in bytes.
+ * @param message The input message buffer.
  * @param[out] digest Output buffer for the result.
  * @param digest_len Requested digest length in 32-bit words.
  * @return Error status.
  */
 OT_WARN_UNUSED_RESULT
-status_t kmac_shake_256(const uint8_t *message, size_t message_len,
+status_t kmac_shake_256(const otcrypto_const_byte_buf_t *message,
                         uint32_t *digest, size_t digest_len);
 
 /**
@@ -189,8 +214,7 @@ status_t kmac_shake_256(const uint8_t *message, size_t message_len,
  * The caller must ensure that `digest_len` words are allocated at the location
  * pointed to by `digest`.
  *
- * @param message The input message.
- * @param message_len The input message length in bytes.
+ * @param message The input message buffer.
  * @param func_name The function name.
  * @param func_name_len The function name length in bytes.
  * @param cust_str The customization string.
@@ -200,7 +224,7 @@ status_t kmac_shake_256(const uint8_t *message, size_t message_len,
  * @return Error status.
  */
 OT_WARN_UNUSED_RESULT
-status_t kmac_cshake_128(const uint8_t *message, size_t message_len,
+status_t kmac_cshake_128(const otcrypto_const_byte_buf_t *message,
                          const unsigned char *func_name, size_t func_name_len,
                          const unsigned char *cust_str, size_t cust_str_len,
                          uint32_t *digest, size_t digest_len);
@@ -211,8 +235,7 @@ status_t kmac_cshake_128(const uint8_t *message, size_t message_len,
  * The caller must ensure that `digest_len` words are allocated at the location
  * pointed to by `digest`.
  *
- * @param message The input message.
- * @param message_len The input message length in bytes.
+ * @param message The input message buffer.
  * @param func_name The function name.
  * @param func_name_len The function name length in bytes.
  * @param cust_str The customization string.
@@ -222,7 +245,7 @@ status_t kmac_cshake_128(const uint8_t *message, size_t message_len,
  * @return Error status.
  */
 OT_WARN_UNUSED_RESULT
-status_t kmac_cshake_256(const uint8_t *message, size_t message_len,
+status_t kmac_cshake_256(const otcrypto_const_byte_buf_t *message,
                          const unsigned char *func_name, size_t func_name_len,
                          const unsigned char *cust_str, size_t cust_str_len,
                          uint32_t *digest, size_t digest_len);
@@ -239,24 +262,23 @@ status_t kmac_cshake_256(const uint8_t *message, size_t message_len,
  * With SW-provided keys, `key->hw_backed` must be `kHardenedBoolFalse`, `share`
  * pointers must be correctly configured and `len` must match the key length.
  *
- * The caller must ensure that `digest_len` words are allocated at the location
+ * The caller must ensure that `digest_len` bytes are allocated at the location
  * pointed to by `digest`. `cust_str_len` must not exceed
  * `kKmacCustStrMaxSize`. If `masked_digest` is true, the `digest` buffer must
- * have enough space for 2x `digest_len` words.
+ * have enough space for 2x `digest_len` bytes.
  *
  * @param key The KMAC key.
  * @param masked_digest Whether to return the digest in concatenated shares.
- * @param message The input message.
- * @param message_len The input message length in bytes.
+ * @param message The input message buffer.
  * @param cust_str The customization string.
  * @param cust_str_len The customization string length in bytes.
  * @param[out] digest Output buffer for the result.
- * @param digest_len Requested digest length in 32-bit words.
+ * @param digest_len Requested digest length in bytes.
  * @return Error status.
  */
 OT_WARN_UNUSED_RESULT
 status_t kmac_kmac_128(kmac_blinded_key_t *key, hardened_bool_t masked_digest,
-                       const uint8_t *message, size_t message_len,
+                       const otcrypto_const_byte_buf_t *message,
                        const unsigned char *cust_str, size_t cust_str_len,
                        uint32_t *digest, size_t digest_len);
 
@@ -272,26 +294,337 @@ status_t kmac_kmac_128(kmac_blinded_key_t *key, hardened_bool_t masked_digest,
  * With SW-provided keys, `key->hw_backed` must be `kHardenedBoolFalse`, `share`
  * pointers must be correctly configured and `len` must match the key length.
  *
- * The caller must ensure that `digest_len` words are allocated at the location
+ * The caller must ensure that `digest_len` bytes are allocated at the location
  * pointed to by `digest`. `cust_str_len` must not exceed
  * `kKmacCustStrMaxSize`. If `masked_digest` is true, the `digest` buffer must
- * have enough space for 2x `digest_len` words.
+ * have enough space for 2x `digest_len` bytes.
  *
  * @param key The KMAC key.
  * @param masked_digest Whether to return the digest in concatenated shares.
- * @param message The input message.
- * @param message_len The input message length in bytes.
+ * @param message The input message buffer.
  * @param cust_str The customization string.
  * @param cust_str_len The customization string length in bytes.
+ * @param[out] digest Output buffer for the result.
+ * @param digest_len Requested digest length in bytes.
+ * @return Error status.
+ */
+OT_WARN_UNUSED_RESULT
+status_t kmac_kmac_256(kmac_blinded_key_t *key, hardened_bool_t masked_digest,
+                       const otcrypto_const_byte_buf_t *message,
+                       const unsigned char *cust_str, size_t cust_str_len,
+                       uint32_t *digest, size_t digest_len);
+
+/**
+ * Initializes the context for a streamed SHA-3-224 computation.
+ *
+ * @param[out] ctx KMAC context.
+ * @return Error status.
+ */
+OT_WARN_UNUSED_RESULT
+status_t kmac_sha3_224_init(kmac_ctx_t *ctx);
+
+/**
+ * Initializes the context for a streamed SHA-3-256 computation.
+ *
+ * @param[out] ctx KMAC context.
+ * @return Error status.
+ */
+OT_WARN_UNUSED_RESULT
+status_t kmac_sha3_256_init(kmac_ctx_t *ctx);
+
+/**
+ * Initializes the context for a streamed SHA-3-384 computation.
+ *
+ * @param[out] ctx KMAC context.
+ * @return Error status.
+ */
+OT_WARN_UNUSED_RESULT
+status_t kmac_sha3_384_init(kmac_ctx_t *ctx);
+
+/**
+ * Initializes the context for a streamed SHA-3-512 computation.
+ *
+ * @param[out] ctx KMAC context.
+ * @return Error status.
+ */
+OT_WARN_UNUSED_RESULT
+status_t kmac_sha3_512_init(kmac_ctx_t *ctx);
+
+/**
+ * Initializes the context for a streamed SHAKE-128 computation.
+ *
+ * @param[out] ctx KMAC context.
+ * @return Error status.
+ */
+OT_WARN_UNUSED_RESULT
+status_t kmac_shake_128_init(kmac_ctx_t *ctx);
+
+/**
+ * Initializes the context for a streamed SHAKE-256 computation.
+ *
+ * @param[out] ctx KMAC context.
+ * @return Error status.
+ */
+OT_WARN_UNUSED_RESULT
+status_t kmac_shake_256_init(kmac_ctx_t *ctx);
+
+/**
+ * Initializes the context for a streamed CSHAKE-128 computation.
+ *
+ * The combined length of `func_name` and `cust_str` must not exceed
+ * `kKmacPrefixMaxSize`.
+ *
+ * @param func_name The function name.
+ * @param func_name_len The function name length in bytes.
+ * @param cust_str The customization string.
+ * @param cust_str_len The customization string length in bytes.
+ * @param[out] ctx KMAC context.
+ * @return Error status.
+ */
+OT_WARN_UNUSED_RESULT
+status_t kmac_cshake_128_init(const unsigned char *func_name,
+                              size_t func_name_len,
+                              const unsigned char *cust_str,
+                              size_t cust_str_len, kmac_ctx_t *ctx);
+
+/**
+ * Initializes the context for a streamed CSHAKE-256 computation.
+ *
+ * The combined length of `func_name` and `cust_str` must not exceed
+ * `kKmacPrefixMaxSize`.
+ *
+ * @param func_name The function name.
+ * @param func_name_len The function name length in bytes.
+ * @param cust_str The customization string.
+ * @param cust_str_len The customization string length in bytes.
+ * @param[out] ctx KMAC context.
+ * @return Error status.
+ */
+OT_WARN_UNUSED_RESULT
+status_t kmac_cshake_256_init(const unsigned char *func_name,
+                              size_t func_name_len,
+                              const unsigned char *cust_str,
+                              size_t cust_str_len, kmac_ctx_t *ctx);
+
+/**
+ * Initializes the context for a streamed KMAC-128 computation.
+ *
+ * The key is configured as documented for `kmac_kmac_128`; both SW-provided
+ * and sideloaded (`key->hw_backed = kHardenedBoolTrue`) keys are supported.
+ * `cust_str_len` must not exceed `kKmacCustStrMaxSize`.
+ *
+ * @param key The KMAC key.
+ * @param cust_str The customization string.
+ * @param cust_str_len The customization string length in bytes.
+ * @param[out] ctx KMAC context.
+ * @return Error status.
+ */
+OT_WARN_UNUSED_RESULT
+status_t kmac_kmac_128_init(kmac_blinded_key_t *key,
+                            const unsigned char *cust_str, size_t cust_str_len,
+                            kmac_ctx_t *ctx);
+
+/**
+ * Initializes the context for a streamed KMAC-256 computation.
+ *
+ * The key is configured as documented for `kmac_kmac_256`; both SW-provided
+ * and sideloaded (`key->hw_backed = kHardenedBoolTrue`) keys are supported.
+ * `cust_str_len` must not exceed `kKmacCustStrMaxSize`.
+ *
+ * @param key The KMAC key.
+ * @param cust_str The customization string.
+ * @param cust_str_len The customization string length in bytes.
+ * @param[out] ctx KMAC context.
+ * @return Error status.
+ */
+OT_WARN_UNUSED_RESULT
+status_t kmac_kmac_256_init(kmac_blinded_key_t *key,
+                            const unsigned char *cust_str, size_t cust_str_len,
+                            kmac_ctx_t *ctx);
+
+/**
+ * Pass data for absorption to a streamed {KMAC, SHA3, SHAKE, cSHAKE}
+ * operation.
+ *
+ * This function can be called multiple times between an `init` and
+ * `final` invocation.
+ *
+ * @param ctx KMAC context.
+ * @param msg Message bytes to be absorbed.
+ * @return Error status.
+ */
+OT_WARN_UNUSED_RESULT
+status_t kmac_update(kmac_ctx_t *ctx, const otcrypto_const_byte_buf_t *msg);
+
+/**
+ * Squeeze digest words out of a streamed SHAKE or cSHAKE operation.
+ *
+ * This function can be called multiple times to extract a digest of arbitrary
+ * length in several steps. The first call terminates the absorb phase.
+ * It is necessary to call `kmac_xof_end` after all data has been squeezed
+ * in order to release the hardware.
+ *
+ * @param ctx KMAC context.
  * @param[out] digest Output buffer for the result.
  * @param digest_len Requested digest length in 32-bit words.
  * @return Error status.
  */
 OT_WARN_UNUSED_RESULT
-status_t kmac_kmac_256(kmac_blinded_key_t *key, hardened_bool_t masked_digest,
-                       const uint8_t *message, size_t message_len,
-                       const unsigned char *cust_str, size_t cust_str_len,
-                       uint32_t *digest, size_t digest_len);
+status_t kmac_xof_squeeze(kmac_ctx_t *ctx, uint32_t *digest, size_t digest_len);
+
+/**
+ * Finish a streamed SHAKE or cSHAKE operation.
+ *
+ * Issues the `DONE` command, which wipes the Keccak state and releases the
+ * KMAC HWIP.
+ *
+ * @param ctx KMAC context.
+ * @return Error status.
+ */
+OT_WARN_UNUSED_RESULT
+status_t kmac_xof_end(kmac_ctx_t *ctx);
+
+/**
+ * Finalize a streamed SHA-3-224 computation and return the digest.
+ *
+ * @param ctx KMAC context.
+ * @param[out] digest Output buffer for the result.
+ * @return Error status.
+ */
+OT_WARN_UNUSED_RESULT
+status_t kmac_sha3_224_final(kmac_ctx_t *ctx, uint32_t *digest);
+
+/**
+ * Finalize a streaming SHA-3-256 computation and return the digest.
+ *
+ * @param ctx KMAC context.
+ * @param[out] digest Output buffer for the result.
+ * @return Error status.
+ */
+OT_WARN_UNUSED_RESULT
+status_t kmac_sha3_256_final(kmac_ctx_t *ctx, uint32_t *digest);
+
+/**
+ * Finalize a streamed SHA-3-384 computation and return the digest.
+ *
+ * @param ctx KMAC context.
+ * @param[out] digest Output buffer for the result.
+ * @return Error status.
+ */
+OT_WARN_UNUSED_RESULT
+status_t kmac_sha3_384_final(kmac_ctx_t *ctx, uint32_t *digest);
+
+/**
+ * Finalize a streamed SHA-3-512 computation and return the digest.
+ *
+ * @param ctx KMAC context.
+ * @param[out] digest Output buffer for the result.
+ * @return Error status.
+ */
+OT_WARN_UNUSED_RESULT
+status_t kmac_sha3_512_final(kmac_ctx_t *ctx, uint32_t *digest);
+
+/**
+ * Finalize a streamed SHAKE-128 computation and return the digest.
+ *
+ * @param ctx KMAC context.
+ * @param[out] digest Output buffer for the result.
+ * @param digest_len Requested digest length in 32-bit words.
+ * @return Error status.
+ */
+OT_WARN_UNUSED_RESULT
+status_t kmac_shake_128_final(kmac_ctx_t *ctx, uint32_t *digest,
+                              size_t digest_len);
+
+/**
+ * Finalize a streamed SHAKE-256 computation and return the digest.
+ *
+ * @param ctx KMAC context.
+ * @param[out] digest Output buffer for the result.
+ * @param digest_len Requested digest length in 32-bit words.
+ * @return Error status.
+ */
+OT_WARN_UNUSED_RESULT
+status_t kmac_shake_256_final(kmac_ctx_t *ctx, uint32_t *digest,
+                              size_t digest_len);
+
+/**
+ * Finalize a streamed CSHAKE-128 computation and return the digest.
+ *
+ * @param ctx KMAC context.
+ * @param[out] digest Output buffer for the result.
+ * @param digest_len Requested digest length in 32-bit words.
+ * @return Error status.
+ */
+OT_WARN_UNUSED_RESULT
+status_t kmac_cshake_128_final(kmac_ctx_t *ctx, uint32_t *digest,
+                               size_t digest_len);
+
+/**
+ * Finalize a streamed CSHAKE-256 computation and return the digest.
+ *
+ * @param ctx KMAC context.
+ * @param[out] digest Output buffer for the result.
+ * @param digest_len Requested digest length in 32-bit words.
+ * @return Error status.
+ */
+OT_WARN_UNUSED_RESULT
+status_t kmac_cshake_256_final(kmac_ctx_t *ctx, uint32_t *digest,
+                               size_t digest_len);
+
+/**
+ * Finalize a streamed KMAC-128 computation and return the tag.
+ *
+ * If `masked_digest` is true, the `digest` buffer must have enough space for
+ * twice the amount of `digest_len` bytes.
+ *
+ * @param ctx KMAC context.
+ * @param masked_digest Whether to return the digest in concatenated shares.
+ * @param[out] digest Output buffer for the result.
+ * @param digest_len Requested digest length in bytes.
+ * @return Error status.
+ */
+OT_WARN_UNUSED_RESULT
+status_t kmac_kmac_128_final(kmac_ctx_t *ctx, hardened_bool_t masked_digest,
+                             uint32_t *digest, size_t digest_len);
+
+/**
+ * Finalize a streaming KMAC-256 computation and return the tag.
+ *
+ * If `masked_digest` is true, the `digest` buffer must have enough space for
+ * twice the amount of `digest_len` bytes.
+ *
+ * @param ctx KMAC context.
+ * @param masked_digest Whether to return the digest in concatenated shares.
+ * @param[out] digest Output buffer for the result.
+ * @param digest_len Requested digest length in bytes.
+ * @return Error status.
+ */
+OT_WARN_UNUSED_RESULT
+status_t kmac_kmac_256_final(kmac_ctx_t *ctx, hardened_bool_t masked_digest,
+                             uint32_t *digest, size_t digest_len);
+
+/**
+ * Compute the checksum of an KMAC key.
+ *
+ * Call this routine after creating or modifying the KMAC key structure.
+ *
+ * @param key KMAC key.
+ * @returns Checksum value.
+ */
+uint32_t kmac_key_integrity_checksum(const kmac_blinded_key_t *key);
+
+/**
+ * Perform an integrity check on the KMAC key.
+ *
+ * Returns `kHardenedBoolTrue` if the check passed and `kHardenedBoolFalse`
+ * otherwise.
+ *
+ * @param key KMAC key.
+ * @returns Whether the integrity check passed.
+ */
+hardened_bool_t kmac_key_integrity_checksum_check(
+    const kmac_blinded_key_t *key);
 
 #ifdef __cplusplus
 }

@@ -20,6 +20,7 @@ pub struct SpiConsoleDevice<'a> {
     rx_buf: RefCell<VecDeque<u8>>,
     next_read_address: Cell<u32>,
     device_tx_ready_pin: Option<&'a Rc<dyn GpioPin>>,
+    ignore_frame_num: bool,
 }
 
 impl<'a> SpiConsoleDevice<'a> {
@@ -34,6 +35,7 @@ impl<'a> SpiConsoleDevice<'a> {
     pub fn new(
         spi: &'a dyn Target,
         device_tx_ready_pin: Option<&'a Rc<dyn GpioPin>>,
+        ignore_frame_num: bool,
     ) -> Result<Self> {
         let flash = SpiFlash {
             ..Default::default()
@@ -45,7 +47,13 @@ impl<'a> SpiConsoleDevice<'a> {
             console_next_frame_number: Cell::new(0),
             next_read_address: Cell::new(0),
             device_tx_ready_pin,
+            ignore_frame_num,
         })
+    }
+
+    pub fn reset_frame_counter(&self) {
+        self.console_next_frame_number.set(0);
+        self.next_read_address.set(0);
     }
 
     fn check_device_boot_up(&self, buf: &[u8]) -> Result<usize> {
@@ -57,8 +65,7 @@ impl<'a> SpiConsoleDevice<'a> {
         }
         // Set busy bit and wait for the device to clear the boot magic.
         self.flash.program(self.spi, 0, buf)?;
-        self.console_next_frame_number.set(0);
-        self.next_read_address.set(0);
+        self.reset_frame_counter();
         Ok(0)
     }
 
@@ -72,7 +79,7 @@ impl<'a> SpiConsoleDevice<'a> {
         let frame_number: u32 = u32::from_le_bytes(header[4..8].try_into().unwrap());
         let data_len_bytes: usize = u32::from_le_bytes(header[8..12].try_into().unwrap()) as usize;
         if magic_number != SpiConsoleDevice::SPI_FRAME_MAGIC_NUMBER
-            || frame_number != self.console_next_frame_number.get()
+            || (!self.ignore_frame_num && frame_number != self.console_next_frame_number.get())
             || data_len_bytes > SpiConsoleDevice::SPI_MAX_DATA_LENGTH
         {
             if self.device_tx_ready_pin.is_none() {

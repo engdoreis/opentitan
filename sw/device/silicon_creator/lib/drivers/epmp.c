@@ -22,7 +22,7 @@ void epmp_set(uint8_t entry, uint32_t pmpcfg, uint32_t pmpaddr) {
   uint32_t cfg = (pmpcfg & 0xFFu) << shift;
   HARDENED_CHECK_LT(entry, 16);
   switch (entry) {
-    // clang-format off
+      // clang-format off
     case  0: EPMP_SET(0,  0, mask, cfg, pmpaddr); break;
     case  1: EPMP_SET(0,  1, mask, cfg, pmpaddr); break;
     case  2: EPMP_SET(0,  2, mask, cfg, pmpaddr); break;
@@ -61,6 +61,19 @@ void epmp_clear_lock_bits(void) {
   CSR_CLEAR_BITS(CSR_REG_PMPCFG3, mask);
   for (int cfgent = 0; cfgent < 4; ++cfgent) {
     epmp_state.pmpcfg[cfgent] &= ~mask;
+  }
+}
+
+void epmp_set_lock_bits(void) {
+  const uint32_t mask =
+      ((uint32_t)EPMP_CFG_L << 0 * 8) | ((uint32_t)EPMP_CFG_L << 1 * 8) |
+      ((uint32_t)EPMP_CFG_L << 2 * 8) | ((uint32_t)EPMP_CFG_L << 3 * 8);
+  CSR_SET_BITS(CSR_REG_PMPCFG0, mask);
+  CSR_SET_BITS(CSR_REG_PMPCFG1, mask);
+  CSR_SET_BITS(CSR_REG_PMPCFG2, mask);
+  CSR_SET_BITS(CSR_REG_PMPCFG3, mask);
+  for (int cfgent = 0; cfgent < 4; ++cfgent) {
+    epmp_state.pmpcfg[cfgent] |= mask;
   }
 }
 

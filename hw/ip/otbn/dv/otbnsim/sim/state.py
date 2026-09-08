@@ -10,18 +10,20 @@ from shared.mem_layout import get_memory_layout
 from .csr import CSRFile
 from .dmem import Dmem
 from .constants import ErrBits, LcTx, Status
-from .edn_client import EdnClient
 from .ext_regs import OTBNExtRegs
 from .flags import FlagReg
 from .gpr import GPRs
+from .kmac import Kmac
 from .loop import LoopStack
+from .mai import MaskingAcceleratorInterface
 from .reg import RegFile
 from .trace import Trace, TracePC
 from .wsr import WSRFile
 
 # The number of cycles spent per round of a secure wipe. This takes constant
-# time in the RTL, mirrored here.
-_WIPE_CYCLES = 68
+# time in the RTL, mirrored here. The constant here needs to be incremented
+# by one compared to the constant found in RTL (`otbn_core_model.sv`)
+WIPE_CYCLES = 99 + 1
 
 
 class FsmState(IntEnum):
@@ -82,7 +84,8 @@ class OTBNState:
 
         self.ext_regs = OTBNExtRegs()
         self.wsrs = WSRFile(self.ext_regs)
-        self.csrs = CSRFile()
+        self.csrs = CSRFile(self.wsrs, self.ext_regs)
+        self.kmac = Kmac(self.csrs, self.wsrs)
 
         self.pc = 0
         self._pc_next_override: Optional[int] = None
@@ -110,8 +113,7 @@ class OTBNState:
 
         self._err_bits = 0
         self.pending_halt = False
-
-        self._urnd_client = EdnClient()
+        self._pending_err_bits = 0
 
         # To simulate injecting integrity errors, we set a flag to say that
         # IMEM is no longer readable without getting an error. This can't take
@@ -127,6 +129,10 @@ class OTBNState:
         # to catch bugs if we forget to set it.
         self.wipe_cycles = -1
 
+        # Remember the last state we were in. This is used to determine whether we
+        # need to delay zeroing INSN_CNT when locking after a wipe.
+        self.old_state = self._fsm_state
+
         # This controls which state we move to when the next secure wipe ends
         self.lock_after_wipe = False
 
@@ -138,6 +144,14 @@ class OTBNState:
         # cancelled).
         self.injected_err_bits = 0
         self.lock_immediately = False
+
+        # The DV environment can request a stall for one cycle.
+        # This is used to model situations where OTBN is stalled due to
+        # injected errors. The DV environment can decide whether a stall
+        # request should be enforced even if there is a pending halt. If not
+        # enforced, any pending halt will override the stall request.
+        self._stall_requested = False
+        self._enforce_stall_request = False
 
         # OTBN might zero its insn_cnt register during a secure wipe. The
         # precise cycle that this happens depends slightly on how we decide to
@@ -187,6 +201,30 @@ class OTBNState:
         # random data).
         self.edn_seen_running = False
 
+        # The masking accelerator interface (MAI) handles the accelerators
+        self.mai = MaskingAcceleratorInterface(self.csrs, self.wsrs)
+
+        # Wait For Interrupt:
+        # - wfi_enabled is the CTRL bit.
+        # - if wfi_auto_resume is set, the wfi insn resumes after 1 cycle. Useful to set in
+        #   standalone mode
+        # - The resume command has one cycle delay in RTL. The simulation however requests the
+        #   resume when the command is issued. Thus _wfi_resume_pending models this delay.
+        # - _wfi_resume is the actual flag which gets set to advance.
+        self.wfi_enabled = False
+        self.wfi_auto_resume = False
+        self._wfi_resume_pending = False
+        self._wfi_resume = False
+
+        # MAC operand-shuffling offset. The predecoder samples the two LSBs of
+        # URND one cycle before a vectorized multiply executes and uses them to
+        # rotate the order in which the 64b chunks are processed. mac_rnd_offset
+        # is the value visible to an instruction starting in the current cycle,
+        # mac_rnd_offset_predec is the value sampled in the current cycle (used
+        # by an instruction starting in the next cycle).
+        self.mac_rnd_offset = 0
+        self.mac_rnd_offset_predec = 0
+
     def get_next_pc(self) -> int:
         if self._pc_next_override is not None:
             return self._pc_next_override
@@ -198,18 +236,18 @@ class OTBNState:
         self._pc_next_override = next_pc
 
     def edn_urnd_step(self, urnd_data: int) -> None:
-        self._urnd_client.take_word(urnd_data, False)
+        self.wsrs.URND.set_seed(urnd_data)
+        self.wsrs.URND.commit()
 
     def edn_rnd_step(self, rnd_data: int, fips_err: bool) -> None:
         self.ext_regs.rnd_take_word(rnd_data, fips_err)
 
     def edn_flush(self) -> None:
         self.ext_regs.rnd_reset()
-        self._urnd_client.edn_reset()
         # If the initial secure wipe is running, OTBN will directly request a
         # new URND value.
         if self.init_sec_wipe_is_running():
-            self._urnd_client.request()
+            self.wsrs.URND.requesting = True
 
     def rnd_completed(self) -> None:
         '''Called when CDC completes for the EDN RND interface'''
@@ -221,22 +259,13 @@ class OTBNState:
             self.wsrs.RND.set_unsigned(rnd_val, fips_err, rep_err)
 
     def urnd_completed(self) -> None:
-        w256, retry, _, _ = self._urnd_client.cdc_complete()
-        # The URND client should never be poisoned
-        assert w256 is not None and retry is False
-
-        # cdc_complete() returned a 256-bit value but we actually need to split
-        # it back into four 64-bit words.
-        w64s = [(w256 >> (64 * i)) & ((1 << 64) - 1) for i in range(4)]
-
         self.edn_seen_running = True
-
-        self.wsrs.URND.set_seed(w64s)
+        self.wsrs.URND.reseed_done = True
 
     def start_init_sec_wipe(self) -> None:
         self._init_sec_wipe_state = InitSecWipeState.IN_PROGRESS
         # OTBN will request a new URND value, so the model has to do the same.
-        self._urnd_client.request()
+        self.wsrs.URND.requesting = True
 
     def init_sec_wipe_is_running(self) -> bool:
         return self._init_sec_wipe_state == InitSecWipeState.IN_PROGRESS
@@ -272,7 +301,7 @@ class OTBNState:
         c += self.loop_stack.changes()
         c += self.ext_regs.changes()
         c += self.wsrs.changes()
-        c += self.csrs.flags.changes()
+        c += self.csrs.changes()
         c += self.wdrs.changes()
         return c
 
@@ -294,7 +323,8 @@ class OTBNState:
         if handle_injected_error:
             self.take_injected_err_bits()
         self.ext_regs.step()
-        self._urnd_client.step()
+        self.kmac.step()
+        self.mai.step()
 
     def commit(self, sim_stalled: bool) -> None:
         if self._time_to_imem_invalidation is not None:
@@ -303,11 +333,11 @@ class OTBNState:
                 self.invalidated_imem = True
                 self._time_to_imem_invalidation = None
 
-        old_state = self._fsm_state
+        self.old_state = self._fsm_state
 
         self._fsm_state = self._next_fsm_state
 
-        if self._fsm_state == old_state:
+        if self._fsm_state == self.old_state:
             self.cycles_in_this_state += 1
         else:
             self.cycles_in_this_state = 0
@@ -323,14 +353,18 @@ class OTBNState:
         # register) but nothing else. This is just an optimisation: if
         # everything is working properly, there won't be any other pending
         # changes.
-        if old_state not in [FsmState.EXEC, FsmState.WIPING]:
+        if self.old_state not in [FsmState.EXEC, FsmState.WIPING]:
             return
+
+        # Detect KMAC errors caused by this instruction. This relies on flags inside the ISPRs
+        # which are cleared when committing. Thus it must come before the register commit.
+        self.kmac.detect_errors()
 
         self.gprs.commit()
         self.dmem.commit()
         self.loop_stack.commit()
         self.wsrs.commit()
-        self.csrs.flags.commit()
+        self.csrs.commit()
         self.wdrs.commit()
 
         if not sim_stalled:
@@ -339,13 +373,18 @@ class OTBNState:
 
     def _abort(self) -> None:
         '''Abort any pending state changes'''
+        # Detect KMAC errors caused by this instruction. This relies on flags inside the ISPRs
+        # which are cleared when aborting. The error bits however are always updated, thus it must
+        # come before the register abort.
+        self.kmac.detect_errors()
+
         self.gprs.abort()
         self._pc_next_override = None
         self.dmem.abort()
         self.loop_stack.abort()
         self.ext_regs.abort()
         self.wsrs.abort()
-        self.csrs.flags.abort()
+        self.csrs.abort()
         self.wdrs.abort()
 
     def start(self) -> None:
@@ -363,8 +402,11 @@ class OTBNState:
         # Reset CSRs, WSRs, loop stack and call stack. WSRs have special
         # treatment because some of them have values that persist across
         # operations.
-        self.csrs = CSRFile()
         self.wsrs.on_start()
+        self.csrs = CSRFile(self.wsrs, self.ext_regs)
+        # TODO: Figure out how to model the secure wipe persistent behaviour of the KMAC interface.
+        self.kmac.on_start(self.csrs, self.wsrs)
+        self.mai.on_start(self.csrs, self.wsrs)
         self.loop_stack = LoopStack()
         self.gprs.empty_call_stack()
 
@@ -372,7 +414,8 @@ class OTBNState:
         # request.
         self.ext_regs.rnd_poison()
 
-        self._urnd_client.request()
+        # Immediately start requesting EDN seeds upon startup.
+        self.wsrs.URND.requesting = True
 
     def stop(self) -> None:
         '''Set flags to stop the processor and maybe abort the instruction.
@@ -404,8 +447,7 @@ class OTBNState:
         # set) is the 'done' flag.
         self.ext_regs.set_bits('INTR_STATE', 1 << 0)
 
-        should_lock = (((self._err_bits >> 16) != 0) or
-                       ((self._err_bits >> 10) & 1 != 0) or
+        should_lock = ((self._err_bits & ErrBits.FATAL_MASK) != 0 or
                        (self._err_bits != 0 and self.software_errs_fatal) or
                        self.rma_req == LcTx.ON)
         # Make any error bits visible
@@ -453,6 +495,35 @@ class OTBNState:
         # Clear any pending request in the RND EDN client
         self.ext_regs.rnd_forget()
 
+    def enter_wfi_pause(self) -> None:
+        '''Pause execution on a wfi instruction.
+
+        Raise the done interrupt and reflect PAUSED in STATUS.
+        '''
+        self.ext_regs.set_bits('INTR_STATE', 1 << 0)
+        self.ext_regs.write('STATUS', Status.PAUSED, True)
+
+    def wfi_should_resume(self) -> bool:
+        '''Return whether a wfi instruction should resume this cycle.'''
+        # There is one cycle delay in the RTL. The simulation sets the pending flag which then
+        # updates the actual flag. The actual flag is then checked one cycle later. Immediately
+        # resume if wfi_auto_resume is set.
+        do_resume = self._wfi_resume or self.wfi_auto_resume
+        if not do_resume:
+            self._wfi_resume = self._wfi_resume_pending
+            self._wfi_resume_pending = False
+
+        return do_resume
+
+    def exit_wfi_pause(self) -> None:
+        '''Resume execution after a wfi pause.'''
+        self.ext_regs.write('STATUS', Status.BUSY_EXECUTE, True)
+        self._wfi_resume = False
+
+    def request_wfi_resume(self) -> None:
+        '''Request that a paused wfi instruction resumes.'''
+        self._wfi_resume_pending = True
+
     def get_fsm_state(self) -> FsmState:
         return self._fsm_state
 
@@ -462,7 +533,7 @@ class OTBNState:
         # the wiping operation itself will take.
         wiping_next = new_state == FsmState.WIPING
         if wiping_next:
-            self.wipe_cycles = _WIPE_CYCLES
+            self.wipe_cycles = WIPE_CYCLES
         self._next_fsm_state = new_state
 
     def set_flags(self, fg: int, flags: FlagReg) -> None:
@@ -536,9 +607,45 @@ class OTBNState:
         Any bits set in err_bits will be set in the ERR_BITS register when
         we're done.
 
+        Some errors are delayed by one cycle to match the RTL's behaviour.
         '''
+        # Delay certain errors due to the registering of escalation signals.
+        # For some fatal escalation sources (like predecode errors) OTBN
+        # escalates one cycle after the error is detected. This is not directly
+        # modeled in this simulator as such errors only occur in real HW or
+        # during tests that inject errors into the simulation model. In case
+        # such a test injects an error it can notify the model in the correct
+        # cycle using the send_err_escalation command of the stepped simulator.
+        # However, this method cannot cover all possible escalation sources.
+        # One such example is the DMEM integrity violation error. If the test
+        # invalidates the DMEM it cannot know when the next DMEM read will
+        # happen as the binary being executed is not known to the testbench.
+        # When the memory is invalidated the next load instruction will
+        # trigger the DMEM integrity violation error by calling
+        # stop_at_end_of_cycle with the DMEM_INTG_VIOLATION error set. The
+        # model now detects that this error is set and must delay the
+        # escalation by one cycle. For this the error bit is added to the
+        # pending errors and removed from the current error bits. If there are
+        # no other error bits set the model must still commit the current
+        # instruction and thus may not set the pending_halt flag.
+        if err_bits & ErrBits.DMEM_INTG_VIOLATION:
+            # Clear the flag so it's not applied below
+            err_bits &= ~ErrBits.DMEM_INTG_VIOLATION
+            self._pending_err_bits |= ErrBits.DMEM_INTG_VIOLATION
+            # We don't want to stop if this is the only error bit set
+            if err_bits == 0:
+                return
+
+        # Any other stop request (with or without errors) happens immediately
         self._err_bits |= err_bits
         self.pending_halt = True
+
+    def take_pending_err_bits(self) -> None:
+        '''Apply any pending error bits'''
+        if self._pending_err_bits:
+            self._err_bits |= self._pending_err_bits
+            self._pending_err_bits = 0
+            self.pending_halt = True
 
     def invalidate_imem(self) -> None:
         self._time_to_imem_invalidation = 2
@@ -559,3 +666,29 @@ class OTBNState:
         if self.injected_err_bits != 0:
             self.stop_at_end_of_cycle(self.injected_err_bits)
             self.injected_err_bits = 0
+
+    def request_stall(self, enforce: bool) -> None:
+        '''Make the model stall for one cycle instead of retiring the next
+        instruction.
+
+        In case there is a pending halt, the stall request is ignored except
+        if enforced is True.'''
+        self._stall_requested = True
+        self._enforce_stall_request = enforce
+
+    def stall_requested(self) -> bool:
+        '''Returns whether a stall should happen. Any call resets a pending
+        stall request.
+
+        If there is also a pending halt, the stall request is ignored unless
+        it was requested to be enforced.
+        '''
+        # Stall if there is an enforced stall request or if there is a request
+        # but no pending halt.
+        should_stall = (self._stall_requested and
+                        (self._enforce_stall_request or (not self.pending_halt)))
+
+        # Any stall request is only valid for one cycle.
+        self._stall_requested = False
+        self._enforce_stall_request = False
+        return should_stall

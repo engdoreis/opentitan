@@ -13,11 +13,11 @@ _TEST_RND_DATA = cycle([
 ])
 
 
-# This is the default seed for URND PRNG. Note that the actualy URND value will
+# This is the default seed for URND PRNG. Note that the actually URND value will
 # be random since we are modelling PRNG inside the URND register model.
-_TEST_URND_DATA = [
-    0x84ddfadaf7e1134d, 0x70aa1c59de6197ff,
-    0x25a4fe335d095f1e, 0x2cba89acbe4a07e9
+_TEST_URND_SEED = [
+    0x11111111, 0x22222222, 0x33333333,
+    0x44444444, 0x55555555, 0x66666666
 ]
 
 
@@ -29,23 +29,28 @@ class StandaloneSim(OTBNSim):
 
         '''
         insn_count = 0
+        urnd_seed_count = 0
 
         # Skip the initial secure wipe
         self.state.complete_init_sec_wipe()
+
+        # There is no host to enable wfi or to issue RESUME in standalone mode,
+        # so allow wfi and have it resume immediately (a regular 1-cycle insn).
+        self.state.wfi_enabled = True
+        self.state.wfi_auto_resume = True
 
         while True:
             # If there's a RND request, respond immediately
             if self.state.ext_regs.read('RND_REQ', True):
                 self.state.wsrs.RND.set_unsigned(next(_TEST_RND_DATA), False,
                                                  False)
-            # If there's a URND request, respond immediately.
-            if not self.state.wsrs.URND.running:
-                self.state.wsrs.URND.set_seed(_TEST_URND_DATA)
 
-            # Similarly, if URND is not running, provide it with some arbitrary
-            # seed.
-            if not self.state.wsrs.URND.running:
-                self.state.wsrs.URND.set_seed(_TEST_URND_DATA)
+            # If there's a URND request, respond immediately.
+            if self.state.wsrs.URND.requesting:
+                self.state.wsrs.URND.set_seed(_TEST_URND_SEED[urnd_seed_count])
+                urnd_seed_count = (urnd_seed_count + 1) % len(_TEST_URND_SEED)
+                if urnd_seed_count == 0:
+                    self.state.wsrs.URND.reseed_done = True
 
             self.step(verbose)
             insn_count += 1

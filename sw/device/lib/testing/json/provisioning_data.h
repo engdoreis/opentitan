@@ -14,6 +14,35 @@ extern "C" {
 #define MODULE_ID MAKE_MODULE_ID('j', 'p', 'd')
 
 /**
+ * Max sizes of the UJSON structs below when they are serialized.
+ *
+ * The are obtained by running the following FPGA test:
+ * bazel test --test_output=streamed \
+ *  //sw/device/silicon_creator/manuf/tests:ujson_msg_size_functest
+ *
+ * These should match the constants in:
+ * sw/host/provisioning/ujson_lib/src/lib.rs
+ */
+#ifndef RUST_PREPROCESSOR_EMIT
+enum {
+  kSerdesSha256HashSerializedMaxSize = 98,
+  kLcTokenHashSerializedMaxSize = 52,
+  kManufCertgenInputsSerializedMaxSize = 215,
+  kPersoBlobSerializedMaxSize = 20535,
+};
+#endif
+
+/**
+ * Version of the personalization blob format.
+ */
+// clang-format off
+#define ENUM_PERSO_BLOB_VERSION(field, value) \
+    value(field, V0, 0) \
+    value(field, V1, 1)
+UJSON_SERDE_ENUM(PersoBlobVersion, perso_blob_version_t, ENUM_PERSO_BLOB_VERSION);
+// clang-format on
+
+/**
  * Provisioning data imported onto the device during CP.
  */
 // clang-format off
@@ -76,12 +105,27 @@ UJSON_SERDE_STRUCT(LcTokenHash, \
 // clang-format on
 
 /**
+ * Provisioning data imported onto the device in FT during individualization.
+ */
+// clang-format off
+#define STRUCT_MANUF_FT_INDIVIDUALIZE_DATA(field, string) \
+    field(ft_device_id, uint32_t, 4)
+UJSON_SERDE_STRUCT(ManufFtIndividualizeData, \
+                   manuf_ft_individualize_data_t, \
+                   STRUCT_MANUF_FT_INDIVIDUALIZE_DATA);
+// clang-format on
+
+/**
  * Inputs needed to generate certificates during personalization.
  */
 // clang-format off
 #define STRUCT_MANUF_CERTGEN_INPUTS(field, string) \
     field(dice_auth_key_key_id, uint8_t, 20) \
-    field(ext_auth_key_key_id, uint8_t, 20)
+    field(ext_auth_key_key_id, uint8_t, 20) \
+    /* TODO: This should be a perso_blob_version_t enum, but using a primitive \
+     * uint16_t to avoid a ujson deserialization bug with nested derived \
+     * types. */ \
+    field(blob_version, uint16_t)
 UJSON_SERDE_STRUCT(ManufCertgenInputs, \
                    manuf_certgen_inputs_t, \
                    STRUCT_MANUF_CERTGEN_INPUTS);
@@ -102,7 +146,7 @@ UJSON_SERDE_STRUCT(ManufCertgenInputs, \
 #define STRUCT_PERSO_BLOB(field, string) \
     field(num_objs, size_t) \
     field(next_free, size_t) \
-    field(body, uint8_t, 4096)
+    field(body, uint8_t, 5120)
 UJSON_SERDE_STRUCT(PersoBlob, \
                    perso_blob_t, \
                    STRUCT_PERSO_BLOB);

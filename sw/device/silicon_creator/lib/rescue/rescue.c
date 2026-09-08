@@ -4,67 +4,153 @@
 
 #include "sw/device/silicon_creator/lib/rescue/rescue.h"
 
+#include "hw/top/dt/aon_timer.h"
+#include "hw/top/dt/api.h"
+#include "hw/top/dt/rstmgr.h"
 #include "sw/device/lib/arch/device.h"
 #include "sw/device/lib/base/memory.h"
 #include "sw/device/silicon_creator/lib/boot_data.h"
+#include "sw/device/silicon_creator/lib/boot_log.h"
+#include "sw/device/silicon_creator/lib/boot_svc/boot_svc_enter_rescue.h"
+#include "sw/device/silicon_creator/lib/boot_svc/boot_svc_msg.h"
 #include "sw/device/silicon_creator/lib/dbg_print.h"
-#include "sw/device/silicon_creator/lib/drivers/flash_ctrl.h"
+#include "sw/device/silicon_creator/lib/drivers/ibex.h"
 #include "sw/device/silicon_creator/lib/drivers/lifecycle.h"
 #include "sw/device/silicon_creator/lib/drivers/pinmux.h"
 #include "sw/device/silicon_creator/lib/drivers/retention_sram.h"
 #include "sw/device/silicon_creator/lib/drivers/rstmgr.h"
 #include "sw/device/silicon_creator/lib/drivers/uart.h"
+#include "sw/device/silicon_creator/lib/manifest.h"
+#include "sw/device/silicon_creator/lib/nvm_ctrl.h"
 #include "sw/device/silicon_creator/lib/ownership/datatypes.h"
 #include "sw/device/silicon_creator/lib/ownership/owner_block.h"
 
-#include "hw/top/flash_ctrl_regs.h"
+#if RESCUE_USES_UART == 1
+#define rescue_msg(fmt, ...)        \
+  do {                              \
+    dbg_printf(fmt, ##__VA_ARGS__); \
+  } while (0)
+#else
+#define rescue_msg(fmt, ...) \
+  do {                       \
+  } while (0)
+#endif
 
-const uint32_t kFlashPageSize = FLASH_CTRL_PARAM_BYTES_PER_PAGE;
-const uint32_t kFlashBankSize =
-    kFlashPageSize * FLASH_CTRL_PARAM_REG_PAGES_PER_BANK;
+typedef enum rescue_request {
+  kRescueRequestNone = 0,
+  kRescueRequestEnter = 0x739,
+  kRescueRequestSkip = 0x1d4,
+} rescue_request_t;
 
-rom_error_t flash_firmware_block(rescue_state_t *state) {
+static rescue_request_t rescue_requested;
+
+const uint32_t kNvmPageSize = NVM_BYTES_PER_PAGE;
+// Byte size of one firmware slot (A or B); see `NVM_BYTES_PER_SLOT`.
+const uint32_t kNvmSlotSize = NVM_BYTES_PER_SLOT;
+
+static inline bool is_rom_ext(const void *data) {
+  const manifest_t *manifest = (const manifest_t *)data;
+  return manifest->identifier == CHIP_ROM_EXT_IDENTIFIER;
+}
+
+static inline bool is_rom_ext_update_allowed(rescue_state_t *state) {
+  // A ROM_EXT update is allowed if the partition we're flashing is not the
+  // ROM_EXT active partition.
+  return (state->mode == kRescueModeFirmware &&
+          state->boot_log->rom_ext_slot == kBootSlotB) ||
+         (state->mode == kRescueModeFirmwareSlotB &&
+          state->boot_log->rom_ext_slot == kBootSlotA);
+}
+
+rom_error_t nvm_firmware_block(rescue_state_t *state) {
   uint32_t bank_offset =
-      state->mode == kRescueModeFirmwareSlotB ? kFlashBankSize : 0;
-  if (state->flash_offset == 0) {
+      state->mode == kRescueModeFirmwareSlotB ? kNvmSlotSize : 0;
+  // `state->nvm_limit` is slot-agnostic (relative to `bank_offset`), but the
+  // portion of NVM usable for generic firmware data is not necessarily a
+  // whole slot away from `bank_offset` -- e.g. on RRAM, Slot B's tail
+  // overlaps the emulated info-page region and, past that, a small range
+  // reserved for OTP that's read/write protected in hardware. Clamp so this
+  // never erases/writes past `NVM_SLOT_B_END_BYTES` regardless of
+  // which slot `bank_offset` selects.
+  uint32_t nvm_limit = state->nvm_limit;
+  if (bank_offset + nvm_limit > NVM_SLOT_B_END_BYTES) {
+    nvm_limit = NVM_SLOT_B_END_BYTES - bank_offset;
+  }
+  // Slot A has its own separate reserved tail (see
+  // `NVM_SLOT_USABLE_SIZE_BYTES`), used on RRAM for `CreatorReserved0`'s
+  // dedicated region. The clamp above doesn't cover it, since it's entirely
+  // below `NVM_SLOT_B_END_BYTES` and only applies when `bank_offset`
+  // selects Slot A.
+  if (bank_offset == 0 && nvm_limit > NVM_SLOT_USABLE_SIZE_BYTES) {
+    nvm_limit = NVM_SLOT_USABLE_SIZE_BYTES;
+  }
+  if (state->nvm_offset == 0) {
     // TODO(#24428): Make sure we interact correctly with owner flash region
     // configuration.
-    flash_ctrl_data_default_perms_set((flash_ctrl_perms_t){
+    nvm_ctrl_data_default_perms_set((nvm_page_perms_t){
         .read = kMultiBitBool4True,
         .write = kMultiBitBool4True,
         .erase = kMultiBitBool4True,
     });
-    for (uint32_t addr = state->flash_start; addr < state->flash_limit;
-         addr += kFlashPageSize) {
-      HARDENED_RETURN_IF_ERROR(
-          flash_ctrl_data_erase(bank_offset + addr, kFlashCtrlEraseTypePage));
+    // Detect if we're allowed to flash the ROM_EXT _and_ if the data stream
+    // starts with a ROM_EXT.  If so, we start flashing at offset 0 in this
+    // bank.
+    state->nvm_begin =
+        (is_rom_ext_update_allowed(state) && is_rom_ext(state->data))
+            ? 0
+            : state->nvm_start;
+
+    // Erase the allowed range in the requested partition.
+    for (uint32_t addr = state->nvm_begin; addr < nvm_limit;
+         addr += kNvmPageSize) {
+      HARDENED_RETURN_IF_ERROR(nvm_ctrl_data_erase(bank_offset + addr));
     }
-    state->flash_offset = state->flash_start;
+    // Regardless of whether we're allowed to flash the ROM_EXT, set the flash
+    // offset to zero if the data stream contains a ROM_EXT, otherwise, set to
+    // nvm_start. This will allow rescue to silently consume the ROM_EXT if
+    // we're in the ROM_EXT active partition.
+    state->nvm_offset = is_rom_ext(state->data) ? 0 : state->nvm_start;
   }
-  if (state->flash_offset < state->flash_limit) {
-    HARDENED_RETURN_IF_ERROR(flash_ctrl_data_write(
-        bank_offset + state->flash_offset,
-        sizeof(state->data) / sizeof(uint32_t), state->data));
-    state->flash_offset += sizeof(state->data);
-  } else {
+
+  if (state->nvm_offset < state->nvm_begin) {
+    // Before allowed beginning; silently consume the data without flashing.
+    state->nvm_offset += sizeof(state->data);
+  } else if (state->nvm_offset >= nvm_limit) {
+    // Beyond the allowed limit; return an error.
     return kErrorRescueImageTooBig;
+  } else {
+    // In the allowed range; flash the data, clamping the write length so it
+    // never extends past `nvm_limit` into the reserved region beyond it.
+    uint32_t write_len = sizeof(state->data);
+    bool truncated = state->nvm_offset + write_len > nvm_limit;
+    if (truncated) {
+      write_len = nvm_limit - state->nvm_offset;
+    }
+    HARDENED_RETURN_IF_ERROR(
+        nvm_ctrl_data_write(bank_offset + state->nvm_offset,
+                            write_len / sizeof(uint32_t), state->data));
+    state->nvm_offset += sizeof(state->data);
+    if (truncated) {
+      // The valid portion of this block was written, but the image extends
+      // past `nvm_limit`; report the error now that the write is done.
+      return kErrorRescueImageTooBig;
+    }
   }
   return kErrorOk;
 }
 
-rom_error_t flash_owner_block(rescue_state_t *state, boot_data_t *bootdata) {
-  if (bootdata->ownership_state == kOwnershipStateUnlockedAny ||
-      bootdata->ownership_state == kOwnershipStateUnlockedSelf ||
-      bootdata->ownership_state == kOwnershipStateUnlockedEndorsed ||
-      (bootdata->ownership_state == kOwnershipStateLockedOwner &&
+rom_error_t nvm_owner_block(rescue_state_t *state) {
+  if (state->bootdata->ownership_state == kOwnershipStateUnlockedAny ||
+      state->bootdata->ownership_state == kOwnershipStateUnlockedSelf ||
+      state->bootdata->ownership_state == kOwnershipStateUnlockedEndorsed ||
+      (state->bootdata->ownership_state == kOwnershipStateLockedOwner &&
        owner_block_newversion_mode() == kHardenedBoolTrue)) {
-    HARDENED_RETURN_IF_ERROR(flash_ctrl_info_erase(
-        &kFlashCtrlInfoPageOwnerSlot1, kFlashCtrlEraseTypePage));
-    HARDENED_RETURN_IF_ERROR(flash_ctrl_info_write(
-        &kFlashCtrlInfoPageOwnerSlot1, 0,
-        sizeof(state->data) / sizeof(uint32_t), state->data));
+    HARDENED_RETURN_IF_ERROR(nvm_ctrl_info_erase(kNvmInfoPageOwnerSlot1));
+    HARDENED_RETURN_IF_ERROR(nvm_ctrl_info_write(
+        kNvmInfoPageOwnerSlot1, 0, sizeof(state->data) / sizeof(uint32_t),
+        state->data));
   } else {
-    dbg_printf("error: cannot accept owner_block in current state\r\n");
+    rescue_msg("error: cannot accept owner_block in current state\r\n");
   }
   return kErrorOk;
 }
@@ -79,32 +165,29 @@ rom_error_t flash_owner_block(rescue_state_t *state, boot_data_t *bootdata) {
 static void ownership_erase(void) {
   lifecycle_state_t lc_state = lifecycle_state_get();
   if (lc_state == kLcStateDev) {
-    OT_DISCARD(flash_ctrl_info_erase(&kFlashCtrlInfoPageOwnerSlot0,
-                                     kFlashCtrlEraseTypePage));
-    OT_DISCARD(flash_ctrl_info_erase(&kFlashCtrlInfoPageOwnerSlot1,
-                                     kFlashCtrlEraseTypePage));
-    dbg_printf("ok: erased owner blocks\r\n");
+    OT_DISCARD(nvm_ctrl_info_erase(kNvmInfoPageOwnerSlot0));
+    OT_DISCARD(nvm_ctrl_info_erase(kNvmInfoPageOwnerSlot1));
+    rescue_msg("ok: erased owner blocks\r\n");
   } else {
-    dbg_printf("error: erase not allowed in state %x\r\n", lc_state);
+    rescue_msg("error: erase not allowed in state %x\r\n", lc_state);
   }
 }
 #endif
 
-rom_error_t rescue_validate_mode(uint32_t mode, rescue_state_t *state,
-                                 boot_data_t *bootdata) {
-  dbg_printf("\r\nmode: %C\r\n", bitfield_byteswap32(mode));
+rom_error_t rescue_validate_mode(uint32_t mode, rescue_state_t *state) {
+  rescue_msg("\r\nmode: %C\r\n", bitfield_byteswap32(mode));
   rom_error_t result = kErrorOk;
 
   // The following commands are always allowed and are not subject to
   // the "command allowed" check.
   switch (mode) {
     case kRescueModeReboot:
-      dbg_printf("ok: reboot\r\n");
+      rescue_msg("ok: reboot\r\n");
       state->mode = (rescue_mode_t)mode;
       goto exitproc;
-    case kRescueModeWait:
-      dbg_printf("ok: wait after upload\r\n");
-      state->reboot = false;
+    case kRescueModeNoOp:
+      // The No-Op mode is always allowed and does nothing.
+      state->mode = (rescue_mode_t)mode;
       goto exitproc;
 #ifdef ROM_EXT_KLOBBER_ALLOWED
     case kRescueModeKlobber:
@@ -119,55 +202,70 @@ rom_error_t rescue_validate_mode(uint32_t mode, rescue_state_t *state,
   if (allow == kHardenedBoolTrue) {
     switch (mode) {
       case kRescueModeBootLog:
-        dbg_printf("ok: receive boot_log\r\n");
+        rescue_msg("ok: receive boot_log\r\n");
         break;
       case kRescueModeBootSvcRsp:
-        dbg_printf("ok: receive boot_svc response\r\n");
+        rescue_msg("ok: receive boot_svc response\r\n");
         break;
       case kRescueModeBootSvcReq:
-        dbg_printf("ok: send boot_svc request\r\n");
+        rescue_msg("ok: send boot_svc request\r\n");
         break;
       case kRescueModeOwnerBlock:
-        if (bootdata->ownership_state == kOwnershipStateUnlockedAny ||
-            bootdata->ownership_state == kOwnershipStateUnlockedSelf ||
-            bootdata->ownership_state == kOwnershipStateUnlockedEndorsed ||
-            (bootdata->ownership_state == kOwnershipStateLockedOwner &&
+        if (state->bootdata->ownership_state == kOwnershipStateUnlockedAny ||
+            state->bootdata->ownership_state == kOwnershipStateUnlockedSelf ||
+            state->bootdata->ownership_state ==
+                kOwnershipStateUnlockedEndorsed ||
+            (state->bootdata->ownership_state == kOwnershipStateLockedOwner &&
              owner_block_newversion_mode() == kHardenedBoolTrue)) {
-          dbg_printf("ok: send owner_block\r\n");
+          rescue_msg("ok: send owner_block\r\n");
         } else {
-          dbg_printf("error: cannot accept owner_block in current state\r\n");
+          rescue_msg("error: cannot accept owner_block in current state\r\n");
           return kErrorRescueBadMode;
         }
         break;
       case kRescueModeFirmware:
       case kRescueModeFirmwareSlotB:
-        dbg_printf("ok: send firmware\r\n");
+        rescue_msg("ok: send firmware\r\n");
         break;
       case kRescueModeOwnerPage0:
       case kRescueModeOwnerPage1:
-        dbg_printf("ok: receive owner page\r\n");
+        rescue_msg("ok: receive owner page\r\n");
         break;
       case kRescueModeOpenTitanID:
-        dbg_printf("ok: receive device ID\r\n");
+        rescue_msg("ok: receive device ID\r\n");
         break;
       default:
         // User input error.  Do not change modes.
-        dbg_printf("error: unrecognized mode\r\n");
+        rescue_msg("error: unrecognized mode\r\n");
         return kErrorRescueBadMode;
     }
     state->mode = (rescue_mode_t)mode;
   } else {
-    dbg_printf("error: mode not allowed\r\n");
+    rescue_msg("error: mode not allowed\r\n");
     result = kErrorRescueBadMode;
   }
 exitproc:
   state->frame = 1;
   state->offset = 0;
-  state->flash_offset = 0;
+  state->nvm_offset = 0;
   return result;
 }
 
-rom_error_t rescue_send_handler(rescue_state_t *state, boot_data_t *bootdata) {
+rom_error_t rescue_send_handler(rescue_state_t *state) {
+  // The following commands are always allowed and are not subject to
+  // the "command allowed" check.
+  switch (state->mode) {
+    case kRescueModeReboot:
+      // If a reboot was requested, return an error and go through the normal
+      // shutdown process.
+      return kErrorRescueReboot;
+    case kRescueModeNoOp:
+      // The No-Op mode is always allowed and does nothing.
+      return kErrorOk;
+    default:
+        /* do nothing */;
+  }
+
   hardened_bool_t allow =
       owner_rescue_command_allowed(state->config, state->mode);
   if (allow != kHardenedBoolTrue) {
@@ -191,13 +289,15 @@ rom_error_t rescue_send_handler(rescue_state_t *state, boot_data_t *bootdata) {
       break;
     }
     case kRescueModeOwnerPage0:
-    case kRescueModeOwnerPage1:
-      HARDENED_RETURN_IF_ERROR(flash_ctrl_info_read(
-          state->mode == kRescueModeOwnerPage0 ? &kFlashCtrlInfoPageOwnerSlot0
-                                               : &kFlashCtrlInfoPageOwnerSlot1,
-          0, sizeof(state->data) / sizeof(uint32_t), state->data));
+    case kRescueModeOwnerPage1: {
+      nvm_info_page_t page = state->mode == kRescueModeOwnerPage0
+                                 ? kNvmInfoPageOwnerSlot0
+                                 : kNvmInfoPageOwnerSlot1;
+      HARDENED_RETURN_IF_ERROR(nvm_ctrl_info_read(
+          page, 0, sizeof(state->data) / sizeof(uint32_t), state->data));
       state->staged_len = sizeof(state->data);
       break;
+    }
 
     case kRescueModeBootSvcReq:
     case kRescueModeOwnerBlock:
@@ -205,10 +305,6 @@ rom_error_t rescue_send_handler(rescue_state_t *state, boot_data_t *bootdata) {
     case kRescueModeFirmwareSlotB:
       // Nothing to do for receive modes.
       return kErrorOk;
-    case kRescueModeReboot:
-      // If a reboot was requested, return an error and go through the normal
-      // shutdown process.
-      return kErrorRescueReboot;
     default:
       // This state should be impossible.
       return kErrorRescueBadMode;
@@ -216,7 +312,7 @@ rom_error_t rescue_send_handler(rescue_state_t *state, boot_data_t *bootdata) {
   return kErrorRescueSendStart;
 }
 
-rom_error_t rescue_recv_handler(rescue_state_t *state, boot_data_t *bootdata) {
+rom_error_t rescue_recv_handler(rescue_state_t *state) {
   hardened_bool_t allow =
       owner_rescue_command_allowed(state->config, state->mode);
   if (allow != kHardenedBoolTrue) {
@@ -225,12 +321,14 @@ rom_error_t rescue_recv_handler(rescue_state_t *state, boot_data_t *bootdata) {
 
   retention_sram_t *rr = retention_sram_get();
   switch (state->mode) {
+    case kRescueModeNoOp:
     case kRescueModeBootLog:
     case kRescueModeBootSvcRsp:
     case kRescueModeOpenTitanID:
     case kRescueModeOwnerPage0:
     case kRescueModeOwnerPage1:
       // Nothing to do for send modes.
+      state->offset = 0;
       break;
     case kRescueModeBootSvcReq:
       if (state->offset >= sizeof(rr->creator.boot_svc_msg)) {
@@ -246,14 +344,14 @@ rom_error_t rescue_recv_handler(rescue_state_t *state, boot_data_t *bootdata) {
       break;
     case kRescueModeOwnerBlock:
       if (state->offset == sizeof(state->data)) {
-        HARDENED_RETURN_IF_ERROR(flash_owner_block(state, bootdata));
+        HARDENED_RETURN_IF_ERROR(nvm_owner_block(state));
         state->offset = 0;
       }
       break;
     case kRescueModeFirmware:
     case kRescueModeFirmwareSlotB:
       if (state->offset == sizeof(state->data)) {
-        HARDENED_RETURN_IF_ERROR(flash_firmware_block(state));
+        HARDENED_RETURN_IF_ERROR(nvm_firmware_block(state));
         state->offset = 0;
       }
       break;
@@ -265,38 +363,110 @@ rom_error_t rescue_recv_handler(rescue_state_t *state, boot_data_t *bootdata) {
   return kErrorOk;
 }
 
-void rescue_state_init(rescue_state_t *state,
+void rescue_state_init(rescue_state_t *state, boot_data_t *bootdata,
+                       boot_log_t *boot_log,
                        const owner_rescue_config_t *config) {
+  state->boot_log = boot_log;
+  state->bootdata = bootdata;
   state->config = config;
+  state->default_mode = kRescueModeFirmware;
+  state->next_mode = 0;
+
   if ((hardened_bool_t)config == kHardenedBoolFalse) {
     HARDENED_CHECK_EQ((hardened_bool_t)config, kHardenedBoolFalse);
     // If there is no rescue config, then the rescue region starts immediately
     // after the ROM_EXT and ends at the end of the flash bank.
-    state->flash_start = CHIP_ROM_EXT_SIZE_MAX;
-    state->flash_limit = kFlashBankSize;
+    state->nvm_start = CHIP_ROM_EXT_SIZE_MAX;
+    state->nvm_limit = kNvmSlotSize;
+    state->inactivity_deadline = 0;
   } else {
-    state->flash_start = (uint32_t)config->start * kFlashPageSize;
-    state->flash_limit =
-        (uint32_t)(config->start + config->size) * kFlashPageSize;
+    state->nvm_start = (uint32_t)config->start * kNvmPageSize;
+    state->nvm_limit = (uint32_t)(config->start + config->size) * kNvmPageSize;
+    uint32_t timeout =
+        bitfield_field32_read(config->timeout, RESCUE_TIMEOUT_SECONDS);
+    state->inactivity_deadline =
+        timeout ? ibex_mcycle() + ibex_time_to_cycles(1000000 * timeout) : 0;
+
+    // If the owner has disabled the firmware rescue commands, then set the
+    // default mode to No-Op.
+    if (owner_rescue_command_allowed(config, state->default_mode) ==
+        kHardenedBoolFalse) {
+      state->default_mode = kRescueModeNoOp;
+    }
   }
+  state->mode = state->default_mode;
 }
 
-hardened_bool_t rescue_detect_entry(const owner_rescue_config_t *config) {
+rom_error_t rescue_enter_handler(boot_svc_msg_t *msg) {
+  rescue_requested = msg->enter_rescue_req.skip_once == kHardenedBoolTrue
+                         ? kRescueRequestSkip
+                         : kRescueRequestEnter;
+  boot_svc_enter_rescue_res_init(kErrorOk, &msg->enter_rescue_res);
+  return kErrorOk;
+}
+
+rom_error_t rescue_inactivity(rescue_state_t *state) {
+  if (state->inactivity_deadline &&
+      ibex_mcycle() > state->inactivity_deadline) {
+    return kErrorRescueInactivity;
+  }
+  return kErrorOk;
+}
+
+hardened_bool_t rescue_enter_on_fail(const owner_rescue_config_t *config) {
+  if ((hardened_bool_t)config != kHardenedBoolFalse) {
+    if (bitfield_bit32_read(config->timeout, RESCUE_ENTER_ON_FAIL_BIT)) {
+      return kHardenedBoolTrue;
+    }
+  }
+  return kHardenedBoolFalse;
+}
+
+void rescue_skip_next_boot(void) {
+  boot_svc_msg_t *msg = &retention_sram_get()->creator.boot_svc_msg;
+  boot_svc_enter_rescue_req_init(kHardenedBoolTrue, &msg->enter_rescue_req);
+}
+
+hardened_bool_t rescue_detect_entry(const owner_rescue_config_t *config,
+                                    uint32_t reset_reasons) {
+  switch (rescue_requested) {
+    case kRescueRequestEnter:
+      return kHardenedBoolTrue;
+    case kRescueRequestSkip:
+      return kHardenedBoolFalse;
+    default:
+        /* do nothing and continue with trigger detection */;
+  }
+  rescue_protocol_t protocol = kRescueProtocolXmodem;
   rescue_detect_t detect = kRescueDetectBreak;
   uint32_t index = 0;
   uint32_t gpio_val = 0;
+  uint32_t wdt_enable = 0;
   if ((hardened_bool_t)config != kHardenedBoolFalse) {
+    protocol = config->protocol;
     detect = bitfield_field32_read(config->detect, RESCUE_DETECT);
     index = bitfield_field32_read(config->detect, RESCUE_DETECT_INDEX);
-    gpio_val = bitfield_bit32_read(config->gpio, RESCUE_GPIO_VALUE_BIT);
+    gpio_val = bitfield_bit32_read(config->gpio, RESCUE_MISC_GPIO_VALUE_BIT);
+    wdt_enable = bitfield_bit32_read(config->gpio,
+                                     RESCUE_MISC_GPIO_WATCHDOG_TIMEOUT_EN_BIT);
   }
+  dbg_printf("info: rescue protocol %c\r\n", rescue_type);
+  if (protocol != rescue_type) {
+    dbg_printf("warning: rescue configured for protocol %c\r\n", protocol);
+  }
+
+  if (wdt_enable &&
+      rstmgr_is_hw_reset_reason(kDtRstmgr, reset_reasons, kDtInstanceIdAonTimer,
+                                kDtAonTimerResetReqAonTimer)) {
+    return kHardenedBoolTrue;
+  }
+
   switch (detect) {
     case kRescueDetectNone:
       break;
     case kRescueDetectBreak:
       if (uart_break_detect(kRescueDetectTime) == kHardenedBoolTrue) {
-        dbg_printf("rescue: remember to clear break\r\n");
-        uart_enable_receiver();
+        dbg_printf("rescue:1.0 remember to clear break\r\n");
         return kHardenedBoolTrue;
       }
       break;
@@ -309,6 +479,8 @@ hardened_bool_t rescue_detect_entry(const owner_rescue_config_t *config) {
       if (pinmux_read_straps() == index) {
         return kHardenedBoolTrue;
       }
+      break;
+    default:
       break;
   }
   return kHardenedBoolFalse;

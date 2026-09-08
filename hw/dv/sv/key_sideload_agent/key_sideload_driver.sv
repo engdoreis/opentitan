@@ -11,15 +11,11 @@ class key_sideload_driver#(
   // the base class provides the following handles for use:
   // key_sideload_agent_cfg: cfg
 
-  `uvm_component_new
+  function new (string name, uvm_component parent);
+    super.new(name, parent);
+  endfunction
 
-  virtual task run_phase(uvm_phase phase);
-    // base class forks off reset_signals() and get_and_drive() tasks
-    super.run_phase(phase);
-  endtask
-
-  // reset signals
-  virtual task reset_signals();
+  task on_enter_reset();
     cfg.vif.sideload_key.valid = 0;
     cfg.vif.sideload_key.key[0] = 'x;
     cfg.vif.sideload_key.key[1] = 'x;
@@ -32,22 +28,20 @@ class key_sideload_driver#(
       $cast(rsp, req.clone());
       rsp.set_id_info(req);
       `uvm_info(`gfn, $sformatf("rcvd item:\n%0s", req.sprint()), UVM_HIGH)
+
       cfg.vif.sideload_key.valid = req.valid;
-      if (req.valid) begin
-        cfg.vif.sideload_key.key[0] = req.key0;
-        cfg.vif.sideload_key.key[1] = req.key1;
-      end
-      else begin
-        cfg.vif.sideload_key.key[0] = 'x;
-        cfg.vif.sideload_key.key[1] = 'x;
-      end
-      // Always wait for one clock cycle. Otherwise, this task may consume zero time while the
-      // reset is active. This would be problematic as it would cause the key sideload interface
-      // to be updated endlessly and the DV environment to hang.
-      cfg.vif.wait_clks(1);
-      // send rsp back to seq
+      cfg.vif.sideload_key.key[0] = req.valid ? req.key0 : 'x;
+      cfg.vif.sideload_key.key[1] = req.valid ? req.key1 : 'x;
       `uvm_info(`gfn, "item sent", UVM_HIGH)
-      cfg.vif.wait_clks_or_rst(req.rsp_delay);
+
+      fork : isolation_fork begin
+        fork
+          cfg.vif.wait_clks_or_rst(1 + req.rsp_delay);
+          req.wait_stop_requested();
+        join_any
+        disable fork;
+      end join
+
       seq_item_port.item_done(req);
     end
   endtask

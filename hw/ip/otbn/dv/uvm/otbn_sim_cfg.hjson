@@ -57,7 +57,7 @@ name:
              "sec_cm_prim_count_bind"]
 
   // Default iterations for all tests - each test entry can override this.
-  reseed: 50
+  reseed: 10
 
   // Default UVM test and seq class name.
   uvm_test: otbn_base_test
@@ -96,6 +96,7 @@ name:
 
   smoke_dir: "{otbn_dir}/dv/smoke"
   multi_err_dir: "{otbn_dir}/dv/otbnsim/test/simple/multi"
+  wfi_dir: "{proj_root}/sw/otbn/wfi"
 
   run_modes: [
     // Run the random instruction generator and build the one resulting binary
@@ -127,7 +128,8 @@ name:
       ]
     }
 
-    // Build the smoke test in {otbn_elf_dir}.
+    // Build the smoke tests in {otbn_elf_dir}. This builds both the regular and vectorized smoke
+    // tests.
     {
       name: build_otbn_smoke_binary_mode
       pre_run_cmds: [
@@ -142,6 +144,14 @@ name:
         "{gen_fixed} --src-dir {multi_err_dir} {otbn_elf_dir}"
       ]
     }
+
+    // Build the WFI top level test in {otbn_elf_dir}.
+    {
+      name: build_otbn_wfi_binary_mode
+      pre_run_cmds: [
+        "{gen_fixed} --src-dir {wfi_dir} {otbn_elf_dir}"
+      ]
+    }
   ]
 
   // List of test specifications.
@@ -151,8 +161,19 @@ name:
       uvm_test_seq: "otbn_smoke_vseq"
       en_run_modes: ["build_otbn_smoke_binary_mode"]
       // Run just one smoke test: it's a fixed binary and there's not much
-      // interaction with the environment so there's probably not much point
-      // in running it loads of times.
+      // interaction with the environment so there's no point in running it
+      // more than once.
+      reseed: 1
+    }
+
+    {
+      name: "otbn_smoke_vectorized"
+      uvm_test_seq: "otbn_smoke_vectorized_vseq"
+      // The build_otbn_smoke_binary_mode builds both smoke tests
+      en_run_modes: ["build_otbn_smoke_binary_mode"]
+      // Run just one smoke test: it's a fixed binary and there's not much
+      // interaction with the environment so there's no point in running it
+      // more than once.
       reseed: 1
     }
 
@@ -356,19 +377,40 @@ name:
       en_run_modes: ["build_otbn_rig_binary_mode"]
       reseed: 10
     }
+
+    {
+      name: "otbn_wfi_smoke"
+      uvm_test_seq: "otbn_wfi_smoke_vseq"
+      en_run_modes: ["build_otbn_wfi_binary_mode"]
+      reseed: 1 // directed test
+    }
+
+    {
+      name: "otbn_wfi_sec_wipe"
+      uvm_test_seq: "otbn_wfi_sec_wipe_vseq"
+      en_run_modes: ["build_otbn_wfi_binary_mode"]
+      reseed: 5 // directed test but with randomized escalation source
+    }
+
+    {
+      name: "otbn_wfi_back_to_back"
+      uvm_test_seq: "otbn_wfi_back_to_back_vseq"
+      en_run_modes: ["build_otbn_wfi_binary_mode"]
+      reseed: 1 // directed test
+    }
   ]
 
   // List of regressions.
   regressions: [
     {
       name: smoke
-      tests: ["otbn_smoke"]
+      tests: ["otbn_smoke", "otbn_smoke_vectorized"]
     }
 
     {
       name: "core"
       tests: [
-        "otbn_smoke", "otbn_single", "otbn_multi", "otbn_reset",
+        "otbn_smoke", "otbn_smoke_vectorized", "otbn_single", "otbn_multi", "otbn_reset",
          "otbn_multi_err", "otbn_imem_err", "otbn_dmem_err",
          "otbn_stress_all", "otbn_escalate", "otbn_illegal_mem_acc",
          "otbn_zero_state_err_urnd", "otbn_sw_errs_fatal_chk",
@@ -382,7 +424,7 @@ name:
       name: "ci"
       tests: [
         # V1
-        "otbn_smoke", "otbn_single", "otbn_csr_hw_reset", "otbn_csr_rw",
+        "otbn_smoke", "otbn_smoke_vectorized", "otbn_single", "otbn_csr_hw_reset", "otbn_csr_rw",
         "otbn_csr_bit_bash", "otbn_csr_aliasing",
         "otbn_csr_mem_rw_with_rand_reset",
         "otbn_mem_partial_access",

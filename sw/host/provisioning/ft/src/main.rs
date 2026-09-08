@@ -16,26 +16,54 @@ use indexmap::IndexMap;
 use p256::NistP256;
 
 use cert_lib::{CaConfig, CaKey, CaKeyType};
-use ft_lib::response::PersonalizeResponse;
 use ft_lib::{
     check_slot_b_boot_up, run_ft_personalize, run_sram_ft_individualize, test_exit, test_unlock,
 };
 use opentitanlib::backend;
 use opentitanlib::console::spi::SpiConsoleDevice;
+use opentitanlib::io::gpio::{PinMode, PullMode};
 use opentitanlib::test_utils::init::InitializeTest;
 use opentitanlib::test_utils::lc::{read_device_id, read_lc_state};
 use opentitanlib::test_utils::load_sram_program::SramProgramParams;
 use ot_hal::dif::lc_ctrl::DifLcCtrlState;
 use ujson_lib::UjsonPayloads;
-use ujson_lib::provisioning_data::ManufCertgenInputs;
+use ujson_lib::provisioning_data::{ManufCertgenInputs, ManufFtIndividualizeData};
+use util_lib::response::PersonalizeResponse;
 use util_lib::{
     encrypt_token, hex_string_to_u8_arrayvec, hex_string_to_u32_arrayvec, load_rsa_public_key,
     random_token,
 };
 
 /// Provisioning data command-line parameters.
+#[derive(clap::ValueEnum, Clone, Copy, Debug, PartialEq, Eq)]
+pub enum BlobVersion {
+    #[value(alias = "0")]
+    V0,
+    #[value(alias = "1")]
+    V1,
+}
+
+impl From<BlobVersion> for ujson_lib::provisioning_data::PersoBlobVersion {
+    fn from(v: BlobVersion) -> Self {
+        match v {
+            BlobVersion::V0 => ujson_lib::provisioning_data::PersoBlobVersion::V0,
+            BlobVersion::V1 => ujson_lib::provisioning_data::PersoBlobVersion::V1,
+        }
+    }
+}
+
 #[derive(Debug, Args, Clone)]
 pub struct ManufFtProvisioningDataInput {
+    /// FT Device ID to provision.
+    ///
+    /// Contains the SKU-specific portion of the device ID.
+    #[arg(long, default_value = "")]
+    pub ft_device_id: String,
+
+    /// Wafer Authentication Secret to verify from device.
+    #[arg(long)]
+    pub wafer_auth_secret: String,
+
     /// TestUnlock token; a 128-bit hex string.
     #[arg(long)]
     pub test_unlock_token: String,
@@ -59,6 +87,10 @@ pub struct ManufFtProvisioningDataInput {
     /// Pretty-print the provisioning data output.
     #[arg(long, default_value = "false")]
     pretty: bool,
+
+    /// Version of the TLV blob format to use.
+    #[arg(long, value_enum, default_value_t = BlobVersion::V0)]
+    pub blob_version: BlobVersion,
 }
 
 #[derive(Debug, Parser)]
@@ -81,12 +113,16 @@ struct Opts {
     second_bootstrap: PathBuf,
 
     /// Console receive timeout.
-    #[arg(long, value_parser = humantime::parse_duration, default_value = "600s")]
+    #[arg(long, value_parser = humantime::parse_duration, default_value = "30s")]
     timeout: Duration,
 
     /// Name of the SPI interface to connect to the OTTF console.
     #[arg(long, default_value = "BOOTSTRAP")]
     console_spi: String,
+
+    /// Name of the SPI interface to connect to the OTTF console.
+    #[arg(long, default_value = "IOA5")]
+    console_tx_indicator_pin: String,
 
     /// Owner's firmware string indicating successful start up.
     #[arg(long)]
@@ -111,13 +147,25 @@ fn main() -> Result<()> {
     let transport = backend::create(&opts.init.backend_opts)?;
     transport.apply_default_configuration(None)?;
     let spi = transport.spi(&opts.console_spi)?;
-    let spi_console_device = SpiConsoleDevice::new(&*spi, None)?;
+    let device_console_tx_ready_pin = &transport.gpio_pin(&opts.console_tx_indicator_pin)?;
+    device_console_tx_ready_pin.set_mode(PinMode::Input)?;
+    device_console_tx_ready_pin.set_pull_mode(PullMode::None)?;
+    let spi_console = SpiConsoleDevice::new(
+        &*spi,
+        Some(device_console_tx_ready_pin),
+        /*ignore_frame_num=*/ false,
+    )?;
     InitializeTest::print_result(
         "load_bitstream",
-        opts.init.load_bitstream.init(&transport).map(|_| None),
+        opts.init
+            .load_bitstream
+            .init(&transport, &opts.init.jtag_params)
+            .map(|_| None),
     )?;
 
-    // Parse and format LC tokens.
+    // Parse and format tokens.
+    let wafer_auth_secret =
+        hex_string_to_u8_arrayvec::<32>(opts.provisioning_data.wafer_auth_secret.as_str())?;
     let _test_unlock_token =
         hex_string_to_u32_arrayvec::<4>(opts.provisioning_data.test_unlock_token.as_str())?;
     let _test_exit_token =
@@ -132,6 +180,16 @@ fn main() -> Result<()> {
     let encrypted_rma_unlock_token = encrypt_token(&token_encrypt_key, &rma_unlock_token)?;
     response.rma_unlock_token = Base64::encode_string(&encrypted_rma_unlock_token);
     log::info!("Encrypted rma_unlock_token = {}", response.rma_unlock_token);
+
+    // Parse and prepare individualization ujson data payload.
+    let mut ft_device_id = ArrayVec::<u32, 4>::from([0; 4]);
+    if !opts.provisioning_data.ft_device_id.is_empty() {
+        ft_device_id =
+            hex_string_to_u32_arrayvec::<4>(opts.provisioning_data.ft_device_id.as_str())?;
+        ft_device_id.reverse();
+    }
+    // The FT device ID is sent to the DUT in little endian order.
+    let ft_individualize_data_in = ManufFtIndividualizeData { ft_device_id };
 
     // Parse and prepare CA key.
     let mut ca_cfgs: HashMap<String, CaConfig> = serde_annotate::from_str(
@@ -167,6 +225,10 @@ fn main() -> Result<()> {
     let _perso_certgen_inputs = ManufCertgenInputs {
         dice_auth_key_key_id: dice_ca_key_id.clone(),
         ext_auth_key_key_id: ext_ca_key_id.clone(),
+        blob_version: match opts.provisioning_data.blob_version {
+            BlobVersion::V0 => 0,
+            BlobVersion::V1 => 1,
+        },
     };
 
     // Only run test unlock operation if we are in a locked LC state.
@@ -209,8 +271,10 @@ fn main() -> Result<()> {
                 &transport,
                 &opts.init.jtag_params,
                 &opts.sram_program,
+                &ft_individualize_data_in,
+                &spi_console,
                 opts.timeout,
-                &spi_console_device,
+                &mut ujson_payloads,
             )?;
             response.stats.log_elapsed_time("ft-individualize", t0);
 
@@ -238,12 +302,13 @@ fn main() -> Result<()> {
     run_ft_personalize(
         &transport,
         &opts.init,
+        &wafer_auth_secret,
         &rma_unlock_token,
         ca_cfgs,
         ca_keys,
         &_perso_certgen_inputs,
         opts.second_bootstrap,
-        &spi_console_device,
+        &spi_console,
         &mut ujson_payloads,
         opts.timeout,
         &mut response,

@@ -28,10 +28,16 @@
       default: "otp_ctrl"
     }
     {
-      name: "enable_flash_key"
-      desc: "Enable the flash key interface."
+      name: "enable_nvm_key"
+      desc: "Enable the nvm key interface."
       type: "bool"
       default: "true"
+    }
+    {
+      name: "num_sram_key_req_slots"
+      desc: "Number of key derivation interfaces for SRAM scrambling devices."
+      type: "int"
+      default: "4"
     }
   ]
 }

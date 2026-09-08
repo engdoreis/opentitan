@@ -27,7 +27,7 @@ typedef enum owner_page_status {
 } owner_page_status_t;
 
 /**
- * RAM copies of the owner pages read out of flash INFO pages.
+ * RAM copies of the owner pages read out of NVM INFO pages.
  */
 extern owner_block_t owner_page[2];
 extern owner_page_status_t owner_page_valid[2];
@@ -39,12 +39,18 @@ extern owner_page_status_t owner_page_valid[2];
 typedef struct owner_config {
   /** The requested SRAM execution configuration. */
   owner_sram_exec_mode_t sram_exec;
-  /** The requested flash configuration. */
-  const owner_flash_config_t *flash;
-  /** The requested flash INFO configuration. */
-  const owner_flash_info_config_t *info;
+  /** Allow boot_svc after wakeup. */
+  hardened_bool_t boot_svc_after_wakeup;
+  /** The requested NVM configuration. */
+  const owner_nvm_config_t *nvm;
+  /** The requested NVM INFO configuration. */
+  const owner_nvm_info_config_t *info;
   /** The requested rescue configuration. */
   const owner_rescue_config_t *rescue;
+  /**
+   * The requested Integrator Specific Firmware Binding (ISFB) configuration.
+   */
+  const owner_isfb_config_t *isfb;
 } owner_config_t;
 
 /**
@@ -57,6 +63,13 @@ typedef struct owner_application_keyring {
   /** Pointers to the application keys. */
   const owner_application_key_t *key[16];
 } owner_application_keyring_t;
+
+/**
+ * Determine if the owner keys are equal between owner page 0 and 1.
+ *
+ * @return kHardenedBoolTrue if the owner key are the same between both pages.
+ */
+hardened_bool_t owner_block_owner_key_equal(void);
 
 /**
  * Determine if the ownership update mode is one of the "newversion" modes.
@@ -79,6 +92,9 @@ hardened_bool_t owner_block_page1_valid_for_transfer(boot_data_t *bootdata);
  * The sram_exec mode is set to DisabledLocked and the three configuration
  * pointers are set to kHardenedBoolFalse.
  *
+ * The default implementation is weak and can be overridden for SKU-specific
+ * defaults.
+ *
  * @param config A pointer to a config struct holding pointers to config items.
  */
 void owner_config_default(owner_config_t *config);
@@ -100,40 +116,76 @@ rom_error_t owner_block_parse(const owner_block_t *block,
                               owner_application_keyring_t *keyring);
 
 /**
- * Check the flash config for errors.
+ * Check the NVM config for errors.
  *
- * Currently, this checks that a flash config region covering the ROM_EXT
- * is compatible with the default flash config region.
+ * Currently, this checks that a NVM config region covering the ROM_EXT
+ * is compatible with the default NVM config region.
  *
- * @param flash A pointer to a flash configuration struct.
+ * @param nvm A pointer to a NVM configuration struct.
  * @return error code.
  */
-rom_error_t owner_block_flash_check(const owner_flash_config_t *flash);
+rom_error_t owner_block_nvm_check(const owner_nvm_config_t *nvm);
 
 /**
- * Apply the flash configuration parameters from the owner block.
+ * Check the ISFB configuration for errors.
  *
- * @param flash A pointer to a flash configuration struct.
- * @param config_side Which side of the flash to configure.
+ * Currently, this checks that the ISFB configuration is on an owner page,
+ * and that the product_words field is within bounds.
+ *
+ * @param isfb A pointer to an ISFB configuration struct.
+ * @return error code.
+ */
+rom_error_t owner_isfb_config_check(const owner_isfb_config_t *isfb);
+
+/**
+ * Apply the NVM configuration parameters from the owner block.
+ *
+ * @param nvm A pointer to a NVM configuration struct.
+ * @param config_side Which side of the NVM to configure.
  * @param owner_lockdown Apply any special lockdown configuration to
  *                       silicon_owner regions on the specified side of the
- *                       flash.  May use kHardenedBoolFalse to skip lockdown.
+ *                       NVM.  May use kHardenedBoolFalse to skip lockdown.
  * @param mp_index The destination configuration index.  The value should be
  *                 initialized to zero before the first call to this function.
  * @return error code.
  */
-rom_error_t owner_block_flash_apply(const owner_flash_config_t *flash,
-                                    uint32_t config_side,
-                                    uint32_t owner_lockdown,
-                                    uint32_t *mp_index);
+rom_error_t owner_block_nvm_apply(const owner_nvm_config_t *nvm,
+                                  uint32_t config_side, uint32_t owner_lockdown,
+                                  uint32_t *mp_index);
 
 /**
- * Apply the flash info configuration parameters from the owner block.
+ * Apply the NVM info configuration parameters from the owner block.
  *
- * @param info A pointer to a flash_info configuration.
+ * @param info A pointer to an NVM info configuration.
  * @return error code.
  */
-rom_error_t owner_block_info_apply(const owner_flash_info_config_t *info);
+rom_error_t owner_block_info_apply(const owner_nvm_info_config_t *info);
+
+/**
+ * Lock the NVM info configuration parameters as requested by the owner block.
+ *
+ * @param info A pointer to an NVM info configuration.
+ * @return error code.
+ */
+rom_error_t owner_block_info_lockdown(const owner_nvm_info_config_t *info);
+
+/**
+ * Enable erase on the ISFB info page.
+ *
+ * Unconditionally enables erase on the ISFB info page. This function is used
+ * to enable the erase policy for the ISFB info page.
+ *
+ * The function does not enable erase on the ISFB info page if the owner config
+ * does not contain the ISFB or info page owner blocks. The settings are also
+ * ignored if the device is not in the `kOwnershipStateLockedOwner` state.
+ *
+ * @param bootdata The current boot data.
+ * @param owner_config The owner configuration.
+ *
+ * @return The result of the operation.
+ */
+rom_error_t owner_block_info_isfb_erase_enable(
+    boot_data_t *bootdata, const owner_config_t *owner_config);
 
 rom_error_t owner_keyring_find_key(const owner_application_keyring_t *keyring,
                                    uint32_t key_id, size_t *index);

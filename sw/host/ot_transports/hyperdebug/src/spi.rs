@@ -16,6 +16,7 @@ use opentitanlib::io::gpio::GpioPin;
 use opentitanlib::io::spi::{
     AssertChipSelect, MaxSizes, SpiError, Target, TargetChipDeassert, Transfer, TransferMode,
 };
+use opentitanlib::spiflash::flash::SpiFlash;
 use opentitanlib::transport::TransportError;
 
 use super::{BulkInterface, Inner};
@@ -258,7 +259,7 @@ impl HyperdebugSpiTarget {
         idx: u8,
         supports_tpm_poll: bool,
     ) -> Result<Self> {
-        let mut usb_handle = inner.usb_device.borrow_mut();
+        let usb_handle = &inner.usb_device;
 
         // Tell HyperDebug to enable SPI bridge, and to address particular SPI device.
         inner.selected_spi.set(idx);
@@ -312,7 +313,7 @@ impl HyperdebugSpiTarget {
     fn select_my_spi_bus(&self) -> Result<()> {
         if self.inner.selected_spi.get() != self.target_idx {
             self.inner.selected_spi.set(self.target_idx);
-            self.inner.usb_device.borrow().write_control(
+            self.inner.usb_device.write_control(
                 rusb::request_type(Direction::Out, RequestType::Vendor, Recipient::Interface),
                 self.target_enable_cmd,
                 self.target_idx as u16,
@@ -679,7 +680,6 @@ impl HyperdebugSpiTarget {
     fn usb_write_bulk(&self, buf: &[u8]) -> Result<()> {
         self.inner
             .usb_device
-            .borrow()
             .write_bulk(self.interface.out_endpoint, buf)?;
         Ok(())
     }
@@ -688,7 +688,6 @@ impl HyperdebugSpiTarget {
     fn usb_read_bulk(&self, buf: &mut [u8]) -> Result<usize> {
         self.inner
             .usb_device
-            .borrow()
             .read_bulk(self.interface.in_endpoint, buf)
     }
 
@@ -696,7 +695,6 @@ impl HyperdebugSpiTarget {
     fn usb_read_bulk_timeout(&self, buf: &mut [u8], timeout: Duration) -> Result<usize> {
         self.inner
             .usb_device
-            .borrow()
             .read_bulk_timeout(self.interface.in_endpoint, buf, timeout)
     }
 }
@@ -782,7 +780,10 @@ impl Target for HyperdebugSpiTarget {
     fn get_flashrom_programmer(&self) -> Result<String> {
         Ok(format!(
             "raiden_debug_spi:serial={},target={}",
-            self.inner.usb_device.borrow().get_serial_number(),
+            self.inner
+                .usb_device
+                .get_serial_number()
+                .expect("hyperdebug with no serial number!"),
             self.target_idx
         ))
     }
@@ -1054,10 +1055,10 @@ impl Target for HyperdebugSpiTarget {
                 }
                 [eeprom::Transaction::WaitForBusyClear, rest @ ..] => {
                     self.get_last_streamed_data(stream_state)?;
-                    let mut status = eeprom::STATUS_WIP;
-                    while status & eeprom::STATUS_WIP != 0 {
+                    let mut status = SpiFlash::STATUS_WIP;
+                    while status & SpiFlash::STATUS_WIP != 0 {
                         self.run_transaction(&mut [
-                            Transfer::Write(&[eeprom::READ_STATUS]),
+                            Transfer::Write(&[SpiFlash::READ_STATUS]),
                             Transfer::Read(std::slice::from_mut(&mut status)),
                         ])?;
                     }

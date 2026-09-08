@@ -45,6 +45,7 @@ filesets:
       - seq_lib/otbn_dmem_err_vseq.sv: {is_include_file: true}
       - seq_lib/otbn_single_vseq.sv: {is_include_file: true}
       - seq_lib/otbn_smoke_vseq.sv: {is_include_file: true}
+      - seq_lib/otbn_smoke_vectorized_vseq.sv: {is_include_file: true}
       - seq_lib/otbn_stress_all_vseq.sv: {is_include_file: true}
       - seq_lib/otbn_escalate_vseq.sv: {is_include_file: true}
       - seq_lib/otbn_zero_state_err_urnd_vseq.sv: {is_include_file: true}
@@ -65,6 +66,9 @@ filesets:
       - seq_lib/otbn_mem_gnt_acc_err_vseq.sv: {is_include_file: true}
       - seq_lib/otbn_stack_addr_integ_chk_vseq.sv: {is_include_file: true}
       - seq_lib/otbn_partial_wipe_vseq.sv: {is_include_file: true}
+      - seq_lib/otbn_wfi_smoke_vseq.sv: {is_include_file: true}
+      - seq_lib/otbn_wfi_sec_wipe_vseq.sv: {is_include_file: true}
+      - seq_lib/otbn_wfi_back_to_back_vseq.sv: {is_include_file: true}
     file_type: systemVerilogSource
 
 generate:
@@ -80,4 +84,4 @@ targets:
     filesets:
       - files_dv
     generate:
-      - ral
+      - "!chip_level ? (ral)"

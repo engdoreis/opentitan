@@ -21,6 +21,9 @@ where
 {
     fn send(&self, device: &T) -> Result<String>;
     fn send_with_crc(&self, device: &T) -> Result<String>;
+    fn send_with_padding(&self, device: &T, max_size: usize) -> Result<String>;
+    fn send_with_padding_and_crc(&self, device: &T, max_size: usize, quiet: bool)
+    -> Result<String>;
 }
 
 impl<T, U> ConsoleSend<T> for U
@@ -45,13 +48,51 @@ where
         let crc_s = actual_crc.send(device)?;
         Ok(s + &crc_s)
     }
+
+    fn send_with_padding(&self, device: &T, max_size: usize) -> Result<String> {
+        let mut s = serde_json::to_string(self)?;
+        let pad_len = max_size - s.len();
+        let pad_str = ' '.to_string().repeat(pad_len);
+        s.insert_str(s.len() - 1, &pad_str);
+        device.write(s.as_bytes())?;
+        Ok(s)
+    }
+
+    fn send_with_padding_and_crc(
+        &self,
+        device: &T,
+        max_size: usize,
+        quiet: bool,
+    ) -> Result<String> {
+        // Craft the UJSON string and pad with whitespace.
+        let mut s = serde_json::to_string(self)?;
+        let pad_len = max_size - s.len();
+        let pad_str = ' '.to_string().repeat(pad_len);
+        s.insert_str(s.len() - 1, &pad_str);
+        // Craft the CRC and pad with whitespace.
+        let actual_crc = OttfCrc {
+            crc: Crc::<u32>::new(&CRC_32_ISO_HDLC).checksum(s.as_bytes()),
+        };
+        let max_crc = OttfCrc { crc: u32::MAX };
+        let mut crc_s = serde_json::to_string(&actual_crc)?;
+        let max_crc_s = serde_json::to_string(&max_crc)?;
+        let crc_pad_str = ' '.to_string().repeat(max_crc_s.len() - crc_s.len());
+        crc_s.insert_str(crc_s.len() - 1, &crc_pad_str);
+        // Send bytes to the DUT.
+        if !quiet {
+            log::info!("Sending: {}", s.clone() + &crc_s);
+        }
+        device.write(s.as_bytes())?;
+        device.write(crc_s.as_bytes())?;
+        Ok(s + &crc_s)
+    }
 }
 
 pub trait ConsoleRecv<T>
 where
     T: ConsoleDevice + ?Sized,
 {
-    fn recv(device: &T, timeout: Duration, quiet: bool) -> Result<Self>
+    fn recv(device: &T, timeout: Duration, quiet: bool, skip_crc: bool) -> Result<Self>
     where
         Self: Sized;
 }
@@ -61,10 +102,11 @@ where
     T: ConsoleDevice + ?Sized,
     U: DeserializeOwned,
 {
-    fn recv(device: &T, timeout: Duration, quiet: bool) -> Result<Self>
+    fn recv(device: &T, timeout: Duration, quiet: bool, skip_crc: bool) -> Result<Self>
     where
         Self: Sized,
     {
+        let device = device.coverage();
         let device: &dyn ConsoleDevice = if quiet { &device } else { &device.logged() };
         let result = device.wait_for_line(
             PassFail(
@@ -78,7 +120,9 @@ where
             PassFailResult::Pass(cap) => {
                 let json_str = &cap[1];
                 let crc_str = &cap[2];
-                check_crc(json_str, crc_str)?;
+                if !skip_crc {
+                    check_crc(json_str, crc_str)?;
+                }
                 Ok(serde_json::from_str::<Self>(json_str)?)
             }
             PassFailResult::Fail(cap) => {

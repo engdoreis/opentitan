@@ -8,11 +8,12 @@
 #include "sw/device/lib/base/memory.h"
 #include "sw/device/silicon_creator/lib/boot_data.h"
 #include "sw/device/silicon_creator/lib/boot_svc/boot_svc_msg.h"
-#include "sw/device/silicon_creator/lib/drivers/flash_ctrl.h"
 #include "sw/device/silicon_creator/lib/drivers/lifecycle.h"
 #include "sw/device/silicon_creator/lib/error.h"
+#include "sw/device/silicon_creator/lib/nvm_ctrl.h"
 #include "sw/device/silicon_creator/lib/ownership/owner_block.h"
 #include "sw/device/silicon_creator/lib/ownership/ownership_key.h"
+#include "sw/device/silicon_creator/lib/sigverify/flash_exec.h"
 
 rom_error_t ownership_activate(boot_data_t *bootdata,
                                hardened_bool_t write_both_pages) {
@@ -32,19 +33,17 @@ rom_error_t ownership_activate(boot_data_t *bootdata,
   // flash writes succeeded.
   //
   // Program the sealed page into slot 1.
-  HARDENED_RETURN_IF_ERROR(flash_ctrl_info_erase(&kFlashCtrlInfoPageOwnerSlot1,
-                                                 kFlashCtrlEraseTypePage));
-  HARDENED_RETURN_IF_ERROR(flash_ctrl_info_write(
-      &kFlashCtrlInfoPageOwnerSlot1, 0,
-      sizeof(owner_page[1]) / sizeof(uint32_t), &owner_page[1]));
+  HARDENED_RETURN_IF_ERROR(nvm_ctrl_info_erase(kNvmInfoPageOwnerSlot1));
+  HARDENED_RETURN_IF_ERROR(nvm_ctrl_info_write(
+      kNvmInfoPageOwnerSlot1, 0, sizeof(owner_page[1]) / sizeof(uint32_t),
+      &owner_page[1]));
 
   if (write_both_pages == kHardenedBoolTrue) {
     // Program the same data into slot 0.
-    HARDENED_RETURN_IF_ERROR(flash_ctrl_info_erase(
-        &kFlashCtrlInfoPageOwnerSlot0, kFlashCtrlEraseTypePage));
-    HARDENED_RETURN_IF_ERROR(flash_ctrl_info_write(
-        &kFlashCtrlInfoPageOwnerSlot0, 0,
-        sizeof(owner_page[1]) / sizeof(uint32_t), &owner_page[1]));
+    HARDENED_RETURN_IF_ERROR(nvm_ctrl_info_erase(kNvmInfoPageOwnerSlot0));
+    HARDENED_RETURN_IF_ERROR(nvm_ctrl_info_write(
+        kNvmInfoPageOwnerSlot0, 0, sizeof(owner_page[1]) / sizeof(uint32_t),
+        &owner_page[1]));
   }
 
   return kErrorOk;
@@ -56,9 +55,16 @@ static rom_error_t activate_handler(boot_svc_msg_t *msg,
   // requirements are met). We do this first (rather than parse) because if the
   // signature requirements are not met, the RAM copy of the owner page will be
   // destroyed.
-  if (owner_block_page1_valid_for_transfer(bootdata) != kHardenedBoolTrue) {
+  if (launder32(owner_block_page1_valid_for_transfer(bootdata)) !=
+      kHardenedBoolTrue) {
     return kErrorOwnershipInvalidInfoPage;
   }
+  HARDENED_CHECK_EQ(owner_block_page1_valid_for_transfer(bootdata),
+                    kHardenedBoolTrue);
+
+  // Set the variable checking whether the correct signatures have been
+  // verified.
+  uint32_t flash_exec = 0;
 
   // Check the activation key and the nonce.
   size_t len = (uintptr_t)&msg->ownership_activate_req.signature -
@@ -66,7 +72,10 @@ static rom_error_t activate_handler(boot_svc_msg_t *msg,
   HARDENED_RETURN_IF_ERROR(ownership_key_validate(
       /*page=*/1, kOwnershipKeyActivate, msg->header.type, &bootdata->nonce,
       &msg->ownership_activate_req.signature,
-      &msg->ownership_activate_req.primary_bl0_slot, len));
+      &msg->ownership_activate_req.primary_bl0_slot, len, &flash_exec));
+
+  // Verify that we passed signature verification for the message.
+  HARDENED_CHECK_EQ(flash_exec, kSigverifyFlashExec);
 
   if (!nonce_equal(&msg->ownership_activate_req.nonce, &bootdata->nonce)) {
     return kErrorOwnershipInvalidNonce;
@@ -80,15 +89,19 @@ static rom_error_t activate_handler(boot_svc_msg_t *msg,
     return kErrorOwnershipInvalidDin;
   }
 
+  // Copy the prior owner's key so we can save it in the key history.
+  uint32_t prior_key_alg = owner_page[0].ownership_key_alg;
+  owner_keydata_t prior_owner_key = owner_page[0].owner_key;
+
   HARDENED_RETURN_IF_ERROR(
       ownership_activate(bootdata, /*write_both_pages=*/kHardenedBoolTrue));
 
-  // The requested primary_bl0_slot is user input.  Validate and clamp it to
-  // legal values.
-  if (msg->ownership_activate_req.primary_bl0_slot == kBootSlotB) {
-    bootdata->primary_bl0_slot = kBootSlotB;
-  } else {
-    bootdata->primary_bl0_slot = kBootSlotA;
+  // The requested primary_bl0_slot is user input.
+  // Legal values change the primary boot slot.  All other values result in no
+  // change.
+  if (msg->ownership_activate_req.primary_bl0_slot == kBootSlotA ||
+      msg->ownership_activate_req.primary_bl0_slot == kBootSlotB) {
+    bootdata->primary_bl0_slot = msg->ownership_activate_req.primary_bl0_slot;
   }
 
   if (bootdata->ownership_state == kOwnershipStateUnlockedSelf) {
@@ -98,7 +111,8 @@ static rom_error_t activate_handler(boot_svc_msg_t *msg,
   } else {
     // All other activations are transfers and need to regenerate entropy stored
     // in the OwnerSecret page.
-    HARDENED_RETURN_IF_ERROR(ownership_secret_new());
+    HARDENED_RETURN_IF_ERROR(
+        ownership_secret_new(prior_key_alg, &prior_owner_key));
     bootdata->ownership_transfers += 1;
   }
 

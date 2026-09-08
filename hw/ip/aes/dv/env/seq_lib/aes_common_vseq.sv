@@ -96,7 +96,10 @@ class aes_common_vseq extends aes_base_vseq;
         if (phase_val != GCM_RESTORE &&
             phase_val != GCM_AAD     &&
             phase_val != GCM_TEXT    &&
-            phase_val != GCM_TAG) begin
+            phase_val != GCM_TAG     || 1) begin // TODO: We can only leave GCM_INIT after having
+                                                 // generated the hash subkey and after having
+                                                 // encrypted the initial counter block. Right now,
+                                                 // the DV cannot track this.
           phase_val = {val_cur.phase};
         end
       end else if (val_cur.phase == GCM_RESTORE) begin
@@ -161,6 +164,19 @@ class aes_common_vseq extends aes_base_vseq;
       ral.ctrl_gcm_shadowed.lock_shadow_reg();
     end
   endfunction
+
+  // This task is extended from the one in cip_base_vseq. If seq is actually an aes_stress_all_vseq,
+  // tell that virtual sequence that it might be reset (so shouldn't run any sequences that
+  // themselves involve resets)
+  virtual protected task run_seq_with_rand_reset_vseq(uvm_sequence seq,
+                                                      int          num_times,
+                                                      uint         reset_delay_bound);
+    aes_stress_all_vseq stress_all_vseq;
+    if ($cast(stress_all_vseq, seq)) begin
+      stress_all_vseq.require_resettable();
+    end
+    super.run_seq_with_rand_reset_vseq(seq, num_times, reset_delay_bound);
+  endtask
 
   virtual task body();
     run_common_vseq_wrapper(num_trans);

@@ -59,6 +59,8 @@ enum module_ {
   kModulePwrmgr =          MODULE_CODE('P', 'M'),
   kModuleGpio =            MODULE_CODE('G', 'I'),
   kModuleUsb =             MODULE_CODE('U', 'S'),
+  kModuleNvmCtrl =         MODULE_CODE('N', 'V'),
+  kModuleRramCtrl =        MODULE_CODE('R', 'M'),
   // clang-format on
 };
 
@@ -88,6 +90,7 @@ enum module_ {
 #define DEFINE_ERRORS(X) \
   X(kErrorOk,                         0x739), \
   X(kErrorWriteBootdataThenReboot,    0x2ea), \
+  X(kErrorNoData,                     0x4d7), \
   X(kErrorUnknown,                    0xffffffff), \
   \
   X(kErrorSigverifyBadRsaSignature,   ERROR_(1, kModuleSigverify, kInvalidArgument)), \
@@ -144,6 +147,11 @@ enum module_ {
   X(kErrorFlashCtrlDataErase,         ERROR_(5, kModuleFlashCtrl, kInternal)), \
   X(kErrorFlashCtrlInfoErase,         ERROR_(6, kModuleFlashCtrl, kInternal)), \
   X(kErrorFlashCtrlDataEraseVerify,   ERROR_(7, kModuleFlashCtrl, kInternal)), \
+  \
+  X(kErrorRramCtrlDataRead,           ERROR_(1, kModuleRramCtrl, kInternal)), \
+  X(kErrorRramCtrlInfoRead,           ERROR_(2, kModuleRramCtrl, kInternal)), \
+  X(kErrorRramCtrlDataWrite,          ERROR_(3, kModuleRramCtrl, kInternal)), \
+  X(kErrorRramCtrlInfoWrite,          ERROR_(4, kModuleRramCtrl, kInternal)), \
   \
   X(kErrorBootPolicyBadIdentifier,    ERROR_(1, kModuleBootPolicy, kInternal)), \
   X(kErrorBootPolicyBadLength,        ERROR_(2, kModuleBootPolicy, kInternal)), \
@@ -207,6 +215,7 @@ enum module_ {
   X(kErrorRescueBadMode,              ERROR_(1, kModuleRescue, kInvalidArgument)), \
   X(kErrorRescueImageTooBig,          ERROR_(2, kModuleRescue, kFailedPrecondition)), \
   X(kErrorRescueSendStart,            ERROR_(4, kModuleRescue, kInternal)), \
+  X(kErrorRescueInactivity,           ERROR_(5, kModuleRescue, kDeadlineExceeded)), \
   \
   X(kErrorCertInternal,               ERROR_(0, kModuleCert, kInternal)), \
   X(kErrorCertInvalidArgument,        ERROR_(1, kModuleCert, kInvalidArgument)), \
@@ -220,25 +229,34 @@ enum module_ {
   X(kErrorOwnershipInvalidTag,        ERROR_(5, kModuleOwnership, kInvalidArgument)), \
   X(kErrorOwnershipInvalidTagLength,  ERROR_(6, kModuleOwnership, kInvalidArgument)), \
   X(kErrorOwnershipDuplicateItem,     ERROR_(7, kModuleOwnership, kAlreadyExists)), \
-  X(kErrorOwnershipFlashConfigLength, ERROR_(8, kModuleOwnership, kOutOfRange)), \
+  X(kErrorOwnershipNvmConfigLength, ERROR_(8, kModuleOwnership, kOutOfRange)), \
   X(kErrorOwnershipInvalidInfoPage,   ERROR_(9, kModuleOwnership, kInvalidArgument)), \
   X(kErrorOwnershipBadInfoPage,       ERROR_(10, kModuleOwnership, kInternal)), \
   X(kErrorOwnershipNoOwner,           ERROR_(11, kModuleOwnership, kInternal)), \
   X(kErrorOwnershipKeyNotFound,       ERROR_(12, kModuleOwnership, kNotFound)), \
   X(kErrorOwnershipInvalidDin,        ERROR_(13, kModuleOwnership, kInvalidArgument)), \
   X(kErrorOwnershipUnlockDenied,      ERROR_(14, kModuleOwnership, kPermissionDenied)), \
-  X(kErrorOwnershipFlashConfigRomExt, ERROR_(15, kModuleOwnership, kInvalidArgument)), \
-  X(kErrorOwnershipFlashConfigBounds, ERROR_(16, kModuleOwnership, kInvalidArgument)), \
+  X(kErrorOwnershipNvmConfigRomExt, ERROR_(15, kModuleOwnership, kInvalidArgument)), \
+  X(kErrorOwnershipNvmConfigBounds, ERROR_(16, kModuleOwnership, kInvalidArgument)), \
   X(kErrorOwnershipInvalidAlgorithm,  ERROR_(17, kModuleOwnership, kInvalidArgument)), \
-  X(kErrorOwnershipFlashConfigSlots,  ERROR_(18, kModuleOwnership, kInvalidArgument)), \
+  X(kErrorOwnershipNvmConfigSlots,  ERROR_(18, kModuleOwnership, kInvalidArgument)), \
   X(kErrorOwnershipInvalidRescueBounds, ERROR_(19, kModuleOwnership, kInvalidArgument)), \
   X(kErrorOwnershipSignatureNotFound, ERROR_(20, kModuleOwnership, kNotFound)), \
+  /* Group all of the ISFB error codes together */ \
+  X(kErrorOwnershipISFBNotPresent,    ERROR_(0x60, kModuleOwnership, kNotFound)), \
+  X(kErrorOwnershipISFBProductExpCnt, ERROR_(0x61, kModuleOwnership, kOutOfRange)), \
+  X(kErrorOwnershipISFBStrikeMask,    ERROR_(0x62, kModuleOwnership, kPermissionDenied)), \
+  X(kErrorOwnershipISFBProductExp,    ERROR_(0x63, kModuleOwnership, kPermissionDenied)), \
+  X(kErrorOwnershipISFBFailed,        ERROR_(0x64, kModuleOwnership, kInternal)), \
+  X(kErrorOwnershipISFBPage,          ERROR_(0x65, kModuleOwnership, kInvalidArgument)), \
+  X(kErrorOwnershipISFBSize,          ERROR_(0x66, kModuleOwnership, kInvalidArgument)), \
   /* Group all of the tag version error codes together */ \
   X(kErrorOwnershipOWNRVersion,       ERROR_(0x70, kModuleOwnership, kInvalidArgument)), \
   X(kErrorOwnershipAPPKVersion,       ERROR_(0x71, kModuleOwnership, kInvalidArgument)), \
   X(kErrorOwnershipFLSHVersion,       ERROR_(0x72, kModuleOwnership, kInvalidArgument)), \
   X(kErrorOwnershipINFOVersion,       ERROR_(0x73, kModuleOwnership, kInvalidArgument)), \
   X(kErrorOwnershipRESQVersion,       ERROR_(0x74, kModuleOwnership, kInvalidArgument)), \
+  X(kErrorOwnershipISFBVersion,       ERROR_(0x75, kModuleOwnership, kInvalidArgument)), \
   \
   X(kErrorPersoTlvInternal,           ERROR_(0, kModulePersoTlv, kInternal)), \
   X(kErrorPersoTlvCertObjNotFound,    ERROR_(1, kModulePersoTlv, kNotFound)), \
@@ -249,6 +267,7 @@ enum module_ {
   X(kErrorDiceCwtCoseKeyNotFound,     ERROR_(1, kModuleDice, kNotFound)), \
   X(kErrorDiceCwtCoseKeyBadSize,      ERROR_(1, kModuleDice, kInternal)), \
   X(kErrorDiceCwtKeyCoordsNotFound,   ERROR_(2, kModuleDice, kNotFound)), \
+  X(kErrorDicePageCorrupted,          ERROR_(3, kModuleDice, kInvalidArgument)), \
   \
   X(kErrorPwrmgrUnknownRequestSource, ERROR_(1, kModulePwrmgr, kInvalidArgument)), \
   X(kErrorPwrmgrInvalidRequestType,   ERROR_(2, kModulePwrmgr, kInvalidArgument)), \
@@ -256,6 +275,8 @@ enum module_ {
   X(kErrorGpioInvalidPin,             ERROR_(0, kModuleGpio, kInvalidArgument)), \
   X(kErrorUsbBadSetup,                ERROR_(0, kModuleUsb, kInvalidArgument)), \
   X(kErrorUsbBadEndpointNumber,       ERROR_(1, kModuleUsb, kInvalidArgument)), \
+  \
+  X(kErrorNvmCtrlInvalidInfoPage,     ERROR_(1, kModuleNvmCtrl, kInvalidArgument)), \
   \
   /* This comment prevent clang from trying to format the macro. */
 

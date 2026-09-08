@@ -182,18 +182,18 @@ ${"###"} Assertions
 * Clock divider assertions: Interface `clkmgr_div_sva_if` contains concurrent SVA that checks the `io_div2` and `io_div4` clocks are running at nominal frequency, or are divided by two each in response to the `extclk` logic.
 * External clock assertions: Interface `clkmgr_extclk_sva_if` contains concurrent SVA that checks the external control outputs respond correctly to the various CSR or inputs that control them.
 * Clock gating assertions: Interface `clkmgr_cg_en_sva_if` contains concurrent assertions that check a clock's cg_en output is active when the clock is disabled, and viceversa.
-  As a special case, interface `clkmgr_aon_cg_en_sva_if` checks cg_en is never active for an aon clock.
+  As a special case, interface `clkmgr_cg_en_sva_if` checks cg_en is never active for an aon clock.
 * Lost calibration assertions: Interfaces `clkmgr_lost_calib_ctrl_en_sva_if` and `clkmgr_lost_calib_regwen_sva_if` check that losing calibration turns off clock measurements and re-enables measure control writes.
 * TLUL assertions: `clkmgr_bind.sv` binds the `tlul_assert` [assertions](../../../../ip/tlul/doc/TlulProtocolChecker.md) to the IP to ensure TileLink interface protocol compliance.
 * Unknown checks on DUT outputs: The RTL has assertions to ensure all outputs are initialized to known values after coming out of reset.
 
 ${"##"} Building and running tests
-We are using our in-house developed [regression tool](../../../../../util/dvsim/README.md) for building and running our tests and regressions.
+The [dvsim](https://github.com/lowRISC/dvsim) tool is used for building and running our tests and regressions.
 Please take a look at the link for detailed information on the usage, capabilities, features and known issues.
 Here's how to run a smoke test:
 
 ```console
-$ $REPO_TOP/util/dvsim/dvsim.py $REPO_TOP/hw/top_${topname}/ip_autogen/clkmgr/dv/clkmgr_sim_cfg.hjson -i clkmgr_smoke
+$ dvsim $REPO_TOP/hw/top_${topname}/ip_autogen/clkmgr/dv/clkmgr_sim_cfg.hjson -i clkmgr_smoke
 ```
 
 ${"##"} Testplan

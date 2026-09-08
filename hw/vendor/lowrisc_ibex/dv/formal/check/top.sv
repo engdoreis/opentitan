@@ -40,6 +40,7 @@ module top import ibex_pkg::*; #(
   parameter bit          SecureIbex       = 1'b0,
   parameter bit          WritebackStage   = 1'b1,
   parameter bit          RV32E            = 1'b0,
+  parameter rv32zc_e     RV32ZC           = RV32Zca,
   parameter int unsigned PMPNumRegions    = 4
 ) (
   // Clock and Reset
@@ -50,10 +51,10 @@ module top import ibex_pkg::*; #(
   `endif
 
   input  logic                                                         test_en_i,
-  input  prim_ram_1p_pkg::ram_1p_cfg_t                                 ram_cfg_icache_tag_i,
-  output prim_ram_1p_pkg::ram_1p_cfg_rsp_t [ibex_pkg::IC_NUM_WAYS-1:0] ram_cfg_rsp_icache_tag_o,
-  input  prim_ram_1p_pkg::ram_1p_cfg_t                                 ram_cfg_icache_data_i,
-  output prim_ram_1p_pkg::ram_1p_cfg_rsp_t [ibex_pkg::IC_NUM_WAYS-1:0] ram_cfg_rsp_icache_data_o,
+  input  prim_ram_1p_pkg::ram_1p_cfg_req_t [ibex_pkg::IC_NUM_WAYS-1:0] ram_cfg_icache_tag_i,
+  output prim_ram_1p_pkg::ram_1p_cfg_rsp_t [ibex_pkg::IC_NUM_WAYS-1:0] ram_cfg_icache_tag_o,
+  input  prim_ram_1p_pkg::ram_1p_cfg_req_t [ibex_pkg::IC_NUM_WAYS-1:0] ram_cfg_icache_data_i,
+  output prim_ram_1p_pkg::ram_1p_cfg_rsp_t [ibex_pkg::IC_NUM_WAYS-1:0] ram_cfg_icache_data_o,
 
   input  logic [31:0]                                                  hart_id_i,
   input  logic [31:0]                                                  boot_addr_i,
@@ -69,7 +70,6 @@ module top import ibex_pkg::*; #(
 
   // Data memory interface
   output logic                                                         data_req_o,
-  output logic                                                         data_is_cap_o,
   input  logic                                                         data_gnt_i,
   input  logic                                                         data_rvalid_i,
   output logic                                                         data_we_o,
@@ -102,6 +102,7 @@ module top import ibex_pkg::*; #(
 
   // CPU Control Signals
   input  ibex_mubi_t                                                   fetch_enable_i,
+  input  ibex_mubi_t                                                   mcounteren_writable_i,
   output logic                                                         core_sleep_o,
   output logic                                                         alert_minor_o,
   output logic                                                         alert_major_internal_o,
@@ -109,7 +110,22 @@ module top import ibex_pkg::*; #(
 
 
   // DFT bypass controls
-  input logic                                                          scan_rst_ni
+  input logic                                                          scan_rst_ni,
+
+  // Lockstep signals
+  output ibex_mubi_t                                                  lockstep_cmp_en_o,
+
+  // Shadow core data interface outputs
+  output logic                                                        data_req_shadow_o,
+  output logic                                                        data_we_shadow_o,
+  output logic [3:0]                                                  data_be_shadow_o,
+  output logic [31:0]                                                 data_addr_shadow_o,
+  output logic [31:0]                                                 data_wdata_shadow_o,
+  output logic [6:0]                                                  data_wdata_intg_shadow_o,
+
+  // Shadow core instruction interface outputs
+  output logic                                                        instr_req_shadow_o,
+  output logic [31:0]                                                 instr_addr_shadow_o
 );
 
 // Yosys based tools have no inherent understanding of a reset signal (unlike jasper, which has the
@@ -125,12 +141,41 @@ localparam logic [31:0] CSR_MIMPID_VALUE = 32'b0;
 
 default clocking @(posedge clk_i); endclocking
 
+// The TRVK (CHERIoT revocation) filter is only instantiated when BaseIsa is
+// BaseIsaRV32IorCHERIoT. The core has no CHERIoT support yet and the formal spec
+// is the plain RISC-V Sail model, so select BaseIsaRV32I to bypass the filter
+// (a combinational pass-through of the data interface). The filter's ports still
+// exist on ibex_top, so provide nets for the `.*` connection below: drive the
+// inputs to their inactive values and leave the outputs as sinks.
+ibex_mubi_t  cheriot_enable_i;
+logic [31:0] trvk_heap_base_addr_i;
+logic        data_tag_o;
+logic        data_tag_i;
+logic        trvk_revbm_req_o;
+logic        trvk_revbm_gnt_i;
+logic        trvk_revbm_rvalid_i;
+logic [31:0] trvk_revbm_addr_o;
+logic [31:0] trvk_revbm_rdata_i;
+logic [ 6:0] trvk_revbm_rdata_intg_i;
+logic        trvk_revbm_err_i;
+
+assign cheriot_enable_i        = IbexMuBiOff;
+assign trvk_heap_base_addr_i   = 32'b0;
+assign data_tag_i              = 1'b0;
+assign trvk_revbm_gnt_i        = 1'b0;
+assign trvk_revbm_rvalid_i     = 1'b0;
+assign trvk_revbm_rdata_i      = 32'b0;
+assign trvk_revbm_rdata_intg_i = 7'b0;
+assign trvk_revbm_err_i        = 1'b0;
+
 ibex_top #(
+    .BaseIsa(ibex_pkg::BaseIsaRV32I),
     .DmHaltAddr(DmHaltAddr),
     .DmExceptionAddr(DmExceptionAddr),
     .SecureIbex(SecureIbex),
     .WritebackStage(WritebackStage),
     .RV32E(RV32E),
+    .RV32ZC(RV32ZC),
     .BranchTargetALU(1'b1),
     .PMPEnable(1'b1),
     .PMPNumRegions(PMPNumRegions),
@@ -145,7 +190,9 @@ NotDebug: assume property (!ibex_top_i.u_ibex_core.debug_mode & !debug_req_i);
 ConstantBoot: assume property (boot_addr_i == $past(boot_addr_i));
 // 3. Always fetch enable
 FetchEnable: assume property (fetch_enable_i == IbexMuBiOn);
-// 4. Never try to sleep if we couldn't ever wake up
+// 4. Always have mcounteren writable
+McounterenWritable: assume property (mcounteren_writable_i == IbexMuBiOn);
+// 5. Never try to sleep if we couldn't ever wake up
 WFIStart: assume property (`IDC.ctrl_fsm_cs == SLEEP |-> (
                                                           `CSR.mie_q.irq_software |
                                                           `CSR.mie_q.irq_timer |
@@ -279,7 +326,7 @@ logic mem_req_snd_d; // We are having the second req
 logic wbexc_mem_had_snd_req; // During ID/EX there was a second request
 
 logic lsu_had_first_resp;
-assign lsu_had_first_resp = `LSU.ls_fsm_cs == `LSU.WAIT_GNT && `LSU.split_misaligned_access;
+assign lsu_had_first_resp = `LSU.ls_fsm_cs == WAIT_GNT && `LSU.split_misaligned_access;
 
 ////////////////////// Wrap signals //////////////////////
 
@@ -424,42 +471,65 @@ logic ex_is_checkable_csr;
 assign ex_is_checkable_csr = ~(
   ((CSR_MHPMCOUNTER3H <= `CSR_ADDR) && (`CSR_ADDR <= CSR_MHPMCOUNTER31H)) |
   ((CSR_MHPMCOUNTER3 <= `CSR_ADDR) && (`CSR_ADDR <= CSR_MHPMCOUNTER31)) |
+  ((CSR_HPMCOUNTER3H <= `CSR_ADDR) && (`CSR_ADDR <= CSR_HPMCOUNTER31H)) |
+  ((CSR_HPMCOUNTER3 <= `CSR_ADDR) && (`CSR_ADDR <= CSR_HPMCOUNTER31)) |
   ((CSR_MHPMEVENT3 <= `CSR_ADDR) && (`CSR_ADDR <= CSR_MHPMEVENT31)) |
   (`CSR_ADDR == CSR_CPUCTRLSTS) | (`CSR_ADDR == CSR_SECURESEED) |
   (`CSR_ADDR == CSR_MIE) |
   (`CSR_ADDR == CSR_MCYCLE) | (`CSR_ADDR == CSR_MCYCLEH) |
+  (`CSR_ADDR == CSR_CYCLE) | (`CSR_ADDR == CSR_CYCLEH) |
 
   // TODO:
   (`CSR_ADDR == CSR_MINSTRET) | (`CSR_ADDR == CSR_MINSTRETH) |
+  (`CSR_ADDR == CSR_INSTRET) | (`CSR_ADDR == CSR_INSTRETH) |
   (`CSR_ADDR == CSR_MCOUNTINHIBIT)
 );
 
 `undef INSTR
+
+// Force mcounteren to always be zero to match the current Sail model.
+McounterenStubbedZero: assume property (`CSR.mcounteren_q == 32'h0);
 
 ////////////////////// Decompression Invariant Defs //////////////////////
 // These will be used to show that the decompressed instruction stored is in fact the decompressed version of the compressed instruction.
 
 logic [31:0] decompressed_instr;
 logic decompressed_instr_illegal;
-ibex_compressed_decoder decompression_assertion_decoder(
+ibex_compressed_decoder #(
+    .RV32ZC(RV32ZC),
+    .ResetAll(SecureIbex),
+    .BaseIsa(ibex_pkg::BaseIsaRV32I)
+) decompression_assertion_decoder (
     .clk_i,
     .rst_ni,
     .valid_i(1'b1),
+    .id_in_ready_i(1'b1),
     .instr_i(ex_compressed_instr),
+    .cheriot_enable_i(IbexMuBiOff),
     .instr_o(decompressed_instr),
     .is_compressed_o(),
+    .gets_expanded_o(),
+    .flush_expanded_i(1'b0),
     .illegal_instr_o(decompressed_instr_illegal)
 );
 
 logic [31:0] decompressed_instr_2;
 logic decompressed_instr_illegal_2;
-ibex_compressed_decoder decompression_assertion_decoder_2(
+ibex_compressed_decoder #(
+    .RV32ZC(RV32ZC),
+    .ResetAll(SecureIbex),
+    .BaseIsa(ibex_pkg::BaseIsaRV32I)
+) decompression_assertion_decoder_2(
     .clk_i,
     .rst_ni,
     .valid_i(1'b1),
+    .id_in_ready_i(1'b1),
     .instr_i(wbexc_instr),
+    .cheriot_enable_i(IbexMuBiOff),
     .instr_o(decompressed_instr_2),
     .is_compressed_o(wbexc_is_compressed),
+    .gets_expanded_o(),
+    .flush_expanded_i(1'b0),
     .illegal_instr_o(decompressed_instr_illegal_2)
 );
 

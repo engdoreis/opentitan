@@ -108,10 +108,10 @@ module tb;
     .lc_rma_req_i    (escalate_if.req),
     .lc_rma_ack_o    (escalate_if.ack),
 
-    .ram_cfg_imem_i('0),
-    .ram_cfg_dmem_i('0),
-    .ram_cfg_rsp_imem_o(),
-    .ram_cfg_rsp_dmem_o(),
+    .ram_cfg_imem_i(prim_ram_1p_pkg::RAM_1P_CFG_REQ_DEFAULT),
+    .ram_cfg_dmem_i(prim_ram_1p_pkg::RAM_1P_CFG_REQ_DEFAULT),
+    .ram_cfg_imem_o(),
+    .ram_cfg_dmem_o(),
 
     .clk_edn_i (edn_clk),
     .rst_edn_ni(edn_rst_n),
@@ -197,7 +197,7 @@ module tb;
   logic otp_key_cdc_done;
 
   assign edn_rnd_cdc_done = dut.edn_rnd_req & dut.edn_rnd_ack;
-  assign edn_urnd_cdc_done = dut.edn_urnd_req & dut.edn_urnd_ack;
+  assign edn_urnd_cdc_done = dut.u_otbn_core.u_otbn_rnd.urnd_reseed_ack_o;
   assign otp_key_cdc_done = dut.u_otbn_scramble_ctrl.otp_key_ack;
 
   bit [31:0] model_insn_cnt;
@@ -213,6 +213,10 @@ module tb;
 
     .cmd_i   (model_if.cmd_q),
     .cmd_en_i(model_if.cmd_qe),
+
+    // These control bits are driven dynamically through the model agent by snooping CTRL
+    // register writes.
+    .wfi_enabled_i      (1'b0),
 
     .lc_escalate_en_i(escalate_if.enable),
     .lc_rma_req_i    (escalate_if.req),
@@ -296,7 +300,7 @@ module tb;
   // Disable checking URND in the case of Locked status since it's modelling is not exactly accurate
   // for that state.
   // TODO (#15710): Fix modelling of URND in the locked state.
-  `ASSERT(MatchingReqURND_A, dut.u_otbn_core.edn_urnd_req_o == edn_urnd_req_model,
+  `ASSERT(MatchingReqURND_A, dut.u_otbn_core.edn_urnd_o.edn_req == edn_urnd_req_model,
     clk, !rst_n || model_if.status == otbn_pkg::StatusLocked)
 
   initial begin

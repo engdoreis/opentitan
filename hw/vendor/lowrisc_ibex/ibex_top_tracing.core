@@ -9,6 +9,7 @@ filesets:
     depend:
       - lowrisc:ibex:ibex_top
       - lowrisc:ibex:ibex_tracer
+      # Map the prims in ibex_top to prim_generic implementations for simulation and linting
       - "fileset_partner ? (partner:prim_generic:all)"
       - "!fileset_partner ? (lowrisc:prim_generic:all)"
     files:
@@ -26,6 +27,12 @@ parameters:
     datatype: bool
     paramtype: vlogdefine
 
+  BaseIsa:
+    datatype: str
+    default: ibex_pkg::BaseIsaRV32I
+    paramtype: vlogdefine
+    description: "Base ISA parameter enum. See the ibex_pkg::base_isa_e enum in ibex_pkg.sv for permitted values."
+
   RV32E:
     datatype: int
     default: 0
@@ -42,6 +49,12 @@ parameters:
     default: ibex_pkg::RV32BNone
     paramtype: vlogdefine
     description: "Bitmanip implementation parameter enum. See the ibex_pkg::rv32b_e enum in ibex_pkg.sv for permitted values."
+
+  RV32ZC:
+    datatype: str
+    default: ibex_pkg::RV32ZcaZcbZcmp
+    paramtype: vlogdefine
+    description: "Compressed instructions parameter enum. See the ibex_pkg::rv32zc_e enum in ibex_pkg.sv for permitted values."
 
   RegFile:
     datatype: str
@@ -140,9 +153,11 @@ targets:
     parameters:
       - RVFI=true
       - SYNTHESIS=true
+      - BaseIsa
       - RV32E
       - RV32M
       - RV32B
+      - RV32ZC
       - RegFile
       - ICache
       - ICacheECC

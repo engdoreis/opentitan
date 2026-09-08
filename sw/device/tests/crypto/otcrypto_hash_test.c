@@ -5,9 +5,12 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#include "otcrypto.h"
 #include "sw/device/lib/base/macros.h"
 #include "sw/device/lib/base/status.h"
-#include "sw/device/lib/crypto/include/sha2.h"
+#include "sw/device/lib/crypto/include/config.h"
+#include "sw/device/lib/crypto/include/datatypes.h"
+#include "sw/device/lib/crypto/include/self_integrity.h"
 #include "sw/device/lib/runtime/log.h"
 #include "sw/device/lib/testing/test_framework/ottf_main.h"
 
@@ -40,13 +43,12 @@ status_t hash_test(void) {
       .len = ARRAYSIZE(digest_content),
       .data = digest_content,
   };
-  otcrypto_const_byte_buf_t buf = {
-      .len = sizeof(kGettysburgPrelude) - 1,
-      .data = (const uint8_t *)kGettysburgPrelude,
-  };
+  otcrypto_const_byte_buf_t buf = OTCRYPTO_MAKE_BUF(
+      otcrypto_const_byte_buf_t, (const uint8_t *)kGettysburgPrelude,
+      sizeof(kGettysburgPrelude) - 1);
 
   TRY(otcrypto_sha2_init(kOtcryptoHashModeSha256, &ctx));
-  TRY(otcrypto_sha2_update(&ctx, buf));
+  TRY(otcrypto_sha2_update(&ctx, &buf));
   TRY(otcrypto_sha2_final(&ctx, &digest));
 
   TRY_CHECK_ARRAYS_EQ((const uint8_t *)digest.data, kGettysburgDigest,
@@ -59,6 +61,8 @@ OTTF_DEFINE_TEST_CONFIG();
 
 bool test_main(void) {
   status_t result = OK_STATUS();
+  CHECK_STATUS_OK(otcrypto_init(kOtcryptoKeySecurityLevelLow));
+
   result = hash_test();
   return status_ok(result);
 }

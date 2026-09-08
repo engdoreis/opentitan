@@ -46,6 +46,14 @@
 .equ MODE_RSA_4096_MODEXP_F4, 0x3d4
 
 /**
+ * Hardened boolean values.
+ *
+ * Should match the values in `hardened_asm.h`.
+ */
+.equ HARDENED_BOOL_TRUE, 0x739
+.equ HARDENED_BOOL_FALSE, 0x1d4
+
+/**
  * Make the mode constants visible to Ibex.
  */
 .globl MODE_RSA_1024_KEYGEN
@@ -67,6 +75,11 @@
 start:
   /* Init all-zero register. */
   bn.xor  w31, w31, w31
+
+  /* Initialize the 'ok' flag to FALSE. */
+  la      x2, ok
+  addi    x3, x0, HARDENED_BOOL_FALSE
+  sw      x3, 0(x2)
 
   /* Read the mode and tail-call the requested operation. */
   la      x2, mode
@@ -244,15 +257,38 @@ rsa_4096_modexp_f4:
  * @param[out] dmem[d1]: d1, second share of secret exponent
  */
 do_keygen:
-  # Save mode indicator in register.
+  # Save mode indicator in the scratchpad.
   la x16, mode
-  lw x28, 0(x16)
+  la x17, mode_tmp
+  lw x18, 0(x16)
+  sw x18, 0(x17)
 
   jal x1, rsa_keygen
 
-  # Restore mode indicator in DMEM.
+  # Restore mode indicator from the scratchpad.
   la x16, mode
-  sw x28, 0(x16)
+  la x17, mode_tmp
+  lw x18, 0(x17)
+  sw x18, 0(x16)
+
+  # Move the Miller-Rabin counter from the scratchpad.
+
+  # Prime p.
+  la x16, mr_iter_p
+  la x17, mr_iter_p_tmp
+  lw x18, 0(x17)
+  sw x18, 0(x16)
+
+  # Prime q.
+  la x16, mr_iter_q
+  la x17, mr_iter_q_tmp
+  lw x18, 0(x17)
+  sw x18, 0(x16)
+
+  /* Write success. */
+  la       x2, ok
+  addi     x3, x0, HARDENED_BOOL_TRUE
+  sw       x3, 0(x2)
 
   ecall
 
@@ -269,10 +305,6 @@ do_keygen:
  * @param[out] dmem[inout]: result, a^d mod n
  */
 do_modexp:
-  # Save mode indicator in register.
-  la x16, mode
-  lw x28, 0(x16)
-
   /* Load pointers to modulus and Montgomery constant buffers. */
   la    x16, rsa_n
   la    x17, RR
@@ -284,9 +316,25 @@ do_modexp:
        dmem[inout] = dmem[inout]^dmem[d] mod dmem[n] */
   jal      x1, modexp
 
-  # Restore mode indicator in DMEM.
-  la x16, mode
-  sw x28, 0(x16)
+  # Restore mode indicator based on limb count x30.
+  li   x16, 8
+  addi x17, x0, MODE_RSA_2048_MODEXP
+  beq  x30, x16, _restore_mode
+
+  li   x16, 12
+  addi x17, x0, MODE_RSA_3072_MODEXP
+  beq  x30, x16, _restore_mode
+
+  addi x17, x0, MODE_RSA_4096_MODEXP
+
+_restore_mode:
+  la   x16, mode
+  sw   x17, 0(x16)
+
+  /* Write success. */
+  la       x2, ok
+  addi     x3, x0, HARDENED_BOOL_TRUE
+  sw       x3, 0(x2)
 
   ecall
 
@@ -321,5 +369,10 @@ do_modexp_f4:
   loop  x30, 2
     bn.lid x0, 0(x3++)
     bn.sid x0, 0(x4++)
+
+  /* Write success. */
+  la       x2, ok
+  addi     x3, x0, HARDENED_BOOL_TRUE
+  sw       x3, 0(x2)
 
   ecall

@@ -122,8 +122,8 @@ typedef enum tlv_tag {
   kTlvTagOwner = 0x524e574f,
   /** Application Key: `APPK`. */
   kTlvTagApplicationKey = 0x4b505041,
-  /** Flash Configuration: `FLSH`. */
-  kTlvTagFlashConfig = 0x48534c46,
+  /** NVM Configuration: `FLSH`. */
+  kTlvTagNvmConfig = 0x48534c46,
   /** Flash INFO configuration: `INFO`. */
   kTlvTagInfoConfig = 0x4f464e49,
   /** Rescue Configuration: `RESQ`. */
@@ -181,8 +181,10 @@ typedef struct owner_block {
   uint32_t lock_constraint;
   /** The device ID to which this config applies */
   uint32_t device_id[8];
+  /** Perform ROM_EXT boot services after wakeup (hardened_bool_t). */
+  uint32_t boot_svc_after_wakeup;
   /** Reserved space for future use. */
-  uint32_t reserved[16];
+  uint32_t reserved[15];
   /** Owner public key. */
   owner_keydata_t owner_key;
   /** Owner's Activate public key. */
@@ -205,7 +207,8 @@ OT_ASSERT_MEMBER_OFFSET(owner_block_t, update_mode, 20);
 OT_ASSERT_MEMBER_OFFSET(owner_block_t, min_security_version_bl0, 24);
 OT_ASSERT_MEMBER_OFFSET(owner_block_t, lock_constraint, 28);
 OT_ASSERT_MEMBER_OFFSET(owner_block_t, device_id, 32);
-OT_ASSERT_MEMBER_OFFSET(owner_block_t, reserved, 64);
+OT_ASSERT_MEMBER_OFFSET(owner_block_t, boot_svc_after_wakeup, 64);
+OT_ASSERT_MEMBER_OFFSET(owner_block_t, reserved, 68);
 OT_ASSERT_MEMBER_OFFSET(owner_block_t, owner_key, 128);
 OT_ASSERT_MEMBER_OFFSET(owner_block_t, activate_key, 224);
 OT_ASSERT_MEMBER_OFFSET(owner_block_t, unlock_key, 320);
@@ -275,34 +278,16 @@ enum {
       offsetof(owner_application_key_t, data) + sizeof(hybrid_key_t),
 };
 
-// clang-format off
 /**
- * Bitfields for the `access` word of flash region configs.
+ * The maximum number of owner_nvm_region_t allower per slot.
  */
-#define FLASH_CONFIG_READ                 ((bitfield_field32_t) { .mask = 0xF, .index = 0 })
-#define FLASH_CONFIG_PROGRAM              ((bitfield_field32_t) { .mask = 0xF, .index = 4 })
-#define FLASH_CONFIG_ERASE                ((bitfield_field32_t) { .mask = 0xF, .index = 8 })
-#define FLASH_CONFIG_PROTECT_WHEN_PRIMARY ((bitfield_field32_t) { .mask = 0xF, .index = 24 })
-#define FLASH_CONFIG_LOCK                 ((bitfield_field32_t) { .mask = 0xF, .index = 28 })
-
-/**
- * Bitfields for the `properties` word of flash region configs.
- */
-#define FLASH_CONFIG_SCRAMBLE             ((bitfield_field32_t) { .mask = 0xF, .index = 0 })
-#define FLASH_CONFIG_ECC                  ((bitfield_field32_t) { .mask = 0xF, .index = 4 })
-#define FLASH_CONFIG_HIGH_ENDURANCE       ((bitfield_field32_t) { .mask = 0xF, .index = 8 })
-// clang-format on
-
-/**
- * The maximum number of owner_flash_region_t allower per slot.
- */
-#define FLASH_CONFIG_REGIONS_PER_SLOT 3
+#define NVM_CONFIG_REGIONS_PER_SLOT 3
 
 /**
  * The owner flash region describes a region of flash and its configuration
  * properties (ie: ECC, Scrambling, High Endurance, etc).
  */
-typedef struct owner_flash_region {
+typedef struct owner_nvm_region {
   /** The start of the region, in flash pages. */
   uint16_t start;
   /** The size of the region, in flash pages. */
@@ -311,13 +296,13 @@ typedef struct owner_flash_region {
   uint32_t access;
   /** The flash properties of the flash region. */
   uint32_t properties;
-} owner_flash_region_t;
-OT_ASSERT_SIZE(owner_flash_region_t, 12);
+} owner_nvm_region_t;
+OT_ASSERT_SIZE(owner_nvm_region_t, 12);
 
 /**
  * The owner flash config is a collection of owner region configuration items.
  */
-typedef struct owner_flash_config {
+typedef struct owner_nvm_config {
   /**
    * Header identifiying this struct.
    * tag: `FLSH`.
@@ -329,11 +314,11 @@ typedef struct owner_flash_config {
    * In each `config` item, the `access` and `properties` fields are xor-ed
    * with the region index in each nibble (ie: index 1 == 0x11111111).
    */
-  owner_flash_region_t config[];
-} owner_flash_config_t;
-OT_ASSERT_MEMBER_OFFSET(owner_flash_config_t, header, 0);
-OT_ASSERT_MEMBER_OFFSET(owner_flash_config_t, config, 8);
-OT_ASSERT_SIZE(owner_flash_config_t, 8);
+  owner_nvm_region_t config[];
+} owner_nvm_config_t;
+OT_ASSERT_MEMBER_OFFSET(owner_nvm_config_t, header, 0);
+OT_ASSERT_MEMBER_OFFSET(owner_nvm_config_t, config, 8);
+OT_ASSERT_SIZE(owner_nvm_config_t, 8);
 
 /**
  * The owner info page describes an INFO page in flash and its configuration
@@ -352,7 +337,7 @@ typedef struct owner_info_page {
 } owner_info_page_t;
 OT_ASSERT_SIZE(owner_info_page_t, 12);
 
-typedef struct owner_flash_info_config {
+typedef struct owner_nvm_info_config {
   /**
    * Header identifiying this struct.
    * tag: `INFO`.
@@ -365,10 +350,10 @@ typedef struct owner_flash_info_config {
    * with the region index in each nibble (ie: index 1 == 0x11111111).
    */
   owner_info_page_t config[];
-} owner_flash_info_config_t;
-OT_ASSERT_MEMBER_OFFSET(owner_flash_info_config_t, header, 0);
-OT_ASSERT_MEMBER_OFFSET(owner_flash_info_config_t, config, 8);
-OT_ASSERT_SIZE(owner_flash_info_config_t, 8);
+} owner_nvm_info_config_t;
+OT_ASSERT_MEMBER_OFFSET(owner_nvm_info_config_t, header, 0);
+OT_ASSERT_MEMBER_OFFSET(owner_nvm_info_config_t, config, 8);
+OT_ASSERT_SIZE(owner_nvm_info_config_t, 8);
 
 /**
  * The owner rescue configuration describes how the rescue protocol should
@@ -389,21 +374,21 @@ typedef struct owner_rescue_config {
    */
   uint8_t protocol;
   /**
-   * The gpio configuration (if relevant, depending on `detect`).
+   * The misc & gpio configuration (if relevant, depending on `detect`).
    *
-   *  7             2       1       0
-   * +---------------+--------+-------+
-   * | Reserved      | PullEn | Value |
-   * +---------------+--------+-------+
+   *      7 6       2        1       0
+   * +-----+---------+--------+-------+
+   * | WDT | Reserved| PullEn | Value |
+   * +-----+---------+--------+-------+
    */
   uint8_t gpio;
   /**
    * The timeout configuration (not implemented yet).
    *
-   *     7        6  5               0
-   * +-----+--------+-----------------+
-   * | EoF | Enable |         Timeout |
-   * +-----+--------+-----------------+
+   *     7  6                        0
+   * +-----+--------------------------+
+   * | EoF |                  Timeout |
+   * +-----+--------------------------+
    */
   uint8_t timeout;
   /**
@@ -442,10 +427,10 @@ OT_ASSERT_MEMBER_OFFSET(owner_rescue_config_t, command_allow, 16);
 OT_ASSERT_SIZE(owner_rescue_config_t, 16);
 
 #define RESCUE_ENTER_ON_FAIL_BIT 7
-#define RESCUE_TIMEOUT_ENABLED_BIT 6
-#define RESCUE_TIMEOUT_SECONDS ((bitfield_field32_t){.mask = 0x3F, .index = 06})
-#define RESCUE_GPIO_PULL_EN_BIT 1
-#define RESCUE_GPIO_VALUE_BIT 0
+#define RESCUE_TIMEOUT_SECONDS ((bitfield_field32_t){.mask = 0x7F, .index = 0})
+#define RESCUE_MISC_GPIO_WATCHDOG_TIMEOUT_EN_BIT 7
+#define RESCUE_MISC_GPIO_PULL_EN_BIT 1
+#define RESCUE_MISC_GPIO_VALUE_BIT 0
 #define RESCUE_DETECT ((bitfield_field32_t){.mask = 0x03, .index = 6})
 #define RESCUE_DETECT_INDEX ((bitfield_field32_t){.mask = 0x3F, .index = 0})
 

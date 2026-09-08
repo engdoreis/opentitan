@@ -93,7 +93,7 @@ _rom_interrupt_vector_asm:
   .type _rom_interrupt_vector_c, @function
 _rom_interrupt_vector_c:
   // Entry 0: exception handler.
-  j rom_exception_handler
+  j nvm_exception_handler
 
   // Entries 1-30: interrupt handlers.
   .rept 30
@@ -167,7 +167,7 @@ LABEL_FOR_TEST(kRomStartBootExecEn)
 
   // Configure the power manager to enable resets.
   // Note: this enables all types of reset request for simplicity.
-  li t0, TOP_EARLGREY_PWRMGR_AON_BASE_ADDR
+  li t0, TOP_EARLGREY_PWRMGR_BASE_ADDR
   li t1, -1
   sw t1, PWRMGR_RESET_EN_REG_OFFSET(t0)
 
@@ -177,13 +177,13 @@ LABEL_FOR_TEST(kRomStartBootExecEn)
 
   // In case of waking from low power, with AON IP state intact,
   // skip watchdog configuration.
-  li a0, TOP_EARLGREY_RSTMGR_AON_BASE_ADDR
+  li a0, TOP_EARLGREY_RSTMGR_BASE_ADDR
   lw t0, RSTMGR_RESET_INFO_REG_OFFSET(a0)
   li t1, (1 << RSTMGR_RESET_INFO_LOW_POWER_EXIT_BIT)
   beq t0, t1, .L_skip_watchdog_init
 
   // Configure the watchdog's bark and bite thresholds.
-  li t0, TOP_EARLGREY_AON_TIMER_AON_BASE_ADDR
+  li t0, TOP_EARLGREY_AON_TIMER_BASE_ADDR
   li t1, WDOG_BARK_THOLD
   sw t1, AON_TIMER_WDOG_BARK_THOLD_REG_OFFSET(t0)
   li t1, WDOG_BITE_THOLD
@@ -200,7 +200,7 @@ LABEL_FOR_TEST(kRomStartStoreT1ToBiteThold)
             OTP_CTRL_SW_CFG_WINDOW_REG_OFFSET)
   lw   t0, OTP_CTRL_PARAM_OWNER_SW_CFG_ROM_RSTMGR_INFO_EN_OFFSET(a0)
   li   t1, HARDENED_BYTE_BOOL_TRUE
-  li   a0, TOP_EARLGREY_RSTMGR_AON_BASE_ADDR
+  li   a0, TOP_EARLGREY_RSTMGR_BASE_ADDR
   // Enable alert info collection if enabled in OTP.
   andi t2, t0, 0xff
   bne  t2, t1, .L_skip_rstmgr_alert_info_en
@@ -244,7 +244,7 @@ LABEL_FOR_TEST(kRomStartWatchdogEnabled)
   lw   t0, OTP_CTRL_PARAM_CREATOR_SW_CFG_JITTER_EN_OFFSET(a0)
   li   t1, MULTIBIT_ASM_BOOL4_FALSE
   beq  t0, t1, .L_ast_init_end
-  li   a0, TOP_EARLGREY_CLKMGR_AON_BASE_ADDR
+  li   a0, TOP_EARLGREY_CLKMGR_BASE_ADDR
   li   t1, MULTIBIT_ASM_BOOL4_TRUE
   sw   t1, CLKMGR_JITTER_ENABLE_REG_OFFSET(a0)
 
@@ -278,7 +278,7 @@ LABEL_FOR_TEST(kRomStartWatchdogEnabled)
   // |------------------+----------------+----------------+------------------|
   // | Configuration:   | Input          | Input          | Input            |
   // |                  | Pull-down      | Pull-down      | Pull-up          |
-  li   a0, (TOP_EARLGREY_PINMUX_AON_BASE_ADDR + \
+  li   a0, (TOP_EARLGREY_PINMUX_BASE_ADDR + \
             PINMUX_MIO_PAD_ATTR_0_REG_OFFSET)
   li   t0, (1 << PINMUX_MIO_PAD_ATTR_0_PULL_EN_0_BIT) | \
            (1 << PINMUX_MIO_PAD_ATTR_0_PULL_SELECT_0_BIT)
@@ -286,7 +286,7 @@ LABEL_FOR_TEST(kRomStartWatchdogEnabled)
   li   t0, (1 << PINMUX_MIO_PAD_ATTR_0_PULL_EN_0_BIT)
   sw   t0, (SW_STRAP_1_PAD * 4)(a0)
   sw   t0, (SW_STRAP_2_PAD * 4)(a0)
-  li   a0, (TOP_EARLGREY_PINMUX_AON_BASE_ADDR + \
+  li   a0, (TOP_EARLGREY_PINMUX_BASE_ADDR + \
             PINMUX_MIO_PERIPH_INSEL_0_REG_OFFSET)
   li   t0, SW_STRAP_0_INSEL
   sw   t0, (SW_STRAP_0_PERIPH * 4)(a0)
@@ -330,7 +330,7 @@ LABEL_FOR_TEST(kRomStartWatchdogEnabled)
   // loop, disable the watchdog.
 .L_rma_spin_init:
   csrw mcycle, zero
-  li   a0, TOP_EARLGREY_AON_TIMER_AON_BASE_ADDR
+  li   a0, TOP_EARLGREY_AON_TIMER_BASE_ADDR
   sw   zero, AON_TIMER_WDOG_CTRL_REG_OFFSET(a0)
 .L_rma_spin_cycles_loop:
   li   a0, (TOP_EARLGREY_OTP_CTRL_CORE_BASE_ADDR + \
@@ -356,14 +356,16 @@ LABEL_FOR_TEST(kRomStartWatchdogEnabled)
   // 0 given that it is stored in a software OTP partition.
   li   a0, (TOP_EARLGREY_OTP_CTRL_CORE_BASE_ADDR + \
             OTP_CTRL_SW_CFG_WINDOW_REG_OFFSET)
-  lw t0, OTP_CTRL_PARAM_CREATOR_SW_CFG_RNG_HEALTH_CONFIG_DIGEST_OFFSET(a0)
+  lw t0, OTP_CTRL_PARAM_CREATOR_SW_CFG_RNG_BOOT_CONFIG_DIGEST_OFFSET(a0)
   beqz t0, .L_entropy_enable
 
   // Copy the entropy source health checks configuration thresholds from OTP.
+  // In BOOT_ROM, we use the bypass thresholds stored in the lower bits of each threshold value in
+  // OTP.
   li   a0, (TOP_EARLGREY_ENTROPY_SRC_BASE_ADDR + \
-            ENTROPY_SRC_REPCNT_THRESHOLDS_REG_OFFSET)
+            ENTROPY_SRC_REPCNT_THRESHOLD_REG_OFFSET)
   li   a1, (TOP_EARLGREY_ENTROPY_SRC_BASE_ADDR + \
-            ENTROPY_SRC_EXTHT_LO_THRESHOLDS_REG_OFFSET + 4)
+            ENTROPY_SRC_EXTHT_LO_THRESHOLD_REG_OFFSET + 4)
   li   a2, (TOP_EARLGREY_OTP_CTRL_CORE_BASE_ADDR + \
             OTP_CTRL_SW_CFG_WINDOW_REG_OFFSET + \
             OTP_CTRL_PARAM_CREATOR_SW_CFG_RNG_REPCNT_THRESHOLDS_OFFSET)
@@ -373,7 +375,7 @@ LABEL_FOR_TEST(kRomStartWatchdogEnabled)
   li a0, TOP_EARLGREY_ENTROPY_SRC_BASE_ADDR
   li a1, (TOP_EARLGREY_OTP_CTRL_CORE_BASE_ADDR + \
             OTP_CTRL_SW_CFG_WINDOW_REG_OFFSET)
-  lw t1, OTP_CTRL_PARAM_CREATOR_SW_CFG_RNG_ALERT_THRESHOLD_OFFSET(a1)
+  lw t1, OTP_CTRL_PARAM_CREATOR_SW_CFG_RNG_BOOT_ALERT_THRESHOLD_OFFSET(a1)
   sw t1, ENTROPY_SRC_ALERT_THRESHOLD_REG_OFFSET(a0)
 
 .L_entropy_enable:
@@ -410,24 +412,18 @@ LABEL_FOR_TEST(kRomStartWatchdogEnabled)
 
   // Scramble and initialize main memory (main SRAM).
   // Memory accesses will stall until initialization is complete.
-  // Set `SRAM_KEY_RENEW_EN` OTP item to `HARDENED_BOOL_FALSE` to disable and
+  // Set `SRAM_KEY_RENEW_AND_INIT_EN` OTP item to `HARDENED_BOOL_FALSE` to disable and
   // any other value to enable.
   li   a0, (TOP_EARLGREY_OTP_CTRL_CORE_BASE_ADDR + \
             OTP_CTRL_SW_CFG_WINDOW_REG_OFFSET)
   lw   t2, OTP_CTRL_PARAM_OWNER_SW_CFG_ROM_SRAM_READBACK_EN_OFFSET(a0)
-  lw   t0, OTP_CTRL_PARAM_CREATOR_SW_CFG_SRAM_KEY_RENEW_EN_OFFSET(a0)
+  lw   t0, OTP_CTRL_PARAM_CREATOR_SW_CFG_SRAM_KEY_RENEW_AND_INIT_EN_OFFSET(a0)
   li   t1, HARDENED_BOOL_FALSE
-  li   a0, TOP_EARLGREY_SRAM_CTRL_MAIN_REGS_BASE_ADDR
-  li   a1, (1 << SRAM_CTRL_CTRL_INIT_BIT)
-  beq  t0, t1, .L_sram_key_renew_skip
-
-  // Set the scrambling key renewal bit if `SRAM_KEY_RENEW_EN` is not set to
-  // `HARDENED_BOOL_FALSE`
-  or   a1, a1, (1 << SRAM_CTRL_CTRL_RENEW_SCR_KEY_BIT)
-
+  li a0, TOP_EARLGREY_SRAM_CTRL_MAIN_REGS_BASE_ADDR
+  beq t0, t1, .L_sram_key_renew_skip
+  li a1, (1 << SRAM_CTRL_CTRL_RENEW_SCR_KEY_BIT) | (1 << SRAM_CTRL_CTRL_INIT_BIT)
+  sw a1, SRAM_CTRL_CTRL_REG_OFFSET(a0)
 .L_sram_key_renew_skip:
-  sw   a1, SRAM_CTRL_CTRL_REG_OFFSET(a0)
-
   // Depending on OTP, enable the SRAM readback feature.
   sw   t2, SRAM_CTRL_READBACK_REG_OFFSET(a0)
 

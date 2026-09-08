@@ -2,9 +2,11 @@
 // Licensed under the Apache License, Version 2.0, see LICENSE for details.
 // SPDX-License-Identifier: Apache-2.0
 
-#include "sw/device/lib/crypto/drivers/entropy.h"
 #include "sw/device/lib/crypto/drivers/otbn.h"
 #include "sw/device/lib/crypto/impl/ecc/p256.h"
+#include "sw/device/lib/crypto/include/config.h"
+#include "sw/device/lib/crypto/include/entropy_src.h"
+#include "sw/device/lib/crypto/include/integrity.h"
 #include "sw/device/lib/crypto/include/sha2.h"
 #include "sw/device/lib/runtime/log.h"
 #include "sw/device/lib/testing/test_framework/check.h"
@@ -19,16 +21,14 @@
 status_t ecdsa_p256_verify_test(
     const ecdsa_p256_verify_test_vector_t *testvec) {
   // Hash message.
-  otcrypto_const_byte_buf_t msg_buf = {
-      .data = testvec->msg,
-      .len = testvec->msg_len,
-  };
+  otcrypto_const_byte_buf_t msg_buf = OTCRYPTO_MAKE_BUF(
+      otcrypto_const_byte_buf_t, testvec->msg, testvec->msg_len);
   uint32_t digest_buf[256 / 32];
   otcrypto_hash_digest_t digest = {
       .data = digest_buf,
       .len = ARRAYSIZE(digest_buf),
   };
-  TRY(otcrypto_sha2_256(msg_buf, &digest));
+  TRY(otcrypto_sha2_256(&msg_buf, &digest));
 
   // Attempt to verify signature.
   TRY(p256_ecdsa_verify_start(&testvec->signature, digest.data,
@@ -53,7 +53,7 @@ bool test_main(void) {
   // Stays true only if all tests pass.
   bool result = true;
 
-  CHECK_STATUS_OK(entropy_complex_init());
+  CHECK_STATUS_OK(otcrypto_init(kOtcryptoKeySecurityLevelLow));
 
   // The definition of `RULE_NAME` comes from the autogen Bazel rule.
   LOG_INFO("Starting ecdsa_p256_verify_test:%s", RULE_NAME);

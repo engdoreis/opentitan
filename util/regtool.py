@@ -14,6 +14,7 @@ from pathlib import Path
 from reggen import (
     gen_cfg_md, gen_cheader, gen_dv, gen_fpv, gen_md, gen_html, gen_json, gen_rtl,
     gen_rust, gen_sec_cm_testplan, gen_selfdoc, systemrdl_exporter, gen_tock, version,
+    vendor_specific
 )
 from reggen.ip_block import IpBlock
 
@@ -148,7 +149,14 @@ def main():
         help=
         'If version stamping, the location of workspace version stamp file.')
 
+    parser.add_argument('--vendor-specific-fields',
+                        type=str,
+                        default=None,
+                        help='A hjson file describing vendor defined fields.')
+
     args = parser.parse_args()
+
+    vendor_specific.extend_optional_fields(args.vendor_specific_fields)
 
     if args.version:
         version.show_and_exit(__file__, ["Hjson", "Mako"])

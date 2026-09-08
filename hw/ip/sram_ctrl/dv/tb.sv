@@ -20,7 +20,7 @@ module tb;
   wire rst_n;
   wire clk_otp;
   wire rst_otp_n;
-  wire [NUM_MAX_INTERRUPTS-1:0] interrupts;
+
   // RACL:
   // Currently not used, but copying RTL's default value
   parameter int unsigned RaclPolicySelNumRangesRam = 1;
@@ -38,7 +38,6 @@ module tb;
 
   // interfaces
   clk_rst_if clk_rst_if(.clk(clk), .rst_n(rst_n));
-  pins_if #(NUM_MAX_INTERRUPTS) intr_if(interrupts);
   clk_rst_if otp_clk_rst_if(.clk(clk_otp), .rst_n(rst_otp_n));
 
   // TLUL interface to the CSR regfile
@@ -60,15 +59,16 @@ module tb;
 
   // DUT
 
-  // The exact number of word address bits.
-  // Will be set to 10 for retention SRAM and 14 for main SRAM.
-`ifndef SRAM_WORD_ADDR_WIDTH
-  `define SRAM_WORD_ADDR_WIDTH 32
+  // The exact SRAM size in bytes.
+  // Will be set to 4 KiB for retention SRAM and 128 KiB for main SRAM.
+  // Can be a non-power-of-2 size.
+`ifndef SRAM_SIZE_BYTES
+  `define SRAM_SIZE_BYTES 2**17
 `endif
 
   sram_ctrl #(
     // memory size in bytes
-    .MemSizeRam(4 * 2 ** `SRAM_WORD_ADDR_WIDTH),
+    .MemSizeRam(`SRAM_SIZE_BYTES),
     .InstrExec(`INSTR_EXEC),
     // number of PRINCE half rounds for the SRAM scrambling feature
     .NumPrinceRoundsHalf(`NUM_PRINCE_ROUNDS_HALF)
@@ -103,11 +103,17 @@ module tb;
     .lc_hw_debug_en_i             (exec_if.lc_hw_debug_en     ),
     .otp_en_sram_ifetch_i         (exec_if.otp_en_sram_ifetch ),
     // config
-    .cfg_i                        ('0                         ),
-    .cfg_rsp_o                    (                           ),
+    .ram_cfg_i                    ('{default: prim_ram_1p_pkg::RAM_1P_CFG_REQ_DEFAULT}),
+    .ram_cfg_o                    (                                                   ),
     // Error record
     .sram_rerror_o                (                           )
   );
+
+  // Bind in an interface that makes some fault injection easier.
+  //
+  // The sram_addr and sram_wdata signals need passing explicitly to avoid a warning from VCS about
+  // the fact that the (max footprint) interface ports don't match the design.
+  bind dut sram_ctrl_fault_if u_fault_if (.sram_addr(sram_addr), .sram_wdata(sram_wdata), .*);
 
   // KDI interface assignments
   assign kdi_if.req         = key_req.req;
@@ -142,7 +148,6 @@ module tb;
     uvm_config_db#(virtual clk_rst_if)::set(
         null, "*.env", "clk_rst_vif_sram_ctrl_prim_reg_block", clk_rst_if);
     uvm_config_db#(virtual clk_rst_if)::set(null, "*.env", "otp_clk_rst_vif", otp_clk_rst_if);
-    uvm_config_db#(intr_vif)::set(null, "*.env", "intr_vif", intr_if);
     uvm_config_db#(virtual push_pull_if#(.DeviceDataWidth(KDI_DATA_SIZE)))::set(null,
       "*.env.m_kdi_agent*", "vif", kdi_if);
     uvm_config_db#(virtual sram_ctrl_lc_if)::set(null, "*.env", "lc_vif", lc_if);
@@ -151,6 +156,7 @@ module tb;
         null, "*.env.m_tl_agent_sram_ctrl_regs_reg_block*", "vif", tl_if);
     uvm_config_db#(virtual tl_if)::set(
         null, "*.env.m_tl_agent_sram_ctrl_prim_reg_block*", "vif", sram_tl_if);
+    uvm_config_db#(virtual sram_ctrl_fault_if)::set(null, "*.env", "fault_vif", dut.u_fault_if);
     uvm_config_db#(sram_ctrl_bkdr_util)::set(null, "*.env", "sram_ctrl_bkdr_util",
                                              m_sram_ctrl_bkdr_util);
 

@@ -5,10 +5,13 @@
 #include "sw/device/lib/testing/aes_testutils.h"
 
 #include "hw/ip/aes/model/aes_modes.h"
+#include "hw/top/dt/alert_handler.h"
 #include "sw/device/lib/dif/dif_aes.h"
+#include "sw/device/lib/dif/dif_alert_handler.h"
 #include "sw/device/lib/testing/test_framework/check.h"
 
 #ifdef AES_TESTUTILS_HAS_EDN_AND_CSRNG
+#include "hw/top/dt/csrng.h"
 #include "sw/device/lib/dif/dif_csrng_shared.h"
 #include "sw/device/lib/testing/csrng_testutils.h"
 
@@ -88,8 +91,9 @@ const uint32_t kEdnSeedMaterialReseed[kEdnSeedMaterialLen] = {
     0x96994362, 0x7ef8f0b9, 0x5b5332dc, 0xd0df9b12, 0x96dfbaa9, 0xac0b5af7,
     0xec2504be, 0xb00fb68c, 0xf37e0a7f, 0x88172eec, 0x4e4b5f58, 0xfec120c0};
 
-status_t aes_testutils_masking_prng_zero_output_seed(const dif_csrng_t *csrng,
-                                                     const dif_edn_t *edn0) {
+status_t aes_testutils_masking_prng_zero_output_seed(
+    const dif_csrng_t *csrng, const dif_edn_t *edn0,
+    bool gen_zero_output_seed) {
   // Shutdown EDN0 and CSRNG
   TRY(dif_edn_stop(edn0));
   TRY(dif_csrng_stop(csrng));
@@ -133,7 +137,11 @@ status_t aes_testutils_masking_prng_zero_output_seed(const dif_csrng_t *csrng,
                       .len = 0,
                   },
           },
-      .reseed_interval = 1,  // Reseed after every single generate.
+      // When producing the seed causing AES to output an all-zero output, we
+      // need to reseed CSRNG after every single generate. Otherwise, we reseed
+      // less frequently. This produces a different seed and avoids repetition
+      // alerts in EDN.
+      .reseed_interval = gen_zero_output_seed ? 1 : 16,
   };
   memcpy(edn0_params.instantiate_cmd.seed_material.data,
          kEdnSeedMaterialInstantiate, sizeof(kEdnSeedMaterialInstantiate));
@@ -196,11 +204,43 @@ status_t aes_testutils_csrng_kat(const dif_csrng_t *csrng) {
   TRY(csrng_testutils_kat_reseed(csrng, &seed_material_reseed,
                                  &expected_state_reseed));
 
+  // We're about to generate the same `genbits` again which will trigger a
+  // `csrng_recov_alert`. This is expected, so we must disable this alert if it
+  // is currently enabled and restore it after.
+  dif_alert_handler_t alert_handler;
+  TRY(dif_alert_handler_init_from_dt(kDtAlertHandler, &alert_handler));
+
+  dt_alert_id_t csrng_recov_alert =
+      dt_csrng_alert_to_alert_id(kDtCsrng, kDtCsrngAlertRecovAlert);
+
+  dif_toggle_t was_enabled = kDifToggleDisabled;
+  TRY(dif_alert_handler_alert_is_enabled(&alert_handler, csrng_recov_alert,
+                                         &was_enabled));
+
+  if (was_enabled == kDifToggleEnabled) {
+    TRY(dif_alert_handler_alert_set_enabled(&alert_handler, csrng_recov_alert,
+                                            kDifToggleDisabled));
+  }
+
   // Generate one block containing the required seed for the AES masking PRNG
   // to output an all-zero vector.
   TRY(csrng_testutils_kat_generate(csrng, 1, kCsrngBlockLen, NULL,
                                    kAesMaskingPrngZeroOutputSeed,
                                    &expected_state_generate));
+
+  // Check that the correct recoverable alert fired even if the alert was
+  // ignored.
+  uint32_t recov_alerts = 0;
+  TRY(dif_csrng_get_recoverable_alerts(csrng, &recov_alerts));
+  TRY_CHECK(recov_alerts == kDifCsrngRecoverableAlertRepeatedGenBits);
+  TRY(dif_csrng_clear_recoverable_alerts(csrng));
+
+  // Restore the alert if it was enabled.
+  if (was_enabled == kDifToggleEnabled) {
+    TRY(dif_alert_handler_alert_set_enabled(&alert_handler, csrng_recov_alert,
+                                            kDifToggleEnabled));
+  }
+
   return OK_STATUS();
 }
 #endif

@@ -114,7 +114,7 @@ The test sequences besides the base are as follows:
 * `pwrmgr_wakeup_vseq` checks the transitions to low power and the wakeup settings.
   It randomizes wakeup inputs, wakeup enables, the wakeup info capture enable, and the interrupt enable.
 * `pwrmgr_aborted_low_power_vseq` creates scenarios that lead to aborting a low power transition.
-  The abort can be due to the processor waking up very soon, or otp, lc, or flash being busy.
+  The abort can be due to the processor waking up very soon, or otp, lc, or nvm being busy.
 * `pwrmgr_reset_vseq` checks the pwrmgr response to conditional resets and reset enables, and unconditional escalation and main power glitch resets.
 * `pwrmgr_wakeup_reset_vseq` aligns reset and wakeup from low power.
 * `pwrmgr_lowpower_wakeup_race_vseq` aligns a wakeup event coming in proximity to low power entry.
@@ -212,8 +212,8 @@ See also the test plan for specific ways these are driven to trigger different t
 ##### LC
 The pins connecting to LC behave pretty much the same way as those to OTP.
 
-##### FLASH
-- Input `flash_idle` is handled much like `lc_idle` and `otp_idle`.
+##### NVM
+- Input `nvm_idle` is handled much like `lc_idle` and `otp_idle`.
 
 ##### CPU
 - Input `core_sleeping` is driven by sequences.
@@ -244,11 +244,11 @@ The [`hw/top_earlgrey/ip_autogen/pwrmgr/dv/sva/pwrmgr_bind.sv`](https://github.c
 In addition, the RTL has assertions to ensure all outputs are initialized to known values after coming out of reset.
 
 ## Building and running tests
-We are using our in-house developed [regression tool](../../../../../util/dvsim/README.md) for building and running our tests and regressions.
+The [dvsim](https://github.com/lowRISC/dvsim) tool is used for building and running our tests and regressions.
 Please take a look at the link for detailed information on the usage, capabilities, features and known issues.
 Here's how to run a smoke test:
 ```console
-$ $REPO_TOP/util/dvsim/dvsim.py $REPO_TOP/hw/top_earlgrey/ip_autogen/pwrmgr/dv/pwrmgr_sim_cfg.hjson -i pwrmgr_smoke
+$ dvsim $REPO_TOP/hw/top_earlgrey/ip_autogen/pwrmgr/dv/pwrmgr_sim_cfg.hjson -i pwrmgr_smoke
 ```
 
 ## Testplan

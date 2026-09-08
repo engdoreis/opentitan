@@ -98,6 +98,22 @@ py_binary(
 )
 
 py_binary(
+    name = "fi_boot_python_test",
+    testonly = True,
+    srcs = ["test_scripts/fi_boot_python_test.py"],
+    data = [
+        "//sw/host/opentitantool",
+    ],
+    deps = [
+        "//sw/host/penetrationtests/python/fi:fi_boot_commands",
+        "//sw/host/penetrationtests/python/fi:fi_boot_functions",
+        "//sw/host/penetrationtests/python/util:common_library",
+        "//sw/host/penetrationtests/python/util:targets",
+        "@rules_python//python/runfiles",
+    ],
+)
+
+py_binary(
     name = "fi_alert_python_test",
     testonly = True,
     srcs = ["test_scripts/fi_alert_python_test.py"],
@@ -243,6 +259,25 @@ py_binary(
 )
 
 py_binary(
+    name = "fi_rom_ext_imm_skip_python_gdb_test",
+    testonly = True,
+    srcs = ["gdb_testing/fi_rom_ext_imm_skip_python_gdb_test.py"],
+    data = [
+        "//sw/host/opentitantool",
+        "//third_party/openocd:jtag_cmsis_dap_adapter_cfg",
+        "//third_party/openocd:openocd_bin",
+        "//util/openocd/target:lowrisc-earlgrey.cfg",
+        "@lowrisc_rv32imcb_toolchain//:bin/riscv32-unknown-elf-gdb",
+    ],
+    deps = [
+        "//sw/host/penetrationtests/python/util:dis_parser",
+        "//sw/host/penetrationtests/python/util:gdb_controller",
+        "//sw/host/penetrationtests/python/util:targets",
+        "@rules_python//python/runfiles",
+    ],
+)
+
+py_binary(
     name = "fi_sym_cryptolib_python_gdb_test",
     testonly = True,
     srcs = ["gdb_testing/fi_sym_cryptolib_python_gdb_test.py"],
@@ -259,6 +294,7 @@ py_binary(
         "//sw/host/penetrationtests/python/util:dis_parser",
         "//sw/host/penetrationtests/python/util:gdb_controller",
         "//sw/host/penetrationtests/python/util:targets",
+        "//sw/host/penetrationtests/python/util:utils",
         "@rules_python//python/runfiles",
         requirement("pycryptodome"),
     ],
@@ -299,6 +335,7 @@ py_binary(
         "//sw/host/penetrationtests/python/util:dis_parser",
         "//sw/host/penetrationtests/python/util:gdb_controller",
         "//sw/host/penetrationtests/python/util:targets",
+        "//sw/host/penetrationtests/python/util:utils",
         "@rules_python//python/runfiles",
         requirement("pycryptodome"),
     ],
@@ -320,6 +357,34 @@ py_binary(
         "//sw/host/penetrationtests/python/util:common_library",
         "//sw/host/penetrationtests/python/util:dis_parser",
         "//sw/host/penetrationtests/python/util:gdb_controller",
+        "//sw/host/penetrationtests/python/util:targets",
+        "@rules_python//python/runfiles",
+    ],
+)
+
+py_binary(
+    name = "cc_rng_output_test",
+    testonly = True,
+    srcs = ["test_scripts/cc_rng_output_test.py"],
+    data = [
+        "//sw/host/opentitantool",
+    ],
+    deps = [
+        "//sw/host/penetrationtests/python/fi:fi_sym_cryptolib_commands",
+        "//sw/host/penetrationtests/python/util:targets",
+        "@rules_python//python/runfiles",
+    ],
+)
+
+py_binary(
+    name = "fips_rng_output_test",
+    testonly = True,
+    srcs = ["test_scripts/fips_rng_output_test.py"],
+    data = [
+        "//sw/host/opentitantool",
+    ],
+    deps = [
+        "//sw/host/penetrationtests/python/fi:fi_rng_commands",
         "//sw/host/penetrationtests/python/util:targets",
         "@rules_python//python/runfiles",
     ],
@@ -370,6 +435,16 @@ py_library(
     srcs = ["host_scripts/fi_rom_functions.py"],
     deps = [
         ":fi_rom_commands",
+        "//sw/host/penetrationtests/python/util:common_library",
+        "//sw/host/penetrationtests/python/util:targets",
+    ],
+)
+
+py_library(
+    name = "fi_boot_functions",
+    srcs = ["host_scripts/fi_boot_functions.py"],
+    deps = [
+        ":fi_boot_commands",
         "//sw/host/penetrationtests/python/util:common_library",
         "//sw/host/penetrationtests/python/util:targets",
     ],
@@ -448,6 +523,12 @@ py_library(
 py_library(
     name = "fi_rom_commands",
     srcs = ["communication/fi_rom_commands.py"],
+    deps = ["//sw/host/penetrationtests/python/util:common_library"],
+)
+
+py_library(
+    name = "fi_boot_commands",
+    srcs = ["communication/fi_boot_commands.py"],
     deps = ["//sw/host/penetrationtests/python/util:common_library"],
 )
 

@@ -9,8 +9,8 @@
   one_paragraph_desc: '''
   I2C Interface implements the I2C serial communication protocol.
   It can be configured in host (master) or device (slave) mode and supports standard data rate (100 kbaud), fast data rate (400 kbaud), and fast plus data rate (1 Mbaud).
-  In addition to supporting all mandatory I2C features, this block supports clock stretching in host mode and automatic clock stretching in device mode.
-  I2C Interface uses a 7-bit address space and is compatible with any device covered by I2C specification operating at speeds up to 1 Mbaud.
+  In addition to supporting all mandatory I<sup>2</sup>C features, this block supports clock stretching in host mode and automatic clock stretching in device mode.
+  I2C Interface uses a 7-bit address space and is compatible with any device covered by I<sup>2</sup>C specification operating at speeds up to 1 Mbaud.
   '''
   // Unique comportable IP identifier defined under KNOWN_CIP_IDS in the regtool.
   cip_id:             "11",
@@ -111,15 +111,9 @@
     // RAM configuration
     { struct:  "ram_1p_cfg"
       package: "prim_ram_1p_pkg"
-      type:    "uni"
+      type:    "req_rsp"
       name:    "ram_cfg"
-      act:     "rcv"
-    }
-    { struct:  "ram_1p_cfg_rsp"
-      package: "prim_ram_1p_pkg"
-      type:    "uni"
-      name:    "ram_cfg_rsp"
-      act:     "req"
+      act:     "rsp"
     }
     { struct: "logic"
       type:   "uni"
@@ -283,7 +277,7 @@
           resval: "0"
           name: "LLPBK"
           desc: '''
-                Enable I2C line loopback test
+                Enable I2C line loopback test.
                 If line loopback is enabled, the internal design sees ACQ and RX data as "1"
                 '''
           tags: [// Exclude from write-checks: writing 1'b1 to this bit causes interrupts unexpectedly asserted
@@ -635,7 +629,7 @@
 
     { name: "TIMING0"
       desc: '''
-            Detailed I2C Timings (directly corresponding to table 10 in the I2C Specification).
+            Detailed I2C Timings (directly corresponding to table 10 in the I<sup>2</sup>C Specification (rev. 6)).
             All values are expressed in units of the input clock period.
             These must be greater than 2 in order for the change in SCL to propagate to the input of the FSM so that acknowledgements are detected correctly.
             '''
@@ -660,7 +654,7 @@
     }
     { name: "TIMING1",
       desc: '''
-            Detailed I2C Timings (directly corresponding to table 10 in the I2C Specification).
+            Detailed I2C Timings (directly corresponding to table 10 in the I<sup>2</sup>C Specification (rev. 6)).
             All values are expressed in units of the input clock period.
             '''
       swaccess: "rw"
@@ -684,7 +678,7 @@
     }
     { name: "TIMING2"
       desc: '''
-            Detailed I2C Timings (directly corresponding to table 10 in the I2C Specification).
+            Detailed I2C Timings (directly corresponding to table 10 in the I<sup>2</sup>C Specification (rev. 6)).
             All values are expressed in units of the input clock period.
             '''
       swaccess: "rw"
@@ -708,7 +702,7 @@
     }
     { name: "TIMING3"
       desc: '''
-            Detailed I2C Timings (directly corresponding to table 10, in the I2C Specification).
+            Detailed I2C Timings (directly corresponding to table 10 in the I<sup>2</sup>C Specification (rev. 6)).
             All values are expressed in units of the input clock period.
             '''
       swaccess: "rw"
@@ -735,7 +729,7 @@
     }
     { name: "TIMING4"
       desc: '''
-            Detailed I2C Timings (directly corresponding to table 10, in the I2C Specification).
+            Detailed I2C Timings (directly corresponding to table 10 in the I<sup>2</sup>C Specification (rev. 6)).
             All values are expressed in units of the input clock period.
             '''
       swaccess: "rw"
@@ -872,7 +866,7 @@
               name: "START",
               desc: '''
                     A START condition preceded the ABYTE to start a new transaction.
-                    ABYTE contains the 7-bit I2C address plus R/W command bit in the order received on the bus, MSB first.
+                    ABYTE contains the 7-bit I<sup>2</sup>C address plus R/W command bit in the order received on the bus, MSB first.
                     '''
             },
             { value: "2",
@@ -887,7 +881,7 @@
               name: "RESTART",
               desc: '''
                     A repeated START condition preceded the ABYTE, extending the current transaction with a new transfer.
-                    ABYTE contains the 7-bit I2C address plus R/W command bit in the order received on the bus, MSB first.
+                    ABYTE contains the 7-bit I<sup>2</sup>C address plus R/W command bit in the order received on the bus, MSB first.
                     '''
             },
             { value: "4",
@@ -898,7 +892,7 @@
               name: "NACK_START",
               desc: '''
                     A START condition preceded the ABYTE (including repeated START) that was part of a NACK'd transfer.
-                    The ABYTE contains the matching I2C address and command bit.
+                    The ABYTE contains the matching I<sup>2</sup>C address and command bit.
                     The ABYTE was ACK'd, but the rest of the transaction was NACK'ed.
                     '''
             },

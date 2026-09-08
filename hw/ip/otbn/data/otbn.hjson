@@ -8,6 +8,8 @@
   one_paragraph_desc: '''
   OpenTitan Big Number Accelerator (OTBN) is a programmable coprocessor for asymmetric cryptographic algorithms such as RSA or elliptic curve cryptography (ECC).
   Such algorithms are dominated by wide integer arithmetic, which are executed on OTBN's 256-bit-wide data path.
+  OTBN also supports post-quantum cryptography (PQC) algorithms.
+  These operate on smaller numbers, but by making use of the 32-bit SIMD instructions the 256b wide registers can be used to efficiently vectorize the computations.
   The data OTBN processes is often security sensitive, and OTBN is designed to reduce the attack surface by
   (1) keeping the instruction set and the processor design as simple as possible to aid verification,
   (2) minimizing control flow and clearly separating it from data flow,
@@ -40,6 +42,15 @@
           commit_id:          "a6b908283fccba3f8b6b44052c6ad87276dc21e8",
           notes:              ""
       },
+      {
+          version:            "1.2.0",
+          life_stage:         "L1",
+          design_stage:       "D1",
+          verification_stage: "V0",
+          dif_stage:          "S1",
+          commit_id:          "7511d6082ea9ebc926dca4a1bfd3ed2201339fd0",
+          notes:              ""
+      },
   ]
   clocking: [
     {clock: "clk_i", reset: "rst_ni", idle: "idle_o", primary: true},
@@ -69,14 +80,25 @@
       desc:    '''
         Default seed of the PRNG used for URND.
       '''
-      randcount: "256",
+      randcount: "288",
       randtype:  "data"
     },
-    { name:    "SecMuteUrnd"
+    { name:    "SecFixMaiOpSeq"
       type:    "bit"
       default: "0"
       desc: '''
-        If enabled (1), URND is advanced only when data is needed.
+        If enabled (1), masking accelerator interface will not randomize operand start indexes.
+        Disabled (0) by default.
+        Useful for SCA measurements only.
+        '''
+      local:   "false"
+      expose:  "true"
+    }
+    { name:    "SecFixMacOpSeq"
+      type:    "bit"
+      default: "0"
+      desc: '''
+        If enabled (1), the BN MAC will not randomize the order in which the vector elements are processed for vectorized multiplication instructions.
         Disabled (0) by default.
         Useful for SCA measurements only.
         '''
@@ -94,6 +116,25 @@
       local:   "false"
       expose:  "true"
     }
+    { name:    "FeatStubMai"
+      type:    "bit"
+      default: "0"
+      desc: '''
+        If enabled (1), MAI and mask accelerator are not preset in the design.
+        Disabled (0) by default.
+        Useful for resource-bound targets only. Can break software setups and DV.
+        '''
+      local:   "false"
+      expose:  "true"
+    }
+    { name:    "RndCnstBnMacUrndPerm",
+      type:    "otbn_pkg::bn_mac_urnd_perm_t",
+      desc:    '''
+        Compile-time random permutation for URND permutation in BN MAC.
+      '''
+      randcount: "256",
+      randtype:  "perm"
+    },
     { name: "RndCnstOtbnKey",
       type: "otp_ctrl_pkg::otbn_key_t",
       desc: '''
@@ -113,7 +154,7 @@
   ]
   interrupt_list: [
     { name: "done"
-      desc: "OTBN has completed the operation."
+      desc: "OTBN has completed the operation, encountered a WFI instruction or has locked itself."
     }
   ]
   alert_list: [
@@ -162,27 +203,15 @@
     // ram configuration
     { struct:  "ram_1p_cfg",
       package: "prim_ram_1p_pkg",
-      type:    "uni",
+      type:    "req_rsp",
       name:    "ram_cfg_imem",
-      act:     "rcv"
+      act:     "rsp"
     },
     { struct:  "ram_1p_cfg",
       package: "prim_ram_1p_pkg",
-      type:    "uni",
+      type:    "req_rsp",
       name:    "ram_cfg_dmem",
-      act:     "rcv"
-    },
-    { struct:  "ram_1p_cfg_rsp",
-      package: "prim_ram_1p_pkg",
-      type:    "uni",
-      name:    "ram_cfg_rsp_imem",
-      act:     "req"
-    },
-    { struct:  "ram_1p_cfg_rsp",
-      package: "prim_ram_1p_pkg",
-      type:    "uni",
-      name:    "ram_cfg_rsp_dmem",
-      act:     "req"
+      act:     "rsp"
     },
 
     // Lifecycle escalation
@@ -217,6 +246,14 @@
       name:    "keymgr_key"
       act:     "rcv"
       package: "keymgr_pkg"
+    },
+
+    // KMAC interface
+    { struct:  "app"
+      type:    "req_rsp"
+      name:    "kmac_data"
+      act:     "req"
+      package: "kmac_pkg"
     },
   ],
   features: [
@@ -404,10 +441,10 @@
 
   regwidth: "32"
   registers: [
-    // The magic values for EXECUTE, SEC_WIPE_DMEM and SEC_WIPE_IMEM in the CMD
-    // register below were generated with the sparse-fsm-encode.py script:
+    // The magic values in the CMD register below were generated with the sparse-fsm-encode.py
+    // script:
     //
-    //   util/design/sparse-fsm-encode.py -d 4 -m 3 -n 8 --avoid-zero -s 1
+    //   util/design/sparse-fsm-encode.py -d 4 -m 4 -n 8 --avoid-zero -s 1
     //
     // and have a hamming distance of at least 4 from one another and the zero
     // word.
@@ -415,13 +452,14 @@
       desc: '''
         Command Register
 
-        A command initiates an OTBN operation. While performing the operation,
+        Any command except `RESUME` initiates an OTBN operation. While performing the operation,
         OTBN is busy; the !!STATUS register reflects that.
 
         All operations signal their completion by raising the done
         interrupt; alternatively, software may poll the !!STATUS register.
 
-        Writes are ignored if OTBN is not idle.
+        The EXECUTE, SEC_WIPE_DMEM, and SEC_WIPE_IMEM commands take only effect if OTBN is idle.
+        The RESUME command only takes effect if OTBN is paused.
         Unrecognized commands are ignored.
       ''',
       swaccess: "wo",
@@ -440,6 +478,7 @@
             | 0xd8  | EXECUTE       | Starts the execution of the program stored in the instruction memory, starting at address zero. |
             | 0xc3  | SEC_WIPE_DMEM | Securely removes all contents from the data memory. |
             | 0x1e  | SEC_WIPE_IMEM | Securely removes all contents from the instruction  memory. |
+            | 0xa6  | RESUME        | Resumes execution of a program that was previously paused by a WFI instruction. |
           '''
           tags: [
             // Don't write this field in the automated CSR tests: it would
@@ -467,12 +506,36 @@
 
             Writes are ignored if OTBN is not idle.
           '''
+        },
+        { bits: "1",
+          name: "wfi_enabled",
+          resval: 0,
+          desc: '''
+            Controls whether the WFI instruction is enabled.
+
+            When set, the WFI instruction can be used to pause execution.
+            When cleared, the WFI instruction is treated as an invalid instruction.
+
+            Writes are ignored if OTBN is not idle.
+          '''
+        },
+        { bits: "2",
+          name: "urnd_ctrl_enabled",
+          resval: 0,
+          desc: '''
+            Controls whether the URND_CTRL CSR is enabled.
+
+            When set, OTBN SW can use the functionality provided by the URND_CTRL CSR.
+            When cleared, writes to URND_CTRL have no effect.
+
+            Writes are ignored if OTBN is not idle.
+          '''
         }
       ],
       tags: [
-        // Don't write this register in the automated CSR tests, because those
-        // tests are not aware whether OTBN is idle or not. If OTBN is not idle,
-        // it ignores the write and the test would fail.
+        // Don't write this register in the automated CSR tests, because those tests are not aware
+        // whether OTBN is accepting commands or not. If OTBN is not accepting commands, it ignores
+        // the write and the test would fail.
         "excl:CsrAllTests:CsrExclWrite"
       ]
     }
@@ -499,6 +562,7 @@
             | 0x02  | BUSY_SEC_WIPE_DMEM | OTBN is busy securely wiping the data memory.         |
             | 0x03  | BUSY_SEC_WIPE_IMEM | OTBN is busy securely wiping the instruction memory.  |
             | 0x04  | BUSY_SEC_WIPE_INT  | OTBN is busy securely wiping the internal state.      |
+            | 0x05  | PAUSED             | OTBN is paused due to a WFI instruction.              |
             | 0xFF  | LOCKED             | OTBN is locked as reaction to a fatal error, and must be reset to unlock it again. See also the section "Reaction to Fatal Errors". |
 
           '''
@@ -575,6 +639,11 @@
           name: "rnd_fips_chk_fail"
           resval: 0,
           desc: "An `RND_FIPS_CHK_FAIL` error was observed."
+        }
+        { bits: "8",
+          name: "mai_software_error"
+          resval: 0,
+          desc: "An `MAI_SOFTWARE_ERROR` error was observed."
         }
 
         // Fatal errors. Keep in sync with list in FATAL_ALERT_CAUSE.
@@ -739,14 +808,12 @@
       ]
     }
 
-    // Give IMEM and DMEM 16 KiB address space, each, to allow for easy expansion
-    // of the actual IMEM and DMEM sizes without changing the address map.
     { skipto: "0x4000" }
 
     // Imem size (given as `items` below) must be a power of two.
     { window: {
         name: "IMEM",
-        items: "2048", // 8 kB
+        items: "4096", // 16 kB
         swaccess: "rw",
         data-intg-passthru: "true",
         byte-write: "false",
@@ -766,11 +833,11 @@
 
     { skipto: "0x8000" }
 
-    // Dmem size (given as `items` below) must be a power of two.
+    // The total Dmem size (from `items` below plus the scratchpad size) must be a power of two.
+    // Splits that are not a power of two are possible but require to set the attribute 'unusual: "true"' below.
     { window: {
         name: "DMEM",
-        items: "768", // 3 kB visible over the bus (1 kB scratch)
-        unusual: "true", // Needed to avoid an error because of the non-power-of-two size
+        items: "4096", // 16KiB visible over the bus (16KiB scratch)
         swaccess: "rw",
         data-intg-passthru: "true",
         byte-write: "false",
@@ -785,7 +852,7 @@
           If OTBN is busy, any access additionally triggers an
           ILLEGAL_BUS_ACCESS fatal error.
 
-          Note that DMEM is actually 4kiB in size, but only the first 3kiB of
+          Note that DMEM is actually 32kiB in size, but only the first 16kiB of
           the memory is visible through this register interface.
         '''
       }

@@ -70,7 +70,7 @@ typedef enum otcrypto_aes_padding {
  *
  * @param plaintext_len Plaintext data length in bytes.
  * @param aes_padding Padding scheme to be used for the data.
- * @return Size of the padded input or ciphertext.
+ * @param[out] padded_len Size of the padded input or ciphertext.
  * @return Result of the operation.
  */
 otcrypto_status_t otcrypto_aes_padded_plaintext_length(
@@ -78,15 +78,42 @@ otcrypto_status_t otcrypto_aes_padded_plaintext_length(
     size_t *padded_len);
 
 /**
+ * Strips padding bytes from a decrypted AES plaintext buffer.
+ *
+ * After decryption, `otcrypto_aes` leaves the padding bytes intact in the
+ * output buffer. This function validates the padding according to `aes_padding`
+ * and writes the true plaintext length to `*plaintext_len`. The caller can then
+ * use only the first `*plaintext_len` bytes of the buffer. The buffer itself is
+ * not modified.
+ *
+ * WARNING: Exposing whether this function returns a padding error to an
+ * external party can enable a padding oracle attack. The caller must ensure
+ * that any distinction between valid and invalid padding is not observable by
+ * an attacker. This function checks the padding in constant time.
+ *
+ * @param padded_plaintext Decrypted data buffer, including padding bytes.
+ * @param aes_padding Padding scheme that was used during encryption.
+ * @param[out] plaintext_len Number of real (non-padding) bytes in the buffer.
+ * @return Result of the operation.
+ */
+otcrypto_status_t otcrypto_aes_padding_strip(
+    otcrypto_byte_buf_t *padded_plaintext, otcrypto_aes_padding_t aes_padding,
+    size_t *plaintext_len);
+
+/**
  * Performs the AES operation.
  *
  * The input data in the `cipher_input` is first padded using the
  * `aes_padding` scheme and the output is copied to `cipher_output`.
  *
+ * When the key security level is configured higher than `Low`, this function
+ * performs an internal fault-injection hardening check.
+ *
  * The caller should allocate space for the `cipher_output` buffer, which is
  * given in bytes by `otcrypto_aes_padded_plaintext_length`, and set the number
- * of bytes allocated in the `len` field of the output.  If the user-set length
- * and the expected length do not match, an error message will be returned.
+ * of bytes allocated in the `len` field of the output. If the user-set length
+ * and the expected length do not match, `kOtcryptoStatusValueBadArgs` will be
+ * returned.
  *
  * Note that, during decryption, the padding mode is ignored. This function
  * will NOT check the padding or return an error if the padding is invalid,
@@ -100,15 +127,18 @@ otcrypto_status_t otcrypto_aes_padded_plaintext_length(
  * @param cipher_input Input data to be ciphered.
  * @param aes_padding Padding scheme to be used for the data.
  * @param[out] cipher_output Output data after cipher operation.
- * @return The result of the cipher operation.
+ * @return Result of the cipher operation. Returns `kOtcryptoStatusValueOk` on
+ * success, `kOtcryptoStatusValueBadArgs` if arguments, key configuration, or
+ * buffer lengths are invalid, or `kOtcryptoStatusValueFatalError` if an
+ * internal hardware or integrity check fails.
  */
 otcrypto_status_t otcrypto_aes(otcrypto_blinded_key_t *key,
-                               otcrypto_word32_buf_t iv,
+                               otcrypto_word32_buf_t *iv,
                                otcrypto_aes_mode_t aes_mode,
                                otcrypto_aes_operation_t aes_operation,
-                               otcrypto_const_byte_buf_t cipher_input,
+                               const otcrypto_const_byte_buf_t *cipher_input,
                                otcrypto_aes_padding_t aes_padding,
-                               otcrypto_byte_buf_t cipher_output);
+                               otcrypto_byte_buf_t *cipher_output);
 
 #ifdef __cplusplus
 }  // extern "C"

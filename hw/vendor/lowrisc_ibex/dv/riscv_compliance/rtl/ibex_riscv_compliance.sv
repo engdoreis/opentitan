@@ -15,6 +15,7 @@ module ibex_riscv_compliance (
   input IO_RST_N
 );
 
+  parameter ibex_pkg::base_isa_e BaseIsa  = ibex_pkg::BaseIsaRV32IorCHERIoT;
   parameter bit          PMPEnable        = 1'b0;
   parameter int unsigned PMPGranularity   = 0;
   parameter int unsigned PMPNumRegions    = 4;
@@ -23,13 +24,16 @@ module ibex_riscv_compliance (
   parameter bit RV32E                     = 1'b0;
   parameter ibex_pkg::rv32m_e RV32M       = ibex_pkg::RV32MFast;
   parameter ibex_pkg::rv32b_e RV32B       = ibex_pkg::RV32BNone;
+  parameter ibex_pkg::rv32zc_e RV32ZC     = ibex_pkg::RV32Zca;
   parameter ibex_pkg::regfile_e RegFile   = ibex_pkg::RegFileFF;
   parameter bit BranchTargetALU           = 1'b0;
   parameter bit WritebackStage            = 1'b0;
   parameter bit ICache                    = 1'b0;
   parameter bit ICacheECC                 = 1'b0;
+  parameter bit ICacheTweakInfection      = 1'b0;
   parameter bit BranchPredictor           = 1'b0;
   parameter bit SecureIbex                = 1'b0;
+  parameter int unsigned LockstepOffset   = 1;
   parameter bit ICacheScramble            = 1'b0;
   parameter bit DbgTriggerEn              = 1'b0;
 
@@ -138,41 +142,51 @@ module ibex_riscv_compliance (
   end
 
   ibex_top_tracing #(
-      .PMPEnable        (PMPEnable         ),
-      .PMPGranularity   (PMPGranularity    ),
-      .PMPNumRegions    (PMPNumRegions     ),
-      .MHPMCounterNum   (MHPMCounterNum    ),
-      .MHPMCounterWidth (MHPMCounterWidth  ),
-      .RV32E            (RV32E             ),
-      .RV32M            (RV32M             ),
-      .RV32B            (RV32B             ),
-      .RegFile          (RegFile           ),
-      .BranchTargetALU  (BranchTargetALU   ),
-      .WritebackStage   (WritebackStage    ),
-      .ICache           (ICache            ),
-      .ICacheECC        (ICacheECC         ),
-      .BranchPredictor  (BranchPredictor   ),
-      .DbgTriggerEn     (DbgTriggerEn      ),
-      .SecureIbex       (SecureIbex        ),
-      .ICacheScramble   (ICacheScramble    ),
-      .DmBaseAddr       (32'h00000000      ),
-      .DmAddrMask       (32'h00000003      ),
-      .DmHaltAddr       (32'h00000000      ),
-      .DmExceptionAddr  (32'h00000000      )
+      .BaseIsa                   (BaseIsa             ),
+      .PMPEnable                 (PMPEnable           ),
+      .PMPGranularity            (PMPGranularity      ),
+      .PMPNumRegions             (PMPNumRegions       ),
+      .MHPMCounterNum            (MHPMCounterNum      ),
+      .MHPMCounterWidth          (MHPMCounterWidth    ),
+      .RV32E                     (RV32E               ),
+      .RV32M                     (RV32M               ),
+      .RV32B                     (RV32B               ),
+      .RV32ZC                    (RV32ZC              ),
+      .RegFile                   (RegFile             ),
+      .BranchTargetALU           (BranchTargetALU     ),
+      .WritebackStage            (WritebackStage      ),
+      .ICache                    (ICache              ),
+      .ICacheECC                 (ICacheECC           ),
+      .ICacheTweakInfection      (ICacheTweakInfection),
+      .BranchPredictor           (BranchPredictor     ),
+      .DbgTriggerEn              (DbgTriggerEn        ),
+      .SecureIbex                (SecureIbex          ),
+      .LockstepOffset            (LockstepOffset      ),
+      .ICacheScramble            (ICacheScramble      ),
+      .DmBaseAddr                (32'h00000000        ),
+      .DmAddrMask                (32'h00000003        ),
+      .DmHaltAddr                (32'h00000000        ),
+      .DmExceptionAddr           (32'h00000000        ),
+      .CheriotRevBitmapAddrWidth (32'd11              ),
+      .CheriotRevBitmapBaseAddr  (32'h0               )
     ) u_top (
       .clk_i                     (clk_sys              ),
       .rst_ni                    (rst_sys_n            ),
 
       .test_en_i                 ('b0                  ),
       .scan_rst_ni               (1'b1                 ),
-      .ram_cfg_icache_tag_i      ('b0                  ),
-      .ram_cfg_rsp_icache_tag_o  (                     ),
-      .ram_cfg_icache_data_i     ('b0                  ),
-      .ram_cfg_rsp_icache_data_o (                     ),
+      .ram_cfg_icache_tag_i      ('{default: prim_ram_1p_pkg::RAM_1P_CFG_REQ_DEFAULT}),
+      .ram_cfg_icache_tag_o      (                     ),
+      .ram_cfg_icache_data_i     ('{default: prim_ram_1p_pkg::RAM_1P_CFG_REQ_DEFAULT}),
+      .ram_cfg_icache_data_o     (                     ),
 
       .hart_id_i                 (32'b0                ),
       // First instruction executed is at 0x0 + 0x80
       .boot_addr_i               (32'h00000000         ),
+
+      .trvk_heap_base_addr_i     (32'h00000000         ),
+
+      .cheriot_enable_i          (ibex_pkg::IbexMuBiOff),
 
       .instr_req_o               (host_req[CoreI]      ),
       .instr_gnt_i               (host_gnt[CoreI]      ),
@@ -190,9 +204,19 @@ module ibex_riscv_compliance (
       .data_addr_o               (host_addr[CoreD]     ),
       .data_wdata_o              (host_wdata[CoreD]    ),
       .data_wdata_intg_o         (                     ),
+      .data_tag_o                (                     ),
       .data_rdata_i              (host_rdata[CoreD]    ),
       .data_rdata_intg_i         (ibex_data_rdata_intg ),
+      .data_tag_i                (1'b0                 ),
       .data_err_i                (host_err[CoreD]      ),
+
+      .trvk_revbm_req_o          (                     ),
+      .trvk_revbm_gnt_i          (1'b0                 ),
+      .trvk_revbm_rvalid_i       (1'b0                 ),
+      .trvk_revbm_addr_o         (                     ),
+      .trvk_revbm_rdata_i        ('0                   ),
+      .trvk_revbm_rdata_intg_i   ('0                   ),
+      .trvk_revbm_err_i          (1'b0                 ),
 
       .irq_software_i            (1'b0                 ),
       .irq_timer_i               (1'b0                 ),
@@ -210,10 +234,23 @@ module ibex_riscv_compliance (
       .double_fault_seen_o       (                     ),
 
       .fetch_enable_i            (ibex_pkg::IbexMuBiOn ),
+      .mcounteren_writable_i     (ibex_pkg::IbexMuBiOn ),
       .alert_minor_o             (                     ),
       .alert_major_internal_o    (                     ),
       .alert_major_bus_o         (                     ),
-      .core_sleep_o              (                     )
+      .core_sleep_o              (                     ),
+
+      .lockstep_cmp_en_o         (                     ),
+
+      .data_req_shadow_o         (                     ),
+      .data_we_shadow_o          (                     ),
+      .data_be_shadow_o          (                     ),
+      .data_addr_shadow_o        (                     ),
+      .data_wdata_shadow_o       (                     ),
+      .data_wdata_intg_shadow_o  (                     ),
+
+      .instr_req_shadow_o        (                     ),
+      .instr_addr_shadow_o       (                     )
     );
 
   // SRAM block for instruction and data storage

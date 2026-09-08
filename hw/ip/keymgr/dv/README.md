@@ -83,11 +83,11 @@ The covergroups defined in testplan have been developed to prove that the test i
 #### Scoreboard
 The `keymgr_scoreboard` is primarily used for end to end checking.
 It creates the following analysis ports to retrieve the data monitored by corresponding interface agents:
-* tl_a_chan_fifo: An analysis FIFO to hold transactions from TL address channel.
-* tl_d_chan_fifo: An analysis FIFO to hold transactions from TL data channel.
-* req_fifo: An analysis FIFO to hold request data sent to KMAC.
-* rsp_fifo: An analysis FIFO to hold response digests received from KMAC.
-* edn_fifo: An analysis FIFO to hold transactions coming from the EDN interface.
+* `tl_a_chan_fifo`: An analysis FIFO to hold transactions from TL address channel.
+* `tl_d_chan_fifo`: An analysis FIFO to hold transactions from TL data channel.
+* `m_kmac_txn_imp`: An import that sees KMAC transactions sent to the application interface.
+* `m_kmac_req_imp`: An import that sees the requests that began these transactions.
+* `edn_fifos[0]`: An analysis FIFO to hold transactions coming from the EDN interface.
 
 #### Assertions
 * TLUL assertions: The `tb/keymgr_bind.sv` binds the `tlul_assert` [assertions](../../tlul/doc/TlulProtocolChecker.md) to the IP to ensure TileLink interface protocol compliance.
@@ -96,11 +96,11 @@ It creates the following analysis ports to retrieve the data monitored by corres
 * CheckEdn1stReq / CheckEdn2ndReq: Check KEYMGR sends 2 EDN request periodically based on the CSR `reseed_interval`.
 
 ## Building and running tests
-We are using our in-house developed [regression tool](../../../../util/dvsim/README.md) for building and running our tests and regressions.
+The [dvsim](https://github.com/lowRISC/dvsim) tool is used for building and running our tests and regressions.
 Please take a look at the link for detailed information on the usage, capabilities, features and known issues.
 Here's how to run a smoke test:
 ```console
-$ $REPO_TOP/util/dvsim/dvsim.py $REPO_TOP/hw/ip/keymgr/dv/keymgr_sim_cfg.hjson -i keymgr_smoke
+$ dvsim $REPO_TOP/hw/ip/keymgr/dv/keymgr_sim_cfg.hjson -i keymgr_smoke
 ```
 
 ## Testplan
